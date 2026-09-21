@@ -37,15 +37,10 @@ test('the beta status page does not present fabricated monitoring data', () => {
 
 test('public pricing reflects the runtime starter grant and marks future plans as unavailable', () => {
   const pricing = read('app/(marketing)/pricing/page.tsx');
-  const creditMigration = read(
-    '../../supabase/migrations/20260710010350_harden_database_privileges.sql',
-  );
 
   for (const plan of ["name: 'Free'", "name: 'Pro'", "name: 'Ultra'"]) {
     assert.match(pricing, new RegExp(plan));
   }
-
-  assert.match(creditMigration, /v_grant_amount integer := 150/);
   assert.match(pricing, /150 starter AI credits/);
   assert.match(pricing, /Free is the only plan available now/);
   assert.match(pricing, /No purchase or upgrade flow is available/);

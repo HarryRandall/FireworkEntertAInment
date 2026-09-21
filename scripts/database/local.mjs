@@ -10,7 +10,7 @@ const commands = {
   stop: ['stop'],
   status: ['status'],
   reset: ['db', 'reset', '--local'],
-  lint: ['db', 'lint', '--local', '--level', 'warning'],
+  lint: ['db', 'lint', '--local', '--level', 'warning', '--fail-on', 'error'],
 };
 
 function run(args, capture = false) {

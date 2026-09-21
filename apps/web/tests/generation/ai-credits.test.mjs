@@ -11,34 +11,6 @@ function read(path) {
   return readFileSync(join(root, path), 'utf8');
 }
 
-test('AI credit ledger migration creates a seeded wallet, costs, transactions, and admin grant RPC', () => {
-  const migration = read('../../supabase/migrations/20260629102243_ai_credit_ledger.sql');
-  assert.match(migration, /create table if not exists public\.ai_credit_accounts/);
-  assert.match(migration, /balance integer not null default 0/);
-  assert.match(migration, /reserved integer not null default 0/);
-  assert.match(migration, /v_grant_amount integer := 150/);
-  assert.match(migration, /'default_preview_grant'/);
-  assert.match(migration, /create table if not exists public\.ai_credit_costs/);
-  assert.match(migration, /'show_generation_gpt4o'/);
-  assert.match(migration, /'show_generation_sonnet'/);
-  assert.match(migration, /'show_generation_opus'/);
-  assert.match(migration, /'show_refinement'/);
-  assert.match(migration, /create table if not exists public\.ai_credit_transactions/);
-  assert.match(migration, /transaction_type in \('grant', 'reserve', 'debit', 'refund'\)/);
-  assert.match(migration, /'admin\.manage_billing'/);
-  assert.match(migration, /create policy ai_credit_accounts_select_own_or_billing_admin/);
-  assert.match(migration, /create or replace function public\.reserve_ai_credits/);
-  assert.match(migration, /select amount into v_amount/);
-  assert.match(migration, /v_hourly_limit integer := 20/);
-  assert.match(migration, /v_weekly_limit integer := 150/);
-  assert.match(migration, /'hourlyRemaining'/);
-  assert.match(migration, /'weeklyRemaining'/);
-  assert.match(migration, /create or replace function public\.settle_ai_credit_reservation/);
-  assert.match(migration, /create or replace function public\.grant_ai_credits/);
-  assert.doesNotMatch(migration, /daily_limit/);
-  assert.doesNotMatch(migration, /update_ai_credit_limits/);
-});
-
 test('customer billing page stays billing-only without AI credit usage', () => {
   const page = read('app/(app)/settings/billing/page.tsx');
   assert.match(page, /Billing/);
@@ -174,12 +146,6 @@ test('show and music generation reserve, settle, and refund credits', () => {
   const runner = read('lib/cue-generation/runner.server.ts');
   const musicRoute = read('app/api/music-analysis/route.ts');
   const musicStarter = read('lib/start-music-analysis.server.ts');
-  const retryMigration = read(
-    '../../supabase/migrations/20260727090000_song_analysis_retry_leases.sql',
-  );
-  const lifecycleMigration = read(
-    '../../supabase/migrations/20260727103000_backend_lifecycle_operations.sql',
-  );
   const credits = read('lib/ai-credits.server.ts');
   assert.match(credits, /DEFAULT_INCLUDED_AI_CREDITS = 150/);
   assert.match(credits, /creditActionForGenerationMode/);
@@ -202,17 +168,9 @@ test('show and music generation reserve, settle, and refund credits', () => {
   assert.match(newShowPage, /expectedGenerationMode/);
   assert.match(runner, /complete_cue_generation_attempt/);
   assert.match(runner, /fail_cue_generation_attempt/);
-  assert.match(lifecycleMigration, /private\.resolve_known_ai_credit/);
-  assert.match(lifecycleMigration, /'show-generation:' \|\| show_row\.id::text \|\| ':reserve'/);
-  assert.match(lifecycleMigration, /'settled'/);
-  assert.match(lifecycleMigration, /'refunded'/);
   assert.match(musicRoute, /startMusicAnalysisForStoredAudio/);
   assert.match(musicStarter, /musicAnalysisReservationKey/);
   assert.match(musicStarter, /refundAiCreditReservation/);
-  assert.match(retryMigration, /private\.resolve_song_analysis_credit/);
-  assert.match(retryMigration, /'music-analysis:' \|\| analysis_row\.id::text \|\| ':reserve'/);
-  assert.match(retryMigration, /'settled'/);
-  assert.match(retryMigration, /'refunded'/);
 });
 
 test('show refinements reserve, settle, refund, and disclose credits', () => {
@@ -220,9 +178,6 @@ test('show refinements reserve, settle, refund, and disclose credits', () => {
   const replayViewer = read('ui/replay/FireworkReplayViewer.tsx');
   const credits = read('lib/ai-credits.server.ts');
   const databaseTypes = read('lib/database.types.ts');
-  const refinementMigration = read(
-    '../../supabase/migrations/20260715091500_add_refinement_cues_atomically.sql',
-  );
   assert.match(credits, /showRefinementReservationKey/);
   assert.match(previewCues, /aiCreditAction: z\.enum\(\['show_refinement'\]\)\.optional\(\)/);
   assert.match(previewCues, /reserveAiCredits/);
@@ -239,22 +194,6 @@ test('show refinements reserve, settle, refund, and disclose credits', () => {
     /const result = await addPreviewCueAction\(formData\)[\s\S]*?toast\.success\(`Added /,
   );
   assert.match(replayViewer, /This will use \{REFINEMENT_CREDIT_COST\} AI credits/);
-  assert.match(
-    refinementMigration,
-    /create or replace function public\.add_refinement_cue_and_settle_credits\([\s\S]*?security definer[\s\S]*?set search_path = ''/,
-  );
-  assert.match(
-    refinementMigration,
-    /insert into public\.show_timeline_items \([\s\S]*?p_refinement_id[\s\S]*?settlement := public\.settle_ai_credit_reservation/,
-  );
-  assert.match(
-    refinementMigration,
-    /if not coalesce\(\(settlement ->> 'ok'\)::boolean, false\) then[\s\S]*?raise exception/,
-  );
-  assert.match(
-    refinementMigration,
-    /revoke execute on function public\.add_refinement_cue_and_settle_credits\([\s\S]*?from public, anon, authenticated, service_role;[\s\S]*?grant execute on function public\.add_refinement_cue_and_settle_credits\([\s\S]*?to authenticated;/,
-  );
   assert.match(
     databaseTypes,
     /add_refinement_cue_and_settle_credits: \{[\s\S]*?p_refinement_id: string[\s\S]*?Returns: string/,

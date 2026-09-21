@@ -101,12 +101,3 @@ test('chorus and drop beats always saturate all three tubes', () => {
     /if \(beat\.intensity >= 0\.62 \|\| beat\.nearClimax \|\| beat\.vibe === 'chorus' \|\| beat\.vibe === 'drop'\) \{[\s\S]*?return 3;/,
   );
 });
-
-test('emphasis migration adds the validated emphasis column', () => {
-  const migrationPath = '../../supabase/migrations/20260628130000_show_timeline_items_emphasis.sql';
-  assert.equal(existsSync(join(root, migrationPath)), true);
-
-  const migration = read(migrationPath);
-  assert.match(migration, /add column if not exists emphasis text not null default 'normal'/);
-  assert.match(migration, /check \(emphasis in \('normal', 'accent', 'peak'\)\)/);
-});

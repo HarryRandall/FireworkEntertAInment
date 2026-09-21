@@ -161,23 +161,3 @@ test('clone template action sends unauthenticated users to /login and back to th
     /redirect\(`\/login\?next=\$\{encodeURIComponent\(`\/library\/\$\{slug\}`\)\}`\)/,
   );
 });
-
-test('RLS migration opens the browse tables to anon', () => {
-  assert.equal(existsSync(join(root, '../../supabase/migrations')), true);
-
-  const migration = read('../../supabase/migrations/20260629153000_public_browse_anon_select.sql');
-  assert.match(migration, /grant select on public\.show_presets to anon/);
-  for (const table of [
-    'show_presets',
-    'fireworks',
-    'catalogue_items',
-    'multishots',
-    'multishot_fireworks',
-  ]) {
-    assert.match(migration, new RegExp(`drop policy if exists .* on public\\.${table}`));
-    assert.match(
-      migration,
-      new RegExp(`create policy .* on public\\.${table}[\\s\\S]*?for select using \\(true\\)`),
-    );
-  }
-});

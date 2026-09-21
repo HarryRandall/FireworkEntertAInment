@@ -1,5 +1,9 @@
 begin;
 
+-- Compare new import output with the pre-existing bootstrap catalogue.
+create temporary table original_fireworks as select id from public.fireworks;
+create temporary table original_catalogue_items as select id from public.catalogue_items;
+
 create function pg_temp.canonical_firework_design()
 returns jsonb
 language sql
@@ -51,7 +55,7 @@ as $$
   select jsonb_build_object(
     'schemaVersion', 'showcrafter.import-render-result.v1',
     'harnessVersion', 'showcrafter.import-render-harness.v1',
-    'rendererVersion', 'showcrafter.fireworks-engine.import-renderer.v1+sha256.90a37b6ccf746f598adfb0ad88efed910b2b699a063cf5cbd2b0f2f04773358f',
+    'rendererVersion', public.current_firework_import_renderer_contract_version(),
     'source', jsonb_build_object('durationSeconds', p_required_duration, 'width', 960, 'height', 540),
     'rendererDurations', (
       select jsonb_agg(
@@ -74,7 +78,7 @@ as $$
       'schemaVersion', 'showcrafter.engine-render-metrics.v2',
       'engine', jsonb_build_object(
         'renderer', 'FireworksEngine',
-        'rendererVersion', 'showcrafter.fireworks-engine.import-renderer.v1+sha256.90a37b6ccf746f598adfb0ad88efed910b2b699a063cf5cbd2b0f2f04773358f',
+        'rendererVersion', public.current_firework_import_renderer_contract_version(),
         'camera', 'FireworkReplayCanvas.default',
         'frameCount', 32,
         'frameWidth', 960,
@@ -146,12 +150,14 @@ set local request.jwt.claim.role = 'authenticated';
 insert into public.permissions (key, name, category)
 values
   ('admin.manage_imports', 'Manage imports', 'admin'),
-  ('admin.manage_catalogue', 'Manage catalogue', 'admin');
+  ('admin.manage_catalogue', 'Manage catalogue', 'admin')
+on conflict (key) do nothing;
 
 insert into public.roles (key, name)
 values
   ('user', 'User'),
-  ('import-test-admin', 'Import test admin');
+  ('import-test-admin', 'Import test admin')
+on conflict (key) do nothing;
 
 insert into auth.users (id, email, role, aud, created_at, updated_at)
 values
@@ -218,12 +224,14 @@ values (
   false,
   262144000,
   array['video/mp4']
-);
+)
+on conflict (id) do nothing;
 
 insert into public.firework_effects (slug, name, pattern_key, model_json, source)
 values
   ('peony', 'Peony', 'sphere', '{}'::jsonb, 'reference'),
-  ('ring', 'Ring', 'ring', '{}'::jsonb, 'reference');
+  ('ring', 'Ring', 'ring', '{}'::jsonb, 'reference')
+on conflict (slug) do nothing;
 
 insert into storage.objects (bucket_id, name, owner, owner_id, metadata)
 values (
@@ -590,7 +598,7 @@ begin
   exception
     when sqlstate '55000' then null;
   end;
-  if exists (select 1 from public.fireworks) then
+  if exists (select 1 from public.fireworks where id not in (select id from original_fireworks)) then
     raise exception 'Unsealed candidate approval left partial catalogue data.';
   end if;
 end;
@@ -740,7 +748,7 @@ begin
   exception
     when sqlstate '55000' then null;
   end;
-  if exists (select 1 from public.fireworks) then
+  if exists (select 1 from public.fireworks where id not in (select id from original_fireworks)) then
     raise exception 'Rejected artefact mismatch left partial catalogue data.';
   end if;
 end;
@@ -811,11 +819,11 @@ begin
     'Single shot'
   );
   if repeated_catalogue_id <> (select catalogue_item_id from first_approval)
-    or (select count(*) from public.fireworks) <> 1
-    or (select count(*) from public.catalogue_items) <> 1
+    or (select count(*) from public.fireworks where id not in (select id from original_fireworks)) <> 1
+    or (select count(*) from public.catalogue_items where id not in (select id from original_catalogue_items)) <> 1
     or (select duration_seconds from public.catalogue_items where id = repeated_catalogue_id) <> 4
-    or (select caliber from public.fireworks limit 1) <> '30mm'
-    or (select variant_json -> 'reconstructionShot' ->> 'seedOverride' from public.fireworks limit 1) <> '101'
+    or (select caliber from public.fireworks where id not in (select id from original_fireworks) limit 1) <> '30mm'
+    or (select variant_json -> 'reconstructionShot' ->> 'seedOverride' from public.fireworks where id not in (select id from original_fireworks) limit 1) <> '101'
     or (select approval_request_hash from public.import_jobs
         where id = (select job_id from first_import)) is distinct from expected_approval_hash
     or (select approved_at from public.import_jobs
@@ -899,8 +907,8 @@ begin
 
   if (select approval_request_hash from public.import_jobs
       where id = (select job_id from first_import)) is distinct from expected_approval_hash
-    or (select count(*) from public.catalogue_items) <> 1
-    or (select count(*) from public.fireworks) <> 1 then
+    or (select count(*) from public.catalogue_items where id not in (select id from original_catalogue_items)) <> 1
+    or (select count(*) from public.fireworks where id not in (select id from original_fireworks)) <> 1 then
     raise exception 'Rejected approval replay changed persisted approval evidence.';
   end if;
 end;
@@ -1431,7 +1439,7 @@ begin
     or (select renderer_contract_version
         from public.import_candidate_render_validations
         where candidate_id = (select candidate_id from cross_selected_candidate))
-      <> 'showcrafter.fireworks-engine.import-renderer.v1+sha256.90a37b6ccf746f598adfb0ad88efed910b2b699a063cf5cbd2b0f2f04773358f'
+      <> public.current_firework_import_renderer_contract_version()
     or (select balance from public.ai_credit_accounts
         where user_id = '10000000-0000-0000-0000-000000000002') <> 145
     or (select reserved from public.ai_credit_accounts

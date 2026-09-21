@@ -86,19 +86,6 @@ test('the card-preview lead-in cannot leak into full show replay timing', () => 
   );
 });
 
-test('database-backed LLM prompt uses the same impact-time contract', () => {
-  const migration = read(
-    '../../supabase/migrations/20260711050142_improve_show_cue_impact_prompt.sql',
-  );
-
-  assert.match(migration, /For a direct single shot, t is its visible burst/);
-  assert.match(migration, /For a multishot, t is the start of its sustained sequence/);
-  assert.match(migration, /server subtracts their renderer-matched lift time/);
-  assert.match(migration, /product_context_text =/);
-  assert.match(migration, /slot t is the desired burst, not launch/);
-  assert.doesNotMatch(migration, /"description": "<string/);
-});
-
 test('multishot child positions participate in site and overlap safety', () => {
   const domain = read('lib/show-domain.ts');
   const queries = read('lib/shows/queries.server.ts');

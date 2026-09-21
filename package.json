@@ -28,7 +28,16 @@
     "db:reset": "node scripts/database/local.mjs reset",
     "db:lint": "node scripts/database/local.mjs lint",
     "db:env": "node scripts/database/local.mjs env",
-    "test:database-tooling": "node --test scripts/database/*.test.mjs"
+    "test:database-tooling": "node --test scripts/database/*.test.mjs",
+    "db:bootstrap": "node scripts/database/bootstrap.mjs",
+    "db:fixtures": "node scripts/database/fixtures.mjs",
+    "db:admin": "node scripts/database/admin.mjs",
+    "db:test": "node scripts/database/test.mjs",
+    "db:verify": "node scripts/database/verify.mjs",
+    "db:types": "node scripts/database/types.mjs",
+    "db:setup": "pnpm db:start && pnpm db:bootstrap --local && pnpm db:fixtures",
+    "db:export": "node scripts/database/export.mjs",
+    "db:fixtures:check": "node scripts/database/fixtures-check.mjs"
   },
   "devDependencies": {
     "prettier": "3.8.3",

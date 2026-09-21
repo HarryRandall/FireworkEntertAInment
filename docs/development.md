@@ -57,19 +57,10 @@ The scheduled analyser regression uses the checked-in real-audio fixtures.
 
 ## Database
 
-Run Supabase CLI commands from the repository root. Keep existing migrations
-immutable and add migrations for intentional schema changes. Regenerate
-`apps/web/lib/database.types.ts` after a schema change. Exercise the relevant
-SQL under `supabase/tests/`, including denied access and ownership cases.
-
-The catalogue generator is app-owned tooling in
-`apps/web/scripts/generate-firework-catalogue-migration.mjs`; inspect its target
-before running it because it writes migration SQL. Seeds and local fixtures are
-not production migration instructions.
-
-Supabase's ignored `.temp` folder contains CLI caches and the local project link.
-After clearing it, run `supabase link` with the intended project before linked CLI
-operations. Clearing local metadata does not modify the hosted database.
+Use [Database development and handover](database.md) for local setup, catalogue
+snapshots, schema migrations, SQL tests and fresh hosted installations.
+`pnpm db:setup` installs local content and synthetic accounts; `pnpm db:env`
+creates the app's local environment file without overwriting an existing one.
 
 ## Deployment
 
@@ -87,7 +78,7 @@ Modal services retain their existing deployment roots and manifests under
 `services/`. A web release does not deploy Python services or apply migrations.
 
 The UI move changes the fingerprinted replay canvas path. Release the web app,
-import worker and `20260907162952_move_import_renderer_into_shared_ui.sql`
+import worker and the database renderer contract
 together so all three agree on the renderer contract. Existing sealed evidence
 must be revalidated against the new fingerprint before publication.
 

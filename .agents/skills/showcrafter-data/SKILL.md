@@ -21,9 +21,10 @@ Keep multi-write invariants transactional. Do not turn read errors into empty
 results or permissive defaults.
 
 Preserve migration history; use a new migration for an intentional schema
-change. Regenerate database types after schema changes. Catalogue generation
-lives in `apps/web/scripts/generate-firework-catalogue-migration.mjs`; inspect its
-output destination before running it because it writes migration SQL.
+change. Regenerate database types after schema changes. Reusable production content is exported with `scripts/database/export.mjs` and
+installed once from `supabase/bootstrap/`. Follow [the database guide](../../../docs/database.md).
+Do not put catalogue reseeds into schema migrations or run local account fixtures
+against hosted projects.
 
 Use [development guidance](../../../docs/development.md) for local database and
 service checks. Exercise changed SQL/policies with the relevant tests and verify

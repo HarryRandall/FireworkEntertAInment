@@ -41,121 +41,16 @@ test('multishot aim and timing helpers enforce the action bounds', () => {
 });
 
 test('multishot database constraints mirror the admin action contract', () => {
-  const migration = read(
-    '../../supabase/migrations/20260710013955_align_multishot_constraints_and_catalogue.sql',
-  );
-  const tracksMigration = read(
-    '../../supabase/migrations/20260810003120_add_multishot_timeline_tracks.sql',
-  );
-
   assert.equal(MULTISHOT_NAME_MAX_LENGTH, 180);
   assert.equal(MULTISHOT_DESCRIPTION_MAX_LENGTH, 5000);
   assert.equal(MULTISHOT_MAX_SHOT_COUNT, 2000);
-  assert.match(tracksMigration, /add column timeline_track_index integer not null default 0/);
-  assert.match(tracksMigration, /constraint multishot_fireworks_timeline_track_range/);
-  assert.match(tracksMigration, /check \(timeline_track_index between 0 and 1999\)/);
   assert.equal(MULTISHOT_CALIBER_MAX_LENGTH, 40);
   assert.equal(MULTISHOT_NOTES_MAX_LENGTH, 500);
-  assert.match(
-    migration,
-    /set pan_degrees = greatest\(-30, least\(30, pan_degrees\)\),\s+tilt_degrees = greatest\(-50, least\(50, tilt_degrees\)\)/,
-  );
-  assert.match(migration, /drop constraint if exists multishot_fireworks_tilt_degrees_check/);
-
-  for (const constraint of [
-    'multishots_name_length',
-    'multishots_description_length',
-    'multishots_duration_range',
-    'multishots_shot_count_range',
-    'multishot_fireworks_sequence_range',
-    'multishot_fireworks_time_range',
-    'multishot_fireworks_pan_range',
-    'multishot_fireworks_tilt_range',
-    'multishot_fireworks_caliber_length',
-    'multishot_fireworks_notes_length',
-  ]) {
-    assert.match(migration, new RegExp(`add constraint ${constraint}`));
-  }
-
-  assert.match(migration, /check \(char_length\(btrim\(name\)\) between 1 and 180\)/);
-  assert.match(migration, /check \(char_length\(coalesce\(description, ''\)\) <= 5000\)/);
-  assert.match(
-    migration,
-    /check \(duration_seconds is null or duration_seconds between 0 and 3600\)/,
-  );
-  assert.match(migration, /check \(shot_count between 0 and 2000\)/);
-  assert.match(migration, /check \(sequence_index between 1 and 2000\)/);
-  assert.match(migration, /check \(time_offset_seconds between 0 and 3600\)/);
-  assert.match(migration, /check \(pan_degrees between -30 and 30\)/);
-  assert.match(migration, /check \(tilt_degrees between -50 and 50\)/);
-  assert.match(migration, /check \(char_length\(coalesce\(caliber, ''\)\) <= 40\)/);
-  assert.match(migration, /check \(char_length\(coalesce\(notes, ''\)\) <= 500\)/);
-  assert.match(
-    migration,
-    /add constraint catalogue_items_multishot_id_key unique \(multishot_id\)/,
-  );
   const databaseTypes = read('lib/database.types.ts');
   assert.match(databaseTypes, /timeline_track_index: number/);
   assert.match(
     databaseTypes,
     /foreignKeyName: "catalogue_items_multishot_id_fkey"[\s\S]*?isOneToOne: true/,
-  );
-  assert.match(
-    migration,
-    /create or replace function public\.ensure_catalogue_item_for_multishot\(\)[\s\S]*?security definer[\s\S]*?set search_path = ''/,
-  );
-  const catalogueCreator = migration.slice(
-    migration.indexOf('create or replace function public.ensure_catalogue_item_for_multishot()'),
-    migration.indexOf('revoke execute on function public.ensure_catalogue_item_for_multishot()'),
-  );
-  assert.match(
-    catalogueCreator,
-    /insert into public\.catalogue_items[\s\S]*?part_number_value,[\s\S]*?new\.name,[\s\S]*?new\.description/,
-  );
-  assert.doesNotMatch(catalogueCreator, /update public\.catalogue_items/);
-  assert.match(
-    migration,
-    /create trigger multishots_ensure_catalogue_item[\s\S]*?after insert on public\.multishots[\s\S]*?execute function public\.ensure_catalogue_item_for_multishot\(\)/,
-  );
-  assert.match(
-    migration,
-    /revoke execute on function public\.ensure_catalogue_item_for_multishot\(\)[\s\S]*?from public, anon, authenticated/,
-  );
-  assert.match(
-    migration,
-    /create or replace function private\.multishot_minimum_duration\(p_multishot_id uuid\)[\s\S]*?ceil\([\s\S]*?greatest\([\s\S]*?0\.5::numeric/,
-  );
-  assert.match(
-    migration,
-    /create or replace function private\.sync_multishot_derived_state\(p_multishot_id uuid\)[\s\S]*?for update[\s\S]*?set shot_count = derived_shot_count,[\s\S]*?duration_seconds = case/,
-  );
-  assert.match(
-    migration,
-    /create trigger multishot_fireworks_sync_derived_state[\s\S]*?after insert or update or delete on public\.multishot_fireworks/,
-  );
-  assert.match(
-    migration,
-    /create trigger fireworks_sync_multishot_dependencies[\s\S]*?after update of duration_seconds on public\.fireworks/,
-  );
-  assert.match(
-    migration,
-    /create trigger catalogue_items_sync_multishot_dependencies_insert[\s\S]*?after insert on public\.catalogue_items/,
-  );
-  assert.match(
-    migration,
-    /create trigger catalogue_items_sync_multishot_dependencies_update[\s\S]*?after update of duration_seconds, firework_id on public\.catalogue_items/,
-  );
-  assert.match(
-    migration,
-    /create or replace function public\.sync_multishot_derived_state\(p_multishot_id uuid\)[\s\S]*?current_user_has_permission\('admin\.manage_catalogue'\)[\s\S]*?grant execute on function public\.sync_multishot_derived_state\(uuid\)[\s\S]*?to authenticated, service_role/,
-  );
-  const safeCatalogueBackfill = migration.slice(
-    migration.indexOf('-- Backfill only missing links.'),
-  );
-  assert.doesNotMatch(safeCatalogueBackfill, /set part_number|set name|set description/);
-  assert.match(
-    safeCatalogueBackfill,
-    /set duration_seconds = multishot\.duration_seconds[\s\S]*?item\.duration_seconds < multishot\.duration_seconds/,
   );
 });
 

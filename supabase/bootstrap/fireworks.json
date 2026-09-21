@@ -1,0 +1,4222 @@
+[
+  {
+    "id": "053d7d6a-0cd2-4c3c-b80f-73eca6626c19",
+    "firework_effect_id": "030d53ad-4331-481e-8f59-5fc1dcd39106",
+    "slug": "test-ckav",
+    "name": "test",
+    "description": null,
+    "primary_color": null,
+    "secondary_color": null,
+    "color_palette": [],
+    "caliber": null,
+    "duration_seconds": null,
+    "height_meters": null,
+    "variant_json": {},
+    "render_overrides_json": {},
+    "source": "manual",
+    "confidence": 1,
+    "created_at": "2026-07-27T05:17:31.797338+00:00",
+    "updated_at": "2026-07-27T05:17:31.797338+00:00"
+  },
+  {
+    "id": "06bf1289-fe3e-4af8-a552-3872608f143d",
+    "firework_effect_id": "041fc94f-e470-43a1-9658-a1dafbf7efc6",
+    "slug": "horsetail-crimson",
+    "name": "Horsetail Crimson",
+    "description": "Catalogue variant for Horsetail Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "willow",
+      "crossette": false,
+      "horsetail": true,
+      "shellType": "horsetail",
+      "spreadSize": 4.6,
+      "starLifeMs": 4000,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "099aade7-639c-4653-8c22-496d23c564c0",
+    "firework_effect_id": "286d9429-ae68-48a6-9342-2c256a4430bf",
+    "slug": "mine-azure",
+    "name": "Mine Azure",
+    "description": "Catalogue variant for Mine Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 6,
+    "height_meters": 60,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "mine",
+      "spreadSize": 3.2,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "0a04aab5-28ff-4b3e-9b4b-764bcc216eb5",
+    "firework_effect_id": "134b8060-a4e8-4127-ad28-cc9148ba14c9",
+    "slug": "willow-crimson",
+    "name": "Willow Crimson",
+    "description": "Catalogue variant for Willow Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "willow",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "willow",
+      "spreadSize": 4.6,
+      "starLifeMs": 5200,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "0c92894a-d512-4cca-a591-bcc05d00d4f9",
+    "firework_effect_id": "d0001a17-28aa-4a31-b163-cf6eebc2f58c",
+    "slug": "ring-azure",
+    "name": "Ring Azure",
+    "description": "Catalogue variant for Ring Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": true,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "none",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "ring",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "0ebbabd9-8de7-4a2a-b1ed-4d9a3b1dcd04",
+    "firework_effect_id": "f0d96921-d7f9-47e2-95ac-d0885415b053",
+    "slug": "test-e8rx",
+    "name": "test",
+    "description": null,
+    "primary_color": null,
+    "secondary_color": null,
+    "color_palette": [],
+    "caliber": null,
+    "duration_seconds": null,
+    "height_meters": null,
+    "variant_json": {},
+    "render_overrides_json": {},
+    "source": "manual",
+    "confidence": 1,
+    "created_at": "2026-07-27T05:17:04.325593+00:00",
+    "updated_at": "2026-07-27T05:17:04.325593+00:00"
+  },
+  {
+    "id": "10817605-b84d-4d95-8b6d-fb147be762b1",
+    "firework_effect_id": "ba0595eb-6541-41a3-a62c-5c8db210d877",
+    "slug": "brocade-crimson",
+    "name": "Brocade Crimson",
+    "description": "Catalogue variant for Brocade Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "heavy",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "brocade",
+      "spreadSize": 4.6,
+      "starLifeMs": 3000,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "1147018d-f9d3-4734-9220-56b7ca264b10",
+    "firework_effect_id": "ae847746-73cf-48b2-84bf-1543884ed257",
+    "slug": "nishiki-crimson",
+    "name": "Nishiki Crimson",
+    "description": "Catalogue variant for Nishiki Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "nishiki",
+      "spreadSize": 4.6,
+      "starLifeMs": 5200,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "122c7d57-d9d3-4b0f-8007-12dbbab0d19a",
+    "firework_effect_id": "2cfd3796-96b3-495b-a767-0af0b2ed7bc4",
+    "slug": "pistil-crimson",
+    "name": "Pistil Crimson",
+    "description": "Catalogue variant for Pistil Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "pistil",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "13733567-58a0-4bf2-85ed-8bc64bc0dd3e",
+    "firework_effect_id": "22f5c45a-c16f-43b5-83d4-07987efd1828",
+    "slug": "comet-default",
+    "name": "Comet Default",
+    "description": "Catalogue variant for Comet Default.",
+    "primary_color": "#ffd166",
+    "secondary_color": "#ffae3d",
+    "color_palette": [
+      "#ffd166",
+      "#ffae3d",
+      "#fff7de"
+    ],
+    "caliber": null,
+    "duration_seconds": 3.4,
+    "height_meters": 160,
+    "variant_json": {
+      "ring": false,
+      "color": "#ffd166",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "comet",
+      "spreadSize": 2.2,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ffd166",
+        "#ffae3d",
+        "#fff7de"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-05-28T12:05:44.734835+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "1507e18b-089d-49b5-a60e-1aab0b62027b",
+    "firework_effect_id": "df6c0111-6e25-46d3-8378-27fcfcfc1cb7",
+    "slug": "roman_candle-default",
+    "name": "Roman Candle Default",
+    "description": "Catalogue variant for Roman Candle Default.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#14fc56",
+    "color_palette": [
+      "#ff2d55",
+      "#14fc56",
+      "#1e7fff",
+      "#ffd166"
+    ],
+    "caliber": null,
+    "duration_seconds": 6,
+    "height_meters": 60,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "roman_candle",
+      "spreadSize": 3,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#14fc56",
+        "#1e7fff",
+        "#ffd166"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "1851e5c8-2daf-4612-aec0-ee4ac3b93663",
+    "firework_effect_id": "041fc94f-e470-43a1-9658-a1dafbf7efc6",
+    "slug": "horsetail-default",
+    "name": "Horsetail Default",
+    "description": "Catalogue variant for Horsetail Default.",
+    "primary_color": "#ffd166",
+    "secondary_color": "#ffae3d",
+    "color_palette": [
+      "#ffd166",
+      "#ffae3d",
+      "#fff3c4"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ffd166",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "willow",
+      "crossette": false,
+      "horsetail": true,
+      "shellType": "horsetail",
+      "spreadSize": 4.6,
+      "starLifeMs": 4000,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ffd166",
+        "#ffae3d",
+        "#fff3c4"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-05-28T12:05:44.734835+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "1e8b855c-94d2-47c3-9527-af0feb8fb021",
+    "firework_effect_id": "59dbb947-f184-4704-880d-4c27577f110b",
+    "slug": "fountain-azure",
+    "name": "Fountain Azure",
+    "description": "Catalogue variant for Fountain Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 6,
+    "height_meters": 60,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "fountain",
+      "spreadSize": 3,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "1f1558a5-ff32-4016-a9a6-e77434b8a672",
+    "firework_effect_id": "d0001a17-28aa-4a31-b163-cf6eebc2f58c",
+    "slug": "ring-crimson",
+    "name": "Ring Crimson",
+    "description": "Catalogue variant for Ring Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": true,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "none",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "ring",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "1fb52bd4-3570-4195-a746-cdf16e70c572",
+    "firework_effect_id": "52ce413c-5f46-4707-b7a9-e35d37320dbf",
+    "slug": "pearls-crimson",
+    "name": "Pearls Crimson",
+    "description": "Catalogue variant for Pearls Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "none",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "pearls",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "22f5b457-89ee-436b-8a43-8b196efa122f",
+    "firework_effect_id": "f0d96921-d7f9-47e2-95ac-d0885415b053",
+    "slug": "peony-green-vfwp",
+    "name": "Peony Green",
+    "description": null,
+    "primary_color": "#14fc56",
+    "secondary_color": null,
+    "color_palette": [
+      "#14fc56"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {},
+    "render_overrides_json": {
+      "stars": {
+        "outer": {
+          "color": {
+            "b": 0.33725490196078434,
+            "g": 0.9882352941176471,
+            "r": 0.0784313725490196
+          },
+          "colourPattern": {
+            "axis": "vertical",
+            "mode": "solid",
+            "count": 1,
+            "colours": [
+              {
+                "color": {
+                  "b": 0.33725490196078434,
+                  "g": 0.9882352941176471,
+                  "r": 0.0784313725490196
+                },
+                "weight": 100
+              }
+            ]
+          }
+        }
+      }
+    },
+    "source": "manual",
+    "confidence": 1,
+    "created_at": "2026-07-27T04:08:17.210039+00:00",
+    "updated_at": "2026-07-27T04:11:47.611823+00:00"
+  },
+  {
+    "id": "24482d6e-749d-4af4-a311-59d83e2471b7",
+    "firework_effect_id": "22f5c45a-c16f-43b5-83d4-07987efd1828",
+    "slug": "comet-crimson",
+    "name": "Comet Crimson",
+    "description": "Catalogue variant for Comet Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 3.4,
+    "height_meters": 160,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "comet",
+      "spreadSize": 2.2,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "2cff03ae-01f3-4211-8dbf-1deaddd38b92",
+    "firework_effect_id": "53a549c9-6bf3-4853-9b2c-51ad23c6a74d",
+    "slug": "crackle-azure",
+    "name": "Crackle Azure",
+    "description": "Catalogue variant for Crackle Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": true,
+      "glitter": "medium",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "crackle",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "36577785-4dbb-4e70-8dbb-212758f4d91a",
+    "firework_effect_id": "030d53ad-4331-481e-8f59-5fc1dcd39106",
+    "slug": "arthur-rozzi-silver-crackle",
+    "name": "Arthur Rozzi Silver Crysanthemum Crackle",
+    "description": "Very Dense Very Dense Very Small Fast Popcorn Crackle w/ Thick Silver Tail Single Shot",
+    "primary_color": "#f5f7fa",
+    "secondary_color": "#ffffff",
+    "color_palette": [
+      "#f5f7fa",
+      "#ffffff"
+    ],
+    "caliber": "1.87\"",
+    "duration_seconds": 5,
+    "height_meters": 48.2,
+    "variant_json": {
+      "ring": false,
+      "color": "#f5f7fa",
+      "strobe": false,
+      "crackle": true,
+      "glitter": "medium",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "crackle",
+      "tailColor": "#f5f7fa",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "trailEffect": "silver",
+      "colorPalette": [
+        "#f5f7fa",
+        "#ffffff"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {
+      "stars": {
+        "outer": {
+          "color": {
+            "b": 0.9803921568627451,
+            "g": 0.9686274509803922,
+            "r": 0.9607843137254902
+          },
+          "colourPattern": {
+            "axis": "vertical",
+            "mode": "random",
+            "count": 2,
+            "colours": [
+              {
+                "color": {
+                  "b": 0.9803921568627451,
+                  "g": 0.9686274509803922,
+                  "r": 0.9607843137254902
+                },
+                "weight": 78
+              },
+              {
+                "color": {
+                  "b": 1,
+                  "g": 1,
+                  "r": 1
+                },
+                "weight": 22
+              }
+            ]
+          }
+        }
+      },
+      "secondaryColorRatio": 0.22
+    },
+    "source": "llm_generated",
+    "confidence": 0.7,
+    "created_at": "2026-08-03T04:18:59.983284+00:00",
+    "updated_at": "2026-08-03T05:25:55.941912+00:00"
+  },
+  {
+    "id": "3657b00f-4101-4f0d-854d-d4ccc65419c0",
+    "firework_effect_id": "f8857da6-93f2-4cab-a987-7de4f7c36002",
+    "slug": "silverFish-azure",
+    "name": "Silver Fish Azure",
+    "description": "Catalogue variant for Silver Fish Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "silverFish",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "384a3a7f-f84f-498e-a0cb-fb7529ba73db",
+    "firework_effect_id": "f0d96921-d7f9-47e2-95ac-d0885415b053",
+    "slug": "peony-default",
+    "name": "Peony Default",
+    "description": "Catalogue variant for Peony Default.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "peony",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "3946fc09-768a-42e6-bebb-ce2a8bd95603",
+    "firework_effect_id": "847c895e-3183-4dd4-8b1d-2690e220f023",
+    "slug": "double_break-crimson",
+    "name": "Double Break Crimson",
+    "description": "Catalogue variant for Double Break Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "medium",
+      "crossette": true,
+      "horsetail": false,
+      "shellType": "double_break",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "3a52494a-6b0d-456d-8db6-8d5cc27a9e74",
+    "firework_effect_id": "5c11b56e-447a-458d-9e18-26c8d0ca4721",
+    "slug": "kamuro-azure",
+    "name": "Kamuro Azure",
+    "description": "Catalogue variant for Kamuro Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "heavy",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "kamuro",
+      "spreadSize": 4.6,
+      "starLifeMs": 5200,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "3ac7e771-372e-420e-8dce-f1f50c8be22d",
+    "firework_effect_id": "f8857da6-93f2-4cab-a987-7de4f7c36002",
+    "slug": "silverFish-crimson",
+    "name": "Silver Fish Crimson",
+    "description": "Catalogue variant for Silver Fish Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "silverFish",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "49b99246-e90e-4478-ad7f-4bb59ef5d553",
+    "firework_effect_id": "917dd43e-8a13-4e89-b9dd-a8d0f9f22fdc",
+    "slug": "crossette-default",
+    "name": "Crossette Default",
+    "description": "Catalogue variant for Crossette Default.",
+    "primary_color": "#f5f7fa",
+    "secondary_color": "#ffd166",
+    "color_palette": [
+      "#f5f7fa",
+      "#ffd166",
+      "#fff3c4"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#f5f7fa",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "medium",
+      "crossette": true,
+      "horsetail": false,
+      "shellType": "crossette",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#f5f7fa",
+        "#ffd166",
+        "#fff3c4"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-05-28T12:05:44.734835+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "4e475476-acc2-4832-8f8d-fa14d2198e3e",
+    "firework_effect_id": "f0d96921-d7f9-47e2-95ac-d0885415b053",
+    "slug": "peony-crimson",
+    "name": "Peony Crimson",
+    "description": "Catalogue variant for Peony Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "peony",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "50ecd8b0-5c6f-4d30-9006-ef1ec1362248",
+    "firework_effect_id": "8a4f5bac-29e9-4670-bcd7-5ff92f265841",
+    "slug": "palm-crimson",
+    "name": "Palm Crimson",
+    "description": "Catalogue variant for Palm Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "willow",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "palm",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "584a3106-a01d-4f58-9486-1775d5578230",
+    "firework_effect_id": "135e4fd9-74c7-4c4d-afb4-404ab9d52dac",
+    "slug": "whirl-crimson",
+    "name": "Whirl Crimson",
+    "description": "Catalogue variant for Whirl Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "whirl",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "585e6de7-49a1-4f01-b70f-34c7829ab60c",
+    "firework_effect_id": "52ce413c-5f46-4707-b7a9-e35d37320dbf",
+    "slug": "pearls-default",
+    "name": "Pearls Default",
+    "description": "Catalogue variant for Pearls Default.",
+    "primary_color": "#ffd166",
+    "secondary_color": "#f5f7fa",
+    "color_palette": [
+      "#ffd166",
+      "#f5f7fa",
+      "#1e7fff"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ffd166",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "none",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "pearls",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ffd166",
+        "#f5f7fa",
+        "#1e7fff"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-05-28T12:43:37.398358+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "58c833ec-7703-40a3-ba46-ac87e0813195",
+    "firework_effect_id": "f0d96921-d7f9-47e2-95ac-d0885415b053",
+    "slug": "peony-white-nqow",
+    "name": "Peony White",
+    "description": null,
+    "primary_color": "#ffffff",
+    "secondary_color": null,
+    "color_palette": [
+      "#ffffff"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {},
+    "render_overrides_json": {
+      "stars": {
+        "outer": {
+          "color": {
+            "b": 1,
+            "g": 1,
+            "r": 1
+          },
+          "colourPattern": {
+            "axis": "vertical",
+            "mode": "solid",
+            "count": 1,
+            "colours": [
+              {
+                "color": {
+                  "b": 1,
+                  "g": 1,
+                  "r": 1
+                },
+                "weight": 100
+              }
+            ]
+          }
+        }
+      }
+    },
+    "source": "manual",
+    "confidence": 1,
+    "created_at": "2026-07-27T04:14:38.80719+00:00",
+    "updated_at": "2026-07-27T04:18:20.148035+00:00"
+  },
+  {
+    "id": "5ef623f6-c8bf-4945-9c0e-0ec0bab07906",
+    "firework_effect_id": "134b8060-a4e8-4127-ad28-cc9148ba14c9",
+    "slug": "arthur-rozzi-gold-willow-green-purple",
+    "name": "Arthur Rozzi Gold Willow to Green and Purple",
+    "description": "Slightly Big Charcoal Willow w/ Green & Purple w/ Charcoal Tail Single Shot",
+    "primary_color": "#ffd166",
+    "secondary_color": "#14fc56",
+    "color_palette": [
+      "#ffd166",
+      "#14fc56",
+      "#c800ff"
+    ],
+    "caliber": "1.87\"",
+    "duration_seconds": 5,
+    "height_meters": 48.2,
+    "variant_json": {
+      "ring": false,
+      "color": "#ffd166",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "willow",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "willow",
+      "tailColor": "#ffd166",
+      "spreadSize": 5,
+      "starLifeMs": 5200,
+      "starDensity": 1,
+      "trailEffect": "gold",
+      "colorPalette": [
+        "#ffd166",
+        "#14fc56",
+        "#c800ff"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "llm_generated",
+    "confidence": 0.7,
+    "created_at": "2026-08-03T04:18:59.983284+00:00",
+    "updated_at": "2026-08-03T05:04:57.9975+00:00"
+  },
+  {
+    "id": "6015b6b5-2b49-45f2-a710-4d5be07d0d59",
+    "firework_effect_id": "7462feee-0b75-44c8-9a15-6ad3710e227a",
+    "slug": "bowtie-default",
+    "name": "Bow Tie Default",
+    "description": "Catalogue variant for Bow Tie Default.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff8a5a"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "bowtie",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff8a5a"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "608a8b4a-940c-408c-ba37-93c2fdb84ea7",
+    "firework_effect_id": "53a549c9-6bf3-4853-9b2c-51ad23c6a74d",
+    "slug": "arthur-rozzi-indigo-crackle-red",
+    "name": "Arthur Rozzi Indigo Crackle to Red",
+    "description": "Dense Indigo w/ Red Strobing w/ Very Dense Very Small Fast Popcorn Crackle w/ Short Trail Crackling Tail Aerial Single Shot",
+    "primary_color": "#4a00e0",
+    "secondary_color": "#ff2d55",
+    "color_palette": [
+      "#4a00e0",
+      "#ff2d55"
+    ],
+    "caliber": "1.87\"",
+    "duration_seconds": 5,
+    "height_meters": 48.2,
+    "variant_json": {
+      "ring": false,
+      "color": "#4a00e0",
+      "strobe": true,
+      "crackle": true,
+      "glitter": "medium",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "crackle",
+      "tailColor": "#4a00e0",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "trailEffect": "none",
+      "colorPalette": [
+        "#4a00e0",
+        "#ff2d55"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "llm_generated",
+    "confidence": 0.7,
+    "created_at": "2026-08-03T04:18:59.983284+00:00",
+    "updated_at": "2026-08-03T05:04:57.9975+00:00"
+  },
+  {
+    "id": "63c4e4cb-5902-4a0a-9728-6d4dac9ed97a",
+    "firework_effect_id": "8a4f5bac-29e9-4670-bcd7-5ff92f265841",
+    "slug": "palm-azure",
+    "name": "Palm Azure",
+    "description": "Catalogue variant for Palm Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "willow",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "palm",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "681ddba3-b5e7-4be0-8fd8-e4d83f8aa3d0",
+    "firework_effect_id": "8a4f5bac-29e9-4670-bcd7-5ff92f265841",
+    "slug": "arthur-rozzi-palm-red-green-crackle",
+    "name": "Arthur Rozzi Red and Green Palm Crackle",
+    "description": "Very Bright Tip Red Silver Chrysanthemum w/ Very Bright Tip Green Silver Chrysanthemum w/ Very Dense Very Small Fast Popcorn Crackle w/ Thick Silver Tail Single Shot",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#14fc56",
+    "color_palette": [
+      "#ff2d55",
+      "#14fc56",
+      "#f5f7fa"
+    ],
+    "caliber": "1.87\"",
+    "duration_seconds": 5,
+    "height_meters": 48.2,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": true,
+      "glitter": "medium",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "palm",
+      "tailColor": "#f5f7fa",
+      "spreadSize": 4.6,
+      "starLifeMs": 2200,
+      "starDensity": 1,
+      "trailEffect": "silver",
+      "colorPalette": [
+        "#ff2d55",
+        "#14fc56",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "llm_generated",
+    "confidence": 0.7,
+    "created_at": "2026-08-03T04:18:59.983284+00:00",
+    "updated_at": "2026-08-03T05:04:57.9975+00:00"
+  },
+  {
+    "id": "6aaca796-1d7b-413d-afec-26c9f564b920",
+    "firework_effect_id": "e27743d5-c242-49cc-87f4-189955637791",
+    "slug": "strobe-crimson",
+    "name": "Strobe Crimson",
+    "description": "Catalogue variant for Strobe Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": true,
+      "crackle": false,
+      "glitter": "medium",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "strobe",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "6cc09197-617c-49ec-9bbf-1909255f1c4f",
+    "firework_effect_id": "2b73da93-f8d6-41c4-9ab9-c49d85b4275c",
+    "slug": "waterfall-azure",
+    "name": "Waterfall Azure",
+    "description": "Catalogue variant for Waterfall Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "willow",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "waterfall",
+      "spreadSize": 4.6,
+      "starLifeMs": 4000,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "6f8c9716-e594-4473-baae-cdfdca990582",
+    "firework_effect_id": "65dbb1b1-0eb9-4890-8825-418d06d44eaf",
+    "slug": "saturn-default",
+    "name": "Saturn Default",
+    "description": "Catalogue variant for Saturn Default.",
+    "primary_color": "#c800ff",
+    "secondary_color": "#39d98a",
+    "color_palette": [
+      "#c800ff",
+      "#39d98a",
+      "#c89bff",
+      "#7dffbb"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": true,
+      "color": "#c800ff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "none",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "saturn",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#c800ff",
+        "#39d98a",
+        "#c89bff",
+        "#7dffbb"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "70e6c6a8-c677-4394-8fdd-f8a5521cdf52",
+    "firework_effect_id": "52ce413c-5f46-4707-b7a9-e35d37320dbf",
+    "slug": "pearls-azure",
+    "name": "Pearls Azure",
+    "description": "Catalogue variant for Pearls Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "none",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "pearls",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "752a188a-726e-454c-a104-3776a0e8c2d7",
+    "firework_effect_id": "5c11b56e-447a-458d-9e18-26c8d0ca4721",
+    "slug": "kamuro-crimson",
+    "name": "Kamuro Crimson",
+    "description": "Catalogue variant for Kamuro Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "heavy",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "kamuro",
+      "spreadSize": 4.6,
+      "starLifeMs": 5200,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "7becba41-a064-444b-b7d2-73390bbcc480",
+    "firework_effect_id": "030d53ad-4331-481e-8f59-5fc1dcd39106",
+    "slug": "chrysanthemum-crimson",
+    "name": "Chrysanthemum Crimson",
+    "description": "Catalogue variant for Chrysanthemum Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "chrysanthemum",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "7c3f8116-f368-40de-9bda-412c97c7bd5a",
+    "firework_effect_id": "65dbb1b1-0eb9-4890-8825-418d06d44eaf",
+    "slug": "saturn-azure",
+    "name": "Saturn Azure",
+    "description": "Catalogue variant for Saturn Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": true,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "none",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "saturn",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "7c983af8-6af2-4f41-9500-83aacc265d4c",
+    "firework_effect_id": "ba0595eb-6541-41a3-a62c-5c8db210d877",
+    "slug": "brocade-default",
+    "name": "Brocade Default",
+    "description": "Catalogue variant for Brocade Default.",
+    "primary_color": "#fff7de",
+    "secondary_color": "#ffe9a8",
+    "color_palette": [
+      "#fff7de",
+      "#ffe9a8",
+      "#ffd166",
+      "#ffae3d",
+      "#9c5a17"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#fff7de",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "heavy",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "brocade",
+      "spreadSize": 4.6,
+      "starLifeMs": 3000,
+      "starDensity": 1,
+      "colorPalette": [
+        "#fff7de",
+        "#ffe9a8",
+        "#ffd166",
+        "#ffae3d",
+        "#9c5a17"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-05-28T12:05:44.734835+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "8884671f-8d7f-457b-ae00-eec4c0d51486",
+    "firework_effect_id": "030d53ad-4331-481e-8f59-5fc1dcd39106",
+    "slug": "blue-steel-base-4igm",
+    "name": "Blue Steel Base",
+    "description": null,
+    "primary_color": null,
+    "secondary_color": null,
+    "color_palette": [],
+    "caliber": null,
+    "duration_seconds": null,
+    "height_meters": null,
+    "variant_json": {},
+    "render_overrides_json": {},
+    "source": "manual",
+    "confidence": 1,
+    "created_at": "2026-07-27T04:19:23.664381+00:00",
+    "updated_at": "2026-07-27T04:19:23.664381+00:00"
+  },
+  {
+    "id": "8d0c03c1-db75-477b-adbd-73bb01b07d36",
+    "firework_effect_id": "134b8060-a4e8-4127-ad28-cc9148ba14c9",
+    "slug": "arthur-rozzi-gold-willow-blue",
+    "name": "Arthur Rozzi Gold Willow to Blue",
+    "description": "Slightly Big Charcoal Willow w/ Sparse Blue w/ Sparse Red Strobing w/ Charcoal Tail Single Shot",
+    "primary_color": "#ffd166",
+    "secondary_color": "#1e7fff",
+    "color_palette": [
+      "#ffd166",
+      "#1e7fff",
+      "#ff2d55"
+    ],
+    "caliber": "1.87\"",
+    "duration_seconds": 5,
+    "height_meters": 48.2,
+    "variant_json": {
+      "ring": false,
+      "color": "#ffd166",
+      "strobe": true,
+      "crackle": false,
+      "glitter": "willow",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "willow",
+      "tailColor": "#ffd166",
+      "spreadSize": 5,
+      "starLifeMs": 5200,
+      "starDensity": 1,
+      "trailEffect": "gold",
+      "colorPalette": [
+        "#ffd166",
+        "#1e7fff",
+        "#ff2d55"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "llm_generated",
+    "confidence": 0.7,
+    "created_at": "2026-08-03T01:53:42.355895+00:00",
+    "updated_at": "2026-08-03T05:04:57.9975+00:00"
+  },
+  {
+    "id": "8d482bbd-4195-498f-bc77-168acebf1a59",
+    "firework_effect_id": "030d53ad-4331-481e-8f59-5fc1dcd39106",
+    "slug": "arthur-rozzi-chrysanthemum-rgb-crackle",
+    "name": "Arthur Rozzi Red Green Blue Crackling Chrysanthemum",
+    "description": "Short Trail Very Bright Green Blue & Red Silver Crackling Chrysanthemum w/ Short Trail Crackling Tail Aerial Single Shot",
+    "primary_color": "#14fc56",
+    "secondary_color": "#1e7fff",
+    "color_palette": [
+      "#14fc56",
+      "#1e7fff",
+      "#ff2d55"
+    ],
+    "caliber": "1.87\"",
+    "duration_seconds": 5,
+    "height_meters": 48.2,
+    "variant_json": {
+      "ring": false,
+      "color": "#14fc56",
+      "strobe": false,
+      "crackle": true,
+      "glitter": "medium",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "chrysanthemum",
+      "tailColor": "#f5f7fa",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "trailEffect": "silver",
+      "colorPalette": [
+        "#14fc56",
+        "#1e7fff",
+        "#ff2d55"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "llm_generated",
+    "confidence": 0.7,
+    "created_at": "2026-08-03T04:18:59.983284+00:00",
+    "updated_at": "2026-08-03T05:04:57.9975+00:00"
+  },
+  {
+    "id": "9134f3a7-0cf2-419f-af93-9def76511de5",
+    "firework_effect_id": "53a549c9-6bf3-4853-9b2c-51ad23c6a74d",
+    "slug": "crackle-crimson",
+    "name": "Crackle Crimson",
+    "description": "Catalogue variant for Crackle Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": true,
+      "glitter": "medium",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "crackle",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "921fb69f-2a02-49d6-8053-7df43d4ee78a",
+    "firework_effect_id": "917dd43e-8a13-4e89-b9dd-a8d0f9f22fdc",
+    "slug": "crossette-azure",
+    "name": "Crossette Azure",
+    "description": "Catalogue variant for Crossette Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "medium",
+      "crossette": true,
+      "horsetail": false,
+      "shellType": "crossette",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "98ccf0cd-aa3f-41f9-8c4b-2779acad9032",
+    "firework_effect_id": "286d9429-ae68-48a6-9342-2c256a4430bf",
+    "slug": "mine-default",
+    "name": "Mine Default",
+    "description": "Catalogue variant for Mine Default.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#14fc56",
+    "color_palette": [
+      "#ff2d55",
+      "#14fc56",
+      "#ffae3d"
+    ],
+    "caliber": null,
+    "duration_seconds": 6,
+    "height_meters": 60,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "mine",
+      "spreadSize": 3.2,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#14fc56",
+        "#ffae3d"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-05-28T12:05:44.734835+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "9b11764d-6934-43ac-9c7c-f2bd05bc941f",
+    "firework_effect_id": "030d53ad-4331-481e-8f59-5fc1dcd39106",
+    "slug": "chrysanthemum-default",
+    "name": "Chrysanthemum Default",
+    "description": "Catalogue variant for Chrysanthemum Default.",
+    "primary_color": "#14fc56",
+    "secondary_color": "#c800ff",
+    "color_palette": [
+      "#14fc56",
+      "#c800ff"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ffd166",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "chrysanthemum",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ffd166",
+        "#ffcf6b",
+        "#ffe9a8"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {
+      "stars": {
+        "outer": {
+          "color": {
+            "b": 0.33725490196078434,
+            "g": 0.9882352941176471,
+            "r": 0.0784313725490196
+          },
+          "colourPattern": {
+            "axis": "vertical",
+            "mode": "random",
+            "count": 2,
+            "colours": [
+              {
+                "color": {
+                  "b": 0.33725490196078434,
+                  "g": 0.9882352941176471,
+                  "r": 0.0784313725490196
+                },
+                "weight": 78
+              },
+              {
+                "color": {
+                  "b": 1,
+                  "g": 0,
+                  "r": 0.7843137254901961
+                },
+                "weight": 22
+              }
+            ]
+          }
+        }
+      },
+      "burstTrail": {
+        "stops": [
+          {
+            "size": 1.05,
+            "density": 1.5,
+            "position": 0,
+            "shapeWeights": {
+              "circle": 25,
+              "square": 50,
+              "triangle": 25
+            },
+            "sizeVariation": 28
+          },
+          {
+            "size": 0.9,
+            "density": 1.15,
+            "position": 32,
+            "shapeWeights": {
+              "circle": 25,
+              "square": 50,
+              "triangle": 25
+            },
+            "sizeVariation": 30
+          },
+          {
+            "size": 0.5,
+            "density": 0.34,
+            "position": 100,
+            "shapeWeights": {
+              "circle": 25,
+              "square": 50,
+              "triangle": 25
+            },
+            "sizeVariation": 34
+          }
+        ],
+        "width": {
+          "tail": 30,
+          "curve": 1,
+          "front": 0
+        },
+        "motion": {
+          "drag": 1.4,
+          "spin": 0,
+          "driftX": 0,
+          "driftY": -0.012,
+          "driftZ": 0,
+          "gravity": -0.02,
+          "turbulence": 0.045,
+          "inheritedVelocity": 0.02
+        },
+        "preset": "custom",
+        "closing": {
+          "size": {
+            "enabled": false,
+            "endPercent": 0,
+            "shrinkPercent": 22
+          },
+          "colour": {
+            "color": {
+              "b": 0,
+              "g": 0.16470588235294117,
+              "r": 0.5843137254901961
+            },
+            "enabled": false,
+            "fadePercent": 22
+          },
+          "spreadFade": {
+            "enabled": true,
+            "startAngle": 60,
+            "endOpacityPercent": 36
+          }
+        },
+        "enabled": true,
+        "flicker": {
+          "chance": 0,
+          "strength": 0.9,
+          "lifetimeMultiplier": 0.45
+        },
+        "opening": {
+          "size": {
+            "startPercent": 1
+          },
+          "visibility": {
+            "revealPercent": 25,
+            "particlesPercent": 100,
+            "brightnessPercent": 39
+          }
+        },
+        "spacing": {
+          "curve": 4,
+          "jitterPercent": 100
+        },
+        "version": 2,
+        "lifetime": {
+          "mode": "dynamic",
+          "percent": 1,
+          "baseSeconds": 1.7,
+          "afterglowSeconds": 0.32,
+          "variationPercent": 0
+        },
+        "intensity": {
+          "brightness": 1.15,
+          "fadeSoftness": 3.2
+        },
+        "placement": {
+          "headGapPercent": 0
+        },
+        "colourMode": "ember",
+        "frontClump": 0.55,
+        "particleSize": {
+          "base": 4.63,
+          "headScale": 1.25,
+          "tailScale": 0.3,
+          "variationPercent": 28
+        },
+        "particlesPerStar": 280
+      },
+      "secondaryColorRatio": 0.22
+    },
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-07-01T08:14:13.124105+00:00"
+  },
+  {
+    "id": "9c36cbb5-8df5-458f-9f1a-f585ed5c2f3f",
+    "firework_effect_id": "df6c0111-6e25-46d3-8378-27fcfcfc1cb7",
+    "slug": "roman_candle-crimson",
+    "name": "Roman Candle Crimson",
+    "description": "Catalogue variant for Roman Candle Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 6,
+    "height_meters": 60,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "roman_candle",
+      "spreadSize": 3,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "a19a90f4-1c35-4e21-8598-244546f5339b",
+    "firework_effect_id": "f8857da6-93f2-4cab-a987-7de4f7c36002",
+    "slug": "silverFish-default",
+    "name": "Silver Fish Default",
+    "description": "Catalogue variant for Silver Fish Default.",
+    "primary_color": "#f5f7fa",
+    "secondary_color": "#ffd166",
+    "color_palette": [
+      "#f5f7fa",
+      "#ffd166",
+      "#ffffff"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#f5f7fa",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "silverFish",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#f5f7fa",
+        "#ffd166",
+        "#ffffff"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "a35b21f6-f387-4cb6-815a-6dfac0b77ca0",
+    "firework_effect_id": "65dbb1b1-0eb9-4890-8825-418d06d44eaf",
+    "slug": "saturn-crimson",
+    "name": "Saturn Crimson",
+    "description": "Catalogue variant for Saturn Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": true,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "none",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "saturn",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "a538e835-514a-4a6a-8f83-2e358c0eeed1",
+    "firework_effect_id": "030d53ad-4331-481e-8f59-5fc1dcd39106",
+    "slug": "arthur-rozzi-chrysanthemum-silver-red",
+    "name": "Arthur Rozzi Silver Chrysanthemum to Red",
+    "description": "Silver Chrysanthemum w/ Red w/ Silver Tail Aerial Single Shot",
+    "primary_color": "#f5f7fa",
+    "secondary_color": "#ff2d55",
+    "color_palette": [
+      "#f5f7fa",
+      "#ff2d55"
+    ],
+    "caliber": "1.87\"",
+    "duration_seconds": 5,
+    "height_meters": 48.2,
+    "variant_json": {
+      "ring": false,
+      "color": "#f5f7fa",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "chrysanthemum",
+      "tailColor": "#f5f7fa",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "trailEffect": "silver",
+      "colorPalette": [
+        "#f5f7fa",
+        "#ff2d55"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "llm_generated",
+    "confidence": 0.7,
+    "created_at": "2026-08-03T04:18:59.983284+00:00",
+    "updated_at": "2026-08-03T05:04:57.9975+00:00"
+  },
+  {
+    "id": "a68912b4-0512-49c0-a578-cdab33661121",
+    "firework_effect_id": "ba0595eb-6541-41a3-a62c-5c8db210d877",
+    "slug": "brocade-azure",
+    "name": "Brocade Azure",
+    "description": "Catalogue variant for Brocade Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "heavy",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "brocade",
+      "spreadSize": 4.6,
+      "starLifeMs": 3000,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "a76bd834-4407-4e7f-aa3e-18faaea0a267",
+    "firework_effect_id": "ba0595eb-6541-41a3-a62c-5c8db210d877",
+    "slug": "arthur-rozzi-brocade-glitter-red",
+    "name": "Arthur Rozzi Glittering Brocade to Red",
+    "description": "Slightly Big Glittering Brocade Willow w/ Sparse Red Strobing w/ Brocade Tail Single Shot",
+    "primary_color": "#fff7de",
+    "secondary_color": "#ff2d55",
+    "color_palette": [
+      "#fff7de",
+      "#ffffff",
+      "#ff2d55"
+    ],
+    "caliber": "1.87\"",
+    "duration_seconds": 5,
+    "height_meters": 48.2,
+    "variant_json": {
+      "ring": false,
+      "color": "#fff7de",
+      "strobe": true,
+      "crackle": false,
+      "glitter": "heavy",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "brocade",
+      "tailColor": "#fff7de",
+      "spreadSize": 5,
+      "starLifeMs": 3000,
+      "starDensity": 1,
+      "trailEffect": "gold",
+      "colorPalette": [
+        "#fff7de",
+        "#ffffff",
+        "#ff2d55"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "llm_generated",
+    "confidence": 0.7,
+    "created_at": "2026-08-03T04:18:59.983284+00:00",
+    "updated_at": "2026-08-03T05:04:57.9975+00:00"
+  },
+  {
+    "id": "a7a276bb-8f0b-487f-ae18-19639f11ea61",
+    "firework_effect_id": "ba0595eb-6541-41a3-a62c-5c8db210d877",
+    "slug": "arthur-rozzi-brocade-red-green-blue",
+    "name": "Arthur Rozzi Brocade to Red Green and Blue",
+    "description": "Dense Brocade To Red Green & Blue w/ Brocade Tail Aerial Single Shot",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#14fc56",
+    "color_palette": [
+      "#ff2d55",
+      "#14fc56",
+      "#1e7fff"
+    ],
+    "caliber": "1.87\"",
+    "duration_seconds": 5,
+    "height_meters": 48.2,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "heavy",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "brocade",
+      "tailColor": "#fff7de",
+      "spreadSize": 4.6,
+      "starLifeMs": 3000,
+      "starDensity": 1,
+      "trailEffect": "gold",
+      "colorPalette": [
+        "#ff2d55",
+        "#14fc56",
+        "#1e7fff"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "llm_generated",
+    "confidence": 0.7,
+    "created_at": "2026-08-03T04:18:59.983284+00:00",
+    "updated_at": "2026-08-03T05:04:57.9975+00:00"
+  },
+  {
+    "id": "a9807784-3ae8-489b-a5ce-2aaa72051511",
+    "firework_effect_id": "ba0595eb-6541-41a3-a62c-5c8db210d877",
+    "slug": "test-firework-6rkv",
+    "name": "test firework",
+    "description": null,
+    "primary_color": null,
+    "secondary_color": null,
+    "color_palette": [],
+    "caliber": null,
+    "duration_seconds": null,
+    "height_meters": null,
+    "variant_json": {},
+    "render_overrides_json": {},
+    "source": "manual",
+    "confidence": 1,
+    "created_at": "2026-07-27T05:18:35.611758+00:00",
+    "updated_at": "2026-07-27T05:18:35.611758+00:00"
+  },
+  {
+    "id": "b2530966-e96b-434b-91f7-0500fce4c543",
+    "firework_effect_id": "53a549c9-6bf3-4853-9b2c-51ad23c6a74d",
+    "slug": "crackle-default",
+    "name": "Crackle Default",
+    "description": "Catalogue variant for Crackle Default.",
+    "primary_color": "#ffffff",
+    "secondary_color": "#fff3c4",
+    "color_palette": [
+      "#ffffff",
+      "#fff3c4",
+      "#ffd166"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ffffff",
+      "strobe": false,
+      "crackle": true,
+      "glitter": "medium",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "crackle",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ffffff",
+        "#fff3c4",
+        "#ffd166"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-05-28T12:05:44.734835+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "b69eefea-2717-4ab9-a820-3f8b47dabad5",
+    "firework_effect_id": "22f5c45a-c16f-43b5-83d4-07987efd1828",
+    "slug": "comet-azure",
+    "name": "Comet Azure",
+    "description": "Catalogue variant for Comet Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 3.4,
+    "height_meters": 160,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "comet",
+      "spreadSize": 2.2,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "b6cdc6e8-0404-4bc9-820c-d24fd2b146f9",
+    "firework_effect_id": "8a4f5bac-29e9-4670-bcd7-5ff92f265841",
+    "slug": "palm-default",
+    "name": "Palm Default",
+    "description": "Catalogue variant for Palm Default.",
+    "primary_color": "#ffd166",
+    "secondary_color": "#ffae3d",
+    "color_palette": [
+      "#ffd166",
+      "#ffae3d"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ffd166",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "willow",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "palm",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ffd166",
+        "#ffae3d",
+        "#14fc56"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {
+      "stars": {
+        "outer": {
+          "color": {
+            "b": 0.4,
+            "g": 0.8196078431372549,
+            "r": 1
+          },
+          "colourPattern": {
+            "axis": "vertical",
+            "mode": "random",
+            "count": 2,
+            "colours": [
+              {
+                "color": {
+                  "b": 0.4,
+                  "g": 0.8196078431372549,
+                  "r": 1
+                },
+                "weight": 78
+              },
+              {
+                "color": {
+                  "b": 0.23921568627450981,
+                  "g": 0.6823529411764706,
+                  "r": 1
+                },
+                "weight": 22
+              }
+            ]
+          }
+        }
+      },
+      "geometryTuning": {
+        "radialArms": {
+          "arms": 6,
+          "lift": 2,
+          "angleJitter": 1,
+          "dragPercent": 10,
+          "countPercent": 100,
+          "liftVariation": 2
+        }
+      },
+      "secondaryColorRatio": 0.22
+    },
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-05-28T12:05:44.734835+00:00",
+    "updated_at": "2026-07-14T06:23:53.459736+00:00"
+  },
+  {
+    "id": "ba5b44b6-30ca-4dbe-9af8-08cc1f2c3c4c",
+    "firework_effect_id": "ae847746-73cf-48b2-84bf-1543884ed257",
+    "slug": "nishiki-azure",
+    "name": "Nishiki Azure",
+    "description": "Catalogue variant for Nishiki Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "nishiki",
+      "spreadSize": 4.6,
+      "starLifeMs": 5200,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "baf9e89b-9874-45ff-af65-9aa826c57c35",
+    "firework_effect_id": "df6c0111-6e25-46d3-8378-27fcfcfc1cb7",
+    "slug": "roman_candle-azure",
+    "name": "Roman Candle Azure",
+    "description": "Catalogue variant for Roman Candle Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 6,
+    "height_meters": 60,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "roman_candle",
+      "spreadSize": 3,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "bcd86731-caf3-48c3-8e7e-4b1aba0a031a",
+    "firework_effect_id": "030d53ad-4331-481e-8f59-5fc1dcd39106",
+    "slug": "chrysanthemum-azure",
+    "name": "Chrysanthemum Azure",
+    "description": "Catalogue variant for Chrysanthemum Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "chrysanthemum",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "bd0d5bb4-6974-479c-96c6-a1ea0656a152",
+    "firework_effect_id": "917dd43e-8a13-4e89-b9dd-a8d0f9f22fdc",
+    "slug": "crossette-crimson",
+    "name": "Crossette Crimson",
+    "description": "Catalogue variant for Crossette Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "medium",
+      "crossette": true,
+      "horsetail": false,
+      "shellType": "crossette",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "bf032b56-1338-4456-8328-5f388de3fc27",
+    "firework_effect_id": "7462feee-0b75-44c8-9a15-6ad3710e227a",
+    "slug": "bowtie-crimson",
+    "name": "Bow Tie Crimson",
+    "description": "Catalogue variant for Bow Tie Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "bowtie",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "c07bac6d-fa94-4045-a7a8-5b17f8585c4a",
+    "firework_effect_id": "134b8060-a4e8-4127-ad28-cc9148ba14c9",
+    "slug": "willow-default",
+    "name": "Willow Default",
+    "description": "Catalogue variant for Willow Default.",
+    "primary_color": "#ffd166",
+    "secondary_color": "#ffcf6b",
+    "color_palette": [
+      "#ffd166",
+      "#ffcf6b",
+      "#ffae3d",
+      "#9c5a17"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ffd166",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "willow",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "willow",
+      "spreadSize": 4.6,
+      "starLifeMs": 5200,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ffd166",
+        "#ffcf6b",
+        "#ffae3d",
+        "#9c5a17"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-05-28T12:05:44.734835+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "c28b22bd-5fe0-45b4-89d8-259f8fac936a",
+    "firework_effect_id": "e27743d5-c242-49cc-87f4-189955637791",
+    "slug": "strobe-azure",
+    "name": "Strobe Azure",
+    "description": "Catalogue variant for Strobe Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": true,
+      "crackle": false,
+      "glitter": "medium",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "strobe",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "c2a77547-3ef2-4727-a473-448d432b0ab5",
+    "firework_effect_id": "59dbb947-f184-4704-880d-4c27577f110b",
+    "slug": "fountain-default",
+    "name": "Fountain Default",
+    "description": "Catalogue variant for Fountain Default.",
+    "primary_color": "#f8f8ff",
+    "secondary_color": "#ffd166",
+    "color_palette": [
+      "#f8f8ff",
+      "#ffd166",
+      "#fff3c4"
+    ],
+    "caliber": null,
+    "duration_seconds": 6,
+    "height_meters": 60,
+    "variant_json": {
+      "ring": false,
+      "color": "#f8f8ff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "fountain",
+      "spreadSize": 3,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#f8f8ff",
+        "#ffd166",
+        "#fff3c4"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "c3fde61f-e65b-46ec-b771-8af1991f3917",
+    "firework_effect_id": "286d9429-ae68-48a6-9342-2c256a4430bf",
+    "slug": "mine-crimson",
+    "name": "Mine Crimson",
+    "description": "Catalogue variant for Mine Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 6,
+    "height_meters": 60,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "mine",
+      "spreadSize": 3.2,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "c6aec4cd-6e75-46ac-8985-1d9189a966da",
+    "firework_effect_id": "ba0595eb-6541-41a3-a62c-5c8db210d877",
+    "slug": "arthur-rozzi-brocade-magenta-green",
+    "name": "Arthur Rozzi Brocade Magenta to Green",
+    "description": "Slightly Big Brocade Willow w/ Sparse Magenta w/ Sparse Green Strobing w/ Brocade Tail Single Shot",
+    "primary_color": "#fff7de",
+    "secondary_color": "#ff2db3",
+    "color_palette": [
+      "#fff7de",
+      "#ff2db3",
+      "#14fc56"
+    ],
+    "caliber": "1.87\"",
+    "duration_seconds": 5,
+    "height_meters": 48.2,
+    "variant_json": {
+      "ring": false,
+      "color": "#fff7de",
+      "strobe": true,
+      "crackle": false,
+      "glitter": "heavy",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "brocade",
+      "tailColor": "#fff7de",
+      "spreadSize": 5,
+      "starLifeMs": 3000,
+      "starDensity": 1,
+      "trailEffect": "gold",
+      "colorPalette": [
+        "#fff7de",
+        "#ff2db3",
+        "#14fc56"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "llm_generated",
+    "confidence": 0.7,
+    "created_at": "2026-08-03T04:18:59.983284+00:00",
+    "updated_at": "2026-08-03T05:04:57.9975+00:00"
+  },
+  {
+    "id": "c78f9897-15cb-493e-86db-dff0d18b3d86",
+    "firework_effect_id": "041fc94f-e470-43a1-9658-a1dafbf7efc6",
+    "slug": "horsetail-azure",
+    "name": "Horsetail Azure",
+    "description": "Catalogue variant for Horsetail Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "willow",
+      "crossette": false,
+      "horsetail": true,
+      "shellType": "horsetail",
+      "spreadSize": 4.6,
+      "starLifeMs": 4000,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "c801ea42-ab94-438f-8db7-8f79e2b9c90b",
+    "firework_effect_id": "7462feee-0b75-44c8-9a15-6ad3710e227a",
+    "slug": "bowtie-azure",
+    "name": "Bow Tie Azure",
+    "description": "Catalogue variant for Bow Tie Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#c800ff",
+    "color_palette": [
+      "#1e7fff",
+      "#c800ff"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "bowtie",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {
+      "stars": {
+        "outer": {
+          "head": {
+            "opening": {
+              "colour": {
+                "enabled": true,
+                "fadePercent": 10
+              }
+            },
+            "glowSize": 180,
+            "coreSoftness": 48.4,
+            "glowSoftness": 96,
+            "coreBrightness": 31,
+            "coreOpacityFalloff": 73.2,
+            "whiteCoreBlurPercent": 11.4,
+            "whiteCoreSizePercent": 23.2
+          },
+          "burst": {
+            "speed": [
+              9.2,
+              10.4
+            ]
+          },
+          "color": {
+            "b": 1,
+            "g": 0.4980392156862745,
+            "r": 0.11764705882352941
+          },
+          "count": 40,
+          "colourPattern": {
+            "axis": "vertical",
+            "mode": "random",
+            "count": 2,
+            "colours": [
+              {
+                "color": {
+                  "b": 1,
+                  "g": 0.4980392156862745,
+                  "r": 0.11764705882352941
+                },
+                "weight": 48
+              },
+              {
+                "color": {
+                  "b": 1,
+                  "g": 0,
+                  "r": 0.7843137254901961
+                },
+                "weight": 52
+              }
+            ]
+          }
+        }
+      },
+      "burstTrail": {
+        "stops": [
+          {
+            "size": 1.05,
+            "density": 1.5,
+            "position": 0,
+            "shapeWeights": {
+              "circle": 4,
+              "square": 88,
+              "triangle": 8
+            },
+            "sizeVariation": 28
+          },
+          {
+            "size": 0.9,
+            "density": 1.15,
+            "position": 32,
+            "shapeWeights": {
+              "circle": 5,
+              "square": 86,
+              "triangle": 9
+            },
+            "sizeVariation": 30
+          },
+          {
+            "size": 0.5,
+            "density": 0.34,
+            "position": 100,
+            "shapeWeights": {
+              "circle": 8,
+              "square": 84,
+              "triangle": 8
+            },
+            "sizeVariation": 34
+          }
+        ],
+        "width": {
+          "tail": 56,
+          "curve": 1,
+          "front": 39
+        },
+        "motion": {
+          "drag": 1.4,
+          "spin": 0,
+          "driftX": 0,
+          "driftY": -0.012,
+          "driftZ": 0,
+          "gravity": -0.02,
+          "turbulence": 0.045,
+          "inheritedVelocity": 0.02
+        },
+        "preset": "custom",
+        "closing": {
+          "size": {
+            "enabled": true,
+            "endPercent": 46,
+            "shrinkPercent": 22
+          },
+          "colour": {
+            "color": {
+              "b": 0.08,
+              "g": 0.34,
+              "r": 1
+            },
+            "enabled": false,
+            "fadePercent": 22
+          },
+          "spreadFade": {
+            "enabled": true,
+            "startAngle": 60,
+            "endOpacityPercent": 55
+          }
+        },
+        "enabled": true,
+        "flicker": {
+          "chance": 0.08,
+          "strength": 0.9,
+          "lifetimeMultiplier": 0.45
+        },
+        "opening": {
+          "size": {
+            "startPercent": 100
+          },
+          "visibility": {
+            "revealPercent": 24,
+            "particlesPercent": 100,
+            "brightnessPercent": 100
+          }
+        },
+        "spacing": {
+          "curve": 1,
+          "jitterPercent": 5
+        },
+        "version": 2,
+        "lifetime": {
+          "mode": "dynamic",
+          "percent": 0.4,
+          "baseSeconds": 1.7,
+          "afterglowSeconds": 0.32,
+          "variationPercent": 47
+        },
+        "intensity": {
+          "brightness": 1.15,
+          "fadeSoftness": 1
+        },
+        "placement": {
+          "headGapPercent": 0
+        },
+        "colourMode": "ember",
+        "frontClump": 0.55,
+        "particleSize": {
+          "base": 1,
+          "headScale": 1,
+          "tailScale": 0.55,
+          "variationPercent": 28
+        },
+        "particlesPerStar": 981
+      },
+      "liftVelocity": 15,
+      "secondaryColorRatio": 0.52
+    },
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-07-01T11:57:13.06297+00:00"
+  },
+  {
+    "id": "c8b5d9ba-abd9-4fa2-9346-1bcd5a00ae9c",
+    "firework_effect_id": "2cfd3796-96b3-495b-a767-0af0b2ed7bc4",
+    "slug": "pistil-default",
+    "name": "Pistil Default",
+    "description": "Catalogue variant for Pistil Default.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#14fc56",
+    "color_palette": [
+      "#ff2d55",
+      "#14fc56",
+      "#ff5a4d",
+      "#7dffbb"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "pistil",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#14fc56",
+        "#ff5a4d",
+        "#7dffbb"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-05-28T12:43:37.398358+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "ce98adc4-7040-4bee-9f91-a02b4ca245cc",
+    "firework_effect_id": "59dbb947-f184-4704-880d-4c27577f110b",
+    "slug": "fountain-crimson",
+    "name": "Fountain Crimson",
+    "description": "Catalogue variant for Fountain Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 6,
+    "height_meters": 60,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "fountain",
+      "spreadSize": 3,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "cf8d412c-5210-4905-ae2b-a60b5225164f",
+    "firework_effect_id": "847c895e-3183-4dd4-8b1d-2690e220f023",
+    "slug": "double_break-default",
+    "name": "Double Break Default",
+    "description": "Catalogue variant for Double Break Default.",
+    "primary_color": "#14fc56",
+    "secondary_color": "#1e7fff",
+    "color_palette": [
+      "#14fc56",
+      "#1e7fff",
+      "#7dffbb",
+      "#7fd0ff"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#14fc56",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "medium",
+      "crossette": true,
+      "horsetail": false,
+      "shellType": "double_break",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#14fc56",
+        "#1e7fff",
+        "#7dffbb",
+        "#7fd0ff"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "d2c57ea5-34ca-4b45-baec-3ae25c7f89fe",
+    "firework_effect_id": "135e4fd9-74c7-4c4d-afb4-404ab9d52dac",
+    "slug": "whirl-azure",
+    "name": "Whirl Azure",
+    "description": "Catalogue variant for Whirl Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "whirl",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "d3a09de9-379f-416c-9435-d03c188935f5",
+    "firework_effect_id": "134b8060-a4e8-4127-ad28-cc9148ba14c9",
+    "slug": "willow-azure",
+    "name": "Willow Azure",
+    "description": "Catalogue variant for Willow Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "willow",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "willow",
+      "spreadSize": 4.6,
+      "starLifeMs": 5200,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "d622b111-67a9-4c7c-9e0f-9c9d6464630e",
+    "firework_effect_id": "e27743d5-c242-49cc-87f4-189955637791",
+    "slug": "strobe-default",
+    "name": "Blue and Red Strobe",
+    "description": "Catalogue variant for Strobe Default.",
+    "primary_color": "#c70202",
+    "secondary_color": "#0059de",
+    "color_palette": [
+      "#c70202",
+      "#0059de"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ffffff",
+      "strobe": true,
+      "crackle": false,
+      "glitter": "medium",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "strobe",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ffffff",
+        "#f0f6ff",
+        "#9bf09b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {
+      "stars": {
+        "core": {
+          "head": {
+            "size": 223,
+            "closing": {
+              "size": {
+                "enabled": false,
+                "endPercent": 0,
+                "shrinkPercent": 22
+              },
+              "colour": {
+                "color": {
+                  "b": 0.4,
+                  "g": 0.84,
+                  "r": 1
+                },
+                "enabled": false,
+                "fadePercent": 22
+              }
+            },
+            "opening": {
+              "size": {
+                "enabled": false,
+                "growPercent": 22,
+                "startPercent": 35
+              },
+              "colour": {
+                "color": {
+                  "b": 0.08,
+                  "g": 0.42,
+                  "r": 1
+                },
+                "enabled": false,
+                "fadePercent": 24
+              }
+            },
+            "visible": true,
+            "glowBlur": 45,
+            "glowSize": 90,
+            "glowPadding": 150,
+            "coreSoftness": 55,
+            "glowSoftness": 100,
+            "glowStrength": 1.5,
+            "coreBrightness": 50,
+            "coreOpacityFalloff": 60,
+            "glowOpacityFalloff": 100,
+            "whiteCoreBlurPercent": 15,
+            "whiteCoreSizePercent": 20,
+            "brightnessHoldPercent": 82,
+            "backgroundGlowSoftness": 50,
+            "brightnessHoldExponent": 0.8,
+            "backgroundGlowOpacityFalloff": 75
+          },
+          "burst": {
+            "life": [
+              0.31,
+              5.33
+            ],
+            "speed": [
+              0.89,
+              1.99
+            ],
+            "gravity": [
+              -0.24,
+              -0.02
+            ],
+            "flairColorMode": "mixed"
+          },
+          "count": 38,
+          "enabled": false
+        },
+        "outer": {
+          "head": {
+            "size": 200,
+            "closing": {
+              "size": {
+                "enabled": false,
+                "endPercent": 0,
+                "shrinkPercent": 22
+              },
+              "colour": {
+                "color": {
+                  "b": 0.4,
+                  "g": 0.84,
+                  "r": 1
+                },
+                "enabled": false,
+                "fadePercent": 22
+              }
+            },
+            "opening": {
+              "size": {
+                "enabled": false,
+                "growPercent": 22,
+                "startPercent": 35
+              },
+              "colour": {
+                "color": {
+                  "b": 0.08,
+                  "g": 0.42,
+                  "r": 1
+                },
+                "enabled": false,
+                "fadePercent": 24
+              }
+            },
+            "visible": true,
+            "glowBlur": 45,
+            "glowSize": 90,
+            "glowPadding": 150,
+            "coreSoftness": 55,
+            "glowSoftness": 100,
+            "glowStrength": 1.5,
+            "coreBrightness": 50,
+            "coreOpacityFalloff": 60,
+            "glowOpacityFalloff": 100,
+            "whiteCoreBlurPercent": 15,
+            "whiteCoreSizePercent": 20,
+            "brightnessHoldPercent": 82,
+            "backgroundGlowSoftness": 50,
+            "brightnessHoldExponent": 0.8,
+            "backgroundGlowOpacityFalloff": 75
+          },
+          "burst": {
+            "life": [
+              2.5,
+              4
+            ],
+            "speed": [
+              1,
+              1.8
+            ],
+            "gravity": [
+              -0.4,
+              0
+            ],
+            "flairColorMode": "bombColor"
+          },
+          "color": {
+            "b": 0.00784313725490196,
+            "g": 0.00784313725490196,
+            "r": 0.7803921568627451
+          },
+          "count": 70,
+          "enabled": true,
+          "colourPattern": {
+            "axis": "vertical",
+            "mode": "random",
+            "count": 2,
+            "colours": [
+              {
+                "color": {
+                  "b": 0.00784313725490196,
+                  "g": 0.00784313725490196,
+                  "r": 0.7803921568627451
+                },
+                "weight": 51
+              },
+              {
+                "color": {
+                  "b": 0.8705882352941177,
+                  "g": 0.34901960784313724,
+                  "r": 0
+                },
+                "weight": 49
+              }
+            ]
+          }
+        }
+      },
+      "liftVelocity": 15,
+      "secondaryColorRatio": 0.49
+    },
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-07-01T08:36:30.222424+00:00"
+  },
+  {
+    "id": "d834d2a7-002a-424d-9526-731cfd129f99",
+    "firework_effect_id": "2cfd3796-96b3-495b-a767-0af0b2ed7bc4",
+    "slug": "pistil-azure",
+    "name": "Pistil Azure",
+    "description": "Catalogue variant for Pistil Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "pistil",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "dd2d6b72-9acc-4320-90da-733f8c57c61c",
+    "firework_effect_id": "5c11b56e-447a-458d-9e18-26c8d0ca4721",
+    "slug": "kamuro-default",
+    "name": "Kamuro Default",
+    "description": "Catalogue variant for Kamuro Default.",
+    "primary_color": "#ffd166",
+    "secondary_color": "#fff3c4",
+    "color_palette": [
+      "#ffd166",
+      "#fff3c4",
+      "#f5f7fa",
+      "#fff7de"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ffd166",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "heavy",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "kamuro",
+      "spreadSize": 4.6,
+      "starLifeMs": 5200,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ffd166",
+        "#fff3c4",
+        "#f5f7fa",
+        "#fff7de"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "e383343a-d6a2-44e9-96db-2f7164aa0516",
+    "firework_effect_id": "2b73da93-f8d6-41c4-9ab9-c49d85b4275c",
+    "slug": "waterfall-crimson",
+    "name": "Waterfall Crimson",
+    "description": "Catalogue variant for Waterfall Crimson.",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#ff5a4d",
+    "color_palette": [
+      "#ff2d55",
+      "#ff5a4d",
+      "#ff7a6b"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "willow",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "waterfall",
+      "spreadSize": 4.6,
+      "starLifeMs": 4000,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ff2d55",
+        "#ff5a4d",
+        "#ff7a6b"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "e83060e3-ca4d-41c2-8196-acbef06d029e",
+    "firework_effect_id": "ba0595eb-6541-41a3-a62c-5c8db210d877",
+    "slug": "arthur-rozzi-brocade-crackling-palm-red-green",
+    "name": "Arthur Rozzi Brocade Crackling Palm Red and Green",
+    "description": "Very Dense Very Thick Brocade Crackling Palm w/ Dense Red & Green Strobing w/ Short Trail Crackling Tail Aerial Single Shot",
+    "primary_color": "#ff2d55",
+    "secondary_color": "#14fc56",
+    "color_palette": [
+      "#ff2d55",
+      "#14fc56",
+      "#fff7de"
+    ],
+    "caliber": "1.87\"",
+    "duration_seconds": 5,
+    "height_meters": 48.2,
+    "variant_json": {
+      "ring": false,
+      "color": "#ff2d55",
+      "strobe": true,
+      "crackle": true,
+      "glitter": "heavy",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "brocade",
+      "tailColor": "#fff7de",
+      "spreadSize": 5.2,
+      "starLifeMs": 3000,
+      "starDensity": 1,
+      "trailEffect": "gold",
+      "colorPalette": [
+        "#ff2d55",
+        "#14fc56",
+        "#fff7de"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "llm_generated",
+    "confidence": 0.7,
+    "created_at": "2026-08-03T04:18:59.983284+00:00",
+    "updated_at": "2026-08-03T05:04:57.9975+00:00"
+  },
+  {
+    "id": "ea5920b0-f423-4155-b953-c5dbeb543353",
+    "firework_effect_id": "ba0595eb-6541-41a3-a62c-5c8db210d877",
+    "slug": "arthur-rozzi-brocade-blue-green",
+    "name": "Arthur Rozzi Brocade to Blue with Green Strobe",
+    "description": "Dense Brocade To Blue w/ Green Strobing w/ Brocade Tail Aerial Single Shot",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#14fc56",
+    "color_palette": [
+      "#1e7fff",
+      "#14fc56"
+    ],
+    "caliber": "1.87\"",
+    "duration_seconds": 5,
+    "height_meters": 48.2,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": true,
+      "crackle": false,
+      "glitter": "heavy",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "brocade",
+      "tailColor": "#fff7de",
+      "spreadSize": 4.6,
+      "starLifeMs": 3000,
+      "starDensity": 1,
+      "trailEffect": "gold",
+      "colorPalette": [
+        "#1e7fff",
+        "#14fc56"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "llm_generated",
+    "confidence": 0.7,
+    "created_at": "2026-08-03T04:18:59.983284+00:00",
+    "updated_at": "2026-08-03T05:04:57.9975+00:00"
+  },
+  {
+    "id": "ed093925-5a50-4c9e-a098-6203337729b4",
+    "firework_effect_id": "2b73da93-f8d6-41c4-9ab9-c49d85b4275c",
+    "slug": "waterfall-default",
+    "name": "Waterfall Default",
+    "description": "Catalogue variant for Waterfall Default.",
+    "primary_color": "#ffd166",
+    "secondary_color": "#ffd870",
+    "color_palette": [
+      "#ffd166",
+      "#ffd870",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ffd166",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "willow",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "waterfall",
+      "spreadSize": 4.6,
+      "starLifeMs": 4000,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ffd166",
+        "#ffd870",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-05-28T12:43:37.398358+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "ee2dbc47-808b-496f-b4cc-1e141c7ff9c3",
+    "firework_effect_id": "d0001a17-28aa-4a31-b163-cf6eebc2f58c",
+    "slug": "ring-default",
+    "name": "Ring Default",
+    "description": "Catalogue variant for Ring Default.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#f5f7fa",
+    "color_palette": [
+      "#1e7fff",
+      "#f5f7fa",
+      "#7fd0ff"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": true,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "none",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "ring",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#f5f7fa",
+        "#7fd0ff"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-05-28T12:05:44.734835+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "f364080f-1fd5-4263-821a-60420f27364d",
+    "firework_effect_id": "f0d96921-d7f9-47e2-95ac-d0885415b053",
+    "slug": "peony-azure",
+    "name": "Peony Azure",
+    "description": "Catalogue variant for Peony Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "peony",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "f50d7ab4-efaa-4427-87ac-66dc01341df6",
+    "firework_effect_id": "847c895e-3183-4dd4-8b1d-2690e220f023",
+    "slug": "double_break-azure",
+    "name": "Double Break Azure",
+    "description": "Catalogue variant for Double Break Azure.",
+    "primary_color": "#1e7fff",
+    "secondary_color": "#7fd0ff",
+    "color_palette": [
+      "#1e7fff",
+      "#7fd0ff",
+      "#f5f7fa"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#1e7fff",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "medium",
+      "crossette": true,
+      "horsetail": false,
+      "shellType": "double_break",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#1e7fff",
+        "#7fd0ff",
+        "#f5f7fa"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "f6b96c45-b04d-4286-81f0-55de68bb2fc2",
+    "firework_effect_id": "ae847746-73cf-48b2-84bf-1543884ed257",
+    "slug": "nishiki-default",
+    "name": "Nishiki Default",
+    "description": "Catalogue variant for Nishiki Default.",
+    "primary_color": "#ffd166",
+    "secondary_color": "#fff3c4",
+    "color_palette": [
+      "#ffd166",
+      "#fff3c4",
+      "#1e7fff",
+      "#c800ff"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#ffd166",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "nishiki",
+      "spreadSize": 4.6,
+      "starLifeMs": 5200,
+      "starDensity": 1,
+      "colorPalette": [
+        "#ffd166",
+        "#fff3c4",
+        "#1e7fff",
+        "#c800ff"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-06-29T04:40:53.139518+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  },
+  {
+    "id": "ff6e7fae-e624-4392-b083-77603408dbf1",
+    "firework_effect_id": "135e4fd9-74c7-4c4d-afb4-404ab9d52dac",
+    "slug": "whirl-default",
+    "name": "Whirl Default",
+    "description": "Catalogue variant for Whirl Default.",
+    "primary_color": "#f5f7fa",
+    "secondary_color": "#ff2d55",
+    "color_palette": [
+      "#f5f7fa",
+      "#ff2d55",
+      "#ffd166"
+    ],
+    "caliber": null,
+    "duration_seconds": 5,
+    "height_meters": 220,
+    "variant_json": {
+      "ring": false,
+      "color": "#f5f7fa",
+      "strobe": false,
+      "crackle": false,
+      "glitter": "light",
+      "crossette": false,
+      "horsetail": false,
+      "shellType": "whirl",
+      "spreadSize": 4.6,
+      "starLifeMs": 1700,
+      "starDensity": 1,
+      "colorPalette": [
+        "#f5f7fa",
+        "#ff2d55",
+        "#ffd166"
+      ],
+      "starLifeVariation": 0.18
+    },
+    "render_overrides_json": {},
+    "source": "catalogue",
+    "confidence": 0.75,
+    "created_at": "2026-05-28T12:43:37.398358+00:00",
+    "updated_at": "2026-06-29T12:05:40.51516+00:00"
+  }
+]

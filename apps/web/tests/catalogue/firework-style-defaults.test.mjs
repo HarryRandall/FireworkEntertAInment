@@ -34,64 +34,7 @@ function functionBody(source, name) {
 }
 
 test('style default schema keeps saved defaults and prunes live links', () => {
-  const baseMigrationPath =
-    '../../supabase/migrations/20260618051341_live_firework_style_defaults.sql';
-  const generalisedMigrationPath =
-    '../../supabase/migrations/20260618081656_generalised_firework_style_defaults.sql';
-  const copyMigrationPath =
-    '../../supabase/migrations/20260709082959_copy_style_defaults_and_clean_indexes.sql';
-  const geometryMigrationPath =
-    '../../supabase/migrations/20260715031905_add_geometry_style_defaults.sql';
-  assert.equal(existsSync(join(root, baseMigrationPath)), true);
-  assert.equal(existsSync(join(root, generalisedMigrationPath)), true);
-  assert.equal(existsSync(join(root, copyMigrationPath)), true);
-  assert.equal(existsSync(join(root, geometryMigrationPath)), true);
-
-  const baseMigration = read(baseMigrationPath);
-  const generalisedMigration = read(generalisedMigrationPath);
-  const copyMigration = read(copyMigrationPath);
-  const geometryMigration = read(geometryMigrationPath);
   const types = read('lib/database.types.ts');
-
-  assert.match(baseMigration, /create table if not exists public\.firework_style_defaults/);
-  assert.match(
-    baseMigration,
-    /alter table public\.firework_style_defaults enable row level security/,
-  );
-  assert.match(
-    baseMigration,
-    /grant select, insert, update, delete on public\.firework_style_defaults to authenticated/,
-  );
-  assert.match(baseMigration, /public\.current_user_has_permission\('admin\.manage_catalogue'\)/);
-
-  assert.match(
-    generalisedMigration,
-    /drop constraint if exists firework_style_defaults_kind_check/,
-  );
-  assert.match(
-    generalisedMigration,
-    /check \(kind in \('star', 'trail', 'launch', 'smoke', 'strobe', 'crackle', 'split', 'sound'\)\)/,
-  );
-  for (const slug of [
-    'standard-launch',
-    'standard-smoke',
-    'standard-strobe',
-    'standard-crackle',
-    'standard-split',
-    'standard-sound',
-  ]) {
-    assert.match(generalisedMigration, new RegExp(`'${slug}'`));
-  }
-
-  assert.match(copyMigration, /deep_merge_jsonb/);
-  assert.match(copyMigration, /drop table if exists public\.firework_effect_style_default_links/);
-  assert.match(copyMigration, /drop table if exists public\.firework_style_default_links/);
-  assert.match(copyMigration, /drop column if exists star_style_default_id/);
-  assert.match(copyMigration, /drop column if exists trail_style_default_id/);
-  assert.match(copyMigration, /drop index if exists public\.show_analyses_show_latest_idx/);
-  assert.match(copyMigration, /drop index if exists public\.show_analyses_user_created_idx/);
-  assert.match(geometryMigration, /'geometry'/);
-  assert.match(geometryMigration, /firework_style_defaults_kind_check/);
   assert.doesNotMatch(types, /firework_effect_style_default_links: \{/);
   assert.doesNotMatch(types, /firework_style_default_links: \{/);
   assert.doesNotMatch(types, /star_style_default_id:/);
@@ -168,9 +111,6 @@ test('admin actions save copied default settings without live assignments', () =
 });
 
 test('style default saves, archives, and restores record live editor history', () => {
-  const migration = read(
-    '../../supabase/migrations/20260715032141_add_style_default_editor_version_history.sql',
-  );
   const types = read('lib/database.types.ts');
   const adminTypes = read('lib/admin.types.ts');
   const snapshots = read('lib/admin/editor-snapshots.ts');
@@ -178,12 +118,6 @@ test('style default saves, archives, and restores record live editor history', (
   const loader = read('lib/admin/style-defaults.server.ts');
   const versions = read('lib/admin/editor-versions.server.ts');
   const editor = read('app/(admin)/admin/effects/defaults/[id]/_components/StyleDefaultEditor.tsx');
-
-  assert.match(migration, /add column firework_style_default_id uuid/);
-  assert.match(migration, /references public\.firework_style_defaults\(id\) on delete cascade/);
-  assert.match(migration, /target_kind in \('firework', 'effect', 'style_default'\)/);
-  assert.match(migration, /target_kind = 'style_default'/);
-  assert.match(migration, /firework_editor_versions_style_default_created_at_idx/);
   assert.match(types, /firework_style_default_id: string \| null/);
   assert.match(types, /foreignKeyName: "firework_editor_versions_firework_style_default_id_fkey"/);
   assert.match(
@@ -233,27 +167,10 @@ test('style default saves, archives, and restores record live editor history', (
 });
 
 test('inline style-default creation and parent editor saves are atomic', () => {
-  const migration = read(
-    '../../supabase/migrations/20260715034851_atomically_create_editor_style_defaults.sql',
-  );
   const effectActions = read('app/actions/admin-effects.ts');
   const fireworkActions = read('app/actions/admin-fireworks.ts');
   const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
-
-  for (const target of ['effect', 'firework']) {
-    assert.match(
-      migration,
-      new RegExp(`create or replace function public\\.create_style_default_and_update_${target}`),
-    );
-  }
-  assert.match(migration, /security definer/g);
-  assert.match(migration, /set search_path = ''/g);
-  assert.match(migration, /auth\.uid\(\) is null/);
-  assert.match(migration, /current_user_has_permission\('admin\.manage_catalogue'\)/);
-  assert.match(migration, /revoke execute[\s\S]*from public, anon, authenticated/);
-  assert.match(migration, /grant execute[\s\S]*to authenticated/);
-  assert.match(migration, /and updated_at = p_expected_updated_at/);
 
   assert.match(effectActions, /export async function createStyleDefaultAndUpdateEffect/);
   assert.match(effectActions, /rpc\('create_style_default_and_update_effect'/);
@@ -430,85 +347,4 @@ test('style default writes reject invalid renderer fragments', () => {
 
   assert.match(actions, /fireworkDesignFragmentError\(parsed\)/);
   assert.match(actions, /fireworkDesignFragmentError\(snapshot\.defaultsJson\)/);
-});
-
-test('built-in partial trail defaults are hydrated by follow-up migration', () => {
-  const migration = read(
-    '../../supabase/migrations/20260618070216_hydrate_firework_style_default_trails.sql',
-  );
-
-  for (const [slug, preset, particles] of [
-    ['spark-dust-trail', 'sparkDust', 24],
-    ['solid-streaks-trail', 'solidStreaks', 84],
-    ['willow-hang-trail', 'willowHang', 72],
-    ['comet-tail-trail', 'cometTail', 96],
-    ['dense-brocade-trail', 'denseBrocade', 120],
-  ]) {
-    assert.match(migration, new RegExp(`'${slug}'`));
-    assert.match(migration, new RegExp(`"preset":"${preset}"`));
-    assert.match(migration, new RegExp(`"particlesPerStar":${particles}`));
-  }
-
-  assert.match(migration, /"enabled":true/);
-  assert.match(migration, /"stops":\[/);
-  assert.match(migration, /defaults\.defaults_json #> '\{burstTrail,enabled\}' is null/);
-  assert.match(migration, /defaults\.defaults_json #> '\{burstTrail,particlesPerStar\}' is null/);
-  assert.match(migration, /defaults\.defaults_json #> '\{burstTrail,stops\}' is null/);
-  assert.doesNotMatch(migration, /square-star-fade-trail/);
-});
-
-test('realistic preset and shaped-effect seeds stay reusable without creating base fireworks', () => {
-  const defaultsMigration = read(
-    '../../supabase/migrations/20260715065634_seed_realistic_firework_style_defaults.sql',
-  );
-  const effectsMigration = read(
-    '../../supabase/migrations/20260715071512_add_heart_and_outlined_star_effects.sql',
-  );
-  const defaults = readDollarQuotedJson(defaultsMigration, 'seed');
-  const effects = readDollarQuotedJson(effectsMigration, 'effects');
-
-  assert.equal(defaults.length, 51);
-  assert.deepEqual(
-    new Set(defaults.map((entry) => entry.kind)),
-    new Set([
-      'geometry',
-      'star',
-      'trail',
-      'launch',
-      'smoke',
-      'strobe',
-      'crackle',
-      'split',
-      'sound',
-    ]),
-  );
-  assert.match(defaultsMigration, /insert into public\.firework_style_defaults/);
-
-  assert.deepEqual(
-    effects.map((entry) => ({
-      slug: entry.slug,
-      family: entry.family,
-      source: entry.source,
-      geometry: entry.model_json?.renderDefaults?.geometry,
-    })),
-    [
-      {
-        slug: 'heart-shell',
-        family: 'aerial_burst',
-        source: 'manual',
-        geometry: 'heart',
-      },
-      {
-        slug: 'outlined-star-shell',
-        family: 'aerial_burst',
-        source: 'manual',
-        geometry: 'five_point_star',
-      },
-    ],
-  );
-  assert.match(effectsMigration, /insert into public\.firework_effects/);
-  assert.doesNotMatch(
-    effectsMigration,
-    /insert into public\.(?:fireworks|firework_variants|catalogue_items|products)/,
-  );
 });

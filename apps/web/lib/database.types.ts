@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
   public: {
     Tables: {
       ai_credit_accounts: {
@@ -824,7 +819,10 @@ export type Database = {
       }
       import_candidate_render_validations: {
         Row: {
+          artifact_byte_size: number
           artifact_output_id: string
+          artifact_sha256: string
+          artifact_storage_etag: string
           artifact_storage_path: string
           candidate_id: string
           canonical_evidence: Json
@@ -835,7 +833,10 @@ export type Database = {
           validator_version: string
         }
         Insert: {
+          artifact_byte_size: number
           artifact_output_id: string
+          artifact_sha256: string
+          artifact_storage_etag: string
           artifact_storage_path: string
           candidate_id: string
           canonical_evidence: Json
@@ -846,7 +847,10 @@ export type Database = {
           validator_version: string
         }
         Update: {
+          artifact_byte_size?: number
           artifact_output_id?: string
+          artifact_sha256?: string
+          artifact_storage_etag?: string
           artifact_storage_path?: string
           candidate_id?: string
           canonical_evidence?: Json
@@ -2745,14 +2749,6 @@ export type Database = {
         Args: { p_lease_token: string; p_run_id: string }
         Returns: string
       }
-      prepare_assortment_song_analysis: {
-        Args: {
-          p_analysis_id: string
-          p_assortment_token: string
-          p_selection_id: string
-        }
-        Returns: Json
-      }
       prepare_assortment_jamendo_selection: {
         Args: {
           p_access_token_hash: string
@@ -2761,7 +2757,7 @@ export type Database = {
           p_content_type: string
           p_new_analysis_id: string
           p_original_filename: string
-          p_reusable_analysis_id?: string | null
+          p_reusable_analysis_id?: string
           p_selection_id: string
           p_size_bytes: number
           p_source_artist: string
@@ -2770,6 +2766,14 @@ export type Database = {
           p_source_title: string
           p_source_track_id: string
           p_source_url: string
+        }
+        Returns: Json
+      }
+      prepare_assortment_song_analysis: {
+        Args: {
+          p_analysis_id: string
+          p_assortment_token: string
+          p_selection_id: string
         }
         Returns: Json
       }

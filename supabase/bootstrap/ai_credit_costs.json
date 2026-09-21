@@ -1,0 +1,82 @@
+[
+  {
+    "key": "import_video_reconstruction",
+    "name": "Import video reconstruction",
+    "description": "Bounded multi-pass reconstruction and exact engine comparison for a firework video.",
+    "amount": 5,
+    "sort_order": 70,
+    "updated_by": null,
+    "created_at": "2026-06-29T12:05:42.305908+00:00",
+    "updated_at": "2026-07-15T11:58:02.880228+00:00"
+  },
+  {
+    "key": "import_video_refinement",
+    "name": "Import video refinement",
+    "description": "Evidence-driven refinement of a retained firework reconstruction candidate.",
+    "amount": 3,
+    "sort_order": 80,
+    "updated_by": null,
+    "created_at": "2026-06-29T12:05:42.305908+00:00",
+    "updated_at": "2026-07-15T11:58:02.880228+00:00"
+  },
+  {
+    "key": "music_analysis",
+    "name": "Music analysis",
+    "description": "Upload-scoped soundtrack analysis that prepares beat and structure data.",
+    "amount": 1,
+    "sort_order": 10,
+    "updated_by": null,
+    "created_at": "2026-06-29T12:05:42.305908+00:00",
+    "updated_at": "2026-06-29T12:05:42.305908+00:00"
+  },
+  {
+    "key": "show_generation_fast",
+    "name": "Fast show generation",
+    "description": "Default deterministic cue planning for a show.",
+    "amount": 1,
+    "sort_order": 20,
+    "updated_by": null,
+    "created_at": "2026-06-29T12:05:42.305908+00:00",
+    "updated_at": "2026-06-29T12:05:42.305908+00:00"
+  },
+  {
+    "key": "show_generation_gpt4o",
+    "name": "GPT-4o show generation",
+    "description": "Lower-cost OpenAI cue planning through OpenRouter.",
+    "amount": 1,
+    "sort_order": 30,
+    "updated_by": null,
+    "created_at": "2026-06-29T12:05:42.305908+00:00",
+    "updated_at": "2026-06-29T12:05:42.305908+00:00"
+  },
+  {
+    "key": "show_generation_opus",
+    "name": "Claude Opus 4 show generation",
+    "description": "Highest-cost reasoning model cue planning through OpenRouter.",
+    "amount": 5,
+    "sort_order": 50,
+    "updated_by": null,
+    "created_at": "2026-06-29T12:05:42.305908+00:00",
+    "updated_at": "2026-06-29T12:05:42.305908+00:00"
+  },
+  {
+    "key": "show_generation_sonnet",
+    "name": "Claude Sonnet show generation",
+    "description": "Premium balanced cue planning through OpenRouter.",
+    "amount": 3,
+    "sort_order": 40,
+    "updated_by": null,
+    "created_at": "2026-06-29T12:05:42.305908+00:00",
+    "updated_at": "2026-06-29T12:05:42.305908+00:00"
+  },
+  {
+    "key": "show_refinement",
+    "name": "Show refinement",
+    "description": "Prompted changes to an existing show timeline.",
+    "amount": 2,
+    "sort_order": 60,
+    "updated_by": null,
+    "created_at": "2026-06-29T12:05:42.305908+00:00",
+    "updated_at": "2026-06-29T12:05:42.305908+00:00"
+  }
+]

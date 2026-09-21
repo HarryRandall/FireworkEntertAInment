@@ -12,20 +12,12 @@ function read(path) {
 }
 
 test('shows persist a JSON shader cover', () => {
-  const migrationPath = '../../supabase/migrations/20260629130000_add_cover_shader_to_shows.sql';
-  assert.equal(existsSync(join(root, migrationPath)), true);
-
-  const migration = read(migrationPath);
   const types = read('lib/database.types.ts');
-
-  assert.match(migration, /ALTER TABLE shows ADD COLUMN IF NOT EXISTS cover_shader jsonb;/);
-  assert.match(migration, /UPDATE shows\s+SET cover_shader = pg_temp\.random_shader_cover\(\)/);
   assert.match(types, /cover_shader: Json \| null/);
   assert.match(types, /cover_shader\?: Json \| null/);
 });
 
 test('library presets persist and expose JSON shader covers', () => {
-  const migration = read('../../supabase/migrations/20260629130000_add_cover_shader_to_shows.sql');
   const types = read('lib/database.types.ts');
   const adminTypes = read('lib/admin.types.ts');
   const templates = read('lib/admin/templates.server.ts');
@@ -36,14 +28,6 @@ test('library presets persist and expose JSON shader covers', () => {
   const libraryPage = read('app/(browse)/library/page.tsx');
   const cloneAction = read('app/actions/show-templates.ts');
   const showPresetsTypes = types.match(/show_presets: \{[\s\S]*?show_timeline_items:/)?.[0] ?? '';
-
-  assert.match(migration, /ALTER TABLE show_presets ADD COLUMN IF NOT EXISTS cover_shader jsonb;/);
-  assert.match(
-    migration,
-    /UPDATE show_presets\s+SET cover_shader = pg_temp\.random_shader_cover\(\)/,
-  );
-  assert.doesNotMatch(migration, /16777215/);
-  assert.match(migration, /ARRAY\['#00e5ff', '#3b82f6', '#8b5cf6', '#ff3df2'\]/);
   assert.match(showPresetsTypes, /cover_shader: Json \| null/);
   assert.match(showPresetsTypes, /cover_shader\?: Json \| null/);
   assert.match(adminTypes, /coverShader: ShowCover \| null/);
@@ -131,15 +115,4 @@ test('still covers keep the real shader visible without normal animation', () =>
   assert.match(shaderLib, /function normaliseCoverColor/);
   assert.match(shaderLib, /shaderCoverBackdropColor/);
   assert.match(shaderLib, /cheap loading fallback/);
-});
-
-test('Midnight Pulse has a visible palette-led cover', () => {
-  const migration = read(
-    '../../supabase/migrations/20260629163000_fix_midnight_pulse_cover_shader.sql',
-  );
-
-  assert.match(migration, /WHERE slug = 'midnight-pulse'/);
-  assert.match(migration, /'#00e5ff'/);
-  assert.match(migration, /'#8b5cf6'/);
-  assert.doesNotMatch(migration, /'#(?:000000|05070d|050507|0a0a12|0b1020)'/);
 });

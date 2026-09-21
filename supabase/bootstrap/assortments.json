@@ -1,0 +1,26 @@
+[
+  {
+    "id": "302ceb63-de7f-4e1a-a876-a79454e6a854",
+    "slug": "backyard-bash-assortment",
+    "name": "Backyard Bash Assortment",
+    "description": "A bright, high-contrast multishot lineup for a shorter, punchier backyard show.",
+    "price_cents": 14975,
+    "cover_shader": null,
+    "is_active": true,
+    "created_by": null,
+    "created_at": "2026-08-24T03:53:58.890405+00:00",
+    "updated_at": "2026-08-24T03:53:58.890405+00:00"
+  },
+  {
+    "id": "fca93f8e-0836-4920-a0b4-9599cb6e4225",
+    "slug": "comet-trail-assortment",
+    "name": "Comet Trail Assortment",
+    "description": "A colour-coded run of multishot cakes plus a specialty finisher, built for a mid-length backyard show.",
+    "price_cents": 15300,
+    "cover_shader": null,
+    "is_active": true,
+    "created_by": null,
+    "created_at": "2026-08-24T03:53:58.890405+00:00",
+    "updated_at": "2026-08-31T07:12:35.724642+00:00"
+  }
+]

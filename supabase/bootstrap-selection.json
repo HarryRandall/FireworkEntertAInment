@@ -1,0 +1,15 @@
+{
+  "examplePresetSlugs": ["outback-gold", "colour-burst", "midnight-pulse"],
+  "excludedSupplierIds": [
+    "04b2b7f5-9814-4f85-a53c-8010c3327cbd",
+    "1ac7c3e8-d1d1-44ab-bd05-c33aefc40154",
+    "1f3c64db-534d-4ab3-9e99-e90cb7538c9b",
+    "927c7025-e569-45c4-bdd5-873bfca6ece5",
+    "cd2a0bd9-ecd2-492b-ba6a-b0100d121068",
+    "d99e1508-1b6e-4116-9537-3ccc69c8780f"
+  ],
+  "excludedAssortmentIds": [
+    "2fd61125-ffab-40ae-b9d5-25338dc265ca",
+    "a1ff89f8-bf70-44a7-b966-33b4875575ce"
+  ]
+}

@@ -13,5 +13,9 @@ next-env.d.ts
 apps/web/lib/database.types.ts
 apps/web/public
 supabase/.temp
+supabase/.branches
+# Exported files are verified byte-for-byte against the snapshot manifest.
+supabase/bootstrap
 *.min.js
 *.min.css
+.vercel

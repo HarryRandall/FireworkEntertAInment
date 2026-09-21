@@ -106,58 +106,6 @@ test('show creation attaches analysed music and starts cue generation', () => {
   assert.match(action, /return \{ ok: true, slug: show\.slug \}/);
 });
 
-test('music analyses migration creates upload-scoped analysis rows', () => {
-  const migration = readFileSync(
-    join(root, '../../supabase/migrations/20260525090000_music_analyses_show_generation.sql'),
-    'utf8',
-  );
-  const renameMigration = readFileSync(
-    join(root, '../../supabase/migrations/20260614132007_schema_firework_catalogue_rework.sql'),
-    'utf8',
-  );
-
-  assert.match(migration, /CREATE TABLE IF NOT EXISTS public\.music_analyses/);
-  assert.match(migration, /analysis_json jsonb/);
-  assert.match(migration, /ADD COLUMN IF NOT EXISTS music_analysis_id uuid/);
-  assert.match(migration, /ADD COLUMN IF NOT EXISTS generation_status text/);
-  assert.match(migration, /music_analyses_select_own/);
-  assert.match(
-    renameMigration,
-    /alter table if exists public\.music_analyses rename to song_analyses/,
-  );
-  assert.doesNotMatch(renameMigration, /create view public\.music_analyses/);
-  assert.match(renameMigration, /drop view if exists public\.music_analyses/);
-});
-
-test('show analyses migration matches the current database contract', () => {
-  const migration = readFileSync(
-    join(root, '../../supabase/migrations/20260512090000_show_analyses.sql'),
-    'utf8',
-  );
-
-  assert.match(migration, /audio_path text NOT NULL/);
-  assert.match(migration, /personality text NOT NULL DEFAULT 'balanced'/);
-  assert.match(migration, /runner_version text/);
-  assert.match(migration, /llm_payload jsonb/);
-  assert.match(migration, /completed_at timestamptz/);
-  assert.doesNotMatch(migration, /personality_preset/);
-  assert.doesNotMatch(migration, /source_audio_path/);
-  assert.doesNotMatch(migration, /compact_payload/);
-  assert.doesNotMatch(migration, /analysis_storage_path/);
-});
-
-test('show analyses repair migration relaxes legacy not-null columns', () => {
-  const migration = readFileSync(
-    join(root, '../../supabase/migrations/20260518071112_repair_show_analyses_legacy_columns.sql'),
-    'utf8',
-  );
-
-  assert.match(migration, /ADD COLUMN IF NOT EXISTS audio_path text/);
-  assert.match(migration, /ADD COLUMN IF NOT EXISTS llm_payload jsonb/);
-  assert.match(migration, /source_audio_path DROP NOT NULL/);
-  assert.match(migration, /personality_preset DROP NOT NULL/);
-});
-
 test('show song context exposes stored analysis context', () => {
   const page = readFileSync(join(root, 'app/(app)/shows/[id]/timeline/page.tsx'), 'utf8');
   const indexPage = readFileSync(join(root, 'app/(app)/shows/[id]/page.tsx'), 'utf8');

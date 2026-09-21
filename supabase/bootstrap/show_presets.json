@@ -1,0 +1,767 @@
+[
+  {
+    "id": "23fed39d-af00-486b-9062-2c64ed2182a4",
+    "slug": "outback-gold",
+    "title": "Outback Gold",
+    "theme": "Warm gold crescendo with a blazing finale",
+    "description": "A premium night show built around gold-heavy cakes. Cascading gold palms build through silver crowns and brocade into a white-strobe barrage.",
+    "duration_seconds": 183,
+    "budget_cents": 25000,
+    "total_cents": 20925,
+    "effects_count": 31,
+    "time_of_day": "Night",
+    "mood_tags": [
+      "Grand finale focused",
+      "Warm tones",
+      "Premium"
+    ],
+    "preview_cues": [
+      {
+        "emphasis": "normal",
+        "description": "Gold palm",
+        "timeSeconds": 3,
+        "catalogueItemId": "1ddf7778-d029-4aef-ba20-ecb633361e64",
+        "catalogueItemSlug": "palm-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Kamuro crown",
+        "timeSeconds": 9,
+        "catalogueItemId": "ccb8be67-edce-4867-af52-98fc97c586df",
+        "catalogueItemSlug": "kamuro-default",
+        "launchPositionIndex": 1
+      },
+      {
+        "emphasis": "normal",
+        "description": "Willow drift",
+        "timeSeconds": 15,
+        "catalogueItemId": "aedba30c-9689-4460-a317-9727c1c11e75",
+        "catalogueItemSlug": "willow-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Brocade crown",
+        "timeSeconds": 21,
+        "catalogueItemId": "7c9380e4-2b3b-435f-ad36-4af2a02ec8f5",
+        "catalogueItemSlug": "brocade-default",
+        "launchPositionIndex": 1
+      },
+      {
+        "emphasis": "normal",
+        "description": "White strobe",
+        "timeSeconds": 27,
+        "catalogueItemId": "dcba5b29-fa8e-45e6-89af-6d03eace482d",
+        "catalogueItemSlug": "strobe-default",
+        "launchPositionIndex": 2
+      },
+      {
+        "emphasis": "normal",
+        "description": "Gold peony",
+        "timeSeconds": 33,
+        "catalogueItemId": "f7cf3e87-69c3-4c71-9a9c-4a7aa4867ff6",
+        "catalogueItemSlug": "peony-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Gold palm",
+        "timeSeconds": 39,
+        "catalogueItemId": "1ddf7778-d029-4aef-ba20-ecb633361e64",
+        "catalogueItemSlug": "palm-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Kamuro crown",
+        "timeSeconds": 45,
+        "catalogueItemId": "ccb8be67-edce-4867-af52-98fc97c586df",
+        "catalogueItemSlug": "kamuro-default",
+        "launchPositionIndex": 1
+      },
+      {
+        "emphasis": "normal",
+        "description": "Willow drift",
+        "timeSeconds": 51,
+        "catalogueItemId": "aedba30c-9689-4460-a317-9727c1c11e75",
+        "catalogueItemSlug": "willow-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Brocade crown",
+        "timeSeconds": 57,
+        "catalogueItemId": "7c9380e4-2b3b-435f-ad36-4af2a02ec8f5",
+        "catalogueItemSlug": "brocade-default",
+        "launchPositionIndex": 1
+      },
+      {
+        "emphasis": "normal",
+        "description": "White strobe",
+        "timeSeconds": 63,
+        "catalogueItemId": "dcba5b29-fa8e-45e6-89af-6d03eace482d",
+        "catalogueItemSlug": "strobe-default",
+        "launchPositionIndex": 2
+      },
+      {
+        "emphasis": "normal",
+        "description": "Gold peony",
+        "timeSeconds": 69,
+        "catalogueItemId": "f7cf3e87-69c3-4c71-9a9c-4a7aa4867ff6",
+        "catalogueItemSlug": "peony-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Gold palm",
+        "timeSeconds": 75,
+        "catalogueItemId": "1ddf7778-d029-4aef-ba20-ecb633361e64",
+        "catalogueItemSlug": "palm-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Kamuro crown",
+        "timeSeconds": 81,
+        "catalogueItemId": "ccb8be67-edce-4867-af52-98fc97c586df",
+        "catalogueItemSlug": "kamuro-default",
+        "launchPositionIndex": 1
+      },
+      {
+        "emphasis": "normal",
+        "description": "Willow drift",
+        "timeSeconds": 87,
+        "catalogueItemId": "aedba30c-9689-4460-a317-9727c1c11e75",
+        "catalogueItemSlug": "willow-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Brocade crown",
+        "timeSeconds": 93,
+        "catalogueItemId": "7c9380e4-2b3b-435f-ad36-4af2a02ec8f5",
+        "catalogueItemSlug": "brocade-default",
+        "launchPositionIndex": 1
+      },
+      {
+        "emphasis": "normal",
+        "description": "White strobe",
+        "timeSeconds": 99,
+        "catalogueItemId": "dcba5b29-fa8e-45e6-89af-6d03eace482d",
+        "catalogueItemSlug": "strobe-default",
+        "launchPositionIndex": 2
+      },
+      {
+        "emphasis": "normal",
+        "description": "Gold peony",
+        "timeSeconds": 105,
+        "catalogueItemId": "f7cf3e87-69c3-4c71-9a9c-4a7aa4867ff6",
+        "catalogueItemSlug": "peony-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Gold palm",
+        "timeSeconds": 111,
+        "catalogueItemId": "1ddf7778-d029-4aef-ba20-ecb633361e64",
+        "catalogueItemSlug": "palm-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Kamuro crown",
+        "timeSeconds": 117,
+        "catalogueItemId": "ccb8be67-edce-4867-af52-98fc97c586df",
+        "catalogueItemSlug": "kamuro-default",
+        "launchPositionIndex": 1
+      },
+      {
+        "emphasis": "normal",
+        "description": "Willow drift",
+        "timeSeconds": 123,
+        "catalogueItemId": "aedba30c-9689-4460-a317-9727c1c11e75",
+        "catalogueItemSlug": "willow-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Brocade crown",
+        "timeSeconds": 129,
+        "catalogueItemId": "7c9380e4-2b3b-435f-ad36-4af2a02ec8f5",
+        "catalogueItemSlug": "brocade-default",
+        "launchPositionIndex": 1
+      },
+      {
+        "emphasis": "normal",
+        "description": "White strobe",
+        "timeSeconds": 135,
+        "catalogueItemId": "dcba5b29-fa8e-45e6-89af-6d03eace482d",
+        "catalogueItemSlug": "strobe-default",
+        "launchPositionIndex": 2
+      },
+      {
+        "emphasis": "normal",
+        "description": "Gold peony",
+        "timeSeconds": 141,
+        "catalogueItemId": "f7cf3e87-69c3-4c71-9a9c-4a7aa4867ff6",
+        "catalogueItemSlug": "peony-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Gold palm",
+        "timeSeconds": 147,
+        "catalogueItemId": "1ddf7778-d029-4aef-ba20-ecb633361e64",
+        "catalogueItemSlug": "palm-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Kamuro crown",
+        "timeSeconds": 153,
+        "catalogueItemId": "ccb8be67-edce-4867-af52-98fc97c586df",
+        "catalogueItemSlug": "kamuro-default",
+        "launchPositionIndex": 1
+      },
+      {
+        "emphasis": "normal",
+        "description": "Willow drift",
+        "timeSeconds": 159,
+        "catalogueItemId": "aedba30c-9689-4460-a317-9727c1c11e75",
+        "catalogueItemSlug": "willow-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Brocade crown",
+        "timeSeconds": 165,
+        "catalogueItemId": "7c9380e4-2b3b-435f-ad36-4af2a02ec8f5",
+        "catalogueItemSlug": "brocade-default",
+        "launchPositionIndex": 1
+      },
+      {
+        "emphasis": "normal",
+        "description": "White strobe",
+        "timeSeconds": 171,
+        "catalogueItemId": "dcba5b29-fa8e-45e6-89af-6d03eace482d",
+        "catalogueItemSlug": "strobe-default",
+        "launchPositionIndex": 2
+      },
+      {
+        "emphasis": "normal",
+        "description": "Gold peony",
+        "timeSeconds": 177,
+        "catalogueItemId": "f7cf3e87-69c3-4c71-9a9c-4a7aa4867ff6",
+        "catalogueItemSlug": "peony-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Finale",
+        "timeSeconds": 178,
+        "catalogueItemId": "f7cf3e87-69c3-4c71-9a9c-4a7aa4867ff6",
+        "catalogueItemSlug": "peony-default",
+        "launchPositionIndex": 1
+      }
+    ],
+    "is_featured": true,
+    "sort_order": 10,
+    "created_at": "2026-06-29T12:05:43.00025+00:00",
+    "updated_at": "2026-07-10T03:16:05.56419+00:00",
+    "cover_shader": {
+      "kind": "grain-gradient",
+      "frame": 16787,
+      "scale": 1.06,
+      "speed": 1.25,
+      "swirl": 0.44,
+      "colors": [
+        "#ff3df2",
+        "#8b5cf6",
+        "#00e5ff",
+        "#ffd166"
+      ],
+      "spotty": 0.46,
+      "density": 0.42,
+      "midSize": 0.06,
+      "rotation": 292,
+      "softness": 0.69,
+      "intensity": 0.7,
+      "warpShape": "stripes",
+      "distortion": 0.67,
+      "grainMixer": 0.06,
+      "grainShape": "wave",
+      "proportion": 0.39,
+      "shapeScale": 0.11,
+      "midIntensity": 0.72,
+      "stepsPerColor": 2,
+      "swirlIterations": 19
+    },
+    "cover_image_path": "presets/23fed39d-af00-486b-9062-2c64ed2182a4-v2.jpg",
+    "is_published": true,
+    "published_at": "2026-06-29T12:05:43.00025+00:00",
+    "source_show_id": null
+  },
+  {
+    "id": "8e7cec3b-9d00-4126-9da9-fb742aacf0e0",
+    "slug": "midnight-pulse",
+    "title": "Midnight Pulse",
+    "theme": "Sparse, cinematic moments for a calm night",
+    "description": "A minimal, cinematic two-minute show. Lone comets and soft azure peonies leave space to breathe between beats.",
+    "duration_seconds": 122,
+    "budget_cents": 9000,
+    "total_cents": 7800,
+    "effects_count": 18,
+    "time_of_day": "Night",
+    "mood_tags": [
+      "Cinematic",
+      "Minimal",
+      "Calm"
+    ],
+    "preview_cues": [
+      {
+        "emphasis": "normal",
+        "description": "Comet",
+        "timeSeconds": 4,
+        "catalogueItemId": "8c35b799-ac6a-4c3c-80a2-12d83452eb0a",
+        "catalogueItemSlug": "comet-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Azure peony",
+        "timeSeconds": 11,
+        "catalogueItemId": "03db05bd-33fe-4604-955c-49d3f12b98e0",
+        "catalogueItemSlug": "peony-azure",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Strobe",
+        "timeSeconds": 18,
+        "catalogueItemId": "dcba5b29-fa8e-45e6-89af-6d03eace482d",
+        "catalogueItemSlug": "strobe-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Pearls",
+        "timeSeconds": 25,
+        "catalogueItemId": "e0bc4872-5dcb-4435-bc9c-9139542a298c",
+        "catalogueItemSlug": "pearls-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Azure comet",
+        "timeSeconds": 32,
+        "catalogueItemId": "dba9aa43-f587-4d34-ace1-e0dfbdbc1e46",
+        "catalogueItemSlug": "comet-azure",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Comet",
+        "timeSeconds": 39,
+        "catalogueItemId": "8c35b799-ac6a-4c3c-80a2-12d83452eb0a",
+        "catalogueItemSlug": "comet-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Azure peony",
+        "timeSeconds": 46,
+        "catalogueItemId": "03db05bd-33fe-4604-955c-49d3f12b98e0",
+        "catalogueItemSlug": "peony-azure",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Strobe",
+        "timeSeconds": 53,
+        "catalogueItemId": "dcba5b29-fa8e-45e6-89af-6d03eace482d",
+        "catalogueItemSlug": "strobe-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Pearls",
+        "timeSeconds": 60,
+        "catalogueItemId": "e0bc4872-5dcb-4435-bc9c-9139542a298c",
+        "catalogueItemSlug": "pearls-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Azure comet",
+        "timeSeconds": 67,
+        "catalogueItemId": "dba9aa43-f587-4d34-ace1-e0dfbdbc1e46",
+        "catalogueItemSlug": "comet-azure",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Comet",
+        "timeSeconds": 74,
+        "catalogueItemId": "8c35b799-ac6a-4c3c-80a2-12d83452eb0a",
+        "catalogueItemSlug": "comet-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Azure peony",
+        "timeSeconds": 81,
+        "catalogueItemId": "03db05bd-33fe-4604-955c-49d3f12b98e0",
+        "catalogueItemSlug": "peony-azure",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Strobe",
+        "timeSeconds": 88,
+        "catalogueItemId": "dcba5b29-fa8e-45e6-89af-6d03eace482d",
+        "catalogueItemSlug": "strobe-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Pearls",
+        "timeSeconds": 95,
+        "catalogueItemId": "e0bc4872-5dcb-4435-bc9c-9139542a298c",
+        "catalogueItemSlug": "pearls-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Azure comet",
+        "timeSeconds": 102,
+        "catalogueItemId": "dba9aa43-f587-4d34-ace1-e0dfbdbc1e46",
+        "catalogueItemSlug": "comet-azure",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Comet",
+        "timeSeconds": 109,
+        "catalogueItemId": "8c35b799-ac6a-4c3c-80a2-12d83452eb0a",
+        "catalogueItemSlug": "comet-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Azure peony",
+        "timeSeconds": 116,
+        "catalogueItemId": "03db05bd-33fe-4604-955c-49d3f12b98e0",
+        "catalogueItemSlug": "peony-azure",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Finale",
+        "timeSeconds": 118,
+        "catalogueItemId": "dba9aa43-f587-4d34-ace1-e0dfbdbc1e46",
+        "catalogueItemSlug": "comet-azure",
+        "launchPositionIndex": 1
+      }
+    ],
+    "is_featured": true,
+    "sort_order": 30,
+    "created_at": "2026-06-29T12:05:43.00025+00:00",
+    "updated_at": "2026-07-10T03:15:33.325086+00:00",
+    "cover_shader": {
+      "kind": "mesh-gradient",
+      "frame": 38100,
+      "scale": 0.72,
+      "speed": 1.05,
+      "swirl": 0.34,
+      "colors": [
+        "#4d9fe8",
+        "#00e5ff",
+        "#8b5cf6",
+        "#f4f1ea"
+      ],
+      "spotty": 0.34,
+      "density": 0.18,
+      "midSize": 0.3,
+      "rotation": 24,
+      "softness": 0.46,
+      "intensity": 0.62,
+      "warpShape": "stripes",
+      "distortion": 0.58,
+      "grainMixer": 0.02,
+      "grainShape": "wave",
+      "proportion": 0.42,
+      "shapeScale": 0.28,
+      "midIntensity": 0.56,
+      "stepsPerColor": 3,
+      "swirlIterations": 14
+    },
+    "cover_image_path": "presets/8e7cec3b-9d00-4126-9da9-fb742aacf0e0-v2.jpg",
+    "is_published": true,
+    "published_at": "2026-06-29T12:05:43.00025+00:00",
+    "source_show_id": null
+  },
+  {
+    "id": "e2e1cc86-da33-4358-b7e4-a8ae7ce8205f",
+    "slug": "colour-burst",
+    "title": "Colour Burst",
+    "theme": "Red, blue, green and gold in two and a half minutes",
+    "description": "A punchy dusk show that works through the full colour range. Crimson and azure peonies trade off with crossettes and rings.",
+    "duration_seconds": 153,
+    "budget_cents": 12000,
+    "total_cents": 10375,
+    "effects_count": 26,
+    "time_of_day": "Dusk",
+    "mood_tags": [
+      "High energy",
+      "Colourful",
+      "Family friendly"
+    ],
+    "preview_cues": [
+      {
+        "emphasis": "normal",
+        "description": "Crimson peony",
+        "timeSeconds": 3,
+        "catalogueItemId": "000d8e18-27b3-4ef9-a1e4-d69b388954ed",
+        "catalogueItemSlug": "peony-crimson",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Azure ring",
+        "timeSeconds": 9,
+        "catalogueItemId": "7f34f647-eb58-4cd2-8b5c-8c918ecbba33",
+        "catalogueItemSlug": "ring-azure",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Crossette",
+        "timeSeconds": 15,
+        "catalogueItemId": "4c3906bc-c634-48fc-ad81-c28287ef5fb2",
+        "catalogueItemSlug": "crossette-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Azure peony",
+        "timeSeconds": 21,
+        "catalogueItemId": "03db05bd-33fe-4604-955c-49d3f12b98e0",
+        "catalogueItemSlug": "peony-azure",
+        "launchPositionIndex": 1
+      },
+      {
+        "emphasis": "normal",
+        "description": "Crimson ring",
+        "timeSeconds": 27,
+        "catalogueItemId": "bbd9ec20-393c-4b26-9335-c345306f6682",
+        "catalogueItemSlug": "ring-crimson",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Chrysanthemum",
+        "timeSeconds": 33,
+        "catalogueItemId": "91cfc188-ecb9-4327-aba7-d30761aa9808",
+        "catalogueItemSlug": "chrysanthemum-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Crimson peony",
+        "timeSeconds": 39,
+        "catalogueItemId": "000d8e18-27b3-4ef9-a1e4-d69b388954ed",
+        "catalogueItemSlug": "peony-crimson",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Azure ring",
+        "timeSeconds": 45,
+        "catalogueItemId": "7f34f647-eb58-4cd2-8b5c-8c918ecbba33",
+        "catalogueItemSlug": "ring-azure",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Crossette",
+        "timeSeconds": 51,
+        "catalogueItemId": "4c3906bc-c634-48fc-ad81-c28287ef5fb2",
+        "catalogueItemSlug": "crossette-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Azure peony",
+        "timeSeconds": 57,
+        "catalogueItemId": "03db05bd-33fe-4604-955c-49d3f12b98e0",
+        "catalogueItemSlug": "peony-azure",
+        "launchPositionIndex": 1
+      },
+      {
+        "emphasis": "normal",
+        "description": "Crimson ring",
+        "timeSeconds": 63,
+        "catalogueItemId": "bbd9ec20-393c-4b26-9335-c345306f6682",
+        "catalogueItemSlug": "ring-crimson",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Chrysanthemum",
+        "timeSeconds": 69,
+        "catalogueItemId": "91cfc188-ecb9-4327-aba7-d30761aa9808",
+        "catalogueItemSlug": "chrysanthemum-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Crimson peony",
+        "timeSeconds": 75,
+        "catalogueItemId": "000d8e18-27b3-4ef9-a1e4-d69b388954ed",
+        "catalogueItemSlug": "peony-crimson",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Azure ring",
+        "timeSeconds": 81,
+        "catalogueItemId": "7f34f647-eb58-4cd2-8b5c-8c918ecbba33",
+        "catalogueItemSlug": "ring-azure",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Crossette",
+        "timeSeconds": 87,
+        "catalogueItemId": "4c3906bc-c634-48fc-ad81-c28287ef5fb2",
+        "catalogueItemSlug": "crossette-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Azure peony",
+        "timeSeconds": 93,
+        "catalogueItemId": "03db05bd-33fe-4604-955c-49d3f12b98e0",
+        "catalogueItemSlug": "peony-azure",
+        "launchPositionIndex": 1
+      },
+      {
+        "emphasis": "normal",
+        "description": "Crimson ring",
+        "timeSeconds": 99,
+        "catalogueItemId": "bbd9ec20-393c-4b26-9335-c345306f6682",
+        "catalogueItemSlug": "ring-crimson",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Chrysanthemum",
+        "timeSeconds": 105,
+        "catalogueItemId": "91cfc188-ecb9-4327-aba7-d30761aa9808",
+        "catalogueItemSlug": "chrysanthemum-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Crimson peony",
+        "timeSeconds": 111,
+        "catalogueItemId": "000d8e18-27b3-4ef9-a1e4-d69b388954ed",
+        "catalogueItemSlug": "peony-crimson",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Azure ring",
+        "timeSeconds": 117,
+        "catalogueItemId": "7f34f647-eb58-4cd2-8b5c-8c918ecbba33",
+        "catalogueItemSlug": "ring-azure",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Crossette",
+        "timeSeconds": 123,
+        "catalogueItemId": "4c3906bc-c634-48fc-ad81-c28287ef5fb2",
+        "catalogueItemSlug": "crossette-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Azure peony",
+        "timeSeconds": 129,
+        "catalogueItemId": "03db05bd-33fe-4604-955c-49d3f12b98e0",
+        "catalogueItemSlug": "peony-azure",
+        "launchPositionIndex": 1
+      },
+      {
+        "emphasis": "normal",
+        "description": "Crimson ring",
+        "timeSeconds": 135,
+        "catalogueItemId": "bbd9ec20-393c-4b26-9335-c345306f6682",
+        "catalogueItemSlug": "ring-crimson",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Chrysanthemum",
+        "timeSeconds": 141,
+        "catalogueItemId": "91cfc188-ecb9-4327-aba7-d30761aa9808",
+        "catalogueItemSlug": "chrysanthemum-default",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Crimson peony",
+        "timeSeconds": 147,
+        "catalogueItemId": "000d8e18-27b3-4ef9-a1e4-d69b388954ed",
+        "catalogueItemSlug": "peony-crimson",
+        "launchPositionIndex": 0
+      },
+      {
+        "emphasis": "normal",
+        "description": "Finale",
+        "timeSeconds": 148,
+        "catalogueItemId": "91cfc188-ecb9-4327-aba7-d30761aa9808",
+        "catalogueItemSlug": "chrysanthemum-default",
+        "launchPositionIndex": 1
+      }
+    ],
+    "is_featured": true,
+    "sort_order": 20,
+    "created_at": "2026-06-29T12:05:43.00025+00:00",
+    "updated_at": "2026-07-10T03:11:51.924114+00:00",
+    "cover_shader": {
+      "kind": "mesh-gradient",
+      "frame": 38122,
+      "scale": 1.04,
+      "speed": 1.57,
+      "swirl": 0.38,
+      "colors": [
+        "#00e5ff",
+        "#3b82f6",
+        "#8b5cf6",
+        "#ff3df2"
+      ],
+      "spotty": 0.16,
+      "density": 0.33,
+      "midSize": 0.61,
+      "rotation": 258,
+      "softness": 0.1,
+      "intensity": 0.71,
+      "warpShape": "stripes",
+      "distortion": 0.8,
+      "grainMixer": 0.01,
+      "grainShape": "truchet",
+      "proportion": 0.54,
+      "shapeScale": 0.18,
+      "midIntensity": 0.26,
+      "stepsPerColor": 5,
+      "swirlIterations": 17
+    },
+    "cover_image_path": "presets/e2e1cc86-da33-4358-b7e4-a8ae7ce8205f-v2.jpg",
+    "is_published": true,
+    "published_at": "2026-06-29T12:05:43.00025+00:00",
+    "source_show_id": null
+  }
+]
