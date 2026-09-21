@@ -2,14 +2,14 @@ import 'server-only';
 
 import { requirePermission } from '@/lib/access/current-user.server';
 import { getServerClient } from '@/lib/admin/supabase';
-import { IMPORT_VIDEO_BUCKET } from '@/lib/import-jobs';
+import { IMPORT_VIDEO_BUCKET } from '@/lib/firework-import/jobs';
 import type {
   ImportCandidate,
   ImportRun,
   ImportRunHistory,
   ImportRunOutput,
-} from '@/lib/import-review';
-import { isRunOwnedImportEngineReviewVideoPath } from '@/lib/import-review';
+} from '@/lib/firework-import/review';
+import { isRunOwnedImportEngineReviewVideoPath } from '@/lib/firework-import/review';
 import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
 
 const RETAINED_EVIDENCE_URL_TTL_SECONDS = 15 * 60;

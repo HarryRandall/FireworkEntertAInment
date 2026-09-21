@@ -4,13 +4,13 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { join } from 'node:path';
-import { getPreferredImportVideoSource } from '../../lib/import-video-preview.js';
+import { getPreferredImportVideoSource } from '../../lib/firework-import/video-preview.js';
 
 const root = process.cwd();
 const repoRoot = root;
 
 test('admin imports expose upload, candidate review, refinement, and guarded approval', () => {
-  const actions = readFileSync(join(root, 'app/actions/platform-admin.ts'), 'utf8');
+  const actions = readFileSync(join(root, 'app/(admin)/admin/imports/actions.ts'), 'utf8');
   const listPage = readFileSync(join(root, 'app/(admin)/admin/imports/page.tsx'), 'utf8');
   const detailPage = readFileSync(join(root, 'app/(admin)/admin/imports/[id]/page.tsx'), 'utf8');
   assert.match(actions, /finalizeVideoImportJobAction/);
@@ -78,8 +78,8 @@ test('Modal firework reconstruction starts on demand without scheduled polling',
 });
 
 test('generated import specs preserve native renderer designs and shot observations', () => {
-  const imports = readFileSync(join(root, 'lib/import-jobs.ts'), 'utf8');
-  const nativeContract = readFileSync(join(root, 'lib/import-reconstruction.ts'), 'utf8');
+  const imports = readFileSync(join(root, 'lib/firework-import/jobs.ts'), 'utf8');
+  const nativeContract = readFileSync(join(root, 'lib/firework-import/reconstruction.ts'), 'utf8');
   const reconstruction = readFileSync(
     join(repoRoot, '../../services/firework-import-worker/reconstruction.py'),
     'utf8',
@@ -176,7 +176,7 @@ test('uploaded video failure recovery retains exactly one safe retry or discard 
 });
 
 test("finalize action validates uploaded object lives under caller's admin folder", () => {
-  const actions = readFileSync(join(root, 'app/actions/platform-admin.ts'), 'utf8');
+  const actions = readFileSync(join(root, 'app/(admin)/admin/imports/actions.ts'), 'utf8');
   assert.match(actions, /finalizeVideoImportJobAction/);
   assert.match(actions, /FinalizeVideoImportSchema/);
   // Path-prefix check stops a caller from finalizing someone else's upload.
@@ -242,7 +242,7 @@ test('import preview prefers a normalized browser-safe asset when present', () =
 });
 
 test('selected retained engine evidence uses a bounded private URL and accurate UI labels', () => {
-  const historyServer = readFileSync(join(root, 'lib/import-review.server.ts'), 'utf8');
+  const historyServer = readFileSync(join(root, 'lib/firework-import/review.server.ts'), 'utf8');
   const detailPage = readFileSync(join(root, 'app/(admin)/admin/imports/[id]/page.tsx'), 'utf8');
   const preview = readFileSync(
     join(root, 'app/(admin)/admin/imports/[id]/_components/FireworkImportPreview.tsx'),

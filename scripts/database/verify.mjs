@@ -43,7 +43,7 @@ try {
     'select public.current_firework_import_renderer_contract_version() as version;',
   )[0]?.version;
   const source = readFileSync(
-    join(repositoryRoot, 'apps/web/lib/fireworks/import-renderer-contract.ts'),
+    join(repositoryRoot, 'apps/web/lib/firework-import/renderer-contract.ts'),
     'utf8',
   );
   const version = source.match(

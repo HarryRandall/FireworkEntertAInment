@@ -12,12 +12,12 @@ then the consumer, before changing a payload or timing model.
 - Music analysis: `services/music-analyser/showcrafter.py`,
   `apps/web/lib/show-analysis-validation.ts` and the analyser pipeline helper in
   `apps/web/tests/helpers/`.
-- Import reconstruction: `services/firework-import-worker/`,
-  `apps/web/lib/import-reconstruction.ts` and `apps/web/lib/import-render-metrics.ts`.
+- Import reconstruction: `services/firework-import-worker/` and
+  `apps/web/lib/firework-import/`.
 - Renderer: `apps/web/lib/fireworks/`, the replay canvas and the import harness.
 
 The renderer source paths are relative to `apps/web`. Its source list and bytes
-are fingerprinted in `lib/fireworks/import-renderer-contract.ts`. Moving the
+are fingerprinted in `lib/firework-import/renderer-contract.ts`. Moving the
 whole app preserves those relative paths. Changing a listed file or path requires
 an intentional version update aligned across app, worker and database. Do not
 refresh a fingerprint just to make a failing test green.

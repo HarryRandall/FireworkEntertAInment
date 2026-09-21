@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { makeOptimisticEditorVersion } from '../../ui/admin/useEditorHistory.ts';
+import { makeOptimisticEditorVersion } from '../../ui/firework-editor/useEditorHistory.ts';
 import { canApplySavedEditorSnapshot } from '../../lib/admin/editor-save-state.ts';
 import {
   isMissingEditorVersionTableError,
@@ -205,9 +205,9 @@ test('optimistic editor versions map exactly one target before persistence', () 
 });
 
 test('editor saves are optimistic while history persistence stays observed and live', () => {
-  const effectActions = read('app/actions/admin-effects.ts');
-  const fireworkActions = read('app/actions/admin-fireworks.ts');
-  const styleDefaultActions = read('app/actions/admin-style-defaults.ts');
+  const effectActions = read('app/(admin)/admin/effects/actions.ts');
+  const fireworkActions = read('app/(admin)/admin/fireworks/actions.ts');
+  const styleDefaultActions = read('app/(admin)/admin/effects/style-default-actions.ts');
   const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
   const styleDefaultEditor = read(
@@ -217,8 +217,8 @@ test('editor saves are optimistic while history persistence stays observed and l
   const fireworkServer = read('lib/admin/fireworks.server.ts');
   const styleDefaultServer = read('lib/admin/style-defaults.server.ts');
   const editorVersions = read('lib/admin/editor-versions.server.ts');
-  const editorHistoryState = read('ui/admin/useEditorHistory.ts');
-  const historyPanel = read('ui/admin/EditorInspectorPanels.tsx');
+  const editorHistoryState = read('ui/firework-editor/useEditorHistory.ts');
+  const historyPanel = read('ui/firework-editor/EditorInspectorPanels.tsx');
   const sliderField = read('ui/patterns/SliderField.tsx');
 
   for (const actions of [effectActions, fireworkActions, styleDefaultActions]) {

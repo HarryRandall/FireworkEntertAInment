@@ -2,14 +2,14 @@ import {
   latestImportedSpecFromOutputs,
   parseImportedFireworkSpec,
   type ImportedFireworkSpec,
-} from '@/lib/import-jobs';
+} from '@/lib/firework-import/jobs';
 import {
   parseImportReconstruction,
   type ImportReconstructionIssue,
   type ImportReconstructionPlan,
-} from '@/lib/import-reconstruction';
-import { FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION } from '@/lib/fireworks/import-renderer-contract';
-import { IMPORT_RENDER_METRICS_SCHEMA_VERSION } from '@/lib/import-render-metrics';
+} from '@/lib/firework-import/reconstruction';
+import { FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION } from '@/lib/firework-import/renderer-contract';
+import { IMPORT_RENDER_METRICS_SCHEMA_VERSION } from '@/lib/firework-import/render-metrics';
 
 export type ImportOutputLike = {
   id: string;

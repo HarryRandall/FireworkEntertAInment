@@ -1,5 +1,5 @@
 import { Card } from '@/ui/patterns/Card';
-import type { ImportOutputLike, ImportReviewAttempt } from '@/lib/import-review';
+import type { ImportOutputLike, ImportReviewAttempt } from '@/lib/firework-import/review';
 
 export function ImportAdvancedData({
   selectedAttempt,

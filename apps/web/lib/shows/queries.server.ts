@@ -20,7 +20,7 @@ import {
   parseShotPositionOverride,
   parseShotSeedOverride,
   type ReconstructionShotMetadata,
-} from '@/lib/reconstruction-shot';
+} from '@/lib/firework-import/reconstruction-shot';
 import { getCachedJson, setCachedJson } from '@/lib/server-cache';
 import {
   DIRECT_SHOW_REPLAY_SHOT_OFFSET_SECONDS,

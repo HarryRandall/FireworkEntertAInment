@@ -31,11 +31,11 @@ const {
   parseImportReconstruction,
   parseImportReconstructionOrThrow,
   reconstructionToReplayCues,
-} = await import('../../lib/import-reconstruction.ts');
+} = await import('../../lib/firework-import/reconstruction.ts');
 const { DEFAULT_DESIGN, estimateDesignDurationSeconds } =
   await import('../../lib/fireworks/design.ts');
 const { importedSpecToReplayCues, latestImportedSpecFromOutputs, parseImportedFireworkSpec } =
-  await import('../../lib/import-jobs.ts');
+  await import('../../lib/firework-import/jobs.ts');
 
 function reconstructionInput(overrides = {}) {
   return {

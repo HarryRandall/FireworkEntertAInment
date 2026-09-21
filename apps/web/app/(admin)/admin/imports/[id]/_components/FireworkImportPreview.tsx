@@ -4,14 +4,17 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { PreviewFullscreenBackdrop, usePreviewFullscreen } from '@/ui/admin/previewFullscreen';
+import {
+  PreviewFullscreenBackdrop,
+  usePreviewFullscreen,
+} from '@/ui/firework-editor/previewFullscreen';
 import { ReplayLoadingBar } from '@/ui/replay/ReplayLoadingBar';
 import { ReplayTransportControls } from '@/ui/replay/ReplayTransportControls';
-import { importedSpecToReplayCues, type ImportedFireworkSpec } from '@/lib/import-jobs';
+import { importedSpecToReplayCues, type ImportedFireworkSpec } from '@/lib/firework-import/jobs';
 import {
   reconstructionToReplayCues,
   type ImportReconstructionPlan,
-} from '@/lib/import-reconstruction';
+} from '@/lib/firework-import/reconstruction';
 import { cn } from '@/lib/utils';
 
 type FireworkImportPreviewProps = {

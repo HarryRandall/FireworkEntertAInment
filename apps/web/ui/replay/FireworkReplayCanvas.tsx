@@ -44,7 +44,7 @@ import { replaySimulationCacheKey } from '@/lib/fireworks/replay-cache-key';
 import {
   FIREWORKS_ENGINE_FIXED_STEP_SECONDS,
   quantiseFireworksEngineTimeSeconds,
-} from '@/lib/fireworks/import-renderer-contract';
+} from '@/lib/firework-import/renderer-contract';
 import { Button } from '@/ui/patterns/Button';
 import { ReplayLoadingBar } from '@/ui/replay/ReplayLoadingBar';
 import { cn } from '@/lib/utils';

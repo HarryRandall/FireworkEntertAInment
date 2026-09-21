@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useRef, useState, useTransition } from 'react';
 import { Archive, ArrowRight, Loader2 } from 'lucide-react';
-import { deleteImportJobAction } from '@/app/actions/platform-admin';
+import { deleteImportJobAction } from '../actions';
 import { Button } from '@/ui/patterns/Button';
 import { toast } from '@/ui/patterns/toast';
 import {

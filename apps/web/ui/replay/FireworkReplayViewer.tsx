@@ -3,8 +3,8 @@
 /**
  * FireworkReplayViewer: interactive replay and cue editor used on the
  * authenticated show detail route. Wraps the 3D canvas with audio sync
- * controls and server actions for adding / deleting preview cues.
- * Cue mutations go through preview-cues server actions which reject
+ * controls and Server Actions for adding / deleting preview cues.
+ * Cue mutations go through the Shows domain actions, which reject
  * overlaps on the same launch position.
  */
 import dynamic from 'next/dynamic';
@@ -25,8 +25,11 @@ import {
   addPreviewCueAction,
   deletePreviewCueAction,
   type CueActionResult,
-} from '@/app/actions/preview-cues';
-import { usePreviewFullscreen, PreviewFullscreenBackdrop } from '@/ui/admin/previewFullscreen';
+} from '@/lib/shows/cue-actions.server';
+import {
+  usePreviewFullscreen,
+  PreviewFullscreenBackdrop,
+} from '@/ui/firework-editor/previewFullscreen';
 import { ReplayLoadingBar } from '@/ui/replay/ReplayLoadingBar';
 import { ReplayStageBackdrop } from '@/ui/replay/ReplayStageBackdrop';
 import { ReplayTransportControls } from '@/ui/replay/ReplayTransportControls';

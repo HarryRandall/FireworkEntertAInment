@@ -64,7 +64,7 @@ test('effects and fireworks helpers are catalogue-admin gated and cached', () =>
 });
 
 test('base effect edits validate model JSON and use conflict detection', () => {
-  const actions = read('app/actions/admin-effects.ts');
+  const actions = read('app/(admin)/admin/effects/actions.ts');
   const updateBody = functionBody(actions, 'updateEffect');
   const restoreBody = functionBody(actions, 'restoreEffectEditorVersion');
   const createBody = functionBody(actions, 'createCustomStarEffect');
@@ -140,7 +140,7 @@ test('base effect classification column is removed from schema and migrations', 
 });
 
 test('firework edits use conflict detection and immutable version history', () => {
-  const actions = read('app/actions/admin-fireworks.ts');
+  const actions = read('app/(admin)/admin/fireworks/actions.ts');
   const updateBody = functionBody(actions, 'updateFirework');
   const restoreBody = functionBody(actions, 'restoreFireworkEditorVersion');
 
@@ -243,8 +243,8 @@ test('admin effects UI is wired to base effect fields', () => {
   const browser = read('app/(admin)/admin/effects/_components/EffectsBrowser.tsx');
   const editor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
-  const shell = read('ui/admin/FireworkEditorShell.tsx');
-  const inspectorPanels = read('ui/admin/EditorInspectorPanels.tsx');
+  const shell = read('ui/firework-editor/FireworkEditorShell.tsx');
+  const inspectorPanels = read('ui/firework-editor/EditorInspectorPanels.tsx');
   const routeSkeletons = read('ui/shell/RouteSkeletons.tsx');
   const design = read('lib/fireworks/design.ts');
 
@@ -541,8 +541,8 @@ test('admin replay previews opt into FPS diagnostics', () => {
 });
 
 test('catalogue and import mutations invalidate new admin firework caches', () => {
-  const catalogue = read('app/actions/admin-catalogue.ts');
-  const imports = read('app/actions/platform-admin.ts');
+  const catalogue = read('app/(admin)/admin/catalogue/actions.ts');
+  const imports = read('app/(admin)/admin/imports/actions.ts');
 
   assert.match(catalogue, /invalidateAdminEffectsCache/);
   assert.match(catalogue, /invalidateAdminFireworksCache/);

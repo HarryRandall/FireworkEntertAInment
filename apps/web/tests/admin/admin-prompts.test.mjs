@@ -10,7 +10,7 @@ const repoRoot = root;
 
 test('admin prompt route and navigation are present', () => {
   assert.equal(existsSync(join(root, 'app/(admin)/admin/prompts/page.tsx')), true);
-  assert.equal(existsSync(join(root, 'app/actions/admin-prompts.ts')), true);
+  assert.equal(existsSync(join(root, 'app/(admin)/admin/prompts/actions.ts')), true);
 
   const page = readFileSync(join(root, 'app/(admin)/admin/prompts/page.tsx'), 'utf8');
   const productFieldsDialog = readFileSync(
@@ -76,7 +76,7 @@ test('cue generation loads saved mode and prompt config', () => {
 });
 
 test('admin prompt action is RBAC gated and invalidates prompt cache', () => {
-  const action = readFileSync(join(root, 'app/actions/admin-prompts.ts'), 'utf8');
+  const action = readFileSync(join(root, 'app/(admin)/admin/prompts/actions.ts'), 'utf8');
   const helpers = readFileSync(join(root, 'lib/admin/prompts.server.ts'), 'utf8');
   const cacheKeys = readFileSync(join(root, 'lib/admin/cache-keys.ts'), 'utf8');
 

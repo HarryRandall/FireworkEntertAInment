@@ -8,7 +8,7 @@ import {
   duplicateShowPreset,
   importAllGeneratedShowsAsPresets,
   importGeneratedShowAsPreset,
-} from '@/app/actions/admin-show-presets';
+} from '../actions';
 import { Button } from '@/ui/patterns/Button';
 import { Field, FieldLabel } from '@/ui/patterns/Field';
 import { Input } from '@/ui/patterns/Input';

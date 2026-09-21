@@ -1,6 +1,6 @@
 'use server';
 
-/** Admin write actions for in-store assortments, mirroring the shape of app/actions/admin-multishots.ts. */
+/** Shared write actions for in-store assortments. */
 
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';

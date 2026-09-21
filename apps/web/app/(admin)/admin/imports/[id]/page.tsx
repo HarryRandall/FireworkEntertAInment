@@ -7,16 +7,16 @@ import { Card } from '@/ui/patterns/Card';
 import { InlineAlert } from '@/ui/patterns/Feedback';
 import { getImportJobDetail } from '@/lib/admin/imports.server';
 import { requirePermission } from '@/lib/access/current-user.server';
-import { DEFAULT_OPENROUTER_MODEL } from '@/lib/import-jobs';
+import { DEFAULT_OPENROUTER_MODEL } from '@/lib/firework-import/jobs';
 import {
   buildImportReview,
   isRunOwnedImportEngineReviewVideoPath,
   parseImportEngineMetricSummary,
   parseImportEnginePublicationEvidence,
   type ImportCandidate,
-} from '@/lib/import-review';
-import { getImportRunHistory } from '@/lib/import-review.server';
-import { parseImportReconstruction } from '@/lib/import-reconstruction';
+} from '@/lib/firework-import/review';
+import { getImportRunHistory } from '@/lib/firework-import/review.server';
+import { parseImportReconstruction } from '@/lib/firework-import/reconstruction';
 import { FireworkImportPreview } from '@/app/(admin)/admin/imports/[id]/_components/FireworkImportPreview';
 import { ImportAdvancedData } from '@/app/(admin)/admin/imports/[id]/_components/ImportAdvancedData';
 import {

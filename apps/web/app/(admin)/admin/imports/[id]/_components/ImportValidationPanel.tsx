@@ -1,7 +1,7 @@
 import { AlertTriangle, CheckCircle2, CircleHelp, XCircle } from 'lucide-react';
 import { Badge } from '@/ui/patterns/Badge';
 import { Card } from '@/ui/patterns/Card';
-import type { ImportReviewCheck } from '@/lib/import-review';
+import type { ImportReviewCheck } from '@/lib/firework-import/review';
 
 const checkPresentation = {
   pass: {

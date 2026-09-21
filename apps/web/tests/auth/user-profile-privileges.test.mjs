@@ -6,8 +6,8 @@ import { test } from 'node:test';
 import { extname, join, relative } from 'node:path';
 
 const root = process.cwd();
-const adminUsersAction = readFileSync(join(root, 'app/actions/admin-users.ts'), 'utf8');
-const profileActions = readFileSync(join(root, 'app/actions/platform-admin.ts'), 'utf8');
+const adminUsersAction = readFileSync(join(root, 'app/(admin)/admin/users/actions.ts'), 'utf8');
+const profileActions = readFileSync(join(root, 'lib/access/profile-actions.server.ts'), 'utf8');
 
 function sourceFiles(directory) {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
@@ -50,7 +50,7 @@ test('the only direct application update matches the profile column grant', () =
     )
     .map((path) => relative(root, path));
 
-  assert.deepEqual(directUserUpdates, ['app/actions/platform-admin.ts']);
+  assert.deepEqual(directUserUpdates, ['lib/access/profile-actions.server.ts']);
 
   const updateProfileAction = functionBody(profileActions, 'updateProfileAction');
   assert.match(updateProfileAction, /patch\.full_name =/);

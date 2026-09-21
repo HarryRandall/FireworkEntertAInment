@@ -30,7 +30,7 @@ test('cover image path flows through domain types, mappers, and select lists', (
   const showMapper = read('lib/shows/mappers.ts');
   const showTypes = read('lib/shows/types.ts');
   const templates = read('lib/admin/templates.server.ts');
-  const cloneAction = read('app/actions/show-templates.ts');
+  const cloneAction = read('lib/show-templates/clone-actions.server.ts');
 
   assert.match(templateTypes, /coverImagePath: string \| null/);
   assert.match(domain, /coverImagePath: string \| null/);
@@ -83,7 +83,7 @@ test('cover poster render util keeps loading neutral and falls back to the saved
 });
 
 test('user-show capture uploads and persists via a server action', () => {
-  const action = read('app/actions/show-cover-poster.ts');
+  const action = read('lib/shows/cover-actions.server.ts');
   const animation = read('ui/shows/GeneratingShowAnimation.tsx');
   const generatingPage = read('app/(app)/shows/[id]/generating/page.tsx');
 
@@ -107,7 +107,7 @@ test('user-show capture uploads and persists via a server action', () => {
 test('embedded admin backfill + service-role action write preset posters', () => {
   const page = read('app/(admin)/admin/show-presets/page.tsx');
   const backfill = read('app/(admin)/admin/show-presets/_components/CoverPosterBackfill.tsx');
-  const action = read('app/actions/admin-cover-posters.ts');
+  const action = read('app/(admin)/admin/show-presets/cover-poster-actions.ts');
   const list = read('lib/admin/cover-posters.server.ts');
 
   assert.match(page, /listShowPresetsForCoverBackfill/);

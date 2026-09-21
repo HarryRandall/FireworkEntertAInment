@@ -4,7 +4,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { importStageLabel } from '@/lib/import-review';
+import { importStageLabel } from '@/lib/firework-import/review';
 
 type StatusPayload = {
   status: string;

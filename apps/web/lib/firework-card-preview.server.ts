@@ -31,7 +31,7 @@ import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
 import {
   parseReconstructionShotVariant,
   type ReconstructionShotMetadata,
-} from '@/lib/reconstruction-shot';
+} from '@/lib/firework-import/reconstruction-shot';
 import {
   fetchShotsByCatalogueItem,
   listFireworkSpecifications,

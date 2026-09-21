@@ -2,7 +2,7 @@
 
 import { useTransition } from 'react';
 import { Loader2, ShieldAlert, Undo2 } from 'lucide-react';
-import { stopImpersonationAction } from '@/app/actions/impersonation';
+import { stopImpersonationAction } from '@/lib/access/impersonation-actions.server';
 import { toast } from '@/ui/patterns/toast';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/primitives/tooltip';
 import type { ActiveImpersonation } from '@/lib/impersonation.types';

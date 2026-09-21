@@ -31,10 +31,13 @@ import {
   replaceShowPresetCues,
   setShowPresetPublished,
   updateShowPresetDetails,
-} from '@/app/actions/admin-show-presets';
+} from '@/app/(admin)/admin/show-presets/actions';
 import { useAdminBreadcrumbOverride } from '@/ui/shell/AdminShell';
-import { EditorPreviewTransport } from '@/ui/admin/FireworkEditorShell';
-import { PreviewFullscreenBackdrop, usePreviewFullscreen } from '@/ui/admin/previewFullscreen';
+import { EditorPreviewTransport } from '@/ui/firework-editor/FireworkEditorShell';
+import {
+  PreviewFullscreenBackdrop,
+  usePreviewFullscreen,
+} from '@/ui/firework-editor/previewFullscreen';
 import { ReplayCanvasSkeleton } from '@/ui/replay/ReplayCanvasSkeleton';
 import { Badge } from '@/ui/patterns/Badge';
 import { Button } from '@/ui/patterns/Button';

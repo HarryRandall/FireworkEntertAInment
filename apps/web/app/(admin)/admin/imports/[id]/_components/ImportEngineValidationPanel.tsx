@@ -5,7 +5,7 @@ import type {
   ImportEngineMetricField,
   ImportEngineMetricSummary,
   ImportEngineReviewArtifact,
-} from '@/lib/import-review';
+} from '@/lib/firework-import/review';
 
 const componentPresentation: Record<
   ImportEngineMetricField,

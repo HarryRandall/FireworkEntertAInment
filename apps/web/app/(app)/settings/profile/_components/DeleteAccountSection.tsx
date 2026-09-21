@@ -4,7 +4,7 @@
 
 import { useActionState, useEffect, useState } from 'react';
 import { Trash2 } from 'lucide-react';
-import { deleteAccountAction, type DeleteAccountState } from '@/app/actions/account';
+import { deleteAccountAction, type DeleteAccountState } from '@/app/(app)/settings/actions';
 import { Button } from '@/ui/patterns/Button';
 import { Input } from '@/ui/patterns/Input';
 import { Field, FieldHint, FieldLabel } from '@/ui/patterns/Field';

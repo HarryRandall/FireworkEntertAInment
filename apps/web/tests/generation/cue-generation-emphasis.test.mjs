@@ -76,7 +76,7 @@ test('renderer scales the design by per-cue emphasis in fireCue', () => {
 });
 
 test('manual cue add accepts an optional emphasis, defaulting to normal', () => {
-  const action = read('app/actions/preview-cues.ts');
+  const action = read('lib/shows/cue-actions.server.ts');
 
   assert.match(action, /emphasis: z\.enum\(\['normal', 'accent', 'peak'\]\)\.default\('normal'\),/);
   assert.match(action, /emphasis: formData\.get\('emphasis'\) \?\? 'normal',/);

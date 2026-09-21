@@ -31,11 +31,11 @@ const {
   parseImportEngineMetricSummary,
   parseImportEnginePublicationEvidence,
   parseImportEngineReviewArtifact,
-} = await import('../../lib/import-review.ts');
+} = await import('../../lib/firework-import/review.ts');
 const { DEFAULT_DESIGN, estimateDesignDurationSeconds } =
   await import('../../lib/fireworks/design.ts');
 const { FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION } =
-  await import('../../lib/fireworks/import-renderer-contract.ts');
+  await import('../../lib/firework-import/renderer-contract.ts');
 
 const rendererDuration = Math.ceil(estimateDesignDurationSeconds(DEFAULT_DESIGN) * 1_000) / 1_000;
 const RUN_ID = '019f6471-87ef-7dc1-a23b-9cf086945402';

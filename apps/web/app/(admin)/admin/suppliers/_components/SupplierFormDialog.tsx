@@ -20,11 +20,7 @@ import { Field, FieldLabel } from '@/ui/patterns/Field';
 import { Input } from '@/ui/patterns/Input';
 import { SelectField } from '@/ui/patterns/SelectField';
 import { toast } from '@/ui/patterns/toast';
-import {
-  createSupplier,
-  updateSupplier,
-  type SupplierInputType,
-} from '@/app/actions/admin-suppliers';
+import { createSupplier, updateSupplier, type SupplierInputType } from '../actions';
 
 type SupplierValues = SupplierInputType & { id?: string };
 

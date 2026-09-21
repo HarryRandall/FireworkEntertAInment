@@ -21,8 +21,8 @@ test('application duration checks use the same conservative sources as the datab
 });
 
 test('application timeline writes use the guarded RPC surface', () => {
-  const previewActions = read('app/actions/preview-cues.ts');
-  const templateActions = read('app/actions/show-templates.ts');
+  const previewActions = read('lib/shows/cue-actions.server.ts');
+  const templateActions = read('lib/show-templates/clone-actions.server.ts');
   const adapter = read('lib/show-timeline-mutations.server.ts');
 
   assert.match(previewActions, /addShowTimelineItem/);

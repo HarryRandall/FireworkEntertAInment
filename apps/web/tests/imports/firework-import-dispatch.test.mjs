@@ -14,7 +14,7 @@ registerHooks({
 });
 
 const { dispatchFireworkImportRun, getFireworkImportDispatchConfiguration } =
-  await import('../../lib/firework-import-trigger.server.ts');
+  await import('../../lib/firework-import/trigger.server.ts');
 
 const root = process.cwd();
 const runId = '019f6471-87ef-7dc1-a23b-9cf086945402';
@@ -126,8 +126,8 @@ test('non-202 and mismatched acknowledgements fail without unsafe retries', asyn
 });
 
 test('production queue actions preflight before funding and persist dispatch results', () => {
-  const actions = readFileSync(join(root, 'app/actions/platform-admin.ts'), 'utf8');
-  const historyServer = readFileSync(join(root, 'lib/import-review.server.ts'), 'utf8');
+  const actions = readFileSync(join(root, 'app/(admin)/admin/imports/actions.ts'), 'utf8');
+  const historyServer = readFileSync(join(root, 'lib/firework-import/review.server.ts'), 'utf8');
   const historyUi = readFileSync(
     join(root, 'app/(admin)/admin/imports/[id]/_components/ImportRunHistory.tsx'),
     'utf8',

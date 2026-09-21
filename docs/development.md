@@ -77,10 +77,10 @@ releasing this layout; a local refactor does not update that setting.
 Modal services retain their existing deployment roots and manifests under
 `services/`. A web release does not deploy Python services or apply migrations.
 
-The UI move changes the fingerprinted replay canvas path. Release the web app,
-import worker and the database renderer contract
-together so all three agree on the renderer contract. Existing sealed evidence
-must be revalidated against the new fingerprint before publication.
+The renderer fingerprint includes source paths and file bytes. Release the web
+app, import worker and database renderer contract together whenever it changes
+so all three agree on the current contract. Existing sealed evidence must be
+revalidated against a new fingerprint before publication.
 
 ## Changes and reviews
 

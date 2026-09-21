@@ -47,9 +47,9 @@ import {
   type FireworkRenderTuning,
 } from '@/lib/fireworks/render-tuning';
 import { replayCuesSimulationKey } from '@/lib/fireworks/replay-cache-key';
-import { FIREWORKS_ENGINE_FIXED_STEP_SECONDS } from '@/lib/fireworks/import-renderer-contract';
+import { FIREWORKS_ENGINE_FIXED_STEP_SECONDS } from '@/lib/firework-import/renderer-contract';
 
-export { FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION } from '@/lib/fireworks/import-renderer-contract';
+export { FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION } from '@/lib/firework-import/renderer-contract';
 
 export type PoolSnapshot = {
   indices: Uint32Array;

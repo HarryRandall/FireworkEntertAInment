@@ -14,7 +14,7 @@ import {
   Sun,
   type LucideIcon,
 } from 'lucide-react';
-import { updateProfileAction } from '@/app/actions/platform-admin';
+import { updateProfileAction } from '@/lib/access/profile-actions.server';
 import { GeneratedAvatar } from '@/ui/patterns/GeneratedAvatar';
 import { toast } from '@/ui/patterns/toast';
 import {

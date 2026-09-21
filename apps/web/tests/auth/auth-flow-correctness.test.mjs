@@ -115,7 +115,7 @@ test('password recovery requires a verified recovery token hash, not any session
   const recoveryEmail = read('lib/auth/password-recovery-email.server.ts');
   const recoveryTemplate = read('../../supabase/templates/recovery.html');
   const page = read('app/(marketing)/reset-password/page.tsx');
-  const action = read('app/actions/password-recovery.ts');
+  const action = read('lib/auth/password-recovery-actions.server.ts');
   const rateLimit = read('lib/auth/password-recovery-rate-limit.server.ts');
   const serverCache = read('lib/server-cache.ts');
   const appOrigin = read('lib/app-origin.ts');
@@ -206,7 +206,7 @@ test('only Supabase implicit recovery token hashes reach verification', () => {
   assert.equal(isValidPasswordRecoveryTokenHash(undefined), false);
 
   const route = read('app/auth/confirm/route.ts');
-  const action = read('app/actions/password-recovery.ts');
+  const action = read('lib/auth/password-recovery-actions.server.ts');
   assert.match(route, /isValidPasswordRecoveryTokenHash\(tokenHash\)/);
   assert.match(action, /isValidPasswordRecoveryTokenHash\(tokenHash\)/);
 });
@@ -327,7 +327,7 @@ test('the recovery signing secret is documented as server-only configuration', (
 });
 
 test('admin password recovery resolves the canonical Auth identity by id', () => {
-  const adminUsers = read('app/actions/admin-users.ts');
+  const adminUsers = read('app/(admin)/admin/users/actions.ts');
   const actionStart = adminUsers.indexOf('export async function sendUserPasswordResetAction');
   const actionEnd = adminUsers.indexOf('/** Delete the Supabase Auth identity', actionStart);
   const action = adminUsers.slice(actionStart, actionEnd);
@@ -341,7 +341,7 @@ test('admin password recovery resolves the canonical Auth identity by id', () =>
 });
 
 test('normal password changes supply the current password to hosted Auth', () => {
-  const account = read('app/actions/account.ts');
+  const account = read('app/(app)/settings/actions.ts');
 
   assert.match(account, /signInWithPassword\(\{[\s\S]*password: parsed\.data\.currentPassword/);
   assert.match(
@@ -353,7 +353,7 @@ test('normal password changes supply the current password to hosted Auth', () =>
 test('new and recovered passwords share the eight-character minimum', () => {
   const signup = read('app/(auth)/signup/page.tsx');
   const resetForm = read('app/(marketing)/reset-password/_components/ResetPasswordForm.tsx');
-  const recoveryAction = read('app/actions/password-recovery.ts');
+  const recoveryAction = read('lib/auth/password-recovery-actions.server.ts');
 
   assert.match(signup, /password\.length < 8/);
   assert.match(signup, /minLength=\{8\}/);

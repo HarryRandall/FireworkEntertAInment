@@ -5,7 +5,7 @@ import {
   importStageIndex,
   importStageLabel,
   importStatusTone,
-} from '@/lib/import-review';
+} from '@/lib/firework-import/review';
 
 export function ImportStageHeader({
   sourceName,

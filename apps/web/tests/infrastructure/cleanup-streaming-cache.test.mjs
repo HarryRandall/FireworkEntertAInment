@@ -120,10 +120,10 @@ test('admin server lists use short TTL cache keys and mutations invalidate them'
   const cacheKeys = read('lib/admin/cache-keys.ts');
   const usersServer = read('lib/admin/users.server.ts');
   const rolesServer = read('lib/admin/roles.server.ts');
-  const users = read('app/actions/admin-users.ts');
-  const suppliers = read('app/actions/admin-suppliers.ts');
-  const catalogue = read('app/actions/admin-catalogue.ts');
-  const imports = read('app/actions/platform-admin.ts');
+  const users = read('app/(admin)/admin/users/actions.ts');
+  const suppliers = read('app/(admin)/admin/suppliers/actions.ts');
+  const catalogue = read('app/(admin)/admin/catalogue/actions.ts');
+  const imports = read('app/(admin)/admin/imports/actions.ts');
 
   assert.match(cacheKeys, /ADMIN_CACHE_TTL_SECONDS = 60/);
   for (const key of [
@@ -150,8 +150,8 @@ test('admin server lists use short TTL cache keys and mutations invalidate them'
   assert.match(imports, /invalidateAdminCatalogueCache/);
 });
 
-test('legacy platform-admin user supplier and catalogue actions were removed', () => {
-  const actions = read('app/actions/platform-admin.ts');
+test('admin import actions do not own profile catalogue supplier or user mutations', () => {
+  const actions = read('app/(admin)/admin/imports/actions.ts');
   for (const symbol of [
     'AdminUserSchema',
     'PermissionOverrideSchema',
@@ -168,14 +168,14 @@ test('legacy platform-admin user supplier and catalogue actions were removed', (
   ]) {
     assert.doesNotMatch(actions, new RegExp(symbol));
   }
-  assert.match(actions, /updateProfileAction/);
+  assert.doesNotMatch(actions, /updateProfileAction/);
   assert.match(actions, /finalizeVideoImportJobAction/);
 });
 
 test('admin mutations harden self actions roles supplier URLs and product durations', () => {
-  const users = read('app/actions/admin-users.ts');
-  const suppliers = read('app/actions/admin-suppliers.ts');
-  const catalogue = read('app/actions/admin-catalogue.ts');
+  const users = read('app/(admin)/admin/users/actions.ts');
+  const suppliers = read('app/(admin)/admin/suppliers/actions.ts');
+  const catalogue = read('app/(admin)/admin/catalogue/actions.ts');
 
   assert.match(users, /You cannot suspend your own account/);
   assert.match(users, /You cannot delete your own account/);
@@ -195,8 +195,8 @@ test('admin mutations harden self actions roles supplier URLs and product durati
 test('shopping list reads are pure and derived show totals sync only after mutations', () => {
   const queries = read('lib/shows/queries.server.ts');
   const mutations = read('lib/shows/mutations.server.ts');
-  const previewActions = read('app/actions/preview-cues.ts');
-  const templateActions = read('app/actions/show-templates.ts');
+  const previewActions = read('lib/shows/cue-actions.server.ts');
+  const templateActions = read('lib/show-templates/clone-actions.server.ts');
   const listBody = functionBody(queries, 'listShoppingItemsForShow');
 
   assert.doesNotMatch(listBody, /\.update\(/);
@@ -208,7 +208,7 @@ test('shopping list reads are pure and derived show totals sync only after mutat
 });
 
 test('manual cue additions defer schedule safety to the guarded database mutation', () => {
-  const previewActions = read('app/actions/preview-cues.ts');
+  const previewActions = read('lib/shows/cue-actions.server.ts');
   const overlap = read('lib/cue-overlap.server.ts');
 
   assert.match(previewActions, /addShowTimelineItem/);

@@ -10,10 +10,7 @@ import {
   type ReactNode,
 } from 'react';
 import { Save } from 'lucide-react';
-import {
-  updatePromptConfigAction,
-  type PromptConfigActionState,
-} from '@/app/actions/admin-prompts';
+import { updatePromptConfigAction, type PromptConfigActionState } from '../actions';
 import { Button } from '@/ui/patterns/Button';
 import { InlineAlert } from '@/ui/patterns/Feedback';
 

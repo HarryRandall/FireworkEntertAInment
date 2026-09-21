@@ -91,7 +91,7 @@ test('writing a top-level burstTrail clears only the inherited outer layer trail
   const styleDefaults = read('lib/fireworks/style-defaults.ts');
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
   const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
-  const controls = read('ui/admin/FireworkRenderControls.tsx');
+  const controls = read('ui/firework-editor/FireworkRenderControls.tsx');
 
   assert.match(
     styleDefaults,
@@ -126,8 +126,8 @@ test('changing the base effect resets style defaults and clears overrides', () =
 });
 
 test('style defaults are copied through editor JSON instead of live assignment writes', () => {
-  const effectActions = read('app/actions/admin-effects.ts');
-  const fireworkActions = read('app/actions/admin-fireworks.ts');
+  const effectActions = read('app/(admin)/admin/effects/actions.ts');
+  const fireworkActions = read('app/(admin)/admin/fireworks/actions.ts');
 
   assert.equal(existsSync(join(root, 'lib/admin/style-default-assignments.ts')), false);
   assert.doesNotMatch(effectActions, /style-default-assignments|replaceEffectStyleDefaultLinks/);

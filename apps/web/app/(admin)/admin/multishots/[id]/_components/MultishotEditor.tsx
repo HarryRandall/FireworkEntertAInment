@@ -48,14 +48,14 @@ import {
   PreviewFullscreenBackdrop,
   type PreviewFullscreenContainerProps,
   usePreviewFullscreen,
-} from '@/ui/admin/previewFullscreen';
+} from '@/ui/firework-editor/previewFullscreen';
 import {
   deleteMultishotShot,
   updateMultishot,
   upsertMultishotShot,
-} from '@/app/actions/admin-multishots';
+} from '@/app/(admin)/admin/multishots/actions';
 import { useAdminBreadcrumbOverride } from '@/ui/shell/AdminShell';
-import { EditorPreviewTransport } from '@/ui/admin/FireworkEditorShell';
+import { EditorPreviewTransport } from '@/ui/firework-editor/FireworkEditorShell';
 import { ReplayCanvasSkeleton } from '@/ui/replay/ReplayCanvasSkeleton';
 import type { AimMarker } from '@/ui/replay/FireworkReplayCanvas';
 import { Badge } from '@/ui/patterns/Badge';

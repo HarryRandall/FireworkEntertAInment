@@ -1,5 +1,5 @@
 import { Card } from '@/ui/patterns/Card';
-import type { ImportReconstructionPlan } from '@/lib/import-reconstruction';
+import type { ImportReconstructionPlan } from '@/lib/firework-import/reconstruction';
 
 export function ImportReconstructionSummary({
   reconstruction,

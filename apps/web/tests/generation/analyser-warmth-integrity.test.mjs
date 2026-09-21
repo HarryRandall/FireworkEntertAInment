@@ -10,7 +10,7 @@ function read(path) {
 }
 
 test('manual analyser warm-up reports success only after the hosted ping succeeds', () => {
-  const action = read('app/actions/admin-analyser.ts');
+  const action = read('app/(admin)/admin/actions.ts');
 
   assert.doesNotMatch(action, /from 'next\/server'/);
   assert.doesNotMatch(action, /\bafter\s*\(/);

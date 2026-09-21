@@ -5,7 +5,7 @@
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, CircleDashed, X } from 'lucide-react';
-import { setUserPermissionOverrideAction } from '@/app/actions/admin-users';
+import { setUserPermissionOverrideAction } from '@/app/(admin)/admin/users/actions';
 import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
 import { toast } from '@/ui/patterns/toast';
 import { cn } from '@/lib/utils';

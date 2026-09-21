@@ -26,20 +26,20 @@ registerHooks({
 });
 
 const { buildImportRenderSignature, deriveImportRenderSigningKey, verifyImportRenderClaims } =
-  await import('../../lib/import-render-auth-core.ts');
+  await import('../../lib/firework-import/render-auth-core.ts');
 const {
   IMPORT_RENDER_METRICS_SCHEMA_VERSION,
   analyseImportRenderPixels,
   buildImportTemporalForegroundFrames,
   buildImportRenderMetrics,
   compareImportRenderPixels,
-} = await import('../../lib/import-render-metrics.ts');
+} = await import('../../lib/firework-import/render-metrics.ts');
 const {
   FIREWORKS_ENGINE_FIXED_STEP_SECONDS,
   FIREWORKS_ENGINE_IMPORT_RENDERER_SOURCE_FILES,
   FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION,
   quantiseFireworksEngineTimeSeconds,
-} = await import('../../lib/fireworks/import-renderer-contract.ts');
+} = await import('../../lib/firework-import/renderer-contract.ts');
 
 const root = process.cwd();
 const read = (path) => readFileSync(join(root, path), 'utf8');
@@ -300,7 +300,7 @@ test('protected page and harness keep credentials server-side and use exact repl
   const page = read('app/internal/import-render/page.tsx');
   const harness = read('app/internal/import-render/ImportRenderHarness.tsx');
   const replay = read('ui/replay/FireworkReplayCanvas.tsx');
-  const auth = read('lib/import-render-auth.server.ts');
+  const auth = read('lib/firework-import/render-auth.server.ts');
   const nextConfig = read('next.config.ts');
   const proxy = read('proxy.ts');
   const contentSecurityPolicy = read('lib/security/import-render-csp.ts');

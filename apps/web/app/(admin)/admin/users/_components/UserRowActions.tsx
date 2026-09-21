@@ -17,8 +17,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/ui/primitives/alert-dialog';
-import { deleteUserAction, setUserStatusAction } from '@/app/actions/admin-users';
-import { startImpersonationAction } from '@/app/actions/impersonation';
+import { deleteUserAction, setUserStatusAction } from '../actions';
+import { startImpersonationAction } from '@/lib/access/impersonation-actions.server';
 
 type Props = {
   userId: string;

@@ -3,7 +3,7 @@ import 'server-only';
 import {
   verifyImportRenderClaims,
   type ImportRenderAuthClaims,
-} from '@/lib/import-render-auth-core';
+} from '@/lib/firework-import/render-auth-core';
 
 export function isAuthorisedImportRenderRequest(
   claims: ImportRenderAuthClaims,
