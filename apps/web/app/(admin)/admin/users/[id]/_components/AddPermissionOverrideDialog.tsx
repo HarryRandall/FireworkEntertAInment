@@ -5,7 +5,7 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, CircleDashed, Plus, Search, X } from 'lucide-react';
-import { setUserPermissionOverridesAction } from '@/app/actions/admin-users';
+import { setUserPermissionOverridesAction } from '../../actions';
 import { Button } from '@/ui/patterns/Button';
 import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
 import { Input } from '@/ui/patterns/Input';

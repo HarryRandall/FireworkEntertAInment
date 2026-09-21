@@ -17,7 +17,7 @@ import { Button } from '@/ui/patterns/Button';
 import { Field, FieldLabel } from '@/ui/patterns/Field';
 import { Input } from '@/ui/patterns/Input';
 import { toast } from '@/ui/patterns/toast';
-import { createMultishot } from '@/app/actions/admin-multishots';
+import { createMultishot } from '../actions';
 
 export function NewMultishotButton() {
   const router = useRouter();

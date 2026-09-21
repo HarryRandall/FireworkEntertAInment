@@ -26,7 +26,7 @@ test('library presets persist and expose JSON shader covers', () => {
   const explorePreview = read('ui/explore/ExplorePreviewContext.tsx');
   const exploreRow = read('ui/explore/ExploreRow.tsx');
   const libraryPage = read('app/(browse)/library/page.tsx');
-  const cloneAction = read('app/actions/show-templates.ts');
+  const cloneAction = read('lib/show-templates/clone-actions.server.ts');
   const showPresetsTypes = types.match(/show_presets: \{[\s\S]*?show_timeline_items:/)?.[0] ?? '';
   assert.match(showPresetsTypes, /cover_shader: Json \| null/);
   assert.match(showPresetsTypes, /cover_shader\?: Json \| null/);

@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Gauge, Sparkles } from 'lucide-react';
-import { updateShowGenerationModeAction } from '@/app/actions/admin-prompts';
+import { updateShowGenerationModeAction } from '../actions';
 import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
 import { toast } from '@/ui/patterns/toast';
 import type { GenerationMode, GenerationSetting } from '@/lib/prompt-configs';

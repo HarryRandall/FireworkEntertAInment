@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useTransition, type FormEvent } from 'react';
 import { Lock } from 'lucide-react';
-import { updateRecoveredPasswordAction } from '@/app/actions/password-recovery';
+import { updateRecoveredPasswordAction } from '@/lib/auth/password-recovery-actions.server';
 import { Button } from '@/ui/patterns/Button';
 import { FormError } from '@/ui/patterns/FormError';
 import { Input } from '@/ui/patterns/Input';

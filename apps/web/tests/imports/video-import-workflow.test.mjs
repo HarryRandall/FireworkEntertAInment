@@ -10,7 +10,7 @@ const root = process.cwd();
 const repoRoot = root;
 
 test('admin imports expose upload, candidate review, refinement, and guarded approval', () => {
-  const actions = readFileSync(join(root, 'app/actions/platform-admin.ts'), 'utf8');
+  const actions = readFileSync(join(root, 'app/(admin)/admin/imports/actions.ts'), 'utf8');
   const listPage = readFileSync(join(root, 'app/(admin)/admin/imports/page.tsx'), 'utf8');
   const detailPage = readFileSync(join(root, 'app/(admin)/admin/imports/[id]/page.tsx'), 'utf8');
   assert.match(actions, /finalizeVideoImportJobAction/);
@@ -176,7 +176,7 @@ test('uploaded video failure recovery retains exactly one safe retry or discard 
 });
 
 test("finalize action validates uploaded object lives under caller's admin folder", () => {
-  const actions = readFileSync(join(root, 'app/actions/platform-admin.ts'), 'utf8');
+  const actions = readFileSync(join(root, 'app/(admin)/admin/imports/actions.ts'), 'utf8');
   assert.match(actions, /finalizeVideoImportJobAction/);
   assert.match(actions, /FinalizeVideoImportSchema/);
   // Path-prefix check stops a caller from finalizing someone else's upload.

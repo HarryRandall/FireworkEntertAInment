@@ -205,9 +205,9 @@ test('optimistic editor versions map exactly one target before persistence', () 
 });
 
 test('editor saves are optimistic while history persistence stays observed and live', () => {
-  const effectActions = read('app/actions/admin-effects.ts');
-  const fireworkActions = read('app/actions/admin-fireworks.ts');
-  const styleDefaultActions = read('app/actions/admin-style-defaults.ts');
+  const effectActions = read('app/(admin)/admin/effects/actions.ts');
+  const fireworkActions = read('app/(admin)/admin/fireworks/actions.ts');
+  const styleDefaultActions = read('app/(admin)/admin/effects/style-default-actions.ts');
   const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
   const styleDefaultEditor = read(

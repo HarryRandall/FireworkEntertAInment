@@ -9,7 +9,7 @@
  * - Zod schemas for validating spec drafts ({@link ImportedFireworkSpecSchema})
  * - Pure helpers for projecting `import_outputs` rows into a UI-ready shape
  *
- * Imported by both server actions (`app/actions/admin/*`) and server modules
+ * Imported by both admin import actions and server modules
  * (`lib/admin/imports.server.ts`).
  */
 import { z } from 'zod';

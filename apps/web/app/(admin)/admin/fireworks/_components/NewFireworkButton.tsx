@@ -18,7 +18,7 @@ import { Field, FieldLabel } from '@/ui/patterns/Field';
 import { Input } from '@/ui/patterns/Input';
 import { SelectField } from '@/ui/patterns/SelectField';
 import { toast } from '@/ui/patterns/toast';
-import { createFirework } from '@/app/actions/admin-fireworks';
+import { createFirework } from '../actions';
 import type { AdminEffectOption } from '@/lib/admin.types';
 
 export function NewFireworkButton({ effects }: { effects: AdminEffectOption[] }) {

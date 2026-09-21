@@ -18,8 +18,8 @@ test('admin roles page edits role permission defaults with lockout guards', () =
     join(root, 'app/(admin)/admin/roles/_components/RolePermissionToggle.tsx'),
     'utf8',
   );
-  const roleAction = readFileSync(join(root, 'app/actions/admin-roles.ts'), 'utf8');
-  const userAction = readFileSync(join(root, 'app/actions/admin-users.ts'), 'utf8');
+  const roleAction = readFileSync(join(root, 'app/(admin)/admin/roles/actions.ts'), 'utf8');
+  const userAction = readFileSync(join(root, 'app/(admin)/admin/users/actions.ts'), 'utf8');
   const shell = readFileSync(join(root, 'ui/shell/AdminShell.tsx'), 'utf8');
 
   assert.equal(existsSync(rolesPagePath), true);
@@ -69,7 +69,7 @@ test('user detail renders permission exceptions instead of every permission row'
     join(root, 'app/(admin)/admin/users/[id]/_components/PermissionExceptionRow.tsx'),
     'utf8',
   );
-  const userAction = readFileSync(join(root, 'app/actions/admin-users.ts'), 'utf8');
+  const userAction = readFileSync(join(root, 'app/(admin)/admin/users/actions.ts'), 'utf8');
   const databaseTypes = readFileSync(join(root, 'lib/database.types.ts'), 'utf8');
 
   assert.match(detailPage, /PermissionExceptionsPanel/);

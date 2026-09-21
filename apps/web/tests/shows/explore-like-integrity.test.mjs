@@ -13,7 +13,7 @@ function read(path) {
 
 test('saved-template reads and auth checks fail explicitly', () => {
   const templates = read('lib/show-templates/queries.server.ts');
-  const action = read('app/actions/show-preset-likes.ts');
+  const action = read('lib/show-templates/like-actions.server.ts');
 
   assert.match(
     templates,

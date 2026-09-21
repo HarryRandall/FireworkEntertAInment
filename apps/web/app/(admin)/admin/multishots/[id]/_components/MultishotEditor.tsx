@@ -49,11 +49,7 @@ import {
   type PreviewFullscreenContainerProps,
   usePreviewFullscreen,
 } from '@/ui/admin/previewFullscreen';
-import {
-  deleteMultishotShot,
-  updateMultishot,
-  upsertMultishotShot,
-} from '@/app/actions/admin-multishots';
+import { deleteMultishotShot, updateMultishot, upsertMultishotShot } from '../../actions';
 import { useAdminBreadcrumbOverride } from '@/ui/shell/AdminShell';
 import { EditorPreviewTransport } from '@/ui/admin/FireworkEditorShell';
 import { ReplayCanvasSkeleton } from '@/ui/replay/ReplayCanvasSkeleton';

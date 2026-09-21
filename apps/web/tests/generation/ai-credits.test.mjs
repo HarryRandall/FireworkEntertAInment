@@ -174,7 +174,7 @@ test('show and music generation reserve, settle, and refund credits', () => {
 });
 
 test('show refinements reserve, settle, refund, and disclose credits', () => {
-  const previewCues = read('app/actions/preview-cues.ts');
+  const previewCues = read('lib/shows/cue-actions.server.ts');
   const replayViewer = read('ui/replay/FireworkReplayViewer.tsx');
   const credits = read('lib/ai-credits.server.ts');
   const databaseTypes = read('lib/database.types.ts');
@@ -205,7 +205,7 @@ test('user detail exposes credit balances and grant controls', () => {
   const userDetail = read('app/(admin)/admin/users/[id]/page.tsx');
   const userHeaderActions = read('app/(admin)/admin/users/[id]/_components/UserHeaderActions.tsx');
   const grantDialog = read('app/(admin)/admin/users/[id]/_components/GrantAiCreditsDialog.tsx');
-  const actions = read('app/actions/admin-users.ts');
+  const actions = read('app/(admin)/admin/users/actions.ts');
   // The standalone AI billing tab was removed; credit management lives on the
   // user detail page.
   assert.doesNotMatch(shell, /href: '\/admin\/billing'/);

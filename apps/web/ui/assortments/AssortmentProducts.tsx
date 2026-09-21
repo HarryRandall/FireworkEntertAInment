@@ -11,7 +11,7 @@ import { SectionHeader } from '@/ui/patterns/SectionHeader';
 import { toast } from '@/ui/patterns/toast';
 import { formatBudget } from '@/lib/show-domain';
 import type { AdminAssortmentDetail } from '@/lib/admin/assortments.server';
-import { deleteAssortmentItem, upsertAssortmentItem } from '@/app/actions/admin-assortments';
+import { deleteAssortmentItem, upsertAssortmentItem } from '@/lib/assortments/actions.server';
 import { AddCatalogueItemPicker } from './AddCatalogueItemPicker';
 
 export function AssortmentProducts({ assortment }: { assortment: AdminAssortmentDetail }) {

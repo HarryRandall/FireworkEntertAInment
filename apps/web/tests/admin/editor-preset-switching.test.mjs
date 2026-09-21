@@ -126,8 +126,8 @@ test('changing the base effect resets style defaults and clears overrides', () =
 });
 
 test('style defaults are copied through editor JSON instead of live assignment writes', () => {
-  const effectActions = read('app/actions/admin-effects.ts');
-  const fireworkActions = read('app/actions/admin-fireworks.ts');
+  const effectActions = read('app/(admin)/admin/effects/actions.ts');
+  const fireworkActions = read('app/(admin)/admin/fireworks/actions.ts');
 
   assert.equal(existsSync(join(root, 'lib/admin/style-default-assignments.ts')), false);
   assert.doesNotMatch(effectActions, /style-default-assignments|replaceEffectStyleDefaultLinks/);

@@ -5,7 +5,7 @@ import { CalendarDays, Clock, Moon, RefreshCw, Sparkles, Wallet } from 'lucide-r
 import { randomUUID } from 'node:crypto';
 import { Suspense } from 'react';
 import type * as React from 'react';
-import { cloneShowTemplateAction } from '@/app/actions/show-templates';
+import { cloneShowTemplateAction } from '@/lib/show-templates/clone-actions.server';
 import { TemplateReplaySkeleton } from '@/ui/shell/RouteSkeletons';
 import { TemplateCurrentFireworkCard } from '@/ui/explore/TemplateCurrentFireworkCard';
 import { TemplateLikeButton } from '@/ui/explore/TemplateLikeButton';

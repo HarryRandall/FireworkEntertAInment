@@ -5,7 +5,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LogOut, Undo2 } from 'lucide-react';
-import { stopImpersonationAction } from '@/app/actions/impersonation';
+import { stopImpersonationAction } from '@/lib/access/impersonation-actions.server';
 import { signOutCurrentSession } from '@/ui/shell/sign-out.client';
 import { Button } from '@/ui/patterns/Button';
 import { toast } from '@/ui/patterns/toast';

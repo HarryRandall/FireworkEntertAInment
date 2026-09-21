@@ -58,7 +58,7 @@ test('the settings sign-out button stays on the page and becomes retryable after
 });
 
 test('account deletion reports partial session cleanup instead of claiming full sign-out', () => {
-  const account = read('app/actions/account.ts');
+  const account = read('app/(app)/settings/actions.ts');
   const login = read('app/(auth)/login/page.tsx');
   const deletion = account.slice(account.indexOf('export async function deleteAccountAction'));
 

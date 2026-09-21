@@ -14,11 +14,11 @@ test('shared UI cannot reach up into features or route implementations', () => {
     assert.ok(importBoundaryViolation(importer, target), `${importer} -> ${target}`);
 });
 
-test('composition, route descendants and explicit server actions remain valid', () => {
+test('composition, route descendants and shared domain actions remain valid', () => {
   for (const [importer, target] of [
     ['ui/patterns/Button.tsx', '@/ui/primitives/button'],
     ['ui/primitives/button.tsx', '@/lib/utils'],
-    ['ui/assortments/Editor.tsx', '@/app/actions/admin-assortments'],
+    ['ui/assortments/Editor.tsx', '@/lib/assortments/actions.server'],
     ['app/(admin)/admin/assortments/[id]/page.tsx', '@/ui/assortments/AssortmentEditor'],
     ['app/(app)/shows/[id]/page.tsx', '../_components/ShowsToolbar'],
   ])

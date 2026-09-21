@@ -12,7 +12,7 @@ function read(path) {
 }
 
 test('Explore likes persist without exposing user identities', () => {
-  const action = read('app/actions/show-preset-likes.ts');
+  const action = read('lib/show-templates/like-actions.server.ts');
   const button = read('ui/explore/TemplateLikeButton.tsx');
   const mapper = read('lib/show-templates/mappers.ts');
   const card = read('ui/explore/ExploreCard.tsx');
@@ -28,7 +28,7 @@ test('Explore likes persist without exposing user identities', () => {
 });
 
 test('imported Explore presets retain durable generated-show provenance', () => {
-  const actions = read('app/actions/admin-show-presets.ts');
+  const actions = read('app/(admin)/admin/show-presets/actions.ts');
   const templates = read('lib/show-templates/queries.server.ts');
   const adminTemplates = read('lib/admin/templates.server.ts');
   const types = read('lib/show-templates/types.ts');
