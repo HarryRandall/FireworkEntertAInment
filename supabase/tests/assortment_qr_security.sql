@@ -144,7 +144,9 @@ begin
   insert into public.user_roles (user_id, role_id)
   select admin_id, roles.id
   from public.roles roles
-  where roles.key = 'admin';
+  where roles.key = 'admin'
+  on conflict (user_id) do update
+  set role_id = excluded.role_id;
 
   insert into public.assortments (id, slug, name, price_cents, is_active, created_by)
   values (target_assortment_id, 'qr-toggle-security', 'QR toggle security', 100, true, admin_id);
