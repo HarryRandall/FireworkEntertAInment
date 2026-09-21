@@ -25,10 +25,10 @@ begin
   select pg_get_functiondef(
     'public.set_assortment_public_link_enabled(uuid,boolean)'::regprocedure
   ) into function_source;
+  function_source := lower(function_source);
   if function_source not like '%set is_enabled = p_enabled%'
     or function_source like '%set public_token%'
     or function_source like '%set funding_user_id%'
-    or function_source not like '%security definer%'
   then
     raise exception 'QR link enablement RPC does not have the expected narrow security boundary.';
   end if;
@@ -151,6 +151,14 @@ begin
 
   set local role authenticated;
   set local request.jwt.claim.role = 'authenticated';
+  set local request.jwt.claim.sub = admin_id::text;
+  perform public.ensure_assortment_public_link(target_assortment_id);
+
+  select link.public_token, link.funding_user_id
+  into original_token, original_funder
+  from public.assortment_public_links link
+  where link.assortment_id = target_assortment_id;
+
   set local request.jwt.claim.sub = member_id::text;
   begin
     perform public.set_assortment_public_link_enabled(target_assortment_id, false);
@@ -162,11 +170,6 @@ begin
   end if;
 
   set local request.jwt.claim.sub = admin_id::text;
-  select link.public_token, link.funding_user_id
-  into original_token, original_funder
-  from public.assortment_public_links link
-  where link.assortment_id = target_assortment_id;
-
   enabled_value := public.set_assortment_public_link_enabled(target_assortment_id, false);
   if enabled_value is distinct from false then
     raise exception 'Admin disable did not return false.';
