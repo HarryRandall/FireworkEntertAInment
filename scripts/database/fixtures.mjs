@@ -68,8 +68,8 @@ try {
     select public.grant_ai_credits(id, 1000, 'Local development credits', 'local-fixture-credit:' || id)
     from public.users where email in ('admin@showcrafter.test', 'supplier@showcrafter.test', 'user@showcrafter.test');
     update public.generation_settings set generation_mode = 'fast' where key = 'show_cue_generation';
-    insert into public.shows (user_id, slug, title, duration_seconds, description, cover_image_path, cover_shader)
-    select u.id, 'local-' || p.slug, p.title, p.duration_seconds, p.description, p.cover_image_path, p.cover_shader
+    insert into public.shows (user_id, slug, title, duration_seconds, description, cover_image_path, cover_shader, budget_cents, total_cents, effects_count, time_of_day, mood_tags)
+    select u.id, 'local-' || p.slug, p.title, p.duration_seconds, p.description, p.cover_image_path, p.cover_shader, p.budget_cents, p.total_cents, p.effects_count, p.time_of_day, p.mood_tags
     from public.users u cross join public.show_presets p
     where u.email = 'user@showcrafter.test'
       and not exists (select 1 from public.shows s where s.user_id = u.id and s.slug = 'local-' || p.slug);
