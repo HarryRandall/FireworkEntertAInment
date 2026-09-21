@@ -18,13 +18,21 @@
     "audit:ui": "pnpm --filter @showcrafter/web audit:ui",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm format:check && pnpm --filter @showcrafter/web check",
+    "check": "pnpm format:check && pnpm test:database-tooling && pnpm --filter @showcrafter/web check",
     "test:analyser": "services/music-analyser/.venv/bin/python -m unittest discover -s services/music-analyser/tests -p '*test*.py'",
     "test:worker": "services/firework-import-worker/.venv/bin/python -m unittest discover -s services/firework-import-worker/tests -p '*test*.py'",
-    "worker:firework-import": "./services/firework-import-worker/run-worker.sh"
+    "worker:firework-import": "./services/firework-import-worker/run-worker.sh",
+    "db:start": "node scripts/database/local.mjs start",
+    "db:stop": "node scripts/database/local.mjs stop",
+    "db:status": "node scripts/database/local.mjs status",
+    "db:reset": "node scripts/database/local.mjs reset",
+    "db:lint": "node scripts/database/local.mjs lint",
+    "db:env": "node scripts/database/local.mjs env",
+    "test:database-tooling": "node --test scripts/database/*.test.mjs"
   },
   "devDependencies": {
     "prettier": "3.8.3",
-    "prettier-plugin-tailwindcss": "0.8.0"
+    "prettier-plugin-tailwindcss": "0.8.0",
+    "supabase": "2.101.0"
   }
 }
