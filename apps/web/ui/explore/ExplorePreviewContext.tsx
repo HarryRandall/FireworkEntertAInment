@@ -29,7 +29,7 @@ import {
   type ExplorePreviewPayload,
 } from '@/lib/explore-preview';
 import type { FireworkSpecification } from '@/lib/show-domain';
-import type { ShowTemplate } from '@/lib/admin.types';
+import type { ShowTemplate } from '@/lib/show-templates/types';
 import type { ShowTemplateSummary } from '@/lib/show-template-summary';
 
 // Hover-intent delay: a card must be hovered (or focused) for this long before

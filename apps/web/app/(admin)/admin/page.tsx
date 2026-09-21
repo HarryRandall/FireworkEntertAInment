@@ -27,7 +27,7 @@ import {
 } from '@/ui/primitives/table';
 import { TabsContent, TabsList, TabsTrigger } from '@/ui/primitives/tabs';
 import { getAdminOverviewMetrics, type AdminOverviewMetrics } from '@/lib/admin/overview.server';
-import { getCurrentProfile } from '@/lib/admin/current-user.server';
+import { getCurrentProfile } from '@/lib/access/current-user.server';
 import { listAdminEffects } from '@/lib/admin/effects.server';
 import { listAdminFireworks } from '@/lib/admin/fireworks.server';
 import { listCatalogueProducts } from '@/lib/admin/catalogue.server';

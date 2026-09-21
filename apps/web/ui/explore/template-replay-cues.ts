@@ -1,4 +1,4 @@
-import type { ShowTemplateCue } from '@/lib/admin.types';
+import type { ShowTemplateCue } from '@/lib/show-templates/types';
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
 
 export const TEMPLATE_REPLAY_ACTIVE_CUE_EVENT = 'showcrafter:template-replay-active-cue';

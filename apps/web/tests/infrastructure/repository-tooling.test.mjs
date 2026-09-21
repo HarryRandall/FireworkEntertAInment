@@ -20,3 +20,13 @@ test('shows callers import focused owner modules without compatibility barrels',
   assert.equal(existsSync(join(root, 'lib/shows.server.ts')), false);
   assert.equal(existsSync(join(root, 'lib/shows/index.ts')), false);
 });
+
+test('shared access and public template reads stay outside the admin domain', () => {
+  assert.equal(existsSync(join(root, 'lib/admin/current-user.server.ts')), false);
+  assert.equal(existsSync(join(root, 'lib/access/current-user.server.ts')), true);
+  assert.equal(existsSync(join(root, 'lib/show-templates/queries.server.ts')), true);
+
+  const adminTemplates = read('lib/admin/templates.server.ts');
+  assert.doesNotMatch(adminTemplates, /export async function listShowTemplates/);
+  assert.doesNotMatch(adminTemplates, /export async function getShowTemplateBySlug/);
+});

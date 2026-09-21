@@ -51,7 +51,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/ui/primitives/dialog';
-import type { AdminShowPresetDetail, ShowTemplateCue } from '@/lib/admin.types';
+import type { AdminShowPresetDetail } from '@/lib/admin.types';
+import type { ShowTemplateCue } from '@/lib/show-templates/types';
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
 import { formatDuration } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';

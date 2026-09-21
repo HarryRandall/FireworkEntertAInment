@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { requirePermission } from '@/lib/admin/current-user.server';
+import { requirePermission } from '@/lib/access/current-user.server';
 import { getServerClient } from '@/lib/admin/supabase';
 import { IMPORT_VIDEO_BUCKET } from '@/lib/import-jobs';
 import type {

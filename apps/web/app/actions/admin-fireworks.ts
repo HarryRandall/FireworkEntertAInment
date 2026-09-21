@@ -13,7 +13,7 @@ import {
   invalidateAdminMultishotsCache,
   invalidateAdminStyleDefaultsCache,
 } from '@/lib/admin/cache-keys';
-import { requirePermission } from '@/lib/admin/current-user.server';
+import { requirePermission } from '@/lib/access/current-user.server';
 import type {
   AdminEditorVersion,
   AdminStyleDefaultOption,

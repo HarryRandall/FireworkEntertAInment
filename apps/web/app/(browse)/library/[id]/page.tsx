@@ -14,10 +14,13 @@ import { Badge } from '@/ui/patterns/Badge';
 import { Card } from '@/ui/patterns/Card';
 import { InlineAlert, Skeleton } from '@/ui/patterns/Feedback';
 import { formatBudget, formatDuration, type FireworkSpecification } from '@/lib/show-domain';
-import { getCurrentProfile } from '@/lib/admin/current-user.server';
-import { getCurrentShowPresetLikeState, getShowTemplateBySlug } from '@/lib/admin/templates.server';
+import { getCurrentProfile } from '@/lib/access/current-user.server';
+import {
+  getCurrentShowPresetLikeState,
+  getShowTemplateBySlug,
+} from '@/lib/show-templates/queries.server';
 import { listReferencedShowTemplateSpecifications } from '@/lib/show-template-specifications.server';
-import type { ShowTemplate } from '@/lib/admin.types';
+import type { ShowTemplate } from '@/lib/show-templates/types';
 import { CloneTemplateSubmitButton } from '@/app/(browse)/library/[id]/_components/CloneTemplateSubmitButton';
 
 type PageProps = {

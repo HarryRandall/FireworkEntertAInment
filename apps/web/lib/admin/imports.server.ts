@@ -14,7 +14,7 @@ import { IMPORT_VIDEO_BUCKET } from '@/lib/import-jobs';
 import { getPreferredImportVideoSource } from '@/lib/import-video-preview.js';
 import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
 import { ADMIN_CACHE_TTL_SECONDS, getAdminImportsCacheKey } from './cache-keys';
-import { requirePermission } from './current-user.server';
+import { requirePermission } from '@/lib/access/current-user.server';
 import {
   mapImportJob,
   mapImportOutput,

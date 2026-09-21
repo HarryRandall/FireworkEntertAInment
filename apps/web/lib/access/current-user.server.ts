@@ -24,8 +24,8 @@ import {
   type RolePermissionRow,
   type UserPermissionOverrideRow,
   type UserRoleRow,
-} from './mappers';
-import { getServerClient } from './supabase';
+} from '@/lib/admin/mappers';
+import { getServerClient } from '@/lib/admin/supabase';
 
 // Cross-request cache for the RBAC profile. The `current_user_access` RPC takes
 // ~1s and runs on every (app) navigation via the layout; caching it for 30s
@@ -139,7 +139,7 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
   ].filter(({ error }) => error !== null);
 
   if (fallbackErrors.length > 0) {
-    console.error('[admin.current-user] fallback access reads failed:', fallbackErrors);
+    console.error('[access.current-user] fallback access reads failed:', fallbackErrors);
     throw new Error('Current user access could not be loaded.', {
       cause: fallbackErrors[0]?.error,
     });

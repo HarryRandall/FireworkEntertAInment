@@ -2,7 +2,7 @@ import 'server-only';
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/database.types';
-import { requirePermission } from '@/lib/admin/current-user.server';
+import { requirePermission } from '@/lib/access/current-user.server';
 import { getCurrentUserId } from '@/lib/current-user.server';
 import { deleteCachedKeys, getCachedJson, setCachedJson } from '@/lib/server-cache';
 import type { AiUsageSummary } from '@/lib/show-summary';

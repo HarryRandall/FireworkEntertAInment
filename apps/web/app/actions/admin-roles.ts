@@ -11,7 +11,7 @@ import { z } from 'zod';
 import { isLockedRolePermission } from '@/lib/admin/role-permissions';
 import { asPermissionKey, asRoleKey } from '@/lib/admin/mappers';
 import { invalidateAdminRolePermissionsCache } from '@/lib/admin/cache-keys';
-import { requirePermission } from '@/lib/admin/current-user.server';
+import { requirePermission } from '@/lib/access/current-user.server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
 

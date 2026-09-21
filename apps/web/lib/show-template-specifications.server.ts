@@ -1,6 +1,6 @@
 import 'server-only';
 
-import type { ShowTemplateCue } from '@/lib/admin.types';
+import type { ShowTemplateCue } from '@/lib/show-templates/types';
 import type { FireworkSpecification } from '@/lib/show-domain';
 import { listFireworkProducts } from '@/lib/shows/queries.server';
 

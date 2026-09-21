@@ -7,7 +7,7 @@ import {
   getPublicAssortmentByToken,
   resolvePublicAssortmentShow,
 } from '@/lib/assortments/public.server';
-import type { ShowTemplate } from '@/lib/admin.types';
+import type { ShowTemplate } from '@/lib/show-templates/types';
 import { parseStoredAnalyserResult } from '@/lib/show-analysis-validation';
 import { formatBudget } from '@/lib/show-domain';
 import { listFireworkProducts, listReplayCuesForShowWithClient } from '@/lib/shows/queries.server';

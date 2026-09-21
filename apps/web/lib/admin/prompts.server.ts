@@ -22,7 +22,7 @@ import {
   getAdminGenerationSettingsCacheKey,
   getAdminPromptConfigsCacheKey,
 } from './cache-keys';
-import { requirePermission } from './current-user.server';
+import { requirePermission } from '@/lib/access/current-user.server';
 import { getServerClient } from './supabase';
 
 type PromptConfigRow = Database['public']['Tables']['prompt_configs']['Row'];

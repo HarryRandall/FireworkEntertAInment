@@ -267,7 +267,7 @@ test('supporting app routes and workspace summary API are shipped', () => {
 });
 
 test('explore seed data supports database-managed factual library shelves', () => {
-  const templateReads = read('lib/admin/templates.server.ts');
+  const templateReads = read('lib/show-templates/queries.server.ts');
   assert.equal(existsSync(join(root, 'lib/library-seed-templates.ts')), false);
   assert.doesNotMatch(templateReads, /mergeSeededLibraryTemplates/);
   assert.match(templateReads, /if \(cached\) return cached/);

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getShowTemplateBySlug } from '@/lib/admin/templates.server';
+import { getShowTemplateBySlug } from '@/lib/show-templates/queries.server';
 import { listReferencedShowTemplateSpecifications } from '@/lib/show-template-specifications.server';
 
 export const dynamic = 'force-dynamic';

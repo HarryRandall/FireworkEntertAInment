@@ -10,7 +10,7 @@ import {
   type AdminOverviewRangeKey,
 } from './overview-range';
 import { ADMIN_CACHE_TTL_SECONDS, getAdminOverviewCacheKey } from './cache-keys';
-import { requirePermission } from './current-user.server';
+import { requirePermission } from '@/lib/access/current-user.server';
 import { getServerClient } from './supabase';
 
 type ShowRow = Pick<

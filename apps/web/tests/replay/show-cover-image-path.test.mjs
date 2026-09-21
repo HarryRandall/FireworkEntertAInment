@@ -23,20 +23,20 @@ test('generated types expose cover_image_path on shows and show_presets', () => 
 });
 
 test('cover image path flows through domain types, mappers, and select lists', () => {
-  const adminTypes = read('lib/admin.types.ts');
+  const templateTypes = read('lib/show-templates/types.ts');
   const domain = read('lib/show-domain.ts');
   const summary = read('lib/show-summary.ts');
-  const adminMapper = read('lib/admin/mappers.ts');
+  const templateMapper = read('lib/show-templates/mappers.ts');
   const showMapper = read('lib/shows/mappers.ts');
   const showTypes = read('lib/shows/types.ts');
   const templates = read('lib/admin/templates.server.ts');
   const cloneAction = read('app/actions/show-templates.ts');
 
-  assert.match(adminTypes, /coverImagePath: string \| null/);
+  assert.match(templateTypes, /coverImagePath: string \| null/);
   assert.match(domain, /coverImagePath: string \| null/);
   assert.match(summary, /coverImagePath: string \| null/);
   assert.match(summary, /coverImagePath: show\.coverImagePath,/);
-  assert.match(adminMapper, /coverImagePath: row\.cover_image_path \?\? null,/);
+  assert.match(templateMapper, /coverImagePath: row\.cover_image_path \?\? null,/);
   assert.match(showMapper, /coverImagePath: row\.cover_image_path \?\? null,/);
   assert.match(showTypes, /\| 'cover_image_path'/);
   assert.match(showTypes, /cover_shader[^']*cover_image_path/);

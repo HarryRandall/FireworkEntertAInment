@@ -14,7 +14,7 @@ function read(path) {
 test('Explore likes persist without exposing user identities', () => {
   const action = read('app/actions/show-preset-likes.ts');
   const button = read('ui/explore/TemplateLikeButton.tsx');
-  const mapper = read('lib/admin/mappers.ts');
+  const mapper = read('lib/show-templates/mappers.ts');
   const card = read('ui/explore/ExploreCard.tsx');
 
   assert.match(action, /toggle_show_preset_like/);
@@ -29,12 +29,13 @@ test('Explore likes persist without exposing user identities', () => {
 
 test('imported Explore presets retain durable generated-show provenance', () => {
   const actions = read('app/actions/admin-show-presets.ts');
-  const templates = read('lib/admin/templates.server.ts');
-  const types = read('lib/admin.types.ts');
+  const templates = read('lib/show-templates/queries.server.ts');
+  const adminTemplates = read('lib/admin/templates.server.ts');
+  const types = read('lib/show-templates/types.ts');
   const adminPage = read('app/(admin)/admin/show-presets/page.tsx');
   assert.match(actions, /source_show_id: show\.id/);
   assert.match(actions, /\.eq\('source_show_id', show\.id\)/);
-  assert.match(templates, /importedShowIds/);
+  assert.match(adminTemplates, /importedShowIds/);
   assert.match(templates, /PUBLIC_SHOW_TEMPLATES_SELECT/);
   assert.match(templates, /PUBLIC_SHOW_TEMPLATES_FALLBACK_SELECTS/);
   const publicTemplateType = types.match(/export type ShowTemplate = \{[\s\S]*?\n\};/)?.[0] ?? '';

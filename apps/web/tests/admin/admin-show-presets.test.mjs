@@ -47,6 +47,7 @@ test('show preset publication migration and generated types protect drafts', () 
 
 test('public reads only use published presets while admin helpers include drafts', () => {
   const templates = read('lib/admin/templates.server.ts');
+  const publicTemplates = read('lib/show-templates/queries.server.ts');
   const timing = read('lib/show-preset-timing.server.ts');
   const actions = read('app/actions/admin-show-presets.ts');
   const homePage = read('app/(app)/home/page.tsx');
@@ -54,8 +55,8 @@ test('public reads only use published presets while admin helpers include drafts
   const libraryPage = read('app/(browse)/library/page.tsx');
   const libraryDetailPage = read('app/(browse)/library/[id]/page.tsx');
 
-  assert.match(templates, /getShowTemplatesCacheKey\(\)/);
-  assert.match(templates, /\.eq\('is_published', true\)/);
+  assert.match(publicTemplates, /getShowTemplatesCacheKey\(\)/);
+  assert.match(publicTemplates, /\.eq\('is_published', true\)/);
   assert.match(templates, /listAdminShowPresets/);
   assert.match(templates, /getAdminShowPresetById/);
   assert.match(templates, /listAdminShowPresetImportShows/);
@@ -65,7 +66,7 @@ test('public reads only use published presets while admin helpers include drafts
   assert.match(templates, /SHOW_TEMPLATES_FALLBACK_SELECTS/);
   assert.doesNotMatch(templates, /SHOW_TEMPLATES_LEGACY_SELECT/);
   assert.ok(
-    (templates.match(/\.eq\('is_published', true\)/g) ?? []).length >= 4,
+    (publicTemplates.match(/\.eq\('is_published', true\)/g) ?? []).length >= 4,
     'every public list and detail fallback remains publication-scoped',
   );
   assert.match(timing, /const endSeconds = cue\.timeSeconds \+ durationSeconds/);
@@ -117,7 +118,7 @@ test('public reads only use published presets while admin helpers include drafts
 });
 
 test('cue parsing, previews, clone and import paths support catalogue-item cues', () => {
-  const mappers = read('lib/admin/mappers.ts');
+  const mappers = read('lib/show-templates/mappers.ts');
   const replayCues = read('ui/explore/template-replay-cues.ts');
   const cloneAction = read('app/actions/show-templates.ts');
   const presetActions = read('app/actions/admin-show-presets.ts');

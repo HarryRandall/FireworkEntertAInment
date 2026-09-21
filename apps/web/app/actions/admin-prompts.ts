@@ -7,7 +7,7 @@ import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { invalidateAdminPromptConfigsCache } from '@/lib/admin/cache-keys';
-import { requirePermission } from '@/lib/admin/current-user.server';
+import { requirePermission } from '@/lib/access/current-user.server';
 import {
   asProductCatalogueFields,
   PRODUCT_CATALOGUE_FIELD_KEYS,

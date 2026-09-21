@@ -5,7 +5,7 @@ import 'server-only';
  * shader cover and current poster path so the backfill UI can render missing
  * posters client-side and record the resulting storage path.
  */
-import { requirePermission } from './current-user.server';
+import { requirePermission } from '@/lib/access/current-user.server';
 import { getServerClient } from './supabase';
 import { parseCover, type ShowCover } from '@/lib/cover';
 

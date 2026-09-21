@@ -8,7 +8,7 @@ import {
   TEMPLATE_REPLAY_ACTIVE_CUE_EVENT,
   type TemplateReplayActiveCueEventDetail,
 } from '@/ui/explore/template-replay-cues';
-import type { ShowTemplateCue } from '@/lib/admin.types';
+import type { ShowTemplateCue } from '@/lib/show-templates/types';
 import { formatDuration, type FireworkSpecification, type ReplayCue } from '@/lib/show-domain';
 
 type TemplateCurrentFireworkCardProps = {

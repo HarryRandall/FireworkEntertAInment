@@ -16,7 +16,7 @@ function functionBody(name, nextName) {
 
 test('admin preset list and detail distinguish denial or missing rows from read failures', () => {
   const list = functionBody('listAdminShowPresets', 'getAdminShowPresetById');
-  const detail = functionBody('getAdminShowPresetById', 'getShowTemplateBySlug');
+  const detail = functionBody('getAdminShowPresetById');
 
   assert.match(list, /requirePermission\('admin\.manage_catalogue'\)\)\) return \[\]/);
   assert.match(list, /throwAdminTemplateReadError\('listAdminShowPresets', error\)/);
@@ -32,7 +32,7 @@ test('admin preset list and detail distinguish denial or missing rows from read 
 });
 
 test('admin import-source reads preserve feature gating but reject every attempted query error', () => {
-  const imports = functionBody('listAdminShowPresetImportShows', 'listShowTemplates');
+  const imports = functionBody('listAdminShowPresetImportShows', 'listAdminShowPresets');
 
   assert.match(imports, /if \(!service\) return \[\]/);
   assert.match(imports, /error: importedPresetsError/);
