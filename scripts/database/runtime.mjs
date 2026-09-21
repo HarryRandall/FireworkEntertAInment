@@ -40,7 +40,7 @@ export function query(target, sql) {
   const path = join(directory, 'query.sql');
   try {
     writeFileSync(path, sql, { mode: 0o600 });
-    const output = supabase(['db', 'query', ...target.flags, '--file', path]);
+    const output = supabase(['db', 'query', ...target.flags, '--file', path, '--output', 'json']);
     return output.trim() ? (JSON.parse(output).rows ?? []) : [];
   } finally {
     rmSync(directory, { recursive: true, force: true });
