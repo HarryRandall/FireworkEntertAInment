@@ -26,7 +26,10 @@ import {
   deletePreviewCueAction,
   type CueActionResult,
 } from '@/lib/shows/cue-actions.server';
-import { usePreviewFullscreen, PreviewFullscreenBackdrop } from '@/ui/admin/previewFullscreen';
+import {
+  usePreviewFullscreen,
+  PreviewFullscreenBackdrop,
+} from '@/ui/firework-editor/previewFullscreen';
 import { ReplayLoadingBar } from '@/ui/replay/ReplayLoadingBar';
 import { ReplayStageBackdrop } from '@/ui/replay/ReplayStageBackdrop';
 import { ReplayTransportControls } from '@/ui/replay/ReplayTransportControls';

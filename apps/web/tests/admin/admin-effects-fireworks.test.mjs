@@ -243,8 +243,8 @@ test('admin effects UI is wired to base effect fields', () => {
   const browser = read('app/(admin)/admin/effects/_components/EffectsBrowser.tsx');
   const editor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
-  const shell = read('ui/admin/FireworkEditorShell.tsx');
-  const inspectorPanels = read('ui/admin/EditorInspectorPanels.tsx');
+  const shell = read('ui/firework-editor/FireworkEditorShell.tsx');
+  const inspectorPanels = read('ui/firework-editor/EditorInspectorPanels.tsx');
   const routeSkeletons = read('ui/shell/RouteSkeletons.tsx');
   const design = read('lib/fireworks/design.ts');
 

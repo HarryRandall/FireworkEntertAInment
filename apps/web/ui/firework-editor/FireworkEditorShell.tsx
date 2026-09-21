@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { CloudUpload, PanelRightClose, Save, Undo2 } from 'lucide-react';
-import { PreviewFullscreenBackdrop } from '@/ui/admin/previewFullscreen';
+import { PreviewFullscreenBackdrop } from '@/ui/firework-editor/previewFullscreen';
 import {
   ReplayTransportControls,
   type ReplayTransportTick,

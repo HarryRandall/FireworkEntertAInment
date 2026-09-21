@@ -21,24 +21,27 @@ import {
   restoreStyleDefaultEditorVersion,
   updateStyleDefault,
 } from '../../../style-default-actions';
-import { EditorHistoryPanel, JsonReadOnlyPanel } from '@/ui/admin/EditorInspectorPanels';
+import { EditorHistoryPanel, JsonReadOnlyPanel } from '@/ui/firework-editor/EditorInspectorPanels';
 import {
   PREVIEW_LAUNCH_POSITIONS,
   estimateLaunchPreviewDurationSeconds,
   estimateLaunchPreviewTicks,
   estimatePreviewTicks,
-} from '@/ui/admin/editor-preview-timing';
+} from '@/ui/firework-editor/editor-preview-timing';
 import {
   EditorPreviewTransport,
   FireworkEditorShell,
   type FireworkEditorShellTab,
-} from '@/ui/admin/FireworkEditorShell';
-import { makeOptimisticEditorVersion, useEditorHistory } from '@/ui/admin/useEditorHistory';
-import { usePreviewFullscreen } from '@/ui/admin/previewFullscreen';
+} from '@/ui/firework-editor/FireworkEditorShell';
+import {
+  makeOptimisticEditorVersion,
+  useEditorHistory,
+} from '@/ui/firework-editor/useEditorHistory';
+import { usePreviewFullscreen } from '@/ui/firework-editor/previewFullscreen';
 import { useAdminBreadcrumbOverride } from '@/ui/shell/AdminShell';
 import { ReplayStageBackdrop } from '@/ui/replay/ReplayStageBackdrop';
-import { FireworkRenderControls } from '@/ui/admin/FireworkRenderControls';
-import { PanelSection } from '@/ui/admin/firework-render-controls/ControlSections';
+import { FireworkRenderControls } from '@/ui/firework-editor/FireworkRenderControls';
+import { PanelSection } from '@/ui/firework-editor/firework-render-controls/ControlSections';
 import { Button } from '@/ui/patterns/Button';
 import { Field, FieldLabel } from '@/ui/patterns/Field';
 import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
