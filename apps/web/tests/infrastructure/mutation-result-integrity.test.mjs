@@ -12,7 +12,7 @@ function read(path) {
 }
 
 test('catalogue metadata updates require the canonical updated row', () => {
-  const action = read('app/actions/admin-catalogue.ts');
+  const action = read('app/(admin)/admin/catalogue/actions.ts');
 
   assert.match(
     action,
@@ -26,7 +26,7 @@ test('catalogue metadata updates require the canonical updated row', () => {
 });
 
 test('every show preset update rejects a missing returned row before success', () => {
-  const actions = read('app/actions/admin-show-presets.ts');
+  const actions = read('app/(admin)/admin/show-presets/actions.ts');
 
   assert.match(
     actions,

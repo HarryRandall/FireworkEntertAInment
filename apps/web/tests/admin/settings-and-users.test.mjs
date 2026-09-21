@@ -37,7 +37,7 @@ test('settings exposes modern account sections', () => {
 });
 
 test('profile theme preference is persisted by profile actions and schema', () => {
-  const action = readFileSync(join(root, 'app/actions/platform-admin.ts'), 'utf8');
+  const action = readFileSync(join(root, 'lib/access/profile-actions.server.ts'), 'utf8');
   assert.match(action, /themePreference/);
   assert.match(action, /theme_preference/);
 });

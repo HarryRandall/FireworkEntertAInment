@@ -17,8 +17,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/ui/primitives/alert-dialog';
-import { startImpersonationAction } from '@/app/actions/impersonation';
-import { deleteUserAction, sendUserPasswordResetAction } from '@/app/actions/admin-users';
+import { startImpersonationAction } from '@/lib/access/impersonation-actions.server';
+import { deleteUserAction, sendUserPasswordResetAction } from '../../actions';
 import { GrantAiCreditsDialog } from '@/app/(admin)/admin/users/[id]/_components/GrantAiCreditsDialog';
 
 type Props = {

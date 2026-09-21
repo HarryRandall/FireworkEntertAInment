@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useRef, useTransition, type FormEvent } from 'react';
 import { RefreshCcw, WandSparkles } from 'lucide-react';
-import { queueImportJobAction, requestImportRefinementAction } from '@/app/actions/platform-admin';
+import { queueImportJobAction, requestImportRefinementAction } from '../../actions';
 import { Button } from '@/ui/patterns/Button';
 import { Card } from '@/ui/patterns/Card';
 import { Field, FieldHint, FieldLabel } from '@/ui/patterns/Field';

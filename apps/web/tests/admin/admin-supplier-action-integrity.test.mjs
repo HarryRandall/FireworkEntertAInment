@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
-const actions = readFileSync(join(process.cwd(), 'app/actions/admin-suppliers.ts'), 'utf8');
+const actions = readFileSync(join(process.cwd(), 'app/(admin)/admin/suppliers/actions.ts'), 'utf8');
 
 function functionBody(source, name) {
   const start = source.indexOf(`function ${name}`);

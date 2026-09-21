@@ -49,7 +49,7 @@ test('public reads only use published presets while admin helpers include drafts
   const templates = read('lib/admin/templates.server.ts');
   const publicTemplates = read('lib/show-templates/queries.server.ts');
   const timing = read('lib/show-preset-timing.server.ts');
-  const actions = read('app/actions/admin-show-presets.ts');
+  const actions = read('app/(admin)/admin/show-presets/actions.ts');
   const homePage = read('app/(app)/home/page.tsx');
   const homeDiscovery = read('ui/home/HomeDiscoverySections.tsx');
   const libraryPage = read('app/(browse)/library/page.tsx');
@@ -120,8 +120,8 @@ test('public reads only use published presets while admin helpers include drafts
 test('cue parsing, previews, clone and import paths support catalogue-item cues', () => {
   const mappers = read('lib/show-templates/mappers.ts');
   const replayCues = read('ui/explore/template-replay-cues.ts');
-  const cloneAction = read('app/actions/show-templates.ts');
-  const presetActions = read('app/actions/admin-show-presets.ts');
+  const cloneAction = read('lib/show-templates/clone-actions.server.ts');
+  const presetActions = read('app/(admin)/admin/show-presets/actions.ts');
 
   assert.match(mappers, /catalogueItemId/);
   assert.match(mappers, /catalogueItemSlug/);

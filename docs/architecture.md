@@ -51,8 +51,9 @@ it is a manual development fixture, not a production seed step.
 
 Dependencies flow from routes to features to reusable patterns to UI
 primitives. Shared components must not import a route's implementation. Move a
-feature to its domain when a second route needs it. Client components may import
-an explicit server action from `app/actions/`; server-only modules must remain
+feature to its domain when a second route needs it. Keep route-specific Server
+Actions beside their route and shared Server Actions in the owning `lib` domain;
+do not recreate a central `app/actions` folder. Server-only modules must remain
 outside client bundles. Keep permission and ownership checks at server boundaries.
 
 App, admin and My Store use `WorkspaceShell` and `WorkspaceContent` for the

@@ -5,7 +5,7 @@
 import Link from 'next/link';
 import { useState, type FormEvent } from 'react';
 import { Mail, CheckCircle } from 'lucide-react';
-import { requestPasswordRecoveryAction } from '@/app/actions/password-recovery';
+import { requestPasswordRecoveryAction } from '@/lib/auth/password-recovery-actions.server';
 import { BrandLockup } from '@/ui/patterns/BrandMark';
 import { Input } from '@/ui/patterns/Input';
 import { Button } from '@/ui/patterns/Button';

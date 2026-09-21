@@ -6,7 +6,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Heart } from 'lucide-react';
-import { toggleShowPresetLikeAction } from '@/app/actions/show-preset-likes';
+import { toggleShowPresetLikeAction } from '@/lib/show-templates/like-actions.server';
 import { toast } from '@/ui/patterns/toast';
 
 export function TemplateLikeButton({

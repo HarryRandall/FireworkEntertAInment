@@ -17,7 +17,7 @@ import { Button } from '@/ui/patterns/Button';
 import { Field, FieldLabel } from '@/ui/patterns/Field';
 import { Input } from '@/ui/patterns/Input';
 import { toast } from '@/ui/patterns/toast';
-import { createAssortment } from '@/app/actions/admin-assortments';
+import { createAssortment } from '@/lib/assortments/actions.server';
 
 export function NewAssortmentButton({
   destination,

@@ -27,7 +27,7 @@ export function importBoundaryViolation(importer, specifier) {
   ) {
     return 'Design-system patterns may compose UI primitives, not product features or routes.';
   }
-  if (!target.startsWith('app/') || target.startsWith('app/actions/')) return null;
+  if (!target.startsWith('app/')) return null;
   if (importer.startsWith('ui/')) {
     return 'Move shared route code into its component domain or lib before importing it here.';
   }

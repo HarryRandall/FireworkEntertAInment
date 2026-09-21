@@ -55,7 +55,7 @@ test('multishot database constraints mirror the admin action contract', () => {
 });
 
 test('multishot actions validate and resynchronise conservative derived duration', () => {
-  const actions = read('app/actions/admin-multishots.ts');
+  const actions = read('app/(admin)/admin/multishots/actions.ts');
   const derivation = actions.slice(
     actions.indexOf('async function deriveMultishotState'),
     actions.indexOf('async function resynchroniseMultishotDerivedState'),
@@ -138,7 +138,7 @@ test('optimistic shot deletion waits for inserts and rolls back failed deletes',
 });
 
 test('shot actions scope updates and avoid catalogue-wide invalidation for aim-only edits', () => {
-  const actions = read('app/actions/admin-multishots.ts');
+  const actions = read('app/(admin)/admin/multishots/actions.ts');
   const upsert = actions.slice(
     actions.indexOf('export async function upsertMultishotShot'),
     actions.indexOf('export async function deleteMultishotShot'),

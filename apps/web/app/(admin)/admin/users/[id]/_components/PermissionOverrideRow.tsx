@@ -5,7 +5,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { setUserPermissionOverrideAction } from '@/app/actions/admin-users';
+import { setUserPermissionOverrideAction } from '../../actions';
 import { toast } from '@/ui/patterns/toast';
 
 type Mode = 'clear' | 'grant' | 'deny';

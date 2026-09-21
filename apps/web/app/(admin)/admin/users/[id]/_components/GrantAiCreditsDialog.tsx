@@ -5,7 +5,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Plus } from 'lucide-react';
-import { grantUserAiCreditsAction } from '@/app/actions/admin-users';
+import { grantUserAiCreditsAction } from '../../actions';
 import { Button } from '@/ui/patterns/Button';
 import { Field, FieldHint, FieldLabel } from '@/ui/patterns/Field';
 import { Input } from '@/ui/patterns/Input';

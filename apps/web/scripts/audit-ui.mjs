@@ -48,7 +48,6 @@ for (const file of files) {
         importers.get(target).add(file);
         if (
           target.startsWith('app/') &&
-          !target.startsWith('app/actions/') &&
           (!file.startsWith('app/') || file.split('/')[1] !== target.split('/')[1])
         ) {
           crossRouteImports.push({ importer: file, target });

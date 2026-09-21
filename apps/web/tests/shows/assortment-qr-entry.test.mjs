@@ -4,7 +4,7 @@ import test from 'node:test';
 import ts from 'typescript';
 
 const files = {
-  adminActions: new URL('../../app/actions/admin-assortments.ts', import.meta.url),
+  adminActions: new URL('../../lib/assortments/actions.server.ts', import.meta.url),
   adminEditor: new URL('../../ui/assortments/AssortmentQrPanel.tsx', import.meta.url),
   publicServer: new URL('../../lib/assortments/public.server.ts', import.meta.url),
   constraints: new URL('../../lib/assortments/constraints.ts', import.meta.url),

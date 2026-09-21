@@ -2,7 +2,7 @@
 
 import { useEffect, useId, useRef, useState, useTransition } from 'react';
 import { Gauge, Loader2 } from 'lucide-react';
-import { pingAnalyserWarmthAction, setAnalyserWarmthAction } from '@/app/actions/admin-analyser';
+import { pingAnalyserWarmthAction, setAnalyserWarmthAction } from '../actions';
 import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
 import { toast } from '@/ui/patterns/toast';
 import { Badge } from '@/ui/primitives/badge';

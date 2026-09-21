@@ -17,7 +17,7 @@ import {
 import { Button } from '@/ui/patterns/Button';
 import { Input } from '@/ui/patterns/Input';
 import { toast } from '@/ui/patterns/toast';
-import { updateProduct, type ProductInputType } from '@/app/actions/admin-catalogue';
+import { updateProduct, type ProductInputType } from '../actions';
 
 type Values = ProductInputType & { id?: string };
 

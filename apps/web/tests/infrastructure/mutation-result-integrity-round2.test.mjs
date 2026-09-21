@@ -10,7 +10,7 @@ function read(path) {
 }
 
 test('cover poster writes require the owned show row to be returned', () => {
-  const source = read('app/actions/show-cover-poster.ts');
+  const source = read('lib/shows/cover-actions.server.ts');
 
   assert.match(source, /\.eq\('user_id', user\.id\)\s*\.select\('id'\)\s*\.maybeSingle\(\)/);
   assert.match(source, /if \(error \|\| !updatedShow\)/);
@@ -33,8 +33,8 @@ test('shopping totals fail closed and derived writes require a returned show', (
 
 test('generation, cloning, and cue edits cannot present failed total syncs as success', () => {
   const runner = read('lib/cue-generation/runner.server.ts');
-  const templates = read('app/actions/show-templates.ts');
-  const preview = read('app/actions/preview-cues.ts');
+  const templates = read('lib/show-templates/clone-actions.server.ts');
+  const preview = read('lib/shows/cue-actions.server.ts');
 
   const syncIndex = runner.indexOf('await syncShowDerivedFieldsForUser');
   const completeIndex = runner.indexOf("'complete_cue_generation_attempt'", syncIndex);

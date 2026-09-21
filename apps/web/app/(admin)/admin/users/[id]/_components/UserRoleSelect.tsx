@@ -4,7 +4,7 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { setUserRoleAction } from '@/app/actions/admin-users';
+import { setUserRoleAction } from '../../actions';
 import { toast } from '@/ui/patterns/toast';
 import {
   Select,

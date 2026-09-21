@@ -4,7 +4,7 @@
  * Today this is just {@link syncShowDerivedFieldsForUser}, which recomputes the
  * cached `shows.total_cents` and `shows.effects_count` after any mutation that
  * could affect them. Heavier mutations (create/update show) live in server
- * actions under `app/actions/*` since they belong to the auth-gated request
+ * actions in their owning route or domain since they belong to the auth-gated request
  * boundary, not the shared data layer.
  */
 import 'server-only';

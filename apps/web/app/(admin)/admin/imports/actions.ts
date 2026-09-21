@@ -1,8 +1,5 @@
 /**
- * Platform admin server actions.
- *
- * This file groups every server action used by the admin imports flow plus
- * the (single) profile action. Each exported function is a Next.js Server
+ * Server actions owned by the admin imports flow. Each exported function is a Next.js Server
  * Action — invoked from a `<form action={...}>` or `useActionState` hook on
  * the client — so they:
  *
@@ -11,18 +8,12 @@
  *   explicit failure results where they need to display write outcomes
  * - Redirect via `next/navigation`'s `redirect()` only at the end of a flow
  *
- * The file is intentionally kept as a single module: existing tests grep
- * specific snippets out of this file's source (see `tests/*.test.mjs`), and
- * the schemas + helpers below are only used by these actions, so co-location
- * keeps the surface area obvious for code review.
- *
  * Sections:
  *   1. Zod schemas (input shapes for each action)
  *   2. Helpers (error formatting, storage-path safety checks, output reads)
- *   3. Profile actions
- *   4. Generic import-job CRUD actions
- *   5. Video-upload + finalize actions (browser-direct upload flow)
- *   6. Import lifecycle actions (queue / refine / draft / approve)
+ *   3. Generic import-job CRUD actions
+ *   4. Video-upload + finalize actions (browser-direct upload flow)
+ *   5. Import lifecycle actions (queue / refine / draft / approve)
  */
 'use server';
 
@@ -33,14 +24,13 @@ import { cookies } from 'next/headers';
 import { after } from 'next/server';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
-import { getCurrentUserId } from '@/lib/current-user.server';
 import {
   invalidateAdminCatalogueCache,
   invalidateAdminEffectsCache,
   invalidateAdminFireworksCache,
   invalidateAdminImportsCache,
 } from '@/lib/admin/cache-keys';
-import { invalidateUserProfileCache, requirePermission } from '@/lib/access/current-user.server';
+import { requirePermission } from '@/lib/access/current-user.server';
 import {
   DEFAULT_OPENROUTER_MODEL,
   IMPORT_VIDEO_BUCKET,
@@ -65,13 +55,6 @@ import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
 // ===========================================================================
 // 1. Zod schemas
 // ===========================================================================
-
-/** Editable fields on the user's own profile. All keys are optional patches. */
-const ProfileSchema = z.object({
-  fullName: z.string().trim().max(120).optional(),
-  phone: z.string().trim().max(40).optional(),
-  themePreference: z.enum(['dark', 'light', 'system']).optional(),
-});
 
 /** Generic import-job form payload (used by both create + update). */
 const ImportJobSchema = z.object({
@@ -360,82 +343,7 @@ async function verifyCallerOwnedUploadObject(
 }
 
 // ===========================================================================
-// 3. Profile actions
-// ===========================================================================
-
-type ProfilePatch = {
-  fullName?: string;
-  phone?: string;
-  themePreference?: 'dark' | 'light' | 'system';
-};
-
-type SavedProfilePatch = {
-  fullName: string | null;
-  phone: string | null;
-  themePreference: 'dark' | 'light' | 'system';
-};
-
-/**
- * Patch the current user's profile (display name, phone, theme).
- *
- * Empty strings clear the field on the server. Returns a structured result
- * so the client can show a toast — never throws on validation errors.
- */
-export async function updateProfileAction(
-  input: ProfilePatch,
-): Promise<{ ok: true; saved: SavedProfilePatch } | { ok: false; error: string }> {
-  const parsed = ProfileSchema.safeParse(input);
-  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
-
-  const userId = await getCurrentUserId();
-  if (!userId) return { ok: false, error: 'Not signed in' };
-
-  const patch: Record<string, string | null> = {};
-  if ('fullName' in parsed.data) {
-    patch.full_name = parsed.data.fullName ? parsed.data.fullName : null;
-  }
-  if ('phone' in parsed.data) {
-    patch.phone = parsed.data.phone ? parsed.data.phone : null;
-  }
-  if (parsed.data.themePreference) {
-    patch.theme_preference = parsed.data.themePreference;
-  }
-  const supabase = createClient(await cookies());
-  const result =
-    Object.keys(patch).length > 0
-      ? await supabase
-          .from('users')
-          .update(patch)
-          .eq('id', userId)
-          .select('full_name, phone, theme_preference')
-          .maybeSingle()
-      : await supabase
-          .from('users')
-          .select('full_name, phone, theme_preference')
-          .eq('id', userId)
-          .maybeSingle();
-  if (result.error || !result.data) {
-    const error = result.error;
-    console.error('[updateProfileAction] failed:', error);
-    return { ok: false, error: 'Could not save changes' };
-  }
-  if (Object.keys(patch).length > 0) {
-    await invalidateUserProfileCache(userId);
-    revalidatePath('/settings/profile');
-    revalidatePath('/home');
-  }
-  return {
-    ok: true,
-    saved: {
-      fullName: result.data.full_name,
-      phone: result.data.phone,
-      themePreference: result.data.theme_preference as SavedProfilePatch['themePreference'],
-    },
-  };
-}
-
-// ===========================================================================
-// 4. Generic import-job CRUD
+// 3. Generic import-job CRUD
 // ===========================================================================
 
 /**

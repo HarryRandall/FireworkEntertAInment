@@ -79,9 +79,9 @@ test('resolved render designs use copied JSON instead of live default links', ()
 });
 
 test('admin actions save copied default settings without live assignments', () => {
-  const styleActions = read('app/actions/admin-style-defaults.ts');
-  const effectActions = read('app/actions/admin-effects.ts');
-  const fireworkActions = read('app/actions/admin-fireworks.ts');
+  const styleActions = read('app/(admin)/admin/effects/style-default-actions.ts');
+  const effectActions = read('app/(admin)/admin/effects/actions.ts');
+  const fireworkActions = read('app/(admin)/admin/fireworks/actions.ts');
   const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
 
@@ -114,7 +114,7 @@ test('style default saves, archives, and restores record live editor history', (
   const types = read('lib/database.types.ts');
   const adminTypes = read('lib/admin.types.ts');
   const snapshots = read('lib/admin/editor-snapshots.ts');
-  const actions = read('app/actions/admin-style-defaults.ts');
+  const actions = read('app/(admin)/admin/effects/style-default-actions.ts');
   const loader = read('lib/admin/style-defaults.server.ts');
   const versions = read('lib/admin/editor-versions.server.ts');
   const editor = read('app/(admin)/admin/effects/defaults/[id]/_components/StyleDefaultEditor.tsx');
@@ -167,8 +167,8 @@ test('style default saves, archives, and restores record live editor history', (
 });
 
 test('inline style-default creation and parent editor saves are atomic', () => {
-  const effectActions = read('app/actions/admin-effects.ts');
-  const fireworkActions = read('app/actions/admin-fireworks.ts');
+  const effectActions = read('app/(admin)/admin/effects/actions.ts');
+  const fireworkActions = read('app/(admin)/admin/fireworks/actions.ts');
   const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
 
@@ -343,7 +343,7 @@ test('style default helpers extract only the requested section', () => {
 });
 
 test('style default writes reject invalid renderer fragments', () => {
-  const actions = read('app/actions/admin-style-defaults.ts');
+  const actions = read('app/(admin)/admin/effects/style-default-actions.ts');
 
   assert.match(actions, /fireworkDesignFragmentError\(parsed\)/);
   assert.match(actions, /fireworkDesignFragmentError\(snapshot\.defaultsJson\)/);

@@ -23,7 +23,7 @@ import {
 import { isCssCover, randomCover, type ShowCover } from '@/lib/cover';
 import { COVER_POSTER_VERSION, isCurrentCoverPosterPath } from '@/lib/cover-poster-url';
 import { renderCoverToPng } from '@/lib/render-cover-poster';
-import { setShowCoverImagePath } from '@/app/actions/show-cover-poster';
+import { setShowCoverImagePath } from '@/lib/shows/cover-actions.server';
 import { createClient } from '@/lib/supabase/client';
 import { Cover } from '@/ui/covers/Cover';
 import styles from './GeneratingShowAnimation.module.css';
