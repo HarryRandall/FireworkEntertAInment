@@ -2,8 +2,8 @@
 
 import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-import type { CurrentProfile } from '@/lib/admin.types';
-import type { ActiveImpersonation } from '@/lib/impersonation.types';
+import type { CurrentProfile } from '@/lib/access/types';
+import type { ActiveImpersonation } from '@/lib/access/impersonation.types';
 import { toast } from '@/ui/patterns/toast';
 import { SidebarFooter, useSidebar } from '@/ui/primitives/sidebar';
 import { ImpersonationBanner } from './ImpersonationBanner';

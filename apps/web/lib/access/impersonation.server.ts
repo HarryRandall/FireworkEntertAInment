@@ -6,7 +6,7 @@ import { cookies } from 'next/headers';
 import type { CookieOptions } from '@supabase/ssr';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
-import type { ActiveImpersonation, ImpersonationIdentity } from '@/lib/impersonation.types';
+import type { ActiveImpersonation, ImpersonationIdentity } from '@/lib/access/impersonation.types';
 import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
 
 export const IMPERSONATION_RETURN_COOKIE = 'showcrafter_impersonation_return';

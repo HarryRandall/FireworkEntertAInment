@@ -4,9 +4,9 @@ import type { ReactNode } from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AppShell } from '@/ui/shell/AppShell';
-import { getCurrentProfile } from '@/lib/access/current-user.server';
-import { getCurrentUserId } from '@/lib/current-user.server';
-import { getActiveImpersonation } from '@/lib/impersonation.server';
+import { getCurrentProfile } from '@/lib/access/current-profile.server';
+import { getCurrentUserId } from '@/lib/auth/current-user.server';
+import { getActiveImpersonation } from '@/lib/access/impersonation.server';
 import { measureServerTask } from '@/lib/perf.server';
 import {
   parseSidebarCollapsedPreference,

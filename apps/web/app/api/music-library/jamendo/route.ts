@@ -3,7 +3,7 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getCurrentProfile } from '@/lib/access/current-user.server';
+import { getCurrentProfile } from '@/lib/access/current-profile.server';
 import {
   browseJamendoTracks,
   downloadJamendoTrack,

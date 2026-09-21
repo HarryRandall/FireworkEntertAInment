@@ -9,7 +9,7 @@ import type {
 } from '@/lib/admin.types';
 import type { Database, Json } from '@/lib/database.types';
 import { ADMIN_CACHE_TTL_SECONDS, getAdminStyleDefaultsCacheKey } from './cache-keys';
-import { requirePermission } from '@/lib/access/current-user.server';
+import { requirePermission } from '@/lib/access/current-profile.server';
 import { listStyleDefaultEditorVersions } from './editor-versions.server';
 import { describeSupabaseError, isMissingStyleDefaultSchemaError } from './style-default-schema';
 import { getServerClient } from './supabase';

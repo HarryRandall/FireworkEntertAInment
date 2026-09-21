@@ -11,13 +11,11 @@ import type {
   ImportOutputSummary,
   MediaAssetSummary,
   Permission,
-  PermissionKey,
-  ProfileStatus,
   Role,
-  RoleKey,
-  ThemePreference,
 } from '@/lib/admin.types';
-import type { Database, Json } from '@/lib/database.types';
+import type { RoleKey } from '@/lib/access/types';
+import { asPermissionKey, asProfileStatus, asRoleKey } from '@/lib/access/mappers';
+import type { Database } from '@/lib/database.types';
 
 export type ProfileRow = Database['public']['Tables']['users']['Row'];
 export type RoleRow = Database['public']['Tables']['roles']['Row'];
@@ -30,43 +28,6 @@ export type SupplierRow = Database['public']['Tables']['supplier_profiles']['Row
 export type ImportJobRow = Database['public']['Tables']['import_jobs']['Row'];
 export type ImportOutputRow = Database['public']['Tables']['import_outputs']['Row'];
 export type MediaAssetRow = Database['public']['Tables']['media_assets']['Row'];
-
-const ROLE_KEYS: readonly RoleKey[] = ['admin', 'supplier', 'user'];
-
-function isRoleKey(value: string): value is RoleKey {
-  return ROLE_KEYS.includes(value as RoleKey);
-}
-
-/** Coerce a free-form string into a known {@link RoleKey} (defaults to `user`). */
-export function asRoleKey(value: string): RoleKey {
-  return isRoleKey(value) ? value : 'user';
-}
-
-/** Best-effort cast to {@link PermissionKey}. We accept unknown keys so that
- * a permission added to the DB but not yet typed in code still flows through. */
-export function asPermissionKey(value: string): PermissionKey {
-  return value as PermissionKey;
-}
-
-/** Map the DB profile status to the narrowed UI enum. */
-export function asProfileStatus(value: string): ProfileStatus {
-  return value === 'suspended' ? 'suspended' : 'active';
-}
-
-/** Coerce arbitrary JSON into a known {@link ThemePreference} (defaults to `dark`). */
-export function asThemePreference(value: unknown): ThemePreference {
-  return value === 'light' || value === 'system' ? value : 'dark';
-}
-
-/** Type guard for plain JSON objects (rejects arrays + null). */
-export function isRecord(value: Json | undefined): value is Record<string, Json | undefined> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-/** Returns a new array with duplicates removed, preserving first-seen order. */
-export function unique<T>(items: T[]): T[] {
-  return Array.from(new Set(items));
-}
 
 /** Map a DB role row to the domain {@link Role}. */
 export function mapRole(row: RoleRow): Role {

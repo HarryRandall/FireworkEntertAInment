@@ -2,7 +2,7 @@
 
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
-import { getCurrentUserId } from '@/lib/current-user.server';
+import { getCurrentUserId } from '@/lib/auth/current-user.server';
 import { getLatestAnalysisForShow } from '@/lib/show-analyses.server';
 
 const ShowIdSchema = z.string().uuid();

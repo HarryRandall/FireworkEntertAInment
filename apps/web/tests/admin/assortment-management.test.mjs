@@ -22,7 +22,7 @@ function loadReads({ allowed = true, data = [], error = null } = {}) {
   const dependencies = {
     'server-only': {},
     'next/headers': { cookies: async () => ({}) },
-    '@/lib/access/current-user.server': {
+    '@/lib/access/current-profile.server': {
       requirePermission: async () => (allowed ? { id: 'user' } : null),
     },
     '@/lib/supabase/server': { createClient: () => query },

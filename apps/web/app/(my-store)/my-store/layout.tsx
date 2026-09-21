@@ -4,8 +4,8 @@ import type { ReactNode } from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { MyStoreShell } from '@/ui/shell/MyStoreShell';
-import { getActiveImpersonation } from '@/lib/impersonation.server';
-import { requirePermission } from '@/lib/access/current-user.server';
+import { getActiveImpersonation } from '@/lib/access/impersonation.server';
+import { requirePermission } from '@/lib/access/current-profile.server';
 import { measureServerTask } from '@/lib/perf.server';
 import {
   parseSidebarCollapsedPreference,

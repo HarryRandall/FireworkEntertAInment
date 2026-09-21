@@ -51,8 +51,8 @@ import {
   SidebarTrigger,
   useSidebar,
 } from '@/ui/primitives/sidebar';
-import type { CurrentProfile } from '@/lib/admin.types';
-import type { ActiveImpersonation } from '@/lib/impersonation.types';
+import type { CurrentProfile } from '@/lib/access/types';
+import type { ActiveImpersonation } from '@/lib/access/impersonation.types';
 import type { ShowSummaryCard, WorkspaceSummary } from '@/lib/show-summary';
 import { cn } from '@/lib/utils';
 import { ArrowLeft, ChevronRight, PlusCircle } from 'lucide-react';

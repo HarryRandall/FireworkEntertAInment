@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
 import { invalidateShowTemplatesCache } from '@/lib/show-templates/cache.server';
-import { requirePermission } from '@/lib/access/current-user.server';
+import { requirePermission } from '@/lib/access/current-profile.server';
 import { randomCover } from '@/lib/cover';
 import type { Json } from '@/lib/database.types';
 import type { FireworkSpecification } from '@/lib/show-domain';

@@ -3,7 +3,7 @@
 import { cookies, headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-import { requirePermission } from '@/lib/access/current-user.server';
+import { requirePermission } from '@/lib/access/current-profile.server';
 import {
   createReturnToken,
   hashReturnToken,
@@ -11,7 +11,7 @@ import {
   IMPERSONATION_RETURN_COOKIE,
   IMPERSONATION_TTL_SECONDS,
   type ImpersonationEndReason,
-} from '@/lib/impersonation.server';
+} from '@/lib/access/impersonation.server';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
 

@@ -14,7 +14,7 @@ import { IMPORT_VIDEO_BUCKET } from '@/lib/firework-import/jobs';
 import { getPreferredImportVideoSource } from '@/lib/firework-import/video-preview.js';
 import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
 import { ADMIN_CACHE_TTL_SECONDS, getAdminImportsCacheKey } from './cache-keys';
-import { requirePermission } from '@/lib/access/current-user.server';
+import { requirePermission } from '@/lib/access/current-profile.server';
 import {
   mapImportJob,
   mapImportOutput,

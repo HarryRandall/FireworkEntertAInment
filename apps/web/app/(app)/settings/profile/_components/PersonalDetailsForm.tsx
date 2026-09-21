@@ -12,7 +12,7 @@ import { toast } from '@/ui/patterns/toast';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/ui/primitives/card';
 import { Separator } from '@/ui/primitives/separator';
 import { cn } from '@/lib/utils';
-import type { ThemePreference } from '@/lib/admin.types';
+import type { ThemePreference } from '@/lib/access/types';
 
 type Props = {
   initialFullName: string;

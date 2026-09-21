@@ -11,7 +11,7 @@ import 'server-only';
 import { cache } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
-import { getCurrentUserId } from '@/lib/current-user.server';
+import { getCurrentUserId } from '@/lib/auth/current-user.server';
 import type { LaunchPosition } from '@/lib/fireworks/design';
 import { resolveFireworkPreviewImage } from '@/lib/firework-preview-image';
 import {

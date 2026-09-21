@@ -15,7 +15,7 @@ import {
   getAdminRolePermissionMatrixCacheKey,
   getAdminRolesCacheKey,
 } from './cache-keys';
-import { requirePermission } from '@/lib/access/current-user.server';
+import { requirePermission } from '@/lib/access/current-profile.server';
 import {
   mapPermission,
   mapRole,

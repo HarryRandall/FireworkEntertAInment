@@ -30,13 +30,14 @@ and `docs`, which are repository folders. App scripts, including the audit and
 ESLint rules, live together in `apps/web/scripts`. Project-specific agent
 workflows live in `.agents/skills`.
 
-Within `lib`, `auth` owns session, redirect and recovery helpers; `access` owns
-current-profile and effective-permission context; `supabase` owns client
-construction; `admin` owns permission-checked management queries; and
+Within `lib`, `auth` owns session, authenticated identity, redirect and recovery
+helpers; `access` owns current-profile, effective-permission and impersonation
+context; `supabase` owns client construction; `admin` owns reusable
+permission-checked management queries; and
 `cue-generation`, `fireworks`, `firework-import`, `assortments`, `show-templates`
 and `shows` own their domain logic. Public template reads stay in
-`show-templates`; admin owns
-only draft and management reads.
+`show-templates`; route-specific admin show-preset reads stay beside the
+`app/(admin)/admin/show-presets` route.
 Import the owning module directly. Do not restore compatibility forwarding files
 or broad barrels that pull unrelated server and client modules into one API.
 Shared firework editor controls, history and fullscreen preview behaviour live in

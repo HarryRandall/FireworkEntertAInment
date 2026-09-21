@@ -12,7 +12,7 @@
  */
 import 'server-only';
 
-import { getCurrentUserId } from '@/lib/current-user.server';
+import { getCurrentUserId } from '@/lib/auth/current-user.server';
 import { getServerClient } from '@/lib/supabase/server-client';
 import type { Database } from '@/lib/database.types';
 import type {

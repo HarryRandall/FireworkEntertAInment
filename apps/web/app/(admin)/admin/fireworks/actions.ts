@@ -13,12 +13,9 @@ import {
   invalidateAdminMultishotsCache,
   invalidateAdminStyleDefaultsCache,
 } from '@/lib/admin/cache-keys';
-import { requirePermission } from '@/lib/access/current-user.server';
-import type {
-  AdminEditorVersion,
-  AdminStyleDefaultOption,
-  CurrentProfile,
-} from '@/lib/admin.types';
+import { requirePermission } from '@/lib/access/current-profile.server';
+import type { AdminEditorVersion, AdminStyleDefaultOption } from '@/lib/admin.types';
+import type { CurrentProfile } from '@/lib/access/types';
 import {
   makeFireworkEditorSnapshot,
   parseFireworkEditorSnapshot,

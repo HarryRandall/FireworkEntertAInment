@@ -1,7 +1,7 @@
 /** Curated Explore show editor. */
 
 import { notFound } from 'next/navigation';
-import { getAdminShowPresetById } from '@/lib/admin/templates.server';
+import { getAdminShowPresetById } from '../queries.server';
 import { listFireworkProducts } from '@/lib/shows/queries.server';
 import { ShowPresetEditor } from '@/app/(admin)/admin/show-presets/[id]/_components/ShowPresetEditor';
 

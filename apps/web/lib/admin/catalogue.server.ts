@@ -10,7 +10,7 @@ import 'server-only';
 import { getCachedJson, setCachedJson } from '@/lib/server-cache';
 import type { CatalogueProductSummary } from '@/lib/admin.types';
 import { ADMIN_CACHE_TTL_SECONDS, getAdminCatalogueCacheKey } from './cache-keys';
-import { requirePermission } from '@/lib/access/current-user.server';
+import { requirePermission } from '@/lib/access/current-profile.server';
 import { getServerClient } from './supabase';
 
 type CatalogueItemRow = {

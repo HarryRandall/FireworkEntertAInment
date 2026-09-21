@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
 import { ShowDetailChrome } from '@/app/(app)/shows/[id]/_components/ShowDetailChrome';
-import { getCurrentUserId } from '@/lib/current-user.server';
+import { getCurrentUserId } from '@/lib/auth/current-user.server';
 import { getShowBySlug } from '@/lib/shows/queries.server';
 
 type LayoutProps = {

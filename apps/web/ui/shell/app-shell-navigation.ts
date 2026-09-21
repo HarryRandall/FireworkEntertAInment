@@ -14,7 +14,7 @@ import {
   UserRound,
   type LucideIcon,
 } from 'lucide-react';
-import type { PermissionKey } from '@/lib/admin.types';
+import type { PermissionKey } from '@/lib/access/types';
 
 export type AppNavLink = {
   href: string;

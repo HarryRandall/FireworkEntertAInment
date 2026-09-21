@@ -1,4 +1,4 @@
-import type { PermissionKey, RoleKey } from '@/lib/admin.types';
+import type { PermissionKey, RoleKey } from '@/lib/access/types';
 
 export const LOCKED_ADMIN_PERMISSION_KEYS = ['admin.view', 'admin.manage_users'] as const;
 

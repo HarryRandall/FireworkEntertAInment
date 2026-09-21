@@ -5,7 +5,10 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
-const source = readFileSync(join(process.cwd(), 'lib/admin/templates.server.ts'), 'utf8');
+const source = readFileSync(
+  join(process.cwd(), 'app/(admin)/admin/show-presets/queries.server.ts'),
+  'utf8',
+);
 
 function functionBody(name, nextName) {
   const start = source.indexOf(`export async function ${name}`);
@@ -19,14 +22,14 @@ test('admin preset list and detail distinguish denial or missing rows from read 
   const detail = functionBody('getAdminShowPresetById');
 
   assert.match(list, /requirePermission\('admin\.manage_catalogue'\)\)\) return \[\]/);
-  assert.match(list, /throwAdminTemplateReadError\('listAdminShowPresets', error\)/);
+  assert.match(list, /throwAdminShowPresetReadError\('listAdminShowPresets', error\)/);
   assert.doesNotMatch(list, /if \(error\)[\s\S]*?return \[\]/);
 
   assert.match(detail, /requirePermission\('admin\.manage_catalogue'\)\)\) return null/);
-  assert.match(detail, /throwAdminTemplateReadError\('getAdminShowPresetById', error\)/);
+  assert.match(detail, /throwAdminShowPresetReadError\('getAdminShowPresetById', error\)/);
   assert.match(detail, /if \(!data\) return null/);
   assert.ok(
-    detail.indexOf('throwAdminTemplateReadError') < detail.indexOf('if (!data) return null'),
+    detail.indexOf('throwAdminShowPresetReadError') < detail.indexOf('if (!data) return null'),
     'failed reads are checked before a genuinely missing preset',
   );
 });
@@ -38,7 +41,7 @@ test('admin import-source reads preserve feature gating but reject every attempt
   assert.match(imports, /error: importedPresetsError/);
   assert.match(imports, /if \(sourceFailures\.length > 0\)/);
   assert.match(imports, /error: usersError/);
-  assert.match(imports, /throwAdminTemplateReadError\('listAdminShowPresetImportShows owners'/);
+  assert.match(imports, /throwAdminShowPresetReadError\('listAdminShowPresetImportShows owners'/);
   assert.doesNotMatch(imports, /listImportableGeneratedShows failed:[\s\S]*?return \[\]/);
   assert.doesNotMatch(imports, /list imported preset sources failed:[\s\S]*?return \[\]/);
 });
