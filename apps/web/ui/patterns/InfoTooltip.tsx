@@ -1,7 +1,8 @@
 /** InfoTooltip - compact shadcn-style info icon with hover/focus help. */
 import type { ReactNode } from 'react';
 import { Info } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/primitives/tooltip';
+import { Tooltip as TooltipPrimitive } from 'radix-ui';
+import { Tooltip, TooltipTrigger } from '@/ui/primitives/tooltip';
 import { cn } from '@/lib/utils';
 
 type InfoTooltipProps = {
@@ -24,9 +25,26 @@ export function InfoTooltip({ text, className }: InfoTooltipProps) {
           <Info className="size-3" aria-hidden />
         </button>
       </TooltipTrigger>
-      <TooltipContent collisionPadding={12} className="max-w-[15rem] leading-snug">
-        {text}
-      </TooltipContent>
+      <TooltipPrimitive.Portal>
+        <TooltipPrimitive.Content
+          sideOffset={6}
+          collisionPadding={12}
+          className="bg-background text-foreground border-border z-50 max-w-[15rem] rounded-md border px-3 py-1.5 text-xs leading-snug shadow-md"
+        >
+          {text}
+          <TooltipPrimitive.Arrow asChild width={14} height={7}>
+            <svg
+              width="14"
+              height="7"
+              viewBox="0 0 14 7"
+              aria-hidden
+              className="fill-background stroke-border overflow-visible"
+            >
+              <path d="M0 -1 L7 6 L14 -1" strokeWidth="1" strokeLinejoin="round" />
+            </svg>
+          </TooltipPrimitive.Arrow>
+        </TooltipPrimitive.Content>
+      </TooltipPrimitive.Portal>
     </Tooltip>
   );
 }
