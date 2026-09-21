@@ -1,4 +1,4 @@
-import type { ShowTemplateCue } from '@/lib/admin.types';
+import type { ShowTemplateCue } from '@/lib/show-templates/types';
 import type { FireworkSpecification } from '@/lib/show-domain';
 
 export const EXPLORE_PREVIEW_INTENT_MS = 500;

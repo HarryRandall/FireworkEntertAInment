@@ -9,7 +9,7 @@
 import dynamic from 'next/dynamic';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Heart } from 'lucide-react';
-import type { ShowTemplate, ShowTemplateCue } from '@/lib/admin.types';
+import type { ShowTemplate, ShowTemplateCue } from '@/lib/show-templates/types';
 import type { FireworkSpecification } from '@/lib/show-domain';
 import { formatBudget } from '@/lib/show-domain';
 import { PreviewFullscreenBackdrop, usePreviewFullscreen } from '@/ui/admin/previewFullscreen';

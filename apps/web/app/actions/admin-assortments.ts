@@ -6,7 +6,7 @@ import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
-import { requirePermission } from '@/lib/admin/current-user.server';
+import { requirePermission } from '@/lib/access/current-user.server';
 import {
   searchCatalogueItemOptions,
   type AdminCatalogueItemOption,

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getAssortmentById } from '@/lib/admin/assortments.server';
-import { requirePermission } from '@/lib/admin/current-user.server';
+import { requirePermission } from '@/lib/access/current-user.server';
 import { getTrustedAppOrigin } from '@/lib/app-origin';
 import { renderAssortmentQrSvg } from '@/lib/assortments/qr.server';
 

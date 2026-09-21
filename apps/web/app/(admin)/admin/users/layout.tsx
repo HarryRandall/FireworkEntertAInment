@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
-import { requirePermission } from '@/lib/admin/current-user.server';
+import { requirePermission } from '@/lib/access/current-user.server';
 
 export default async function AdminUsersLayout({ children }: { children: ReactNode }) {
   const profile = await requirePermission('admin.manage_users');

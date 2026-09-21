@@ -95,7 +95,7 @@ test('(app) layout requires an authenticated user before rendering the app shell
 });
 
 test('suspended profiles fail closed and access mutations invalidate authorisation caches', () => {
-  const currentUser = read('lib/admin/current-user.server.ts');
+  const currentUser = read('lib/access/current-user.server.ts');
   const actions = read('app/actions/admin-users.ts');
 
   assert.match(currentUser, /profile\.status !== 'active'/);

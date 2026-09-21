@@ -6,7 +6,7 @@ import { ExploreRow } from '@/ui/explore/ExploreRow';
 import { HomeCollectionsSection, HomeFeaturedShows } from '@/ui/home/HomeDiscoverySections';
 import { PromptHero } from '@/ui/shows/ShowSummaryCards';
 import { HomeSectionsSkeleton } from '@/ui/home/HomeLoadingSkeleton';
-import { listShowTemplates } from '@/lib/admin/templates.server';
+import { listShowTemplates } from '@/lib/show-templates/queries.server';
 
 export default function HomePage() {
   return (

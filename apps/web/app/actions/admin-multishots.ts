@@ -12,7 +12,7 @@ import {
   invalidateAdminCatalogueCache,
   invalidateAdminMultishotsCache,
 } from '@/lib/admin/cache-keys';
-import { requirePermission } from '@/lib/admin/current-user.server';
+import { requirePermission } from '@/lib/access/current-user.server';
 import {
   MULTISHOT_CALIBER_MAX_LENGTH,
   MULTISHOT_DESCRIPTION_MAX_LENGTH,

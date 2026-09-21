@@ -12,7 +12,7 @@ function read(path) {
 }
 
 test('RBAC fallback checks every query error before computing effective access', () => {
-  const source = read('lib/admin/current-user.server.ts');
+  const source = read('lib/access/current-user.server.ts');
   const fallbackStart = source.indexOf('const fallbackErrors =');
   const profileRead = source.indexOf('const profile = profileResult.data;');
 

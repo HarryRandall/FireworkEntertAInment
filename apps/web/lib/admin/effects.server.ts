@@ -15,7 +15,7 @@ import {
 } from './cache-keys';
 import { listEffectEditorVersions } from './editor-versions.server';
 import { buildEffectPreview } from './effect-preview';
-import { requirePermission } from './current-user.server';
+import { requirePermission } from '@/lib/access/current-user.server';
 import { describeSupabaseError, isMissingStyleDefaultSchemaError } from './style-default-schema';
 import { listAdminStyleDefaultOptions } from './style-defaults.server';
 import { getServerClient } from './supabase';

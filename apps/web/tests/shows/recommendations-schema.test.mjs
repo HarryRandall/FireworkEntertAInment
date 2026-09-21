@@ -23,8 +23,8 @@ test('show library routes and clone action exist', () => {
 });
 
 test('show library templates use semi-static caching', () => {
-  const cacheKeys = readFileSync(join(root, 'lib/admin/cache-keys.ts'), 'utf8');
-  const templates = readFileSync(join(root, 'lib/admin/templates.server.ts'), 'utf8');
+  const cacheKeys = readFileSync(join(root, 'lib/show-templates/cache.server.ts'), 'utf8');
+  const templates = readFileSync(join(root, 'lib/show-templates/queries.server.ts'), 'utf8');
   assert.match(cacheKeys, /SHOW_TEMPLATES_TTL_SECONDS/);
   assert.match(cacheKeys, /getShowTemplatesCacheKey/);
   assert.match(cacheKeys, /show-templates:database-v4/);

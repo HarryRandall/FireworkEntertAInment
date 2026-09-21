@@ -16,7 +16,7 @@ import { slugifyTitle } from '@/lib/show-domain';
 import { validatePresetTimeline } from '@/lib/show-preset-timing.server';
 import { syncShowDerivedFieldsForUser } from '@/lib/shows/mutations.server';
 import { listFireworkProducts } from '@/lib/shows/queries.server';
-import { getShowTemplateBySlug } from '@/lib/admin/templates.server';
+import { getShowTemplateBySlug } from '@/lib/show-templates/queries.server';
 import { randomCover } from '@/lib/cover';
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;

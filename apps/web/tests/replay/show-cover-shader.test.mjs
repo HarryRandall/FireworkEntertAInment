@@ -19,9 +19,9 @@ test('shows persist a JSON shader cover', () => {
 
 test('library presets persist and expose JSON shader covers', () => {
   const types = read('lib/database.types.ts');
-  const adminTypes = read('lib/admin.types.ts');
+  const templateTypes = read('lib/show-templates/types.ts');
   const templates = read('lib/admin/templates.server.ts');
-  const mapper = read('lib/admin/mappers.ts');
+  const mapper = read('lib/show-templates/mappers.ts');
   const exploreCard = read('ui/explore/ExploreCard.tsx');
   const explorePreview = read('ui/explore/ExplorePreviewContext.tsx');
   const exploreRow = read('ui/explore/ExploreRow.tsx');
@@ -30,8 +30,8 @@ test('library presets persist and expose JSON shader covers', () => {
   const showPresetsTypes = types.match(/show_presets: \{[\s\S]*?show_timeline_items:/)?.[0] ?? '';
   assert.match(showPresetsTypes, /cover_shader: Json \| null/);
   assert.match(showPresetsTypes, /cover_shader\?: Json \| null/);
-  assert.match(adminTypes, /coverShader: ShowCover \| null/);
-  assert.match(adminTypes, /coverImagePath: string \| null/);
+  assert.match(templateTypes, /coverShader: ShowCover \| null/);
+  assert.match(templateTypes, /coverImagePath: string \| null/);
   assert.match(
     templates,
     /SHOW_TEMPLATES_SELECT =\s+`\$\{SHOW_TEMPLATES_BASE_SELECT\}, cover_shader, cover_image_path, show_preset_like_counts\(like_count\)`/,

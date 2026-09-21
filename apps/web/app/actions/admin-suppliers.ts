@@ -11,7 +11,7 @@ import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import { invalidateAdminSuppliersCache } from '@/lib/admin/cache-keys';
-import { requirePermission } from '@/lib/admin/current-user.server';
+import { requirePermission } from '@/lib/access/current-user.server';
 import { slugifyTitle } from '@/lib/show-domain';
 
 type Result = { ok: true } | { ok: false; error: string };

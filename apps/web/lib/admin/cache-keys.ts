@@ -9,14 +9,10 @@ import 'server-only';
 
 import { deleteCachedKeys } from '@/lib/server-cache';
 
-/** Top-level platform namespace, also used by non-admin caches. */
-export const PLATFORM_CACHE_PREFIX = 'platform:v1';
 /** Admin-scoped sub-namespace. All admin keys must extend this prefix. */
-export const ADMIN_CACHE_PREFIX = `${PLATFORM_CACHE_PREFIX}:admin`;
+export const ADMIN_CACHE_PREFIX = 'platform:v1:admin';
 /** TTL for short-lived admin reads (users, suppliers, imports, catalogue). */
 export const ADMIN_CACHE_TTL_SECONDS = 60;
-/** TTL for show templates — they change rarely so we keep them longer. */
-export const SHOW_TEMPLATES_TTL_SECONDS = 60 * 10;
 
 /** Cache key for the list of admin users. */
 export function getAdminUsersCacheKey(): string {
@@ -113,12 +109,6 @@ export function getAdminGenerationSettingsCacheKey(): string {
   return `${ADMIN_CACHE_PREFIX}:generation-settings`;
 }
 
-/** Cache key for public curated show presets. */
-export function getShowTemplatesCacheKey(): string {
-  // Keep cue-bearing list payloads from surviving the summary-only rollout.
-  return `${PLATFORM_CACHE_PREFIX}:show-templates:database-v4`;
-}
-
 /**
  * Invalidate the admin user list and (optionally) a single user's detail blob.
  * Call after any mutation that affects role assignments or profile data.
@@ -204,9 +194,4 @@ export async function invalidateAdminRolePermissionsCache(): Promise<void> {
 /** Invalidate editable prompt configuration reads. */
 export async function invalidateAdminPromptConfigsCache(): Promise<void> {
   await deleteCachedKeys([getAdminPromptConfigsCacheKey(), getAdminGenerationSettingsCacheKey()]);
-}
-
-/** Invalidate public/admin curated show-preset reads. */
-export async function invalidateShowTemplatesCache(): Promise<void> {
-  await deleteCachedKeys([getShowTemplatesCacheKey()]);
 }

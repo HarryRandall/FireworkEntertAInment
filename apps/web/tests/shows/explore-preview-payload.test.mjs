@@ -14,11 +14,12 @@ function read(path) {
 test('public Explore lists select and serialise cue-free summaries', () => {
   const libraryPage = read('app/(browse)/library/page.tsx');
   const homePage = read('app/(app)/home/page.tsx');
-  const templateReads = read('lib/admin/templates.server.ts');
+  const templateReads = read('lib/show-templates/queries.server.ts');
+  const templateSchema = read('lib/show-templates/schema.ts');
   const summaryType = read('lib/show-template-summary.ts');
-  const cacheKeys = read('lib/admin/cache-keys.ts');
+  const cacheKeys = read('lib/show-templates/cache.server.ts');
 
-  const summaryColumns = templateReads.match(
+  const summaryColumns = templateSchema.match(
     /const SHOW_TEMPLATE_SUMMARIES_CORE_SELECT =\s*'([^']+)'/,
   )?.[1];
   assert.ok(summaryColumns);
@@ -56,7 +57,7 @@ test('the scoped preview route returns cues and only their resolved specificatio
 });
 
 test('the cue-bearing template read bypasses the summary cache and fails closed', () => {
-  const templateReads = read('lib/admin/templates.server.ts');
+  const templateReads = read('lib/show-templates/queries.server.ts');
   const start = templateReads.indexOf('export async function getShowTemplateBySlug');
   assert.notEqual(start, -1);
   const detailRead = templateReads.slice(start);

@@ -4,7 +4,7 @@ import 'server-only';
 
 import { createClient } from '@/lib/supabase/server';
 import { cookies } from 'next/headers';
-import { requirePermission } from '@/lib/admin/current-user.server';
+import { requirePermission } from '@/lib/access/current-user.server';
 
 export type AdminAssortmentSummary = {
   id: string;

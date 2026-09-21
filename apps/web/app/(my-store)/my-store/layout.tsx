@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { MyStoreShell } from '@/ui/shell/MyStoreShell';
 import { getActiveImpersonation } from '@/lib/impersonation.server';
-import { requirePermission } from '@/lib/admin/current-user.server';
+import { requirePermission } from '@/lib/access/current-user.server';
 import { measureServerTask } from '@/lib/perf.server';
 import {
   parseSidebarCollapsedPreference,
