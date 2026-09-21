@@ -127,73 +127,85 @@ end;
 $$;
 
 do $$
-declare
-  admin_id uuid := '92000000-0000-0000-0000-000000000101';
-  member_id uuid := '92000000-0000-0000-0000-000000000102';
-  target_assortment_id uuid := '92000000-0000-0000-0000-000000000201';
-  original_token text;
-  original_funder uuid;
-  enabled_value boolean;
-  denied boolean := false;
 begin
   insert into auth.users (id, email, email_confirmed_at)
   values
-    (admin_id, 'assortment-admin@example.test', now()),
-    (member_id, 'assortment-member@example.test', now());
+    ('92000000-0000-0000-0000-000000000101', 'assortment-admin@example.test', now()),
+    ('92000000-0000-0000-0000-000000000102', 'assortment-member@example.test', now());
 
   insert into public.user_roles (user_id, role_id)
-  select admin_id, roles.id
+  select '92000000-0000-0000-0000-000000000101'::uuid, roles.id
   from public.roles roles
   where roles.key = 'admin'
   on conflict (user_id) do update
   set role_id = excluded.role_id;
 
   insert into public.assortments (id, slug, name, price_cents, is_active, created_by)
-  values (target_assortment_id, 'qr-toggle-security', 'QR toggle security', 100, true, admin_id);
+  values ('92000000-0000-0000-0000-000000000201', 'qr-toggle-security', 'QR toggle security', 100, true,
+    '92000000-0000-0000-0000-000000000101');
+end;
+$$;
 
-  set local role authenticated;
-  set local request.jwt.claim.role = 'authenticated';
-  perform set_config('request.jwt.claim.sub', admin_id::text, true);
-  perform public.ensure_assortment_public_link(target_assortment_id);
+set local role authenticated;
+set local request.jwt.claim.role = 'authenticated';
+select set_config('request.jwt.claim.sub', '92000000-0000-0000-0000-000000000101', true);
+select public.ensure_assortment_public_link('92000000-0000-0000-0000-000000000201'::uuid);
 
+select set_config('request.jwt.claim.sub', '92000000-0000-0000-0000-000000000102', true);
+do $$
+begin
+  begin
+    perform public.set_assortment_public_link_enabled(
+      '92000000-0000-0000-0000-000000000201'::uuid,
+      false
+    );
+  exception
+    when insufficient_privilege then return;
+  end;
+  raise exception 'Unauthorised authenticated caller toggled a QR link.';
+end;
+$$;
+
+select set_config('request.jwt.claim.sub', '92000000-0000-0000-0000-000000000101', true);
+do $$
+declare
+  original_token text;
+  original_funder uuid;
+  enabled_value boolean;
+begin
   select link.public_token, link.funding_user_id
   into original_token, original_funder
   from public.assortment_public_links link
-  where link.assortment_id = target_assortment_id;
+  where link.assortment_id = '92000000-0000-0000-0000-000000000201'::uuid;
 
-  perform set_config('request.jwt.claim.sub', member_id::text, true);
-  begin
-    perform public.set_assortment_public_link_enabled(target_assortment_id, false);
-  exception
-    when insufficient_privilege then denied := true;
-  end;
-  if not denied then
-    raise exception 'Unauthorised authenticated caller toggled a QR link.';
-  end if;
-
-  perform set_config('request.jwt.claim.sub', admin_id::text, true);
-  enabled_value := public.set_assortment_public_link_enabled(target_assortment_id, false);
+  enabled_value := public.set_assortment_public_link_enabled(
+    '92000000-0000-0000-0000-000000000201'::uuid,
+    false
+  );
   if enabled_value is distinct from false then
     raise exception 'Admin disable did not return false.';
   end if;
   if exists (
     select 1
     from public.assortment_public_links link
-    where link.assortment_id = target_assortment_id
+    where link.assortment_id = '92000000-0000-0000-0000-000000000201'::uuid
       and (link.public_token is distinct from original_token
         or link.funding_user_id is distinct from original_funder)
   ) then
     raise exception 'Disabling changed QR capability or funding ownership.';
   end if;
 
-  enabled_value := public.set_assortment_public_link_enabled(target_assortment_id, true);
+  enabled_value := public.set_assortment_public_link_enabled(
+    '92000000-0000-0000-0000-000000000201'::uuid,
+    true
+  );
   if enabled_value is distinct from true then
     raise exception 'Admin re-enable did not return true.';
   end if;
   if not exists (
     select 1
     from public.assortment_public_links link
-    where link.assortment_id = target_assortment_id
+    where link.assortment_id = '92000000-0000-0000-0000-000000000201'::uuid
       and link.is_enabled
       and link.public_token = original_token
       and link.funding_user_id = original_funder
@@ -201,8 +213,9 @@ begin
     raise exception 'Re-enabling did not preserve the original QR capability.';
   end if;
 
-  reset role;
 end;
 $$;
+
+reset role;
 
 rollback;
