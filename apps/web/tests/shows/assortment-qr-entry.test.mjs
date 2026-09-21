@@ -6,6 +6,11 @@ import ts from 'typescript';
 const files = {
   adminActions: new URL('../../lib/assortments/actions.server.ts', import.meta.url),
   adminEditor: new URL('../../ui/assortments/AssortmentQrPanel.tsx', import.meta.url),
+  linkToggleMigration: new URL(
+    '../../../../supabase/migrations/20260922000100_toggle_assortment_public_link.sql',
+    import.meta.url,
+  ),
+  securityTest: new URL('../../../../supabase/tests/assortment_qr_security.sql', import.meta.url),
   publicServer: new URL('../../lib/assortments/public.server.ts', import.meta.url),
   constraints: new URL('../../lib/assortments/constraints.ts', import.meta.url),
   loaders: new URL('../../lib/cue-generation/loaders.server.ts', import.meta.url),
@@ -71,6 +76,31 @@ test('assortment actions remain canonical and shared QR controls remain availabl
   assert.match(editor, /Reusable QR code/);
   assert.match(editor, /Copy URL/);
   assert.match(editor, /Download/);
+});
+
+test('admin QR links can be disabled and re-enabled without changing capability ownership', async () => {
+  const [actions, editor, migration, security, publicServer] = await Promise.all([
+    source('adminActions'),
+    source('adminEditor'),
+    source('linkToggleMigration'),
+    source('securityTest'),
+    source('publicServer'),
+  ]);
+  assert.match(actions, /export async function setAssortmentPublicLinkEnabled/);
+  assert.match(actions, /requirePermission\('admin\.manage_assortments'\)/);
+  assert.match(actions, /\.rpc\('set_assortment_public_link_enabled'/);
+  assert.doesNotMatch(actions, /from\('assortment_public_links'\)[\s\S]*\.update/);
+  assert.match(editor, /Disable QR link/);
+  assert.match(editor, /Enable QR link/);
+  assert.match(editor, /QR link disabled/);
+  assert.match(editor, /QR link enabled/);
+  assert.match(publicServer, /\.eq\('is_enabled', true\)/);
+  assert.match(migration, /security definer/);
+  assert.match(migration, /set is_enabled = p_enabled/);
+  assert.doesNotMatch(migration, /grant update|create policy/i);
+  assert.match(security, /set_assortment_public_link_enabled\(uuid,boolean\)/);
+  assert.match(security, /public_token is distinct from original_token/);
+  assert.match(security, /funding_user_id is distinct from original_funder/);
 });
 
 test('the kiosk flow is public, fixed and does not create a consumer identity', async () => {

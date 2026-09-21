@@ -5,6 +5,34 @@ declare
   function_row record;
   function_source text;
 begin
+  if has_table_privilege('authenticated', 'public.assortment_public_links', 'update') then
+    raise exception 'Authenticated callers received table-level QR link UPDATE access.';
+  end if;
+
+  if has_function_privilege(
+    'anon',
+    'public.set_assortment_public_link_enabled(uuid,boolean)',
+    'execute'
+  )
+  or not has_function_privilege(
+    'authenticated',
+    'public.set_assortment_public_link_enabled(uuid,boolean)',
+    'execute'
+  ) then
+    raise exception 'QR link enablement RPC grants are not least-privilege.';
+  end if;
+
+  select pg_get_functiondef(
+    'public.set_assortment_public_link_enabled(uuid,boolean)'::regprocedure
+  ) into function_source;
+  if function_source not like '%set is_enabled = p_enabled%'
+    or function_source like '%set public_token%'
+    or function_source like '%set funding_user_id%'
+    or function_source not like '%security definer%'
+  then
+    raise exception 'QR link enablement RPC does not have the expected narrow security boundary.';
+  end if;
+
   if has_table_privilege('anon', 'public.assortment_public_links', 'select')
     or has_table_privilege('anon', 'public.assortment_public_links', 'insert')
     or has_table_privilege('anon', 'public.assortment_public_links', 'update')
@@ -48,6 +76,7 @@ begin
     from pg_proc
     where oid in (
       'public.ensure_assortment_public_link(uuid)'::regprocedure,
+      'public.set_assortment_public_link_enabled(uuid,boolean)'::regprocedure,
       'public.prepare_assortment_song_analysis(text,uuid,uuid)'::regprocedure,
       'public.create_assortment_qr_show(text,uuid,text,text,text,text,text,jsonb,uuid)'::regprocedure,
       'public.replace_show_timeline_items(uuid,uuid,jsonb)'::regprocedure
@@ -94,6 +123,80 @@ begin
   then
     raise exception 'QR credit reservations no longer use the private credit helpers.';
   end if;
+end;
+$$;
+
+do $$
+declare
+  admin_id uuid := '92000000-0000-0000-0000-000000000101';
+  member_id uuid := '92000000-0000-0000-0000-000000000102';
+  target_assortment_id uuid := '92000000-0000-0000-0000-000000000201';
+  original_token text;
+  original_funder uuid;
+  enabled_value boolean;
+  denied boolean := false;
+begin
+  insert into auth.users (id, email, email_confirmed_at)
+  values
+    (admin_id, 'assortment-admin@example.test', now()),
+    (member_id, 'assortment-member@example.test', now());
+
+  insert into public.user_roles (user_id, role_id)
+  select admin_id, roles.id
+  from public.roles roles
+  where roles.key = 'admin';
+
+  insert into public.assortments (id, slug, name, price_cents, is_active, created_by)
+  values (target_assortment_id, 'qr-toggle-security', 'QR toggle security', 100, true, admin_id);
+
+  set local role authenticated;
+  set local request.jwt.claim.role = 'authenticated';
+  set local request.jwt.claim.sub = member_id::text;
+  begin
+    perform public.set_assortment_public_link_enabled(target_assortment_id, false);
+  exception
+    when insufficient_privilege then denied := true;
+  end;
+  if not denied then
+    raise exception 'Unauthorised authenticated caller toggled a QR link.';
+  end if;
+
+  set local request.jwt.claim.sub = admin_id::text;
+  select link.public_token, link.funding_user_id
+  into original_token, original_funder
+  from public.assortment_public_links link
+  where link.assortment_id = target_assortment_id;
+
+  enabled_value := public.set_assortment_public_link_enabled(target_assortment_id, false);
+  if enabled_value is distinct from false then
+    raise exception 'Admin disable did not return false.';
+  end if;
+  if exists (
+    select 1
+    from public.assortment_public_links link
+    where link.assortment_id = target_assortment_id
+      and (link.public_token is distinct from original_token
+        or link.funding_user_id is distinct from original_funder)
+  ) then
+    raise exception 'Disabling changed QR capability or funding ownership.';
+  end if;
+
+  enabled_value := public.set_assortment_public_link_enabled(target_assortment_id, true);
+  if enabled_value is distinct from true then
+    raise exception 'Admin re-enable did not return true.';
+  end if;
+  if not exists (
+    select 1
+    from public.assortment_public_links link
+    where link.assortment_id = target_assortment_id
+      and link.is_enabled
+      and link.public_token = original_token
+      and link.funding_user_id = original_funder
+  ) then
+    raise exception 'Re-enabling did not preserve the original QR capability.';
+  end if;
+
+  reset role;
 end;
 $$;
 

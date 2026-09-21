@@ -2655,6 +2655,10 @@ export type Database = {
         Args: { p_assortment_id: string }
         Returns: Json
       }
+      set_assortment_public_link_enabled: {
+        Args: { p_assortment_id: string; p_enabled: boolean }
+        Returns: boolean
+      }
       expire_exhausted_cue_generations: {
         Args: { p_limit?: number; p_max_attempts?: number }
         Returns: {
