@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { join } from 'node:path';
-import { getPreferredImportVideoSource } from '../../lib/import-video-preview.js';
+import { getPreferredImportVideoSource } from '../../lib/firework-import/video-preview.js';
 
 const root = process.cwd();
 const repoRoot = root;
@@ -78,8 +78,8 @@ test('Modal firework reconstruction starts on demand without scheduled polling',
 });
 
 test('generated import specs preserve native renderer designs and shot observations', () => {
-  const imports = readFileSync(join(root, 'lib/import-jobs.ts'), 'utf8');
-  const nativeContract = readFileSync(join(root, 'lib/import-reconstruction.ts'), 'utf8');
+  const imports = readFileSync(join(root, 'lib/firework-import/jobs.ts'), 'utf8');
+  const nativeContract = readFileSync(join(root, 'lib/firework-import/reconstruction.ts'), 'utf8');
   const reconstruction = readFileSync(
     join(repoRoot, '../../services/firework-import-worker/reconstruction.py'),
     'utf8',
@@ -242,7 +242,7 @@ test('import preview prefers a normalized browser-safe asset when present', () =
 });
 
 test('selected retained engine evidence uses a bounded private URL and accurate UI labels', () => {
-  const historyServer = readFileSync(join(root, 'lib/import-review.server.ts'), 'utf8');
+  const historyServer = readFileSync(join(root, 'lib/firework-import/review.server.ts'), 'utf8');
   const detailPage = readFileSync(join(root, 'app/(admin)/admin/imports/[id]/page.tsx'), 'utf8');
   const preview = readFileSync(
     join(root, 'app/(admin)/admin/imports/[id]/_components/FireworkImportPreview.tsx'),

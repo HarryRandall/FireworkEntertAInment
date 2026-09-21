@@ -9,7 +9,7 @@ import { Card } from '@/ui/patterns/Card';
 import { Field, FieldHint, FieldLabel } from '@/ui/patterns/Field';
 import { Select, Textarea } from '@/ui/patterns/Input';
 import { toast } from '@/ui/patterns/toast';
-import { OPENROUTER_MODEL_OPTIONS } from '@/lib/import-jobs';
+import { OPENROUTER_MODEL_OPTIONS } from '@/lib/firework-import/jobs';
 
 export function ImportRunControls({
   jobId,

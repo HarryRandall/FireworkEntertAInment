@@ -5,7 +5,8 @@ import { test } from 'node:test';
 import ts from 'typescript';
 
 const root = process.cwd();
-const { parseReconstructionShotVariant } = await import('../../lib/reconstruction-shot.ts');
+const { parseReconstructionShotVariant } =
+  await import('../../lib/firework-import/reconstruction-shot.ts');
 
 function read(path) {
   return readFileSync(join(root, path), 'utf8');

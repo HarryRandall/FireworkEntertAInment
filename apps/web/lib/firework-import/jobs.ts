@@ -20,7 +20,7 @@ import {
   parseImportReconstruction,
   reconstructionToReplayCues,
   type ImportReconstructionPlan,
-} from '@/lib/import-reconstruction';
+} from '@/lib/firework-import/reconstruction';
 import {
   FIREWORK_COLORS,
   FireworkSpecSchema,

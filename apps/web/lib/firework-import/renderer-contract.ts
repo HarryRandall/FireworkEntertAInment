@@ -22,9 +22,9 @@ export const FIREWORKS_ENGINE_IMPORT_RENDERER_SOURCE_FILES = [
   'lib/fireworks/spec.ts',
   'lib/fireworks/style-defaults.ts',
   'lib/fireworks/timing.ts',
-  'lib/import-reconstruction.ts',
-  'lib/import-render-metrics.ts',
-  'lib/reconstruction-shot.ts',
+  'lib/firework-import/reconstruction.ts',
+  'lib/firework-import/render-metrics.ts',
+  'lib/firework-import/reconstruction-shot.ts',
 ] as const;
 
 /**
@@ -32,7 +32,7 @@ export const FIREWORKS_ENGINE_IMPORT_RENDERER_SOURCE_FILES = [
  * Sealed evidence is invalid as soon as the deployed renderer bytes drift.
  */
 export const FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION =
-  'showcrafter.fireworks-engine.import-renderer.v1+sha256.6a785b7dce1801c47d4374a480ebe6e2333b675203333134fb760d7b954b9308' as const;
+  'showcrafter.fireworks-engine.import-renderer.v1+sha256.5aac1a37c746fe186e806692377f37f689bb65038438c03cc3f70bfb55a2fc33' as const;
 
 export const FIREWORKS_ENGINE_FIXED_STEP_SECONDS = 1 / 60;
 

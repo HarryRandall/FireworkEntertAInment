@@ -13,7 +13,7 @@ test('firework replay compiles fireworks, render overrides, and cache-busts old 
   const showMappers = read('lib/shows/mappers.ts');
   const showTypes = read('lib/shows/types.ts');
   const showDomain = read('lib/show-domain.ts');
-  const importJobs = read('lib/import-jobs.ts');
+  const importJobs = read('lib/firework-import/jobs.ts');
 
   assert.match(
     engine,

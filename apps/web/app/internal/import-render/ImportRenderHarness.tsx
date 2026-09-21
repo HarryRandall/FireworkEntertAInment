@@ -13,13 +13,16 @@ import {
   compareImportRenderPixels,
   type ImportRenderFrameFeatures,
   type ImportRenderPerceptualFrame,
-} from '@/lib/import-render-metrics';
-import { parseImportReconstruction, reconstructionToReplayCues } from '@/lib/import-reconstruction';
+} from '@/lib/firework-import/render-metrics';
+import {
+  parseImportReconstruction,
+  reconstructionToReplayCues,
+} from '@/lib/firework-import/reconstruction';
 import { estimateDesignDurationSeconds, scaleDesignForCaliber } from '@/lib/fireworks/design';
 import {
   FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION,
   quantiseFireworksEngineTimeSeconds,
-} from '@/lib/fireworks/import-renderer-contract';
+} from '@/lib/firework-import/renderer-contract';
 import type { ReplayCue } from '@/lib/show-domain';
 
 const FireworkReplayCanvas = dynamic(

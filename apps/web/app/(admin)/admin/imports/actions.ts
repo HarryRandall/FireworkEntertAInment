@@ -38,16 +38,16 @@ import {
   MAX_IMPORT_VIDEO_SECONDS,
   OPENROUTER_MODEL_OPTIONS,
   type ImportedFireworkSpec,
-} from '@/lib/import-jobs';
+} from '@/lib/firework-import/jobs';
 import {
   IMPORT_RECONSTRUCTION_VALIDATOR_VERSION,
   parseImportReconstruction,
-} from '@/lib/import-reconstruction';
-import { parseImportEnginePublicationEvidence } from '@/lib/import-review';
+} from '@/lib/firework-import/reconstruction';
+import { parseImportEnginePublicationEvidence } from '@/lib/firework-import/review';
 import {
   dispatchFireworkImportRun,
   getFireworkImportDispatchConfiguration,
-} from '@/lib/firework-import-trigger.server';
+} from '@/lib/firework-import/trigger.server';
 import { invalidateFireworkCatalogueCaches } from '@/lib/shows/cache-keys';
 import type { Json } from '@/lib/database.types';
 import { createServiceRoleSupabase } from '@/lib/supabase/service-role';

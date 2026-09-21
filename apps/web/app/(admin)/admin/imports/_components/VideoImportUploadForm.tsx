@@ -13,7 +13,7 @@ import {
   IMPORT_VIDEO_BUCKET,
   MAX_IMPORT_VIDEO_SECONDS,
   OPENROUTER_MODEL_OPTIONS,
-} from '@/lib/import-jobs';
+} from '@/lib/firework-import/jobs';
 import { formatDuration } from '@/lib/show-domain';
 import { createClient as createSupabaseBrowserClient } from '@/lib/supabase/client';
 

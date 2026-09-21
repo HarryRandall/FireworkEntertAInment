@@ -33,8 +33,9 @@ workflows live in `.agents/skills`.
 Within `lib`, `auth` owns session, redirect and recovery helpers; `access` owns
 current-profile and effective-permission context; `supabase` owns client
 construction; `admin` owns permission-checked management queries; and
-`cue-generation`, `fireworks`, `assortments`, `show-templates` and `shows` own
-their domain logic. Public template reads stay in `show-templates`; admin owns
+`cue-generation`, `fireworks`, `firework-import`, `assortments`, `show-templates`
+and `shows` own their domain logic. Public template reads stay in
+`show-templates`; admin owns
 only draft and management reads.
 Import the owning module directly. Do not restore compatibility forwarding files
 or broad barrels that pull unrelated server and client modules into one API.
@@ -44,7 +45,7 @@ Shared firework editor controls, history and fullscreen preview behaviour live i
 Both Python services are active application dependencies. Music upload and
 generation call `ANALYSER_URL` through `lib/show-analysis-runner.server.ts`;
 video imports call `FIREWORK_IMPORT_URL` through
-`lib/firework-import-trigger.server.ts`. Their Modal entry points, local worker,
+`lib/firework-import/trigger.server.ts`. Their Modal entry points, local worker,
 browser smoke check and regression fixtures support those paths.
 
 Keep Supabase migration history, recovery email templates and SQL contract
@@ -65,10 +66,12 @@ their route modules supply the destination while server layouts enforce access.
 
 Route groups organise layouts without changing URLs. Use `_components` for
 route-local React components; keep `page`, `layout`, `loading`, `error` and route
-handlers at their Next.js locations. The import-render harness retains its
-fingerprinted path because a move invalidates sealed renderer evidence. Shared
-features should take explicit inputs, such as an assortment destination, instead
-of inferring an admin persona.
+handlers at their Next.js locations. The import-render harness remains a route
+while its reconstruction, review, authentication, metrics and renderer contract
+live in `lib/firework-import`. Fingerprinted source paths are part of sealed
+renderer evidence and must change only through a coordinated app, worker and
+database contract update. Shared features should take explicit inputs, such as
+an assortment destination, instead of inferring an admin persona.
 
 ## Reuse and presentation
 

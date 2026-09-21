@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ImportRenderHarness } from '@/app/internal/import-render/ImportRenderHarness';
-import { isAuthorisedImportRenderRequest } from '@/lib/import-render-auth.server';
+import { isAuthorisedImportRenderRequest } from '@/lib/firework-import/render-auth.server';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;

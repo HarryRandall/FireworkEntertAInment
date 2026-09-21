@@ -8,16 +8,16 @@ import {
   scaleDesignForCaliber,
   type FireworkDesign,
   type FireworkGeometry,
-} from './fireworks/design';
+} from '../fireworks/design';
 import {
   DEFAULT_FIREWORK_SPEC,
   FireworkSpecSchema,
   type FireworkSpec,
   type ShellType,
-} from './fireworks/spec';
-import { FIREWORK_EFFECT_CATALOGUE } from './fireworks/effect-catalogue';
-import type { ReplayCue } from './show-domain';
-import { quantiseFireworksEngineTimeSeconds } from './fireworks/import-renderer-contract';
+} from '../fireworks/spec';
+import { FIREWORK_EFFECT_CATALOGUE } from '../fireworks/effect-catalogue';
+import type { ReplayCue } from '../show-domain';
+import { quantiseFireworksEngineTimeSeconds } from './renderer-contract';
 
 const MAX_RECONSTRUCTION_SECONDS = 60;
 const MAX_RECONSTRUCTION_DESIGNS = 64;

@@ -10,8 +10,8 @@ import 'server-only';
 
 import { getCachedJson, setCachedJson } from '@/lib/server-cache';
 import type { ImportJobDetail, ImportJobSummary } from '@/lib/admin.types';
-import { IMPORT_VIDEO_BUCKET } from '@/lib/import-jobs';
-import { getPreferredImportVideoSource } from '@/lib/import-video-preview.js';
+import { IMPORT_VIDEO_BUCKET } from '@/lib/firework-import/jobs';
+import { getPreferredImportVideoSource } from '@/lib/firework-import/video-preview.js';
 import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
 import { ADMIN_CACHE_TTL_SECONDS, getAdminImportsCacheKey } from './cache-keys';
 import { requirePermission } from '@/lib/access/current-user.server';

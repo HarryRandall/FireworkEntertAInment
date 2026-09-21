@@ -1,7 +1,7 @@
 import {
   FIREWORKS_ENGINE_FIXED_STEP_SECONDS,
   FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION,
-} from '@/lib/fireworks/import-renderer-contract';
+} from '@/lib/firework-import/renderer-contract';
 
 export const IMPORT_RENDER_METRICS_SCHEMA_VERSION = 'showcrafter.engine-render-metrics.v2' as const;
 

@@ -30,3 +30,37 @@ test('shared access and public template reads stay outside the admin domain', ()
   assert.doesNotMatch(adminTemplates, /export async function listShowTemplates/);
   assert.doesNotMatch(adminTemplates, /export async function getShowTemplateBySlug/);
 });
+
+test('firework import implementation has one shared domain owner', () => {
+  for (const path of [
+    'firework-import-trigger.server.ts',
+    'import-jobs.ts',
+    'import-reconstruction.ts',
+    'import-render-auth-core.ts',
+    'import-render-auth.server.ts',
+    'import-render-metrics.ts',
+    'import-review.server.ts',
+    'import-review.ts',
+    'import-video-preview.js',
+    'reconstruction-shot.ts',
+    'fireworks/import-renderer-contract.ts',
+  ]) {
+    assert.equal(existsSync(join(root, 'lib', path)), false, path);
+  }
+
+  for (const path of [
+    'jobs.ts',
+    'reconstruction.ts',
+    'reconstruction-shot.ts',
+    'render-auth-core.ts',
+    'render-auth.server.ts',
+    'render-metrics.ts',
+    'renderer-contract.ts',
+    'review.server.ts',
+    'review.ts',
+    'trigger.server.ts',
+    'video-preview.js',
+  ]) {
+    assert.equal(existsSync(join(root, 'lib/firework-import', path)), true, path);
+  }
+});

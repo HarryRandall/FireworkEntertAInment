@@ -1,6 +1,6 @@
 import { Badge } from '@/ui/patterns/Badge';
 import { Card } from '@/ui/patterns/Card';
-import { importStatusTone, type ImportRun } from '@/lib/import-review';
+import { importStatusTone, type ImportRun } from '@/lib/firework-import/review';
 
 export function ImportRunHistory({ runs }: { runs: ImportRun[] }) {
   return (
