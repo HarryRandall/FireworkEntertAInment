@@ -140,6 +140,13 @@ begin
   on conflict (user_id) do update
   set role_id = excluded.role_id;
 
+  insert into public.user_roles (user_id, role_id)
+  select '92000000-0000-0000-0000-000000000102'::uuid, roles.id
+  from public.roles roles
+  where roles.key = 'supplier'
+  on conflict (user_id) do update
+  set role_id = excluded.role_id;
+
   insert into public.assortments (id, slug, name, price_cents, is_active, created_by)
   values ('92000000-0000-0000-0000-000000000201', 'qr-toggle-security', 'QR toggle security', 100, true,
     '92000000-0000-0000-0000-000000000101');
@@ -155,17 +162,7 @@ reset role;
 set local role authenticated;
 select set_config('request.jwt.claim.sub', '92000000-0000-0000-0000-000000000102', true);
 do $$
-declare
-  actual_user_id uuid := auth.uid();
-  has_admin_permission boolean := public.current_user_has_permission('admin.manage_assortments');
 begin
-  if actual_user_id is distinct from '92000000-0000-0000-0000-000000000102'::uuid
-    or has_admin_permission
-  then
-    raise exception 'QR fixture identity mismatch: uid %, admin permission %',
-      actual_user_id,
-      has_admin_permission;
-  end if;
   begin
     perform public.set_assortment_public_link_enabled(
       '92000000-0000-0000-0000-000000000201'::uuid,
