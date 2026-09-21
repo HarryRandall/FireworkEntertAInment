@@ -10,6 +10,7 @@ work. Follow the user's requested scope and keep commits focused.
 - Database migrations, seeds and SQL tests: `supabase/`.
 - Ownership and UI conventions: [Architecture](docs/architecture.md).
 - Setup, checks and deployment: [Development](docs/development.md).
+- Product overview and repository presentation: [README](README.md).
 
 Use Node 24 (`nvm use`) and the pinned pnpm version. From the repository root:
 `pnpm install --frozen-lockfile`, `pnpm dev`, `pnpm check`.

@@ -28,7 +28,8 @@ them; one app does not need a placeholder package hierarchy.
 Paths in this table are relative to `apps/web`, except `services`, `supabase`
 and `docs`, which are repository folders. App scripts, including the audit and
 ESLint rules, live together in `apps/web/scripts`. Project-specific agent
-workflows live in `.agents/skills`.
+workflows live in `.agents/skills`. Repository presentation media belongs in
+`.github/assets`; browser-capture working files remain ignored under `output/`.
 
 Within `lib`, `auth` owns session, redirect and recovery helpers; `access` owns
 current-profile and effective-permission context; `supabase` owns client
