@@ -3,7 +3,7 @@
 import { useTransition } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { Copy, Download, QrCode } from 'lucide-react';
+import { Copy, Download, Power, QrCode } from 'lucide-react';
 import { Button } from '@/ui/patterns/Button';
 import { Card } from '@/ui/patterns/Card';
 import { Field, FieldLabel } from '@/ui/patterns/Field';
@@ -11,7 +11,10 @@ import { Input } from '@/ui/patterns/Input';
 import { InlineAlert } from '@/ui/patterns/Feedback';
 import { toast } from '@/ui/patterns/toast';
 import type { AdminAssortmentDetail } from '@/lib/admin/assortments.server';
-import { ensureAssortmentPublicLink } from '@/lib/assortments/actions.server';
+import {
+  ensureAssortmentPublicLink,
+  setAssortmentPublicLinkEnabled,
+} from '@/lib/assortments/actions.server';
 
 export function AssortmentQrPanel({
   assortment,
@@ -22,6 +25,7 @@ export function AssortmentQrPanel({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const publicLink = assortment.publicLink;
 
   function ensureLink() {
     startTransition(async () => {
@@ -35,6 +39,25 @@ export function AssortmentQrPanel({
         router.refresh();
       } catch {
         toast.error('The QR link could not be created. Please try again.');
+      }
+    });
+  }
+
+  function setLinkEnabled(enabled: boolean) {
+    startTransition(async () => {
+      try {
+        const result = await setAssortmentPublicLinkEnabled({
+          assortmentId: assortment.id,
+          enabled,
+        });
+        if (!result.ok) {
+          toast.error(result.error);
+          return;
+        }
+        toast.success(enabled ? 'QR link enabled' : 'QR link disabled');
+        router.refresh();
+      } catch {
+        toast.error('The QR link could not be updated. Please try again.');
       }
     });
   }
@@ -66,7 +89,7 @@ export function AssortmentQrPanel({
             Activate it in Pack details when it is ready for shoppers.
           </InlineAlert>
         ) : null}
-        {!assortment.publicLink ? (
+        {!publicLink ? (
           <Button type="button" className="mt-4 w-full" loading={pending} onClick={ensureLink}>
             Create QR link
           </Button>
@@ -89,7 +112,7 @@ export function AssortmentQrPanel({
                 className="font-mono text-xs"
               />
             </Field>
-            {!assortment.publicLink.isEnabled ? (
+            {!publicLink.isEnabled ? (
               <p className="text-destructive mt-3 text-sm">
                 This QR link is disabled. Shoppers cannot use it to create a show.
               </p>
@@ -108,6 +131,16 @@ export function AssortmentQrPanel({
                 SVG
               </Button>
             </div>
+            <Button
+              type="button"
+              variant="ghost"
+              className="mt-2 w-full"
+              loading={pending}
+              onClick={() => setLinkEnabled(!publicLink.isEnabled)}
+            >
+              <Power size={16} aria-hidden="true" />
+              {publicLink.isEnabled ? 'Disable QR link' : 'Enable QR link'}
+            </Button>
           </>
         ) : (
           <p className="text-destructive mt-4 text-sm">

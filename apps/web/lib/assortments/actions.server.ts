@@ -64,6 +64,8 @@ export async function createAssortment(
 
 type EnsurePublicLinkResult = { ok: true; publicToken: string } | { ok: false; error: string };
 
+type SetPublicLinkEnabledResult = { ok: true; isEnabled: boolean } | { ok: false; error: string };
+
 export async function ensureAssortmentPublicLink(
   assortmentId: string,
 ): Promise<EnsurePublicLinkResult> {
@@ -85,6 +87,34 @@ export async function ensureAssortmentPublicLink(
 
   await refreshAssortmentDetail(parsed.data);
   return { ok: true, publicToken: result.publicToken };
+}
+
+const SetPublicLinkEnabledSchema = z.object({
+  assortmentId: z.string().uuid(),
+  enabled: z.boolean(),
+});
+
+export async function setAssortmentPublicLinkEnabled(
+  input: z.infer<typeof SetPublicLinkEnabledSchema>,
+): Promise<SetPublicLinkEnabledResult> {
+  if (!(await requirePermission('admin.manage_assortments'))) {
+    return { ok: false, error: 'Not permitted.' };
+  }
+  const parsed = SetPublicLinkEnabledSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
+
+  const supabase = createClient(await cookies());
+  const { data, error } = await supabase.rpc('set_assortment_public_link_enabled', {
+    p_assortment_id: parsed.data.assortmentId,
+    p_enabled: parsed.data.enabled,
+  });
+  if (error || typeof data !== 'boolean') {
+    console.error('[assortments] public link update failed:', error);
+    return { ok: false, error: 'The QR link could not be updated.' };
+  }
+
+  await refreshAssortmentDetail(parsed.data.assortmentId);
+  return { ok: true, isEnabled: data };
 }
 
 const UpdateAssortmentSchema = z.object({
