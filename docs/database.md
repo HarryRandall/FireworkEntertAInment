@@ -164,13 +164,17 @@ assortment use and credits, import leases and immutable review artefacts, publis
 preset lane safety, signup, effective grants, RLS and Storage visibility. Fresh
 snapshot verification checks all reusable table values and the renderer contract.
 
-## Automated production releases
+## Manual production releases
 
 The `database` CI job builds an empty database, installs the snapshot, runs the SQL
 contracts and checks generated types, then repeats the reset and fixture setup.
-After all web, database and service jobs pass on `main`, the production job checks
-that Vercel and Supabase target the same installed project, applies migrations,
-builds that exact commit and deploys it. It never resets or reseeds production.
+Pushes to `main` run validation only. Production migration and deployment are
+eligible only when an operator manually dispatches the `CI` workflow on `main`
+with `deploy_production` set to `true`, and all web, database and service jobs
+pass. The production job then checks that Vercel and Supabase target the same
+installed project, applies migrations, builds that exact commit and deploys it.
+It rejects a superseded commit and never resets or reseeds production. The
+dispatch input defaults to `false`.
 
 Before the first merge, configure these GitHub `production` environment settings:
 
@@ -180,9 +184,9 @@ Before the first merge, configure these GitHub `production` environment settings
 The Vercel project must use `apps/web` as its Root Directory, include workspace
 files outside it, use Node 24, and have the destination Supabase credentials in
 its Production environment. `apps/web/vercel.json` disables automatic Git
-production deployments from `main`, so they cannot race ahead of migrations.
-Preview branch deployments remain available; give previews an isolated hosted
-development database if they need provider integrations.
+production deployments from `main`. Preview branch deployments remain available;
+give previews an isolated hosted development database if they need provider
+integrations.
 
 This workflow does not automatically provision Auth providers, SMTP, Modal
 services, external API keys, billing plans or domains. Those belong to the hosted

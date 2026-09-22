@@ -7,6 +7,12 @@ on:
       - development
   pull_request:
   workflow_dispatch:
+    inputs:
+      deploy_production:
+        description: Deploy the current main commit to production after all CI checks pass
+        required: true
+        type: boolean
+        default: false
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -183,7 +189,10 @@ jobs:
 
   deploy:
     name: Migrate then deploy production
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'workflow_dispatch' &&
+      inputs.deploy_production == true
     needs: [web, analyser, analyser-contract, worker, database]
     runs-on: ubuntu-latest
     environment: production
