@@ -232,6 +232,8 @@ export const listFireworkSpecifications = cache(async (): Promise<FireworkSpecif
 export type ListFireworkProductsOptions = {
   /** Skip render-design joins for browse-only catalogue cards. */
   lightweight?: boolean;
+  /** Private bounded reads bypass the shared catalogue cache and fail on read errors. */
+  scopedRead?: { supabase: SupabaseClient<Database>; ids: string[] };
 };
 
 /**
@@ -247,9 +249,9 @@ export const listFireworkProducts = cache(
     const cacheKey = getFireworkProductsCacheKey(lightweight);
     const fireworkSelect = lightweight ? CATALOGUE_FIREWORK_CARD_SELECT : FIREWORK_VARIANT_SELECT;
 
-    return loadCachedCatalogue(cacheKey, async () => {
-      const supabase = await getCatalogueReadClient();
-      const { data, error } = await supabase
+    const load = async () => {
+      const supabase = options?.scopedRead?.supabase ?? (await getCatalogueReadClient());
+      let query = supabase
         .from('catalogue_items')
         .select(
           `id, name, part_number, manufacturer, description, duration_seconds, catalogue_item_kind,
@@ -268,8 +270,11 @@ export const listFireworkProducts = cache(
        )`,
         )
         .order('name', { ascending: true });
+      if (options?.scopedRead) query = query.in('id', options.scopedRead.ids);
+      const { data, error } = await query;
       if (error) {
-        if (isSupabaseTransientNetworkError(error)) throw new ShowsNetworkError(error);
+        if (options?.scopedRead || isSupabaseTransientNetworkError(error))
+          throw new ShowsNetworkError(error);
         console.error('[shows.server] listFireworkProducts failed:', error);
         return [];
       }
@@ -369,9 +374,10 @@ export const listFireworkProducts = cache(
         });
       }
 
-      await setCachedJson(cacheKey, mapped, FIREWORK_SPECS_TTL_SECONDS);
+      if (!options?.scopedRead) await setCachedJson(cacheKey, mapped, FIREWORK_SPECS_TTL_SECONDS);
       return mapped;
-    });
+    };
+    return options?.scopedRead ? load() : loadCachedCatalogue(cacheKey, load);
   },
 );
 
@@ -409,6 +415,8 @@ export type CatalogueItemShotSpec = {
 type FetchCatalogueItemShotsOptions = {
   /** Card-preview APIs must surface read failures instead of treating them as no preview. */
   failOnError?: boolean;
+  /** Timing analysis must distinguish a missing offset from a real zero. */
+  preserveUnknownTiming?: boolean;
 };
 
 /**
@@ -484,7 +492,11 @@ export async function fetchShotsByCatalogueItem(
       shots.push({
         kind: 'multishot',
         sourceCueId: shot.id,
-        timeOffsetSeconds: finiteOrZero(shot.time_offset_seconds),
+        timeOffsetSeconds: options.preserveUnknownTiming
+          ? shot.time_offset_seconds == null || String(shot.time_offset_seconds).trim() === ''
+            ? Number.NaN
+            : Number(shot.time_offset_seconds)
+          : finiteOrZero(shot.time_offset_seconds),
         panDegrees: shot.pan_degrees == null ? null : Number(shot.pan_degrees),
         tiltDegrees: shot.tilt_degrees == null ? null : Number(shot.tilt_degrees),
         positionOverride: parseShotPositionOverride(shot.position_override_json),

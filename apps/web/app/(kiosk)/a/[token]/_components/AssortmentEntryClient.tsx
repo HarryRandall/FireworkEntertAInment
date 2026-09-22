@@ -215,6 +215,7 @@ export function AssortmentEntryClient({ token, assortment }: AssortmentEntryClie
           </p>
           <div className="mt-4">
             <JamendoSongSearch
+              recommendations
               apiEndpoint={`/api/assortments/${token}/music/jamendo`}
               disabled={pending}
               hasSelection={jamendoTrack !== null}
