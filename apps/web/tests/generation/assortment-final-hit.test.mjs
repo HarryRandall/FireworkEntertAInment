@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { registerHooks } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -42,6 +42,7 @@ const [
   { planCuesOnBeats },
   { planCuesFast },
   { evaluateFinalChoreography },
+  { selectChoreographyCandidate },
   { DEFAULT_DESIGN },
   { DEFAULT_FIREWORK_SPEC },
 ] = await Promise.all([
@@ -49,6 +50,7 @@ const [
   import('../../lib/cue-generation/beat-sync-planner.ts'),
   import('../../lib/cue-generation/fast-planner.ts'),
   import('../../lib/cue-generation/quality.ts'),
+  import('../../lib/cue-generation/choreography-repair.ts'),
   import('../../lib/fireworks/design.ts'),
   import('../../lib/fireworks/spec.ts'),
 ]);
@@ -345,9 +347,39 @@ test('soft-ending filtering keeps the final musical hit even when it is not a do
 });
 
 test('hard assortment quality failures can invoke deterministic repair', () => {
-  const runner = readFileSync(join(root, 'lib/cue-generation/runner.server.ts'), 'utf8');
-
-  assert.match(runner, /quality\.issues\.some\(\(issue\) => issue\.hard\)/);
-  assert.match(runner, /if \(needsDeterministicRepair\) \{/);
-  assert.match(runner, /Final cue validation after deterministic repair/);
+  const weak = [{ productId: 'weak' }];
+  const strong = [{ productId: 'strong' }];
+  let repairAttempts = 0;
+  const result = selectChoreographyCandidate({
+    initialCues: weak,
+    initialPlanner: 'llm',
+    inspect: (cues) => ({
+      cues,
+      quality:
+        cues[0]?.productId === 'strong'
+          ? {
+              issues: [],
+              comparisonScore: 90,
+              maximumGapSeconds: 1,
+              sectionCoverageRatio: 1,
+              coordinatedStrongMomentRatio: 1,
+              musicSync: null,
+            }
+          : {
+              issues: [{ kind: 'missing_final_hit', detail: 'missing', hard: true }],
+              comparisonScore: 20,
+              maximumGapSeconds: 20,
+              sectionCoverageRatio: 0.5,
+              coordinatedStrongMomentRatio: 0,
+              musicSync: null,
+            },
+    }),
+    createRepair: () => {
+      repairAttempts += 1;
+      return strong;
+    },
+  });
+  assert.equal(repairAttempts, 1);
+  assert.equal(result.report.repairApplied, true);
+  assert.deepEqual(result.selected.cues, strong);
 });

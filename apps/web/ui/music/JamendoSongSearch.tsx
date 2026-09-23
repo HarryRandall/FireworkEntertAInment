@@ -134,16 +134,18 @@ export function JamendoSongSearch({
   hasSelection = false,
   apiEndpoint = '/api/music-library/jamendo',
   disabled = false,
+  recommendations = false,
 }: {
   onSelect: (track: JamendoSearchTrack) => Promise<void>;
   hasSelection?: boolean;
   apiEndpoint?: string;
   disabled?: boolean;
+  recommendations?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
   const [query, setQuery] = useState('');
-  const [mode, setMode] = useState<'browse' | 'search'>('browse');
+  const [mode, setMode] = useState<'browse' | 'search' | 'recommend'>('browse');
   const [genre, setGenre] = useState<JamendoGenre | null>(null);
 
   const [tracks, setTracks] = useState<JamendoSearchTrack[]>([]);
@@ -178,6 +180,33 @@ export function JamendoSongSearch({
       }
     >
   >(new Map());
+
+  async function loadRecommendations() {
+    if (disabled) return;
+    setOpen(true);
+    const token = ++requestTokenRef.current;
+    stopPreview();
+    setMode('recommend');
+    setLoading(true);
+    setLoadingMore(false);
+    setHasMore(false);
+    setHasSearched(true);
+    setError(null);
+    setTracks([]);
+    try {
+      const res = await fetch(`${apiEndpoint}?mode=recommend`, { cache: 'no-store' });
+      const value: unknown = await res.json();
+      if (!res.ok)
+        throw new Error(responseError(value, 'Recommendations are temporarily unavailable.'));
+      if (requestTokenRef.current !== token) return;
+      setTracks(tracksFrom(value));
+    } catch (err) {
+      if (requestTokenRef.current !== token) return;
+      setError(err instanceof Error ? err.message : 'Recommendations are temporarily unavailable.');
+    } finally {
+      if (requestTokenRef.current === token) setLoading(false);
+    }
+  }
 
   useEffect(() => {
     tracksRef.current = tracks;
@@ -335,7 +364,7 @@ export function JamendoSongSearch({
   function openDialog() {
     if (disabled) return;
     setOpen(true);
-    if (!hasSearched) void loadBrowse(null, 0, false);
+    if (!hasSearched || mode === 'recommend') void loadBrowse(null, 0, false);
   }
 
   function togglePreview(track: JamendoSearchTrack) {
@@ -461,6 +490,17 @@ export function JamendoSongSearch({
           : 'Browse a free, licence-cleared library for a track to lead your show.'}
       </p>
 
+      {recommendations ? (
+        <Button
+          type="button"
+          className="mt-3 w-full"
+          disabled={disabled}
+          onClick={() => void loadRecommendations()}
+        >
+          Recommend music for me
+        </Button>
+      ) : null}
+
       <button
         type="button"
         onClick={openDialog}
@@ -548,6 +588,14 @@ export function JamendoSongSearch({
             </div>
 
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              {recommendations ? (
+                <GenreChip
+                  label="For this assortment"
+                  active={mode === 'recommend'}
+                  disabled={busy}
+                  onClick={() => void loadRecommendations()}
+                />
+              ) : null}
               <GenreChip
                 label="All"
                 active={mode === 'browse' && genre === null}
@@ -592,13 +640,19 @@ export function JamendoSongSearch({
                   className="animate-spin motion-reduce:animate-none"
                   aria-hidden="true"
                 />
-                {mode === 'search' ? 'Searching Jamendo' : 'Loading tracks'}
+                {mode === 'recommend'
+                  ? 'Finding music for this assortment'
+                  : mode === 'search'
+                    ? 'Searching Jamendo'
+                    : 'Loading tracks'}
               </div>
             ) : tracks.length === 0 && hasSearched && !error ? (
               <p className="py-10 text-center text-sm text-[color:var(--color-content-subtle)]">
-                {mode === 'search'
-                  ? 'No tracks matched. Try another search or browse by genre.'
-                  : 'No tracks to show right now. Try a different genre.'}
+                {mode === 'recommend'
+                  ? 'No recommendations available. Browse the library or use your own song.'
+                  : mode === 'search'
+                    ? 'No tracks matched. Try another search or browse by genre.'
+                    : 'No tracks to show right now. Try a different genre.'}
               </p>
             ) : (
               <ul className="flex w-full flex-col gap-2">

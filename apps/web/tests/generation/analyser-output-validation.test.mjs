@@ -199,7 +199,7 @@ test('stored schema 1.3.0 analysis is safely upgraded with bar-grid defaults', (
 
 test('stored future analyser schema remains fail-closed', () => {
   const payload = makeValidAnalysis();
-  payload.schema_version = '1.5.0';
+  payload.schema_version = '1.6.0';
 
   assert.throws(() => parseStoredAnalyserResult(payload), AnalyserOutputValidationError);
 });
@@ -212,7 +212,7 @@ const invalidSamples = [
   },
   {
     name: 'wrong schema version',
-    mutate: (payload) => ({ ...payload, schema_version: '1.5.0' }),
+    mutate: (payload) => ({ ...payload, schema_version: '1.6.0' }),
     expected: /schema_version/,
   },
   {
@@ -383,4 +383,26 @@ test('cue generation revalidates stored analyser JSON before use', () => {
   assert.match(loader, /parseStoredAnalyserResult\(data\.analysis_json\)/);
   assert.match(loader, /status: 'invalid'/);
   assert.doesNotMatch(loader, /data\.analysis_json as unknown as AnalyserResult/);
+});
+
+test('schema 1.5.0 preserves validated bar-grid confidence', () => {
+  const payload = { ...makeValidAnalysis(), schema_version: '1.5.0', bar_grid_confidence: 0.195 };
+  assert.deepEqual(parseAnalyserResult(payload), payload);
+  assert.deepEqual(parseStoredAnalyserResult(payload), payload);
+  assert.deepEqual(parseAnalyserResponse(JSON.stringify(payload)), payload);
+  for (const confidence of [undefined, null, -0.01, 1.01, NaN, Infinity, '0.5']) {
+    assert.throws(
+      () =>
+        parseStoredAnalyserResult({
+          ...makeValidAnalysis(),
+          schema_version: '1.5.0',
+          bar_grid_confidence: confidence,
+        }),
+      AnalyserOutputValidationError,
+    );
+  }
+  assert.throws(
+    () => parseAnalyserResult({ ...makeValidAnalysis(), bar_grid_confidence: 0.5 }),
+    AnalyserOutputValidationError,
+  );
 });

@@ -21,6 +21,7 @@ import {
 } from '@/lib/jamendo.server';
 import { isJamendoGenre } from '@/lib/music-library.types';
 import { runAssortmentSongAnalysisLifecycle } from '@/lib/music-analysis-lifecycle.server';
+import { recommendAssortmentMusic } from '@/lib/assortments/music-recommendations.server';
 
 export const maxDuration = 300;
 
@@ -71,6 +72,19 @@ export async function GET(request: Request, context: { params: Promise<{ token: 
   }
 
   const searchParams = new URL(request.url).searchParams;
+  if (searchParams.get('mode') === 'recommend') {
+    try {
+      const recommendations = await recommendAssortmentMusic(assortment);
+      // Keep ranking evidence server-side; QR consumers receive provider tracks only.
+      return response({ ok: true, tracks: recommendations.tracks });
+    } catch (error) {
+      console.error('[assortment-qr/jamendo] recommendation failed:', error);
+      return response(
+        { ok: false, error: 'Music recommendations are temporarily unavailable.' },
+        500,
+      );
+    }
+  }
   if (searchParams.get('mode') === 'browse') {
     const genreParam = searchParams.get('genre')?.trim().toLowerCase() ?? '';
     if (genreParam && !isJamendoGenre(genreParam)) {
