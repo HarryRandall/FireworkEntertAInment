@@ -263,7 +263,7 @@ export function EffectsBrowser({ effects, styleDefaults, initialView }: Props) {
     () =>
       effectsActive
         ? filteredEffects
-            .filter((effect) => !effect.previewImagePath)
+            .filter((effect) => !effect.previewImagePath && effect.renderDiagnostics.length === 0)
             .map((effect) => ({
               id: `effect-${effect.id}`,
               previewUrl: withFireworkPreviewRevision(
@@ -271,12 +271,14 @@ export function EffectsBrowser({ effects, styleDefaults, initialView }: Props) {
                 effect.previewImageRevision,
               ),
             }))
-        : filteredDefaults.map((item) => ({
-            id: `style-default-${item.id}`,
-            previewUrl: styleDefaultPreviewUrl(item),
-            persist: false,
-            displayPoster: true,
-          })),
+        : filteredDefaults
+            .filter((item) => item.renderDiagnostics.length === 0)
+            .map((item) => ({
+              id: `style-default-${item.id}`,
+              previewUrl: styleDefaultPreviewUrl(item),
+              persist: false,
+              displayPoster: true,
+            })),
     [effectsActive, filteredDefaults, filteredEffects],
   );
 
@@ -349,6 +351,9 @@ export function EffectsBrowser({ effects, styleDefaults, initialView }: Props) {
                     )}
                     persistedPosterUrl={fireworkPreviewImageUrl(effect.previewImagePath)}
                     persistPoster
+                    previewError={
+                      effect.renderDiagnostics.length ? 'Invalid render settings' : null
+                    }
                     label={effect.name}
                     href={`/admin/effects/${effect.id}`}
                   >
@@ -377,6 +382,7 @@ export function EffectsBrowser({ effects, styleDefaults, initialView }: Props) {
                     key={item.id}
                     previewId={`style-default-${item.id}`}
                     previewUrl={styleDefaultPreviewUrl(item)}
+                    previewError={item.renderDiagnostics.length ? 'Invalid render settings' : null}
                     label={item.name}
                     href={`/admin/effects/defaults/${item.id}?view=${item.kind}`}
                   >

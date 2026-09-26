@@ -127,7 +127,30 @@ An isolated browser fixture verified section navigation, disabled Save/recovery,
 record switching, duplicate suppression, long-path wrapping and light/dark,
 narrow/wide layouts. No invalid catalogue records were written for this check.
 These are section links, not yet inline errors attached to individual inputs.
-Catalogue badges and remaining public-consumer validation still need auditing.
+Remaining public-consumer validation still needs auditing.
+
+The catalogue pass now validates the stored effect, preset or resolved firework
+snapshot before normalisation. Invalid cards carry a visible status, hide cached
+posters and do not queue preview or thumbnail capture. They remain links to the
+editor. Invalid presets are excluded from compatible preset pickers. Admin preview
+requests return structured 422 responses, distinct from transient read failures.
+Malformed source JSON is preserved when opening or reverting the editors, rather
+than being replaced with an empty default document.
+
+Firework card previews now compile only their copied snapshot. A behaviour test
+changes the source effect, including making it invalid, and confirms the saved
+preview remains identical. The draft editor also stops merging that live effect.
+Removed duplicate schema-fallback queries which merely retried the same select.
+Read cache keys changed so old cached summaries cannot bypass the new diagnostics.
+
+An isolated browser fixture verified invalid cards make no preview/capture requests,
+keep their repair links and hide both persisted and session posters. Valid cards
+still activate. Light/dark and narrow layouts were checked. The authenticated local
+catalogue and Chrysanthemum Default editor loaded successfully. The latter displays
+a colour-section dirty indicator while the document says Saved; palette initialisation
+and structural comparisons still need investigation before claiming reopen fidelity.
+Cached poster renderer identifiers also need review: they currently describe image
+format/resolution rather than the current simulation fingerprint.
 
 ## Remaining audit and implementation
 

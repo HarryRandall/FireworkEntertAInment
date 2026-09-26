@@ -1,4 +1,5 @@
 'use client';
+import { validateCatalogueRender } from '@/lib/admin/renderer-validation';
 import { rendererTabs } from '@/ui/firework-editor/renderer-tabs';
 import { applyCopiedPreset, resetCopiedPreset } from '@showcrafter/firework-editor/presets';
 
@@ -251,7 +252,14 @@ function effectSavedSnapshotFromFields(
     description: fields.description ?? '',
     patternKey: fields.patternKey,
     sortOrder,
-    modelText: JSON.stringify(modelJson, null, 2),
+    modelText: JSON.stringify(
+      validateCatalogueRender({ kind: 'effect', recordId: fields.id, settings: fields.modelJson })
+        .ok
+        ? modelJson
+        : fields.modelJson,
+      null,
+      2,
+    ),
     styleDefaultIds: fields.styleDefaultIds,
     signature: effectEditorSignature({
       name: fields.name,
@@ -301,9 +309,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   const [description, setDescription] = useState(effect.description ?? '');
   const [patternKey, setPatternKey] = useState(effect.patternKey);
   const [sortOrder, setSortOrder] = useState(String(effect.sortOrder));
-  const [modelText, setModelText] = useState(() =>
-    JSON.stringify(canonicaliseEffectModelJson(effect.modelJson), null, 2),
-  );
+  const [modelText, setModelText] = useState(() => incomingSavedSnapshot.modelText);
   const [styleDefaultIds, setStyleDefaultIds] = useState(() => initialStyleDefaultIds(effect));
   const [createdStyleDefaults, setCreatedStyleDefaults] = useState<LocalStyleDefaultOptions>({});
   const [lastSavedUpdatedAt, setLastSavedUpdatedAt] = useState(effect.updatedAt);
@@ -411,14 +417,16 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     setAdminBreadcrumb({ label: name || effect.name });
     return () => setAdminBreadcrumb(null);
   }, [effect.name, name, setAdminBreadcrumb]);
-  const renderResult = useMemo(
-    () =>
-      validateFireworkDesign({
-        baseModel,
-        primaryColor: modelHasColour ? null : PREVIEW_COLOR,
-      }),
-    [baseModel, modelHasColour],
-  );
+  const renderResult = useMemo(() => {
+    const source = validateCatalogueRender({
+      kind: 'effect',
+      recordId: effect.id,
+      settings: parsedModel.ok ? parsedModel.value : null,
+    });
+    return source.ok
+      ? validateFireworkDesign({ baseModel, primaryColor: modelHasColour ? null : PREVIEW_COLOR })
+      : source;
+  }, [effect.id, parsedModel, baseModel, modelHasColour]);
 
   // Invalid settings remain editable, but never become preview particles.
   const previewDesign = renderResult.ok ? renderResult.design : DEFAULT_DESIGN;
@@ -431,14 +439,20 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       : null;
 
   const [showSaved, setShowSaved] = useState(false);
-  const savedRenderResult = useMemo(
-    () =>
-      validateFireworkDesign({
-        baseModel: JSON.parse(savedPreviewSnapshot.modelText),
-        primaryColor: PREVIEW_COLOR,
-      }),
-    [savedPreviewSnapshot],
-  );
+  const savedRenderResult = useMemo(() => {
+    const model = JSON.parse(savedPreviewSnapshot.modelText);
+    const source = validateCatalogueRender({
+      kind: 'effect',
+      recordId: effect.id,
+      settings: model,
+    });
+    return source.ok
+      ? validateFireworkDesign({
+          baseModel: model,
+          primaryColor: hasConcreteRendererColor(model) ? null : PREVIEW_COLOR,
+        })
+      : source;
+  }, [effect.id, savedPreviewSnapshot]);
   const displayedDesign =
     showSaved && savedRenderResult.ok ? savedRenderResult.design : previewDesign;
 

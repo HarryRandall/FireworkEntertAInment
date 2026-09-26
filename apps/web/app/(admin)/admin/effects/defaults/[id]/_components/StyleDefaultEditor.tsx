@@ -1,4 +1,5 @@
 'use client';
+import { validateCatalogueRender } from '@/lib/admin/renderer-validation';
 import {
   DEFAULT_DESIGN,
   RendererValidationError,
@@ -158,7 +159,18 @@ function styleDefaultSavedSnapshotFromFields(
     kind: fields.kind,
     sortOrder: String(fields.sortOrder),
     isArchived: fields.isArchived,
-    defaultsText: JSON.stringify(defaultsJson, null, 2),
+    defaultsText: JSON.stringify(
+      validateCatalogueRender({
+        kind: 'style-default',
+        recordId: fields.id,
+        styleKind: fields.kind,
+        settings: fields.defaultsJson,
+      }).ok
+        ? defaultsJson
+        : fields.defaultsJson,
+      null,
+      2,
+    ),
     signature: styleDefaultEditorSignature({
       name: fields.name,
       description: fields.description ?? '',
@@ -218,13 +230,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
   const [customTrailPreviewStarDefaults, setCustomTrailPreviewStarDefaults] = useState<
     Record<string, unknown>
   >(() => makeTrailPreviewStarDefaults(styleDefault.kind === 'innerTrail' ? 'core' : 'outer'));
-  const [defaultsText, setDefaultsText] = useState(() =>
-    JSON.stringify(
-      normaliseStyleDefaultJson(styleDefault.kind, styleDefault.defaultsJson),
-      null,
-      2,
-    ),
-  );
+  const [defaultsText, setDefaultsText] = useState(incomingSavedSnapshot.defaultsText);
   const [savedSignature, setSavedSignature] = useState(() => incomingSavedSnapshot.signature);
   const savedSnapshotRef = useRef<StyleDefaultEditorSavedSnapshot>(incomingSavedSnapshot);
   const [savedPreviewSnapshot, setSavedPreviewSnapshot] = useState(incomingSavedSnapshot);
@@ -261,6 +267,13 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
   const renderResult = useMemo<RenderResult>(() => {
     if (!parsedDefaults.ok)
       return { ok: false, diagnostics: [{ path: [], message: parsedDefaults.error }] };
+    const source = validateCatalogueRender({
+      kind: 'style-default',
+      recordId: styleDefault.id,
+      styleKind: kind,
+      settings: parsedDefaults.value,
+    });
+    if (!source.ok) return source;
     try {
       return {
         ok: true,
@@ -275,7 +288,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
         return { ok: false, diagnostics: error.diagnostics };
       throw error;
     }
-  }, [kind, parsedDefaults, trailPreviewStarDefaults]);
+  }, [styleDefault.id, kind, parsedDefaults, trailPreviewStarDefaults]);
   const previewDesign = renderResult.ok ? renderResult.design : DEFAULT_DESIGN;
   const renderError = renderResult.ok
     ? null
@@ -284,6 +297,13 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
         .join('; ');
   const [showSaved, setShowSaved] = useState(false);
   const savedRenderResult = useMemo<RenderResult>(() => {
+    const source = validateCatalogueRender({
+      kind: 'style-default',
+      recordId: styleDefault.id,
+      styleKind: savedPreviewSnapshot.kind,
+      settings: JSON.parse(savedPreviewSnapshot.defaultsText),
+    });
+    if (!source.ok) return source;
     try {
       return {
         ok: true,
@@ -298,7 +318,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
         return { ok: false, diagnostics: error.diagnostics };
       throw error;
     }
-  }, [savedPreviewSnapshot, trailPreviewStarDefaults]);
+  }, [styleDefault.id, savedPreviewSnapshot, trailPreviewStarDefaults]);
   const displayedDesign =
     showSaved && savedRenderResult.ok ? savedRenderResult.design : previewDesign;
   const displayedKind = showSaved ? savedPreviewSnapshot.kind : kind;

@@ -1,3 +1,4 @@
+import { validateCatalogueRender } from './renderer-validation';
 import 'server-only';
 
 import { getCachedJson, setCachedJson } from '@/lib/server-cache';
@@ -16,7 +17,7 @@ import {
 import { listEffectEditorVersions } from './editor-versions.server';
 import { buildEffectPreview } from './effect-preview';
 import { requirePermission } from '@/lib/access/current-profile.server';
-import { describeSupabaseError, isMissingStyleDefaultSchemaError } from './style-default-schema';
+import { describeSupabaseError } from './style-default-schema';
 import { listAdminStyleDefaultOptions } from './style-defaults.server';
 import { getServerClient } from './supabase';
 
@@ -40,7 +41,13 @@ type BaseEffectRow = Pick<
 };
 
 function mapBaseEffectSummary(row: BaseEffectRow): AdminEffectSummary {
+  const renderResult = validateCatalogueRender({
+    kind: 'effect',
+    recordId: row.id,
+    settings: row.model_json,
+  });
   return {
+    renderDiagnostics: renderResult.ok ? [] : renderResult.diagnostics,
     id: row.id,
     slug: row.slug,
     name: row.name,
@@ -87,8 +94,6 @@ function mapBaseEffectDetail(row: BaseEffectRow): CachedAdminEffectDetail {
 
 const BASE_EFFECT_SELECT =
   'id, slug, name, description, pattern_key, model_json, sort_order, source, updated_at, fireworks(id), firework_preview_images(source_revision, renderer_version, storage_path)';
-const LEGACY_BASE_EFFECT_SELECT =
-  'id, slug, name, description, pattern_key, model_json, sort_order, source, updated_at, fireworks(id), firework_preview_images(source_revision, renderer_version, storage_path)';
 
 async function selectBaseEffects(supabase: ServerClient) {
   const result = await supabase
@@ -97,13 +102,7 @@ async function selectBaseEffects(supabase: ServerClient) {
     .order('sort_order', { ascending: true })
     .order('name', { ascending: true });
 
-  if (!isMissingStyleDefaultSchemaError(result.error)) return result;
-
-  return supabase
-    .from('firework_effects')
-    .select(LEGACY_BASE_EFFECT_SELECT)
-    .order('sort_order', { ascending: true })
-    .order('name', { ascending: true });
+  return result;
 }
 
 async function selectBaseEffectById(supabase: ServerClient, effectId: string) {
@@ -113,13 +112,7 @@ async function selectBaseEffectById(supabase: ServerClient, effectId: string) {
     .eq('id', effectId)
     .maybeSingle();
 
-  if (!isMissingStyleDefaultSchemaError(result.error)) return result;
-
-  return supabase
-    .from('firework_effects')
-    .select(LEGACY_BASE_EFFECT_SELECT)
-    .eq('id', effectId)
-    .maybeSingle();
+  return result;
 }
 
 /** Returns every colourless base effect for the admin effects browser. */

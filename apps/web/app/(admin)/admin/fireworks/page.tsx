@@ -83,7 +83,7 @@ async function FireworksData({
   const pageStart = (currentPage - 1) * TABLE_PAGE_SIZE;
   const paginated = filtered.slice(pageStart, pageStart + TABLE_PAGE_SIZE);
   const posterBackfillTargets = filtered
-    .filter((firework) => !firework.previewImagePath)
+    .filter((firework) => !firework.previewImagePath && firework.renderDiagnostics.length === 0)
     .map((firework) => ({
       id: `firework-${firework.id}`,
       previewUrl: withFireworkPreviewRevision(
@@ -117,6 +117,9 @@ async function FireworksData({
                   )}
                   persistedPosterUrl={fireworkPreviewImageUrl(firework.previewImagePath)}
                   persistPoster
+                  previewError={
+                    firework.renderDiagnostics.length ? 'Invalid render settings' : null
+                  }
                   label={firework.name}
                   href={`/admin/fireworks/${firework.id}`}
                 >

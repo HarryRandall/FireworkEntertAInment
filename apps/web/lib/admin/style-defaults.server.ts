@@ -1,3 +1,4 @@
+import { validateCatalogueRender } from './renderer-validation';
 import 'server-only';
 
 import { getCachedJson, setCachedJson } from '@/lib/server-cache';
@@ -39,7 +40,14 @@ function toOption(row: StyleDefaultRow): AdminStyleDefaultOption {
 }
 
 function toSummary(row: StyleDefaultRow): AdminStyleDefaultSummary {
+  const renderResult = validateCatalogueRender({
+    kind: 'style-default',
+    recordId: row.id,
+    settings: row.defaults_json,
+    styleKind: row.kind,
+  });
   return {
+    renderDiagnostics: renderResult.ok ? [] : renderResult.diagnostics,
     ...toOption(row),
     slug: row.slug,
     sortOrder: row.sort_order,
@@ -54,7 +62,7 @@ function groupedOptions(summaries: AdminStyleDefaultSummary[]): AdminStyleDefaul
     FIREWORK_STYLE_DEFAULT_KINDS.map((kind) => [kind, []]),
   ) as unknown as AdminStyleDefaultOptions;
   for (const item of summaries) {
-    if (item.isArchived) continue;
+    if (item.isArchived || item.renderDiagnostics.length) continue;
     grouped[item.kind].push(toOptionFromSummary(item));
   }
   return grouped;

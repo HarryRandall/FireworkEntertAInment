@@ -1,4 +1,5 @@
 'use client';
+import { validateCatalogueRender } from '@/lib/admin/renderer-validation';
 import { rendererTabs } from '@/ui/firework-editor/renderer-tabs';
 import { applyCopiedPreset, resetCopiedPreset } from '@showcrafter/firework-editor/presets';
 
@@ -710,7 +711,7 @@ function fireworkSavedSnapshotFromFields(
     colourStops,
     colourMode,
     colourAxis,
-    overridesText: JSON.stringify(overrides, null, 2),
+    overridesText: JSON.stringify(fields.renderOverridesJson, null, 2),
     signature: fireworkEditorSignature({
       name: fields.name,
       description: fields.description ?? '',
@@ -809,7 +810,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   );
   const nextColourStopIdRef = useRef(nextAddedColourStopIndex(initialColourStops));
   const [overridesText, setOverridesText] = useState(
-    JSON.stringify(firework.renderOverridesJson ?? {}, null, 2),
+    JSON.stringify(firework.renderOverridesJson, null, 2),
   );
   const [lastSavedUpdatedAt, setLastSavedUpdatedAt] = useState(firework.updatedAt);
   const [savedSignature, setSavedSignature] = useState(() => incomingSavedSnapshot.signature);
@@ -846,10 +847,6 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   const colourDefaults = readRecord(overridesRecord, 'colour');
   const colourEnabled = typeof colourDefaults.enabled === 'boolean' ? colourDefaults.enabled : true;
 
-  const baseModel = useMemo(
-    () => (firework.effectModels[effectId] ?? firework.effectModelJson) as Json,
-    [effectId, firework.effectModels, firework.effectModelJson],
-  );
   const selectedFireworkStyleDefaults = useMemo(() => {
     const selected: Partial<Record<FireworkStyleDefaultKind, AdminStyleDefaultOption | null>> = {};
     for (const kind of FIREWORK_STYLE_DEFAULT_KINDS) {
@@ -978,16 +975,20 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     setSavedSignature(incomingSnapshot.signature);
   }, [incomingSavedSnapshot]);
 
-  const renderResult = useMemo(
-    () =>
-      validateFireworkDesign({
-        baseModel,
-        variantOverrides: mergedOverrides,
-        primaryColor: mainColor,
-        colorPalette: palette.length ? palette : null,
-      }),
-    [baseModel, mergedOverrides, mainColor, palette],
-  );
+  const renderResult = useMemo(() => {
+    const source = validateCatalogueRender({
+      kind: 'firework',
+      recordId: firework.id,
+      settings: parsedOverrides.ok ? parsedOverrides.value : null,
+    });
+    return source.ok
+      ? validateFireworkDesign({
+          variantOverrides: mergedOverrides,
+          primaryColor: mainColor,
+          colorPalette: palette.length ? palette : null,
+        })
+      : source;
+  }, [firework.id, parsedOverrides, mergedOverrides, mainColor, palette]);
 
   // Invalid settings remain editable, but never become preview particles.
   const previewDesign = renderResult.ok ? renderResult.design : DEFAULT_DESIGN;
@@ -1002,8 +1003,12 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   const [showSaved, setShowSaved] = useState(false);
   const savedRenderResult = useMemo(
     () =>
-      validateFireworkDesign({ variantOverrides: JSON.parse(savedPreviewSnapshot.overridesText) }),
-    [savedPreviewSnapshot],
+      validateCatalogueRender({
+        kind: 'firework',
+        recordId: firework.id,
+        settings: JSON.parse(savedPreviewSnapshot.overridesText),
+      }),
+    [firework.id, savedPreviewSnapshot],
   );
   const displayedDesign =
     showSaved && savedRenderResult.ok ? savedRenderResult.design : previewDesign;

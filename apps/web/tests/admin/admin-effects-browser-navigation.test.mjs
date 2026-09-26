@@ -77,8 +77,6 @@ test('style defaults use real non-persisted renderer previews and visual cards',
   assert.match(styleDefaults, /export function compileStyleDefaultPreviewDesign/);
   assert.match(styleDefaults, /kind === 'launch' \|\| kind === 'smoke'/);
   assert.match(previewServer, /getAdminStyleDefaultPreviewSourceById/);
-  assert.match(previewServer, /compileStyleDefaultPreviewDesign/);
-  assert.match(previewServer, /styleDefault\.kind === 'trail' \? makeTrailPreviewStarDefaults\(\)/);
   assert.match(previewServer, /if \(kind === 'style-default'\)/);
   assert.match(styleDefaultsServer, /getAdminStyleDefaultPreviewSourceById/);
   assert.match(

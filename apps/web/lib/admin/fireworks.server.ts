@@ -1,3 +1,4 @@
+import { validateCatalogueRender } from './renderer-validation';
 import 'server-only';
 
 import { getCachedJson, setCachedJson } from '@/lib/server-cache';
@@ -22,7 +23,7 @@ import {
 import { listFireworkEditorVersions } from './editor-versions.server';
 import { buildEffectPreview } from './effect-preview';
 import { requirePermission } from '@/lib/access/current-profile.server';
-import { describeSupabaseError, isMissingStyleDefaultSchemaError } from './style-default-schema';
+import { describeSupabaseError } from './style-default-schema';
 import { listAdminStyleDefaultOptions } from './style-defaults.server';
 import { getServerClient } from './supabase';
 
@@ -58,10 +59,7 @@ type FireworkRow = {
 
 const FIREWORK_SELECT =
   'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, render_snapshot_json, render_overrides_json, updated_at, firework_effects (id, slug, name, pattern_key, model_json), firework_preview_images(source_revision, renderer_version, storage_path)';
-const LEGACY_FIREWORK_SELECT =
-  'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, render_snapshot_json, render_overrides_json, updated_at, firework_effects (id, slug, name, pattern_key, model_json), firework_preview_images(source_revision, renderer_version, storage_path)';
 const EFFECT_OPTIONS_SELECT = 'id, slug, name, pattern_key, model_json';
-const LEGACY_EFFECT_OPTIONS_SELECT = 'id, slug, name, pattern_key, model_json';
 
 function firstEffect(
   effect: FireworkEffectRow | FireworkEffectRow[] | null | undefined,
@@ -85,7 +83,13 @@ function numberOrNull(value: number | string | null | undefined): number | null 
 function mapSummary(row: FireworkRow): AdminFireworkSummary {
   const effect = firstEffect(row.firework_effects);
   const palette = Array.isArray(row.color_palette) ? row.color_palette : [];
+  const renderResult = validateCatalogueRender({
+    kind: 'firework',
+    recordId: row.id,
+    settings: row.render_snapshot_json,
+  });
   return {
+    renderDiagnostics: renderResult.ok ? [] : renderResult.diagnostics,
     id: row.id,
     slug: row.slug,
     name: row.name,
@@ -124,13 +128,7 @@ async function selectFireworks(supabase: ServerClient) {
     .order('name', { ascending: true })
     .limit(500);
 
-  if (!isMissingStyleDefaultSchemaError(result.error)) return result;
-
-  return supabase
-    .from('fireworks')
-    .select(LEGACY_FIREWORK_SELECT)
-    .order('name', { ascending: true })
-    .limit(500);
+  return result;
 }
 
 async function selectFireworkById(supabase: ServerClient, fireworkId: string) {
@@ -140,13 +138,7 @@ async function selectFireworkById(supabase: ServerClient, fireworkId: string) {
     .eq('id', fireworkId)
     .maybeSingle();
 
-  if (!isMissingStyleDefaultSchemaError(result.error)) return result;
-
-  return supabase
-    .from('fireworks')
-    .select(LEGACY_FIREWORK_SELECT)
-    .eq('id', fireworkId)
-    .maybeSingle();
+  return result;
 }
 
 async function selectEffectOptions(supabase: ServerClient) {
@@ -156,13 +148,7 @@ async function selectEffectOptions(supabase: ServerClient) {
     .order('sort_order', { ascending: true })
     .order('name', { ascending: true });
 
-  if (!isMissingStyleDefaultSchemaError(result.error)) return result;
-
-  return supabase
-    .from('firework_effects')
-    .select(LEGACY_EFFECT_OPTIONS_SELECT)
-    .order('sort_order', { ascending: true })
-    .order('name', { ascending: true });
+  return result;
 }
 
 /** Lists every atomic firework with its base effect for the admin table. */
@@ -276,7 +262,7 @@ export async function getAdminFireworkById(
   ]);
   const detail: CachedAdminFireworkDetail = {
     ...mapSummary(row),
-    renderOverridesJson: row.render_snapshot_json ?? {},
+    renderOverridesJson: row.render_snapshot_json,
     effectModelJson: (effect?.model_json ?? effectData.models[effect?.id ?? ''] ?? {}) as Json,
     effectStarStyleDefault: effectStyleDefaultLinks.star ?? null,
     effectTrailStyleDefault: effectStyleDefaultLinks.trail ?? null,

@@ -1,3 +1,4 @@
+import type { RenderDiagnostic } from '@showcrafter/fireworks/design';
 import type { Json } from '@/lib/database.types';
 import type { FireworkStyleDefaultKind } from '@showcrafter/fireworks/style-defaults';
 import type { ShowTemplate } from '@/lib/show-templates/types';
@@ -169,6 +170,7 @@ export type AdminStyleDefaultLinkMap = Partial<
 export type AdminStyleDefaultIdMap = Partial<Record<FireworkStyleDefaultKind, string | null>>;
 
 export type AdminStyleDefaultSummary = AdminStyleDefaultOption & {
+  renderDiagnostics: RenderDiagnostic[];
   slug: string;
   sortOrder: number;
   isArchived: boolean;
@@ -197,6 +199,7 @@ export type AdminLinkedProduct = {
 };
 
 export type AdminEffectSummary = {
+  renderDiagnostics: RenderDiagnostic[];
   id: string;
   slug: string;
   name: string;
@@ -236,6 +239,7 @@ export type AdminEffectOption = {
  * This is the customisable unit shown in the admin Fireworks table.
  */
 export type AdminFireworkSummary = {
+  renderDiagnostics: RenderDiagnostic[];
   id: string;
   slug: string;
   name: string;
@@ -260,9 +264,9 @@ export type AdminFireworkSummary = {
 };
 
 export type AdminFireworkDetail = AdminFireworkSummary & {
-  /** Firework-level renderer overrides, design-shaped, merged over the effect. */
+  /** Resolved saved render snapshot. The field name is shared with editor save actions. */
   renderOverridesJson: Json;
-  /** The base effect's `model_json`, used to compose the live preview. */
+  /** Source effect settings, available only for explicit whole-effect replacement. */
   effectModelJson: Json;
   effectStarStyleDefault: AdminStyleDefaultOption | null;
   effectTrailStyleDefault: AdminStyleDefaultOption | null;
