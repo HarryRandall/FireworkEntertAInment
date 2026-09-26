@@ -160,7 +160,7 @@ export function effectSpawnWaterfall(
     if (!layer.enabled) continue;
     const count = starEmissionCount(design, layerKey);
     for (let i = 0; i < count; i++) {
-      const curtain = (i / count - 0.5) * layer.count * shape.curtainWidth;
+      const curtain = count > 1 ? (i / (count - 1) - 0.5) * shape.width : 0;
       effectSpawnEffectStar(ctx, {
         design,
         layer,

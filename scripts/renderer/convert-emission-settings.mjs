@@ -62,6 +62,16 @@ function rate(source, count, key) {
   );
 }
 
+function convertWaterfallWidth(result, source, count) {
+  result.geometryTuning ??= {};
+  const original = source.geometryTuning?.waterfall ?? {};
+  result.geometryTuning.waterfall = {
+    ...result.geometryTuning.waterfall,
+    width: original.width ?? Number((count * (original.curtainWidth ?? 2.2)).toPrecision(12)),
+  };
+  delete result.geometryTuning.waterfall.curtainWidth;
+}
+
 export function convertEmissionDesign(input, { includeProvenance = true } = {}) {
   if (!object(input)) throw new Error('Expected an object containing renderer settings.');
   const source = extractBaseDefaults(input);
@@ -96,6 +106,7 @@ export function convertEmissionDesign(input, { includeProvenance = true } = {}) 
     };
   }
   cleanTuning(result.geometryTuning);
+  convertWaterfallWidth(result, source, parsed.stars.outer.count);
   if (includeProvenance) convertProvenance(result, source);
   // Reject converted values outside the new supported ranges, never clamp them.
   compileFireworkDesign({ variantOverrides: result });
@@ -119,6 +130,8 @@ export function convertEmissionPart(input) {
         result.geometryTuning[group].durationSeconds = duration(input, group);
     }
     cleanTuning(result.geometryTuning);
+    if (result.geometryTuning.waterfall)
+      convertWaterfallWidth(result, input, input.stars?.outer?.count ?? 100);
   }
   convertProvenance(result, input);
   compileFireworkDesign({ variantOverrides: result });

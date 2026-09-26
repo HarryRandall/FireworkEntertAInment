@@ -57,6 +57,15 @@ function emittedStars(design) {
 }
 
 const fountains = designs.filter((design) => design.geometry === 'fountain');
+const waterfalls = designs.filter((design) => design.geometry === 'waterfall');
+assert.deepEqual(
+  waterfalls.map((design) => design.stars.outer.count),
+  [199, 10],
+);
+assert.equal(
+  waterfalls[0].geometryTuning.waterfall.width,
+  waterfalls[1].geometryTuning.waterfall.width,
+);
 assert.deepEqual(
   fountains.map((design) => [
     design.stars.outer.emissionRate,

@@ -1131,6 +1131,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
     renderDefaults: {
       pattern: 'fibonacci',
       geometry: 'waterfall',
+      geometryTuning: { waterfall: { width: 136.4 } },
       trailProfile: 'waterfall',
       size: 80,
       liftVelocity: 18,

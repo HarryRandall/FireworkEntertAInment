@@ -8,6 +8,22 @@ import {
 import { compileFireworkDesign } from '../src/design.ts';
 import { groundEmissionDuration, starEmissionCount } from '../src/emission.ts';
 
+test('waterfall width conversion removes count coupling and is idempotent', () => {
+  const input = {
+    geometry: 'waterfall',
+    stars: { outer: { count: 62, emissionRate: 112 } },
+    geometryTuning: { waterfall: { curtainWidth: 2.2, scatterX: 0 } },
+  };
+  const converted = convertEmissionDesign(input);
+  assert.equal(converted.geometryTuning.waterfall.width, 136.4);
+  assert.equal(converted.geometryTuning.waterfall.curtainWidth, undefined);
+  assert.deepEqual(convertEmissionDesign(converted), converted);
+  assert.equal(input.geometryTuning.waterfall.curtainWidth, 2.2);
+  const part = convertEmissionPart({ geometryTuning: { waterfall: { curtainWidth: 3 } } });
+  assert.deepEqual(part, { geometryTuning: { waterfall: { width: 300 } } });
+  assert.deepEqual(convertEmissionPart(part), part);
+});
+
 test('one-off conversion resolves rate, duration and actual counts without retaining old tuning', () => {
   const original = {
     geometry: 'fountain',

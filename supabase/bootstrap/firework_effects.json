@@ -245,6 +245,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 165
           }
         }
       }
@@ -401,6 +404,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 68.2
           }
         }
       }
@@ -557,6 +563,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 176
           }
         }
       }
@@ -707,6 +716,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 70.4
           }
         }
       }
@@ -863,6 +875,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3.2
+          },
+          "waterfall": {
+            "width": 2.2
           }
         }
       }
@@ -1013,6 +1028,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3.2
+          },
+          "waterfall": {
+            "width": 138.6
           }
         }
       }
@@ -1169,6 +1187,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 136.4
           }
         }
       }
@@ -1364,6 +1385,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 132
           }
         }
       }
@@ -1514,6 +1538,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 24.2
           }
         }
       }
@@ -1664,6 +1691,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 158.4
           }
         }
       }
@@ -1820,6 +1850,9 @@
           },
           "romanCandle": {
             "durationSeconds": 10
+          },
+          "waterfall": {
+            "width": 198
           }
         }
       }
@@ -2204,6 +2237,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 176
           }
         }
       }
@@ -2380,6 +2416,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 103.4
           }
         }
       }
@@ -2530,6 +2569,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 57.2
           }
         }
       }
@@ -2680,6 +2722,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 154
           }
         }
       }
@@ -2836,6 +2881,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 13.2
           }
         }
       }
@@ -2986,6 +3034,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 88
           }
         }
       }
@@ -3187,6 +3238,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 180.4
           }
         }
       }
@@ -3476,6 +3530,9 @@
           },
           "romanCandle": {
             "durationSeconds": 8
+          },
+          "waterfall": {
+            "width": 72.6
           }
         }
       }
@@ -4063,6 +4120,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 215.6
           }
         }
       }
@@ -4194,6 +4254,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 94.6
           }
         }
       }
@@ -4779,6 +4842,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 211.2
           }
         }
       }
@@ -4935,6 +5001,9 @@
           },
           "romanCandle": {
             "durationSeconds": 5.6
+          },
+          "waterfall": {
+            "width": 8.8
           }
         }
       }
@@ -5085,6 +5154,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 154
           }
         }
       }
@@ -5421,6 +5493,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 176
           }
         }
       }
@@ -5571,6 +5646,9 @@
           },
           "romanCandle": {
             "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 79.2
           }
         }
       }

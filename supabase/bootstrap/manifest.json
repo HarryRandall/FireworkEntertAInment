@@ -17,15 +17,15 @@
     },
     "firework_style_defaults": {
       "rows": 71,
-      "sha256": "5a47b4d3e75fafbef34185f4966c443f7e4c18004eae40828dae37377ce2c2e6"
+      "sha256": "9accb1740b9156ad56092943bf175208060616fc1ebb4a49c519f5963fca1af4"
     },
     "firework_effects": {
       "rows": 26,
-      "sha256": "4a22e104e72e259006518664a3a3280042f24cc6acdbef0830a0fb300175f1b6"
+      "sha256": "a7626442e64805faf50e35e1bf31371d3e719415e703fac60ec277239285899d"
     },
     "fireworks": {
       "rows": 90,
-      "sha256": "d995723bc1e2c056dd51a83657c9107e4d924e299deeb4bd1c659cb170014319"
+      "sha256": "a6e37ecbd6d700a417aaeb0fdebf9e083bb7d75c6f7940d34c00b83d58422cb8"
     },
     "multishots": {
       "rows": 39,

@@ -81,9 +81,7 @@ export function renderGeometryControls(context: RendererControlsContext) {
                     min={slider.min}
                     max={slider.max}
                     step={slider.step}
-                    formatValue={
-                      slider.key === 'durationSeconds' ? (value) => `${value} s` : undefined
-                    }
+                    unit={slider.unit}
                     value={round2(values[slider.key] ?? slider.min)}
                     disabled={disabled}
                     hint={slider.hint}

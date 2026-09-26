@@ -20,6 +20,7 @@ export type GeometryTuningSlider = {
   max: number;
   step: number;
   hint: string;
+  unit?: string;
   inputKind?: 'slider' | 'number';
 };
 
@@ -549,12 +550,13 @@ export const GEOMETRY_TUNING_SLIDERS: Record<GeometryTuningGroupKey, GeometryTun
   ],
   waterfall: [
     {
-      key: 'curtainWidth',
+      key: 'width',
       label: 'Curtain width',
-      min: 0.2,
-      max: 6,
-      step: 0.05,
-      hint: 'Curtain width relative to the shell size.',
+      min: 0,
+      max: 1200,
+      step: 0.1,
+      unit: 'scene units',
+      hint: 'Distance between the leftmost and rightmost stars, before scatter. Changing the star count only changes density.',
     },
     {
       key: 'scatterX',

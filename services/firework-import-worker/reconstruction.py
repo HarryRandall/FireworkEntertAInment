@@ -1424,7 +1424,7 @@ def _geometry_tuning(
         "fish": {"fish": {"verticalScale": min(1.5, scale_y)}},
         "waterfall": {
             "waterfall": {
-                "curtainWidth": min(6, scale_x * 2.2),
+                "width": round(scale_x * 220, 4),
                 "sideDrift": min(2, spread * 0.45),
                 "depthDrift": min(2, depth),
             }

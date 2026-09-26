@@ -12,7 +12,7 @@ from test_reconstruction import (
 
 
 def candidate(
-    geometry, effect_slug, trail_profile, *, rate=12.5, fade=0.25, times=(1, 2, 3, 4),
+    geometry, effect_slug, trail_profile, *, rate=12.5, fade=0.25, times=(1, 2, 3, 4), count=199,
 ):
     spec = make_spec()
     identity = {
@@ -23,7 +23,7 @@ def candidate(
     spec["effectSpec"]["shell"].update({**identity, "pistil": effect_slug == "pistil"})
     shot = spec["effectSpec"]["shots"][0]
     shot.update(identity)
-    shot["rendererTuning"] = renderer_tuning(emissionRate=rate, starCount=199)
+    shot["rendererTuning"] = renderer_tuning(emissionRate=rate, starCount=count)
     observations = video_observations()
     if geometry in {"fountain", "roman_candle"}:
         shot.update(timeOffsetSeconds=0.5, burstTimeSeconds=1, liftTimeSeconds=0)
@@ -53,4 +53,5 @@ if __name__ == "__main__":
     cases.append(
         candidate("fountain", "fountain", "spray", rate=600, fade=0.25, times=(1,))
     )
+    cases.append(candidate("waterfall", "waterfall", "waterfall", count=10))
     print(json.dumps(cases))

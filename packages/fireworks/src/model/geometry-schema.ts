@@ -87,7 +87,7 @@ export const GEOMETRY_TUNING_DEFAULTS = {
     trailLifePercent: 60,
   },
   waterfall: {
-    curtainWidth: 2.2,
+    width: 220,
     scatterX: 28,
     scatterZ: 24,
     dropStart: 58,
@@ -325,7 +325,7 @@ export const GeometryTuningSchema = z
     waterfall: z
       .object({
         /** Curtain width relative to the design size. */
-        curtainWidth: z.coerce.number().min(0.2).max(6).default(2.2),
+        width: z.coerce.number().min(0).max(1200).default(220),
         /** Random horizontal scatter of each spawn point, in world units. */
         scatterX: z.coerce.number().min(0).max(120).default(28),
         /** Random depth scatter of each spawn point, in world units. */

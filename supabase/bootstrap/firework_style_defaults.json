@@ -697,10 +697,10 @@
           "dragPercent": 24,
           "gravityBase": -0.27,
           "lifePercent": 160,
-          "curtainWidth": 3.2,
           "headSizePercent": 70,
           "gravityVariation": 0.22,
-          "fallSpeedVariation": 1.1
+          "fallSpeedVariation": 1.1,
+          "width": 320
         }
       }
     },

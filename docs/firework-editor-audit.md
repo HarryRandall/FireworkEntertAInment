@@ -489,3 +489,28 @@ durations, plus a four-shot Roman candle. CI's worker job runs this check alongs
 the Python suite. Worker candidate provenance advances with the mapper; renderer
 source bytes and the app/worker/database renderer fingerprint are unchanged.
 Existing import evidence is not rewritten. The worker still requires deployment.
+
+Waterfall width is now a distance in scene units, from 0 to 1,200. Both star layers
+span that distance independently of count; a single star starts at the centre.
+The previous layout also stopped one interval short of the right edge, so the
+new distribution deliberately centres the curtain and includes both endpoints.
+Scatter remains a separate, additive control. Import reconstruction derives width
+from shape evidence independently of the candidate's star count.
+
+The one-off converter copies the old count-dependent width into this explicit
+field, including geometry presets and copied provenance, then removes the old
+multiplier. Fresh-install snapshots and hashes are updated. The local conversion
+changed 117 records, retained originals in
+`.tmp/renderer-backups/waterfall-width-before-20260926.json`, and verified a second
+pass has no pending changes. Migration `20260926000700` aligns the new renderer
+fingerprint locally; production still needs coordinated rollout and evidence
+revalidation.
+
+Tests cover zero/136.4/1,200 width, 1/2/10/200 outer stars, an independent inner
+layer, conversion idempotence and import count independence. Only the two waterfall
+hashes changed among 48 seeded captures; all particle peaks and timing stayed the
+same. `pnpm check` passed with 608 app, 54 package and 11 database-tooling tests,
+plus the production build. All 68 worker tests, the import contract check, UI
+audit, conversion transaction tests and eight local SQL suites passed. Browser
+verification covered the converted 136.4 value, exact entry, keyboard adjustment
+and one-step undo. Units now display without duplicating the editable value.

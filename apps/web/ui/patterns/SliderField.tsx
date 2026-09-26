@@ -18,6 +18,8 @@ type SliderFieldProps = {
   hint?: ReactNode;
   /** Formats the live readout; defaults to the raw number. */
   formatValue?: (value: number) => string;
+  /** Measurement unit shown once, without duplicating the editable value. */
+  unit?: string;
   /** Shows a compact number input instead of a read-only value for precise entry. */
   showNumberInput?: boolean;
   layout?: 'inline' | 'stacked';
@@ -40,6 +42,7 @@ export function SliderField({
   disabled,
   hint,
   formatValue,
+  unit,
   showNumberInput = false,
   layout = 'inline',
   numberInputMax,
@@ -77,6 +80,7 @@ export function SliderField({
       value={draft ?? inputText}
       disabled={disabled}
       aria-label={inputAriaLabel ?? (typeof label === 'string' ? `${label} value` : undefined)}
+      aria-describedby={unit ? `${generatedId}-unit` : undefined}
       className="h-7 w-14 shrink-0 [appearance:textfield] rounded-md px-1.5 text-right font-mono text-xs tabular-nums [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
       onFocus={(event) => {
         editStart.current = value;
@@ -154,11 +158,17 @@ export function SliderField({
             id={sliderId}
             data-slot="slider-thumb"
             aria-labelledby={labelId}
+            aria-valuetext={unit ? `${sliderValue} ${unit}` : undefined}
             className="border-primary bg-background ring-ring/50 block size-4 shrink-0 rounded-full border shadow-sm transition-[color,box-shadow] hover:ring-4 focus-visible:ring-4 focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50"
           />
         </SliderPrimitive.Root>
         {layout === 'inline' ? valueControl : null}
       </div>
+      {unit ? (
+        <span id={`${generatedId}-unit`} className="text-muted-foreground block text-right text-xs">
+          {unit}
+        </span>
+      ) : null}
       {layout === 'inline' && showNumberInput && formatValue ? (
         <span className="text-muted-foreground block text-right text-xs">{display}</span>
       ) : null}

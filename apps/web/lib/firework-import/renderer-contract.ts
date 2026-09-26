@@ -66,7 +66,7 @@ export const FIREWORKS_ENGINE_IMPORT_RENDERER_SOURCE_FILES = [
  * Sealed evidence is invalid as soon as the deployed renderer bytes drift.
  */
 export const FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION =
-  'showcrafter.fireworks-engine.import-renderer.v1+sha256.6d54362ec140033bb67a4195b038839a581aa30bdcf58986c2047e20c3e0470a' as const;
+  'showcrafter.fireworks-engine.import-renderer.v1+sha256.3e028324684c3ff8658cdf22b3d913ed8e165bd72a2baf75245294c65bb6ac3e' as const;
 
 export const FIREWORKS_ENGINE_FIXED_STEP_SECONDS = 1 / 60;
 

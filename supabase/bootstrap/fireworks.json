@@ -293,7 +293,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -305,7 +304,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 165
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -1174,7 +1174,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -1186,7 +1185,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 68.2
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -2066,7 +2066,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -2078,7 +2077,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 138.6
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -2958,7 +2958,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -2970,7 +2969,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 176
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -3839,7 +3839,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -3851,7 +3850,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 94.6
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -4678,7 +4678,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -4690,7 +4689,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 176
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -5548,7 +5548,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -5560,7 +5559,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 72.6
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -6429,7 +6429,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -6441,7 +6440,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 180.4
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -7321,7 +7321,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -7333,7 +7332,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 132
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -8213,7 +8213,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -8225,7 +8224,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 2.2
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -9107,7 +9107,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -9119,7 +9118,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 8.8
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -9999,7 +9999,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -10011,7 +10010,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 68.2
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -10891,7 +10891,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -10903,7 +10902,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 198
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -11772,7 +11772,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -11784,7 +11783,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 94.6
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -12653,7 +12653,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -12665,7 +12664,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 24.2
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -13534,7 +13534,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -13546,7 +13545,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 176
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -14429,7 +14429,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -14441,7 +14440,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 2.2
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -15321,7 +15321,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -15333,7 +15332,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 158.4
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -16237,7 +16237,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -16249,7 +16248,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 165
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -17140,7 +17140,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -17152,7 +17151,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 79.2
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -18021,7 +18021,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -18033,7 +18032,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 176
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -18902,7 +18902,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -18914,7 +18913,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 154
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -19783,7 +19783,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -19795,7 +19794,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 176
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -20664,7 +20664,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -20676,7 +20675,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 79.2
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -21556,7 +21556,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -21568,7 +21567,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 88
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -22437,7 +22437,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -22449,7 +22448,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 176
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -23318,7 +23318,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -23330,7 +23329,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 13.2
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -24210,7 +24210,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -24222,7 +24221,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 70.4
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -25102,7 +25102,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -25114,7 +25113,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 24.2
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -25983,7 +25983,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -25995,7 +25994,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 176
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -26880,7 +26880,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -26892,7 +26891,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 176
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -27772,7 +27772,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -27784,7 +27783,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 57.2
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -28664,7 +28664,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -28676,7 +28675,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 158.4
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -29556,7 +29556,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -29568,7 +29567,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 13.2
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -30450,7 +30450,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -30462,7 +30461,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 13.2
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -31342,7 +31342,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -31354,7 +31353,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 154
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -32234,7 +32234,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -32246,7 +32245,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 136.4
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -33117,7 +33117,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -33129,7 +33128,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 103.4
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -33998,7 +33998,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -34010,7 +34009,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 24.2
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -34879,7 +34879,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -34891,7 +34890,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 176
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -35749,7 +35749,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -35761,7 +35760,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 165
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -36619,7 +36619,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -36631,7 +36630,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 103.4
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -37493,7 +37493,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -37505,7 +37504,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 72.6
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -38332,7 +38332,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -38344,7 +38343,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 165
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -39215,7 +39215,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -39227,7 +39226,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 176
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -40098,7 +40098,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -40110,7 +40109,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 165
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -40979,7 +40979,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -40991,7 +40990,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 158.4
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -41871,7 +41871,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -41883,7 +41882,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 88
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -42763,7 +42763,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -42775,7 +42774,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 138.6
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -43796,7 +43796,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -43808,7 +43807,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 165
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -44699,7 +44699,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -44711,7 +44710,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 8.8
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -45591,7 +45591,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -45603,7 +45602,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 79.2
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -46472,7 +46472,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -46484,7 +46483,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 103.4
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -47342,7 +47342,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -47354,7 +47353,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 165
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -48212,7 +48212,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -48224,7 +48223,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 72.6
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -49084,7 +49084,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -49096,7 +49095,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 72.6
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -49956,7 +49956,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -49968,7 +49967,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 72.6
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -50804,7 +50804,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -50816,7 +50815,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 72.6
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -51685,7 +51685,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -51697,7 +51696,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 158.4
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -52577,7 +52577,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -52589,7 +52588,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 2.2
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -53513,7 +53513,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -53525,7 +53524,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 26.4
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -54427,7 +54427,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -54439,7 +54438,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 180.4
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -55319,7 +55319,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -55331,7 +55330,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 8.8
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -56200,7 +56200,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -56212,7 +56211,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 165
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -57081,7 +57081,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -57093,7 +57092,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 88
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -57973,7 +57973,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -57985,7 +57984,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 57.2
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -58867,7 +58867,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -58879,7 +58878,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 176
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -59759,7 +59759,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -59771,7 +59770,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 154
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -60651,7 +60651,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -60663,7 +60662,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 198
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -61543,7 +61543,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -61555,7 +61554,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 138.6
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -62426,7 +62426,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -62438,7 +62437,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 72.6
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -63307,7 +63307,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -63319,7 +63318,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 68.2
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -64374,7 +64374,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -64386,7 +64385,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 72.6
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -65290,7 +65290,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -65302,7 +65301,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 132
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -66182,7 +66182,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -66194,7 +66193,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 198
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -67076,7 +67076,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -67088,7 +67087,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 154
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -67968,7 +67968,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -67980,7 +67979,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 70.4
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -68860,7 +68860,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -68872,7 +68871,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 176
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -69925,7 +69925,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -69937,7 +69936,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 154
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -70839,7 +70839,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -70851,7 +70850,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 132
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -71722,7 +71722,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -71734,7 +71733,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 176
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -72603,7 +72603,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -72615,7 +72614,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 136.4
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -73486,7 +73486,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -73498,7 +73497,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 72.6
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -74356,7 +74356,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -74368,7 +74367,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 72.6
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -75237,7 +75237,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -75249,7 +75248,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 136.4
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -76118,7 +76118,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -76130,7 +76129,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 94.6
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -76988,7 +76988,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -77000,7 +76999,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 176
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -77869,7 +77869,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -77881,7 +77880,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 154
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -78763,7 +78763,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -78775,7 +78774,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 180.4
         },
         "whirl": {
           "verticalBias": -0.15,
@@ -79655,7 +79655,6 @@
           "trailLifePercent": 60
         },
         "waterfall": {
-          "curtainWidth": 2.2,
           "scatterX": 28,
           "scatterZ": 24,
           "dropStart": 58,
@@ -79667,7 +79666,8 @@
           "gravityBase": -0.32,
           "gravityVariation": 0.34,
           "dragPercent": 28,
-          "headSizePercent": 75
+          "headSizePercent": 75,
+          "width": 70.4
         },
         "whirl": {
           "verticalBias": -0.15,
