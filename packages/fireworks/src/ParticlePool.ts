@@ -2,9 +2,8 @@
  * Object-pool of {@link Particle}s shared by all firework effects.
  *
  * Allocating thousands of particles per burst at 60fps would crush the GC,
- * so we pre-allocate a fixed-size pool and reuse slots. `acquire()` finds
- * the next free particle; particles that go out of life return to the pool
- * automatically on update.
+ * so we pre-allocate a fixed-size pool and reuse dead slots. A full pool declines
+ * new particles until a simulation tick frees capacity, preserving live effects.
  */
 import { Particle } from './Particle.ts';
 
@@ -52,9 +51,14 @@ export class ParticlePool {
   private activeSlots: Int32Array;
   private activeCount = 0;
   private spawnHeadStyleSlot = 0;
+  private mayHaveFreeSlots = true;
+  private readonly declinedParticle = new Particle(-1);
   readonly capacity: number;
 
   constructor(capacity: number) {
+    if (!Number.isInteger(capacity) || capacity <= 0) {
+      throw new RangeError('Particle capacity must be a positive integer.');
+    }
     this.capacity = capacity;
     this.aliveIndices = new Uint32Array(capacity);
     this.activeSlots = new Int32Array(capacity);
@@ -74,6 +78,7 @@ export class ParticlePool {
     this.aliveMax = -1;
     this.activeCount = 0;
     this.spawnHeadStyleSlot = 0;
+    this.mayHaveFreeSlots = true;
   }
 
   get aliveCount(): number {
@@ -97,19 +102,36 @@ export class ParticlePool {
     }
     this.activeCount = write;
     this.aliveMax = max;
+    // Deaths can occur in callbacks, so retry allocation after each physics tick.
+    this.mayHaveFreeSlots = true;
   }
 
   new(prop: ParticleProps): Particle {
-    this.current++;
-    if (this.current >= this.particles.length) this.current = 0;
-    const p = this.particles[this.current];
-
     const life = prop.life ?? 1;
     if (!Number.isFinite(life) || life <= 0) {
-      // Refuse to spawn dead particles; otherwise a reused slot can linger.
-      p.reset();
-      return p;
+      this.declinedParticle.reset();
+      return this.declinedParticle;
     }
+
+    let index = (this.current + 1) % this.capacity;
+    if (this.particles[index].alive) {
+      if (!this.mayHaveFreeSlots) {
+        this.declinedParticle.reset();
+        return this.declinedParticle;
+      }
+      const start = index;
+      do {
+        index = (index + 1) % this.capacity;
+      } while (this.particles[index].alive && index !== start);
+      if (this.particles[index].alive) {
+        // Scan a saturated pool once per tick, rather than once per emission.
+        this.mayHaveFreeSlots = false;
+        this.declinedParticle.reset();
+        return this.declinedParticle;
+      }
+    }
+    this.current = index;
+    const p = this.particles[index];
 
     p.alive = true;
     p.x = prop.x;
