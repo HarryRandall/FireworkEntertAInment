@@ -234,22 +234,18 @@
         "romanCandle": {
           "spread": 0.42,
           "azimuth": 0.28,
-          "minShots": 6,
           "riseBase": 1.15,
           "speedBase": 1.05,
           "depthScale": 0.16,
           "dragPercent": 62,
           "lifePercent": 96,
           "lateralScale": 0.2,
-          "shotsPercent": 12,
           "muzzleScatter": 8,
           "riseVariation": 0.24,
           "speedVariation": 0.24,
-          "durationPercent": 52,
           "headSizePercent": 96,
           "trailLifePercent": 92,
-          "durationMaxSeconds": 12,
-          "durationMinSeconds": 4
+          "durationSeconds": 10.4
         }
       }
     },
@@ -601,7 +597,8 @@
             "flairColorMode": "mixed"
           },
           "count": 38,
-          "enabled": false
+          "enabled": false,
+          "emissionRate": 53.2
         },
         "outer": {
           "head": {
@@ -671,7 +668,8 @@
             "flairColorMode": "bombColor"
           },
           "count": 80,
-          "enabled": true
+          "enabled": true,
+          "emissionRate": 112
         }
       }
     },
@@ -699,7 +697,6 @@
           "dragPercent": 24,
           "gravityBase": -0.27,
           "lifePercent": 160,
-          "countPercent": 94,
           "curtainWidth": 3.2,
           "headSizePercent": 70,
           "gravityVariation": 0.22,
@@ -723,13 +720,11 @@
       "geometryTuning": {
         "upwardFan": {
           "fanBase": 0.5,
-          "minCount": 48,
           "riseBase": 18,
           "riseSpeed": 1.35,
           "depthScale": 0.3,
           "dragPercent": 54,
           "lifePercent": 82,
-          "countPercent": 120,
           "fanVariation": 0.62,
           "spawnScatter": 26,
           "riseVariation": 16,
@@ -1074,7 +1069,6 @@
         "fish": {
           "wiggleRate": 13,
           "dragPercent": 50,
-          "countPercent": 82,
           "verticalScale": 0.22,
           "gravityPercent": 48,
           "wiggleStrength": 2.4,
@@ -1101,10 +1095,8 @@
       "geometry": "whirl",
       "geometryTuning": {
         "whirl": {
-          "minCount": 40,
           "spinRate": 15,
           "dragPercent": 54,
-          "countPercent": 38,
           "spinStrength": 3.3,
           "verticalBias": -0.08,
           "gravityPercent": 62,
@@ -1313,7 +1305,8 @@
             "flairColorMode": "mixed"
           },
           "count": 100,
-          "enabled": true
+          "enabled": true,
+          "emissionRate": 140
         }
       }
     },
@@ -1870,7 +1863,8 @@
             "flairColorMode": "mixed"
           },
           "count": 38,
-          "enabled": false
+          "enabled": false,
+          "emissionRate": 53.2
         },
         "outer": {
           "head": {
@@ -1938,7 +1932,8 @@
             "flairColorMode": "mixed"
           },
           "count": 97,
-          "enabled": true
+          "enabled": true,
+          "emissionRate": 135.8
         }
       }
     },
@@ -2259,7 +2254,8 @@
             "airResistancePercent": 100
           },
           "count": 38,
-          "enabled": false
+          "enabled": false,
+          "emissionRate": 53.2
         },
         "outer": {
           "head": {
@@ -2331,7 +2327,8 @@
             "airResistancePercent": 100
           },
           "count": 100,
-          "enabled": true
+          "enabled": true,
+          "emissionRate": 140
         }
       }
     },
@@ -2651,7 +2648,6 @@
         "bowtie": {
           "depthScale": 0.1,
           "lengthBase": 0.94,
-          "countPercent": 88,
           "verticalScale": 0.3,
           "fanAngleDegrees": 126,
           "lengthVariation": 0.14
@@ -2693,7 +2689,8 @@
             "flairColorMode": "mixed"
           },
           "count": 34,
-          "enabled": true
+          "enabled": true,
+          "emissionRate": 47.6
         },
         "outer": {
           "head": {
@@ -2717,7 +2714,8 @@
             "flairColorMode": "bombColor"
           },
           "count": 92,
-          "enabled": true
+          "enabled": true,
+          "emissionRate": 128.8
         }
       }
     },
@@ -2777,7 +2775,6 @@
         "ring": {
           "wobble": 0.12,
           "lifePercent": 92,
-          "countPercent": 76,
           "tiltVariation": 0.75,
           "verticalSquash": 0.98
         }
@@ -2932,7 +2929,6 @@
           "scaleX": 1,
           "scaleY": 1.05,
           "depthScale": 0.035,
-          "countPercent": 92,
           "outlineJitter": 0.018,
           "tiltVariation": 0.18,
           "rotationDegrees": 0
@@ -3463,7 +3459,6 @@
           "armLength": 0.92,
           "angleJitter": 0.06,
           "dragPercent": 70,
-          "countPercent": 62,
           "liftVariation": 0.25
         }
       }
@@ -3488,7 +3483,6 @@
           "scaleY": 1.08,
           "depthScale": 0.035,
           "innerRadius": 0.42,
-          "countPercent": 94,
           "outlineJitter": 0.018,
           "tiltVariation": 0.18,
           "rotationDegrees": -90
@@ -3550,17 +3544,13 @@
           "speedBase": 0.7,
           "dragPercent": 105,
           "lifePercent": 72,
-          "ratePercent": 180,
           "lateralScale": 0.42,
           "spawnScatter": 7,
           "speedVariation": 0.65,
-          "durationPercent": 42,
           "headSizePercent": 44,
           "coneAngleDegrees": 38,
-          "minRatePerSecond": 60,
           "trailLifePercent": 58,
-          "durationMaxSeconds": 14,
-          "durationMinSeconds": 4
+          "durationSeconds": 8.4
         }
       }
     },
@@ -4144,7 +4134,8 @@
             "flairColorMode": "bombColor"
           },
           "count": 84,
-          "enabled": true
+          "enabled": true,
+          "emissionRate": 117.6
         }
       }
     },
@@ -4195,7 +4186,8 @@
             "flairColorMode": "bombColor"
           },
           "count": 82,
-          "enabled": true
+          "enabled": true,
+          "emissionRate": 114.8
         }
       }
     },

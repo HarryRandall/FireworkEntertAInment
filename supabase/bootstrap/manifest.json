@@ -17,15 +17,15 @@
     },
     "firework_style_defaults": {
       "rows": 71,
-      "sha256": "9c50c1d001a0a12f98878ad5530dc576459d01b1c4617dde35d59dd4ff557417"
+      "sha256": "5a47b4d3e75fafbef34185f4966c443f7e4c18004eae40828dae37377ce2c2e6"
     },
     "firework_effects": {
       "rows": 26,
-      "sha256": "3e992c8c400c16234c05a1497682c7079bad576dc0e3b5e39b67a0a2a6024e25"
+      "sha256": "4a22e104e72e259006518664a3a3280042f24cc6acdbef0830a0fb300175f1b6"
     },
     "fireworks": {
       "rows": 90,
-      "sha256": "43500a9a4d4e4b77435c426f7da384d0f205553d6ddcea4ba3baf05512d08de9"
+      "sha256": "d995723bc1e2c056dd51a83657c9107e4d924e299deeb4bd1c659cb170014319"
     },
     "multishots": {
       "rows": 39,
@@ -1352,5 +1352,6 @@
       "2fd61125-ffab-40ae-b9d5-25338dc265ca",
       "a1ff89f8-bf70-44a7-b966-33b4875575ce"
     ]
-  }
+  },
+  "rendererSettings": "Resolved copied snapshots with explicit star counts, fountain rates and emission duration."
 }

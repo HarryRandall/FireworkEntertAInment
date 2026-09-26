@@ -4,6 +4,12 @@ import {
   extractBaseDefaults,
 } from '../../packages/fireworks/src/model/compile.ts';
 
+import { deepMergeDesign } from '../../packages/fireworks/src/model/records.ts';
+import {
+  extractStyleDefaultsFromDesign,
+  isFireworkStyleDefaultKind,
+} from '../../packages/fireworks/src/style-defaults.ts';
+
 const countRules = {
   ring: ['ring', 72],
   radial_arms: ['radialArms', 46],
@@ -56,7 +62,7 @@ function rate(source, count, key) {
   );
 }
 
-export function convertEmissionDesign(input) {
+export function convertEmissionDesign(input, { includeProvenance = true } = {}) {
   if (!object(input)) throw new Error('Expected an object containing renderer settings.');
   const source = extractBaseDefaults(input);
   const result = structuredClone(source);
@@ -90,6 +96,7 @@ export function convertEmissionDesign(input) {
     };
   }
   cleanTuning(result.geometryTuning);
+  if (includeProvenance) convertProvenance(result, source);
   // Reject converted values outside the new supported ranges, never clamp them.
   compileFireworkDesign({ variantOverrides: result });
   return object(input.renderDefaults) ? { ...input, renderDefaults: result } : result;
@@ -113,6 +120,7 @@ export function convertEmissionPart(input) {
     }
     cleanTuning(result.geometryTuning);
   }
+  convertProvenance(result, input);
   compileFireworkDesign({ variantOverrides: result });
   return result;
 }
@@ -137,4 +145,26 @@ export function convertEmissionHistory(snapshot) {
     };
   }
   throw new Error('Unknown editor history snapshot kind.');
+}
+
+function convertProvenance(result, context) {
+  if (context.presetSources == null) return;
+  if (!object(context.presetSources)) throw new Error('Preset provenance must be an object.');
+  result.presetSources = {};
+  for (const [kind, source] of Object.entries(context.presetSources)) {
+    if (!isFireworkStyleDefaultKind(kind) || !object(source) || !object(source.settings)) {
+      throw new Error(`Invalid copied preset source: ${kind}.`);
+    }
+    const combined = deepMergeDesign(context, source.settings);
+    // A copied source is converted in its owning document's geometry. A source
+    // star count therefore resets to the same effective count after conversion.
+    const converted = convertEmissionDesign(combined, { includeProvenance: false });
+    result.presetSources[kind] = {
+      ...source,
+      settings: extractStyleDefaultsFromDesign(
+        compileFireworkDesign({ variantOverrides: converted }),
+        kind,
+      ),
+    };
+  }
 }

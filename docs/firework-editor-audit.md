@@ -324,8 +324,9 @@ fingerprint. No database migration or deployment was performed in this pass.
    handling. Mark invalid admin catalogue records. Check every public replay,
    card, multishot, generation and import caller without default substitutions.
 7. **Persistence.** Review transactional history and snapshot writes, idempotent
-   backfill, restored versions and source-preset independence. Fresh database and
-   RLS verification are required. No production changes have been made.
+   backfill, restored versions and source-preset independence. Fresh-install and
+   SQL/RLS verification passed in the isolated stack below. Atomic save/history
+   verification remains. No production changes have been made.
 8. **Single renderer cleanup.** Remove remaining unused compatibility fields,
    converters, fallback queries and obsolete tests in this renderer/editor scope.
    Keep migration history and import evidence protocol distinct from renderer
@@ -411,3 +412,64 @@ Local delivery checks: `pnpm check` (608 app tests, 49 package tests and 11 data
 tooling tests, production build), `pnpm audit:ui` and 68 worker tests passed.
 Eight existing lint warnings remain. The new renderer fingerprint is aligned in
 the app, worker and migration `20260926000500`; that migration has not been applied.
+
+### Saved settings and fresh-install verification
+
+The emission backfill now includes copied preset provenance and both history
+snapshots. Resetting an unmodified copied preset preserves its converted count
+and rate; modified presets still report modifications. The plan compares JSON
+structurally, rejects invalid/unresolved data and recalculates proposed writes
+before execution. Applying requires a new private backup file. It locks the four
+source tables, checks the complete original rows and advances saved revisions
+in one transaction. A concurrent edit aborts every write. Tests against temporary
+PostgreSQL tables verify conversion, history, quoting, concurrency rejection and
+rollback of earlier writes when a later write fails.
+
+Local application completed on 26 September: 26 effects, 90 firework snapshots
+and 18 presets, 134 records total. No stored history needed conversion. A second
+read returned zero pending changes. Original rows are retained in the ignored,
+permission-restricted `.tmp/renderer-backups/emission-before-20260926.json` backup;
+original firework overrides also remain in their existing column. Stale editor
+drafts cannot overwrite these revisions. Production has not been converted.
+
+Commands for a reviewed conversion:
+
+```sh
+node scripts/renderer/preview-emission-conversion.mjs --local
+node scripts/renderer/test-emission-backfill.mjs
+node scripts/renderer/backfill-emission.mjs --local --apply --backup .tmp/renderer-backups/emission-before.json
+```
+
+The bootstrap snapshot now contains resolved independent settings for all 90
+fireworks, explicit emission fields in effects/parts and updated file hashes.
+It retains identity, pricing/scheduling fields, original overrides and all media.
+A fresh installation was verified in the separate
+`showcrafter-renderer-verification` Supabase stack on ports 56520–56524, without
+resetting the working database. Verification compared every value in all 18
+reusable tables, uploaded and checked all 157 media hashes, checked the private
+installation receipt and current renderer fingerprint, ran all eight SQL suites,
+and confirmed generated public types match the committed types. That stack had
+no accounts or user shows during fresh-install verification.
+
+This pass also found that snapshot-only changes did not invalidate posters, and
+that effect changes invalidated posters of already copied fireworks. Migration
+`20260926000600` fixes both. Its SQL test checks a snapshot edit invalidates once,
+a no-op does not invalidate, and a source-effect edit invalidates only its own
+poster. Card poster identity now incorporates renderer source fingerprint and
+capture dimensions, replacing the fixed `v2` cache label. Existing storage
+objects are retained but obsolete captures are not displayed. The local working
+database has migrations through `20260926000600`; production still uses the
+manual release gate.
+
+Remaining persistence work includes atomic editor save/history writes and complete
+restored-history/save-failure UI coverage. Waterfall width and the launch/flash
+`size` alias still depend on count and remain next in the control audit. Fresh
+installation and emission conversion are verified; the overall editor/rendering
+redesign is not complete or production-ready.
+
+Final checks for this pass: `pnpm check` passed (608 app, 52 package and 11
+database-tooling tests, production build). Seven pre-existing lint warnings
+remain. A separate authenticated browser tab opened the converted Fountain
+Default and showed 126 sparks per second, 7.8 seconds and Saved, without editing
+or saving it. The temporary verification stack was stopped and removed after
+its tests; the working local database and the user's browser tab remain running.

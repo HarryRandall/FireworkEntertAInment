@@ -1,7 +1,7 @@
 /** Static and pure-module guards for persisted firework browse images. */
 
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import ts from 'typescript';
@@ -12,13 +12,21 @@ function read(path) {
   return readFileSync(join(root, path), 'utf8');
 }
 
-function loadPreviewImageModule() {
-  const source = read('lib/firework-preview-image.ts');
+function loadPreviewImageModule(path = 'lib/firework-preview-image.ts') {
+  const source = read(path);
   const output = ts.transpileModule(source, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
   const loadedModule = { exports: {} };
-  Function('exports', 'module', output)(loadedModule.exports, loadedModule);
+  Function(
+    'exports',
+    'module',
+    'require',
+    output,
+  )(loadedModule.exports, loadedModule, (specifier) => {
+    assert.equal(specifier, './firework-import/renderer-contract');
+    return loadPreviewImageModule('lib/firework-import/renderer-contract.ts');
+  });
   return loadedModule.exports;
 }
 
@@ -70,17 +78,23 @@ test('preview URL helpers expose only the current renderer version', () => {
     } = loadPreviewImageModule();
 
     assert.equal(FIREWORK_PREVIEW_BUCKET, 'firework-previews');
-    assert.equal(FIREWORK_PREVIEW_RENDERER_VERSION, 'v2');
-    assert.equal(isCurrentFireworkPreviewImagePath('v2/firework/item/poster.webp'), true);
+    const currentPath = `${FIREWORK_PREVIEW_RENDERER_VERSION}/firework/item/poster.webp`;
+    const contract = loadPreviewImageModule('lib/firework-import/renderer-contract.ts');
+    assert.equal(
+      FIREWORK_PREVIEW_RENDERER_VERSION,
+      `1280x800-${contract.FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION.slice(-64)}`,
+    );
+    assert.equal(isCurrentFireworkPreviewImagePath('v2/firework/item/poster.webp'), false);
+    assert.equal(isCurrentFireworkPreviewImagePath(currentPath), true);
     assert.equal(isCurrentFireworkPreviewImagePath('v1/firework/item/poster.webp'), false);
     assert.deepEqual(
       resolveFireworkPreviewImage({
         source_revision: 4,
-        renderer_version: 'v2',
-        storage_path: 'v2/firework/item/poster.webp',
+        renderer_version: FIREWORK_PREVIEW_RENDERER_VERSION,
+        storage_path: currentPath,
       }),
       {
-        previewImagePath: 'v2/firework/item/poster.webp',
+        previewImagePath: currentPath,
         previewImageRevision: 4,
       },
     );
@@ -93,8 +107,8 @@ test('preview URL helpers expose only the current renderer version', () => {
       { previewImagePath: null, previewImageRevision: 5 },
     );
     assert.equal(
-      fireworkPreviewImageUrl('v2/firework/item/poster.webp'),
-      'https://example.supabase.co/storage/v1/object/public/firework-previews/v2/firework/item/poster.webp',
+      fireworkPreviewImageUrl(currentPath),
+      `https://example.supabase.co/storage/v1/object/public/firework-previews/${currentPath}`,
     );
     assert.equal(fireworkPreviewImageUrl('v1/firework/item/poster.webp'), null);
     assert.equal(withFireworkPreviewRevision('/api/preview', 7), '/api/preview?revision=7');
