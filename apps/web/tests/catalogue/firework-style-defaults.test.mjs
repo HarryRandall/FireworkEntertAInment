@@ -1,7 +1,7 @@
 /** Static guards for copy-on-apply firework style defaults. */
 
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 
@@ -9,15 +9,6 @@ const root = process.cwd();
 
 function read(path) {
   return readFileSync(join(root, path), 'utf8');
-}
-
-function readDollarQuotedJson(source, tag) {
-  const marker = `$${tag}$`;
-  const start = source.indexOf(marker);
-  const end = source.indexOf(marker, start + marker.length);
-  assert.notEqual(start, -1, `${marker} opening marker not found`);
-  assert.notEqual(end, -1, `${marker} closing marker not found`);
-  return JSON.parse(source.slice(start + marker.length, end));
 }
 
 function functionBody(source, name) {
@@ -60,12 +51,10 @@ test('admin actions save copied default settings without live assignments', () =
   assert.doesNotMatch(effectActions, /normaliseStyleDefaultAssignments/);
   assert.doesNotMatch(effectActions, /replaceEffectStyleDefaultLinks/);
   assert.doesNotMatch(effectActions, /star_style_default_id|trail_style_default_id/);
-  assert.match(effectActions, /styleDefaultIds: emptyStyleDefaultIdMap\(\)/);
 
   assert.match(fireworkActions, /StyleDefaultAssignmentsSchema/);
   assert.doesNotMatch(fireworkActions, /replaceFireworkStyleDefaultLinks/);
   assert.doesNotMatch(fireworkActions, /star_style_default_id|trail_style_default_id/);
-  assert.match(fireworkActions, /styleDefaultIds: emptyStyleDefaultIdMap\(\)/);
 
   assert.match(effectEditor, /function copySelectedStyleDefaultsIntoModel/);
   assert.match(effectEditor, /applySnapshot\(savedSnapshot\)/);
@@ -106,17 +95,16 @@ test('style default saves, archives, and restores record live editor history', (
   ]) {
     const body = functionBody(actions, name);
     assert.match(body, /historyVersionId: parsed\.data\.historyVersionId/);
-    assert.match(body, /const historyRecorded = await recordStyleDefaultVersion/);
+    assert.match(body, /await saveEditorRecord/);
     assert.match(body, /return \{ ok: true,[\s\S]*historyVersion, historyRecorded \}/);
     assert.ok(
-      body.indexOf('await recordStyleDefaultVersion') < body.indexOf('await refresh'),
+      body.indexOf('await saveEditorRecord') < body.indexOf('await refresh'),
       `${name} must observe history before invalidating caches`,
     );
   }
   const restoreBody = functionBody(actions, 'restoreStyleDefaultEditorVersion');
   assert.match(restoreBody, /parseStyleDefaultEditorSnapshot/);
-  assert.match(restoreBody, /action: 'restore'/);
-  assert.match(restoreBody, /Restored version from/);
+  assert.match(restoreBody, /restoreVersionId: parsed\.data\.versionId/);
 
   assert.match(editor, /restoreStyleDefaultEditorVersion/);
   assert.match(editor, /parseStyleDefaultEditorSnapshot/);
@@ -136,9 +124,9 @@ test('inline style-default creation and parent editor saves are atomic', () => {
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
 
   assert.match(effectActions, /export async function createStyleDefaultAndUpdateEffect/);
-  assert.match(effectActions, /rpc\('create_style_default_and_update_effect'/);
+  assert.match(effectActions, /saveEditorRecord/);
   assert.match(fireworkActions, /export async function createStyleDefaultAndUpdateFirework/);
-  assert.match(fireworkActions, /rpc\('create_style_default_and_update_firework'/);
+  assert.match(fireworkActions, /saveEditorRecord/);
   assert.match(effectEditor, /createStyleDefaultAndUpdateEffect\(\{/);
   assert.match(fireworkEditor, /createStyleDefaultAndUpdateFirework\(\{/);
   assert.doesNotMatch(effectEditor, /await createStyleDefault\(\{/);

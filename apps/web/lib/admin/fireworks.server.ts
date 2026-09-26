@@ -15,11 +15,7 @@ import {
   type FireworkPreviewImageRelation,
 } from '@/lib/firework-preview-image';
 import { emptyStyleDefaultIdMap } from '@showcrafter/fireworks/style-defaults';
-import {
-  ADMIN_CACHE_TTL_SECONDS,
-  getAdminFireworkCacheKey,
-  getAdminFireworksCacheKey,
-} from './cache-keys';
+import { ADMIN_CACHE_TTL_SECONDS, getAdminFireworksCacheKey } from './cache-keys';
 import { listFireworkEditorVersions } from './editor-versions.server';
 import { buildEffectPreview } from './effect-preview';
 import { requirePermission } from '@/lib/access/current-profile.server';
@@ -28,7 +24,7 @@ import { listAdminStyleDefaultOptions } from './style-defaults.server';
 import { getServerClient } from './supabase';
 
 type ServerClient = Awaited<ReturnType<typeof getServerClient>>;
-type CachedAdminFireworkDetail = Omit<AdminFireworkDetail, 'history'>;
+type AdminFireworkDetailWithoutHistory = Omit<AdminFireworkDetail, 'history'>;
 
 type FireworkEffectRow = {
   id: string;
@@ -228,15 +224,8 @@ export async function getAdminFireworkById(
 ): Promise<AdminFireworkDetail | null> {
   if (!(await requirePermission('admin.manage_catalogue'))) return null;
 
-  const cacheKey = getAdminFireworkCacheKey(fireworkId);
+  // Editor baselines must be current even when cache invalidation is unavailable.
   const supabase = await getServerClient();
-  const cached = await getCachedJson<CachedAdminFireworkDetail>(cacheKey);
-  if (cached) {
-    return {
-      ...cached,
-      history: await listFireworkEditorVersions(supabase, fireworkId),
-    };
-  }
 
   const [fireworkResult, effectData] = await Promise.all([
     selectFireworkById(supabase, fireworkId),
@@ -260,7 +249,7 @@ export async function getAdminFireworkById(
     listAdminStyleDefaultOptions(),
     listFireworkEditorVersions(supabase, row.id),
   ]);
-  const detail: CachedAdminFireworkDetail = {
+  const detail: AdminFireworkDetailWithoutHistory = {
     ...mapSummary(row),
     renderOverridesJson: row.render_snapshot_json,
     effectModelJson: (effect?.model_json ?? effectData.models[effect?.id ?? ''] ?? {}) as Json,
@@ -277,6 +266,5 @@ export async function getAdminFireworkById(
     effectTrailStyleDefaults: effectData.trailStyleDefaults,
     effectStyleDefaultLinksByEffect: effectData.styleDefaultLinksByEffect,
   };
-  await setCachedJson(cacheKey, detail, ADMIN_CACHE_TTL_SECONDS);
   return { ...detail, history };
 }

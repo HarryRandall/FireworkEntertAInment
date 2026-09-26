@@ -2,22 +2,18 @@
 
 /** Admin actions for reusable live firework renderer style defaults. */
 
+import { saveEditorRecord } from '@/lib/admin/editor-persistence.server';
 import { requirePermission } from '@/lib/access/current-profile.server';
-import type { CurrentProfile } from '@/lib/access/types';
 import type { AdminEditorVersion, AdminStyleDefaultOption } from '@/lib/admin.types';
 import {
   invalidateAdminEffectsCache,
   invalidateAdminFireworksCache,
   invalidateAdminStyleDefaultsCache,
 } from '@/lib/admin/cache-keys';
-import {
-  makeStyleDefaultEditorSnapshot,
-  parseStyleDefaultEditorSnapshot,
-} from '@/lib/admin/editor-snapshots';
+import { parseStyleDefaultEditorSnapshot } from '@/lib/admin/editor-snapshots';
 import { isMissingEditorVersionSchemaError } from '@/lib/admin/style-default-schema';
 import type { Database, Json } from '@/lib/database.types';
 import { invalidateFireworkCatalogueCaches } from '@/lib/shows/cache-keys';
-import { isSupabaseTransientNetworkError } from '@/lib/supabase/errors';
 import { createClient } from '@/lib/supabase/server';
 import { fireworkDesignFragmentError } from '@showcrafter/fireworks/design';
 import {
@@ -64,10 +60,6 @@ type UpdateResult =
       historyRecorded: boolean;
     }
   | { ok: false; error: string };
-type ActionSupabase = ReturnType<typeof createClient>;
-
-const STYLE_DEFAULT_MUTATION_SELECT =
-  'id, name, description, kind, sort_order, is_archived, defaults_json, updated_at';
 
 const StyleDefaultKindSchema = z.enum(FIREWORK_STYLE_DEFAULT_KINDS);
 
@@ -139,157 +131,6 @@ function mapSavedStyleDefault(row: StyleDefaultMutationRow): SavedStyleDefault {
     isArchived: row.is_archived,
     defaultsJson: row.defaults_json ?? {},
     updatedAt: row.updated_at,
-  };
-}
-
-function adminLabel(profile: CurrentProfile): string {
-  return profile.fullName || profile.email || 'Platform admin';
-}
-
-function readSnapshotRecord(value: Json | null): Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
-}
-
-function fieldChanges(previousSnapshot: Json | null, nextSnapshot: Json, fields: string[]): Json {
-  const previous = readSnapshotRecord(previousSnapshot);
-  const next = readSnapshotRecord(nextSnapshot);
-  const changes: Record<string, Json> = {};
-  for (const field of fields) {
-    const before = previous[field];
-    const after = next[field];
-    if (JSON.stringify(before) === JSON.stringify(after)) continue;
-    changes[field] = { before: (before ?? null) as Json, after: (after ?? null) as Json };
-  }
-  return changes;
-}
-
-function summariseStyleDefaultChanges(changesJson: Json): string {
-  const labels: Record<string, string> = {
-    name: 'name',
-    description: 'description',
-    styleKind: 'kind',
-    sortOrder: 'sort order',
-    isArchived: 'archive status',
-    defaultsJson: 'defaults JSON',
-  };
-  const fields = Object.keys(readSnapshotRecord(changesJson));
-  if (fields.length === 0) return 'Saved without visible field changes';
-  const visible = fields.slice(0, 3).map((field) => labels[field] ?? field);
-  const extra = fields.length > visible.length ? ` +${fields.length - visible.length}` : '';
-  return `Updated ${visible.join(', ')}${extra}`;
-}
-
-function makeStyleDefaultSnapshot(saved: SavedStyleDefault): Json {
-  return makeStyleDefaultEditorSnapshot({
-    kind: 'style_default',
-    id: saved.id,
-    name: saved.name,
-    description: saved.description,
-    styleKind: saved.kind,
-    sortOrder: saved.sortOrder,
-    isArchived: saved.isArchived,
-    defaultsJson: saved.defaultsJson,
-    updatedAt: saved.updatedAt,
-  });
-}
-
-async function loadStyleDefaultEditorSnapshot(
-  supabase: ActionSupabase,
-  styleDefaultId: string,
-): Promise<{ ok: true; snapshot: Json | null } | { ok: false; error: string }> {
-  const { data, error } = await supabase
-    .from('firework_style_defaults')
-    .select(STYLE_DEFAULT_MUTATION_SELECT)
-    .eq('id', styleDefaultId)
-    .maybeSingle();
-
-  if (error) return { ok: false, error: error.message };
-  if (!data) return { ok: true, snapshot: null };
-  return {
-    ok: true,
-    snapshot: makeStyleDefaultSnapshot(mapSavedStyleDefault(data as StyleDefaultMutationRow)),
-  };
-}
-
-async function recordStyleDefaultVersion(
-  supabase: ActionSupabase,
-  version: AdminEditorVersion,
-): Promise<boolean> {
-  const styleDefaultId = version.fireworkStyleDefaultId;
-  if (!styleDefaultId) return false;
-
-  const row = {
-    id: version.id,
-    target_kind: 'style_default',
-    firework_style_default_id: styleDefaultId,
-    action: version.action,
-    summary: version.summary,
-    snapshot_json: version.snapshotJson,
-    previous_snapshot_json: version.previousSnapshotJson,
-    changes_json: version.changesJson,
-    created_by: version.createdBy,
-    created_by_label: version.createdByLabel,
-    created_at: version.createdAt,
-  } as const;
-
-  async function isRecorded(targetStyleDefaultId: string): Promise<boolean> {
-    const { data, error } = await supabase
-      .from('firework_editor_versions')
-      .select('id')
-      .eq('id', version.id)
-      .eq('target_kind', 'style_default')
-      .eq('firework_style_default_id', targetStyleDefaultId)
-      .maybeSingle();
-    if (error && !isMissingEditorVersionSchemaError(error)) {
-      console.error('[recordStyleDefaultVersion] history confirmation failed:', error);
-    }
-    return Boolean(data);
-  }
-
-  const first = await supabase.from('firework_editor_versions').insert(row);
-  if (!first.error) return true;
-  if (isMissingEditorVersionSchemaError(first.error)) return false;
-  if (await isRecorded(styleDefaultId)) return true;
-
-  if (isSupabaseTransientNetworkError(first.error)) {
-    const retry = await supabase.from('firework_editor_versions').insert(row);
-    if (!retry.error || (await isRecorded(styleDefaultId))) return true;
-    if (!isMissingEditorVersionSchemaError(retry.error)) {
-      console.error('[recordStyleDefaultVersion] history retry failed:', retry.error);
-    }
-    return false;
-  }
-
-  console.error('[recordStyleDefaultVersion] history insert failed:', first.error);
-  return false;
-}
-
-function makeStyleDefaultVersion(input: {
-  styleDefaultId: string;
-  action: 'update' | 'restore';
-  summary: string;
-  snapshotJson: Json;
-  previousSnapshotJson: Json | null;
-  changesJson: Json;
-  profile: CurrentProfile;
-  historyVersionId?: string;
-}): AdminEditorVersion {
-  return {
-    id: input.historyVersionId ?? crypto.randomUUID(),
-    targetKind: 'style_default',
-    fireworkId: null,
-    fireworkEffectId: null,
-    fireworkStyleDefaultId: input.styleDefaultId,
-    action: input.action,
-    summary: input.summary,
-    snapshotJson: input.snapshotJson,
-    previousSnapshotJson: input.previousSnapshotJson,
-    changesJson: input.changesJson,
-    createdBy: input.profile.id,
-    createdByLabel: adminLabel(input.profile),
-    createdAt: new Date().toISOString(),
   };
 }
 
@@ -384,58 +225,26 @@ export async function updateStyleDefault(
   if (!defaults.ok) return { ok: false, error: defaults.error };
 
   const supabase = createClient(await cookies());
-  const previousSnapshot = await loadStyleDefaultEditorSnapshot(supabase, parsed.data.id);
-  if (!previousSnapshot.ok) return previousSnapshot;
-
-  const { data, error } = await supabase
-    .from('firework_style_defaults')
-    .update({
-      name: parsed.data.name,
-      description: parsed.data.description || null,
-      kind: parsed.data.kind,
-      defaults_json: defaults.value,
-      sort_order: parsed.data.sortOrder,
-      is_archived: parsed.data.isArchived,
-    })
-    .eq('id', parsed.data.id)
-    .eq('updated_at', parsed.data.expectedUpdatedAt)
-    .select(STYLE_DEFAULT_MUTATION_SELECT)
-    .maybeSingle();
-
-  if (error) return { ok: false, error: error.message };
-  if (!data) {
-    return {
-      ok: false,
-      error: 'This style default changed in another session. Refresh before saving again.',
-    };
-  }
-
-  const saved = mapSavedStyleDefault(data as StyleDefaultMutationRow);
-  const snapshotJson = makeStyleDefaultSnapshot(saved);
-  const changesJson = fieldChanges(previousSnapshot.snapshot, snapshotJson, [
-    'name',
-    'description',
-    'styleKind',
-    'sortOrder',
-    'isArchived',
-    'defaultsJson',
-  ]);
-  const historyVersion = makeStyleDefaultVersion({
-    styleDefaultId: saved.id,
-    action: 'update',
-    summary: summariseStyleDefaultChanges(changesJson),
-    snapshotJson,
-    previousSnapshotJson: previousSnapshot.snapshot,
-    changesJson,
-    profile,
+  const patch = {
+    name: parsed.data.name,
+    description: parsed.data.description || null,
+    kind: parsed.data.kind,
+    defaults_json: defaults.value,
+    sort_order: parsed.data.sortOrder,
+    is_archived: parsed.data.isArchived,
+  };
+  const result = await saveEditorRecord(supabase, {
+    kind: 'style_default',
+    id: parsed.data.id,
+    expectedUpdatedAt: parsed.data.expectedUpdatedAt,
+    patch,
     historyVersionId: parsed.data.historyVersionId,
   });
-  const historyRecorded = await recordStyleDefaultVersion(supabase, historyVersion).catch(
-    (historyError: unknown) => {
-      console.error('[updateStyleDefault] version history failed:', historyError);
-      return false;
-    },
-  );
+  if (!result.ok) return result;
+  const saved = mapSavedStyleDefault(result.saved);
+  const historyVersion = result.historyVersion;
+  const historyRecorded = true;
+
   await refresh(parsed.data.id);
   return { ok: true, saved, updatedAt: saved.updatedAt, historyVersion, historyRecorded };
 }
@@ -452,50 +261,19 @@ export async function archiveStyleDefault(
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
 
   const supabase = createClient(await cookies());
-  const previousSnapshot = await loadStyleDefaultEditorSnapshot(supabase, parsed.data.id);
-  if (!previousSnapshot.ok) return previousSnapshot;
-
-  const { data, error } = await supabase
-    .from('firework_style_defaults')
-    .update({ is_archived: true })
-    .eq('id', parsed.data.id)
-    .eq('updated_at', parsed.data.expectedUpdatedAt)
-    .select(STYLE_DEFAULT_MUTATION_SELECT)
-    .maybeSingle();
-
-  if (error) return { ok: false, error: error.message };
-  if (!data) {
-    return {
-      ok: false,
-      error: 'This style default changed in another session. Refresh before archiving.',
-    };
-  }
-  const saved = mapSavedStyleDefault(data as StyleDefaultMutationRow);
-  const snapshotJson = makeStyleDefaultSnapshot(saved);
-  const changesJson = fieldChanges(previousSnapshot.snapshot, snapshotJson, [
-    'name',
-    'description',
-    'styleKind',
-    'sortOrder',
-    'isArchived',
-    'defaultsJson',
-  ]);
-  const historyVersion = makeStyleDefaultVersion({
-    styleDefaultId: saved.id,
-    action: 'update',
-    summary: 'Archived style default',
-    snapshotJson,
-    previousSnapshotJson: previousSnapshot.snapshot,
-    changesJson,
-    profile,
+  const patch = { is_archived: true };
+  const result = await saveEditorRecord(supabase, {
+    kind: 'style_default',
+    id: parsed.data.id,
+    expectedUpdatedAt: parsed.data.expectedUpdatedAt,
+    patch,
     historyVersionId: parsed.data.historyVersionId,
   });
-  const historyRecorded = await recordStyleDefaultVersion(supabase, historyVersion).catch(
-    (historyError: unknown) => {
-      console.error('[archiveStyleDefault] version history failed:', historyError);
-      return false;
-    },
-  );
+  if (!result.ok) return result;
+  const saved = mapSavedStyleDefault(result.saved);
+  const historyVersion = result.historyVersion;
+  const historyRecorded = true;
+
   await refresh(parsed.data.id);
   return { ok: true, saved, updatedAt: saved.updatedAt, historyVersion, historyRecorded };
 }
@@ -535,61 +313,26 @@ export async function restoreStyleDefaultEditorVersion(
     return { ok: false, error: `That version has invalid renderer settings: ${rendererError}` };
   }
 
-  const previousSnapshot = await loadStyleDefaultEditorSnapshot(
-    supabase,
-    parsed.data.styleDefaultId,
-  );
-  if (!previousSnapshot.ok) return previousSnapshot;
-
-  const { data, error } = await supabase
-    .from('firework_style_defaults')
-    .update({
-      name: snapshot.name,
-      description: snapshot.description,
-      kind: snapshot.styleKind,
-      defaults_json: snapshot.defaultsJson,
-      sort_order: snapshot.sortOrder,
-      is_archived: snapshot.isArchived,
-    })
-    .eq('id', parsed.data.styleDefaultId)
-    .eq('updated_at', parsed.data.expectedUpdatedAt)
-    .select(STYLE_DEFAULT_MUTATION_SELECT)
-    .maybeSingle();
-
-  if (error) return { ok: false, error: error.message };
-  if (!data) {
-    return {
-      ok: false,
-      error: 'This style default changed in another session. Refresh before restoring.',
-    };
-  }
-
-  const saved = mapSavedStyleDefault(data as StyleDefaultMutationRow);
-  const snapshotJson = makeStyleDefaultSnapshot(saved);
-  const changesJson = fieldChanges(previousSnapshot.snapshot, snapshotJson, [
-    'name',
-    'description',
-    'styleKind',
-    'sortOrder',
-    'isArchived',
-    'defaultsJson',
-  ]);
-  const historyVersion = makeStyleDefaultVersion({
-    styleDefaultId: saved.id,
-    action: 'restore',
-    summary: `Restored version from ${version.created_by_label}`,
-    snapshotJson,
-    previousSnapshotJson: previousSnapshot.snapshot,
-    changesJson,
-    profile,
+  const patch = {
+    name: snapshot.name,
+    description: snapshot.description,
+    kind: snapshot.styleKind,
+    defaults_json: snapshot.defaultsJson,
+    sort_order: snapshot.sortOrder,
+    is_archived: snapshot.isArchived,
+  };
+  const result = await saveEditorRecord(supabase, {
+    kind: 'style_default',
+    id: parsed.data.styleDefaultId,
+    expectedUpdatedAt: parsed.data.expectedUpdatedAt,
+    patch,
     historyVersionId: parsed.data.historyVersionId,
+    restoreVersionId: parsed.data.versionId,
   });
-  const historyRecorded = await recordStyleDefaultVersion(supabase, historyVersion).catch(
-    (historyError: unknown) => {
-      console.error('[restoreStyleDefaultEditorVersion] version history failed:', historyError);
-      return false;
-    },
-  );
+  if (!result.ok) return result;
+  const saved = mapSavedStyleDefault(result.saved);
+  const historyVersion = result.historyVersion;
+  const historyRecorded = true;
 
   await refresh(parsed.data.styleDefaultId);
   return { ok: true, saved, updatedAt: saved.updatedAt, historyVersion, historyRecorded };

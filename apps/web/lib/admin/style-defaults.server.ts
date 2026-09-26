@@ -135,8 +135,7 @@ export async function listAdminStyleDefaultOptions(): Promise<AdminStyleDefaultO
 export async function getAdminStyleDefaultById(
   defaultId: string,
 ): Promise<AdminStyleDefaultDetail | null> {
-  const defaults = await listAdminStyleDefaults();
-  const styleDefault = defaults.find((item) => item.id === defaultId);
+  const styleDefault = await getAdminStyleDefaultPreviewSourceById(defaultId);
   if (!styleDefault) return null;
 
   const supabase = await getServerClient();

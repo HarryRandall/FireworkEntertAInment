@@ -11,31 +11,34 @@ The audit is no longer expanding. The implemented changes are ready for code
 review, but this document does not approve production rollout or claim the full
 redesign's acceptance criteria are complete.
 
-- `pnpm check`: formatting, 11 database-tooling tests, 60 package tests, 608 app
-  tests, TypeScript and the production build passed. Seven existing unused-code
-  lint warnings remain; there are no lint errors.
+- `pnpm check`: formatting, 11 database-tooling tests, 60 package tests, 610 app
+  tests, TypeScript and the production build passed. Unused imports and helpers
+  left by the extraction have been removed; lint has no warnings or errors.
 - `pnpm test:worker`: 68 passed. `pnpm test:analyser`: 35 tests, one skipped.
   `pnpm test:import-contract` passed for all 19 supported geometries. The UI audit
-  passed. Conversion rollback/concurrency checks and all eight local SQL suites
+  passed. Conversion rollback/concurrency checks and all nine local SQL suites
   passed.
-- A clean installation through migration `20260926000900` passed in the disposable
+- A clean installation through migration `20260926001100` passed in the disposable
   verification database: exact contents of 18 reusable tables, all 157 media
-  hashes, installation receipt, renderer fingerprint, eight SQL suites and
+  hashes, installation receipt, renderer fingerprint, nine SQL suites and
   generated public types. The disposable stack was stopped and removed afterwards.
 - Authenticated browser checks covered scene flash exact entry and one-step undo,
   explicit sound choices, burst/fade seeking, restart, fountain playback and its
   separate 126 sparks/second and 7.8-second duration. No browser errors were logged.
-  No records were saved during these checks. Earlier layout and gesture checks are
-  recorded below; the final smoke test does not replace full device testing.
+  A disposable local effect also passed two saves, immediate reload, history and
+  restore through the real editor. It was removed afterwards. Earlier layout and
+  gesture checks are recorded below; this does not replace full device testing.
 - Remote references were refreshed: `origin/main` is an ancestor of this branch
-  at `4917a8a`. No merge, push or deployment has been performed.
+  at `4917a8a`. Changes are being published as an ordered PR stack for review.
+  Merging and deployment remain with the maintainer.
 
 Resolve or explicitly defer these before treating the original plan as complete:
 
 1. Dense-show GPU frame-time measurements and the recorded peak-particle increases
    above 10%. Their causes have been investigated, but performance is not cleared.
-2. Atomic editor save/history writes and complete save-failure/restored-history
-   coverage. These are currently separate writes.
+2. Remaining device-level save-failure coverage. Atomic save/history writes and
+   restored versions are now implemented and covered by transaction and browser
+   checks below.
 3. Final invalid-record/caller coverage and full replay, multishot, touch and
    Saved/Draft comparison verification.
 4. Footage-based calibration and reviewed visual captures. Seeded simulation
@@ -606,3 +609,34 @@ The new tests cover count-independent flash, zero intensity, weak flashes,
 elapsed-time fading at different step sizes, copied geometry presets and
 idempotent conversion. The final verification results are recorded at the top
 of this document.
+
+### Atomic editor persistence
+
+All nine mutation entry points now use one permission-checked database transaction:
+effect and firework updates/restores/inline presets, plus part-preset updates,
+archives and restores. It locks the target, rejects stale revisions, builds
+previous/current history snapshots from database rows and commits all writes
+together. A history or inline-preset failure rolls back the record as well.
+Firework history uses the resolved snapshot rather than retained original overrides.
+Every edit receives a distinct monotonic revision. The superseded inline RPCs and
+three duplicated history-write implementations have been removed.
+
+A real browser save/reload exposed a separate stale baseline bug: detail readers
+could return their cached pre-save record alongside fresh history. All three
+editor detail readers now read the current record directly. List caching remains.
+A disposable local effect passed two saves, immediate reopening with the latest
+name, both persisted history entries and restore to the earlier version. The
+fixture and its generated history were removed after verification.
+
+The SQL suite checks all three target kinds, history failure after record/preset
+writes, stale conflicts, protected fields, permission denial, restore ownership,
+archives and inner-layer preset creation. Client tests reject incomplete or
+mismatched save confirmations. Source guards now check transaction routing rather
+than freezing the obsolete separate-write implementation. A fresh database through
+migration `20260926001100` passed all nine SQL suites and generated-type checks.
+
+Migration `20260926001000` updates the source fingerprint after unused import
+helpers were removed. Simulation behaviour is unchanged, but evidence still needs
+to match deployed source bytes. Coordinate schema/app/worker deployment and keep
+admin writes gated during the switch: migration `20260926001100` replaces the old
+inline save RPCs. Nothing has been merged or deployed by this task.
