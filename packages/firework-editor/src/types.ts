@@ -8,11 +8,6 @@ export type RenderControlsProps = {
   layer?: 'outer' | 'core';
   design: FireworkDesign;
   defaults: JsonRecord;
-  /**
-   * Saved base settings used as the 50% point for calibrated appearance sliders.
-   * If absent, the controls fall back to their renderer-safe defaults.
-   */
-  calibrationDefaults?: JsonRecord;
   mutate: (updater: (defaults: JsonRecord) => void) => void;
   disabled?: boolean;
   /** Content to render directly after the required Burst section. */

@@ -15,6 +15,7 @@ import { RendererField as SliderField } from '../RendererField';
 export function renderLiftVelocityControl(context: RendererControlsContext, hint: ReactNode) {
   const {
     liftVelocity,
+    design,
     forceCustomLiftVelocity,
     disabled,
     setLiftVelocityMode,
@@ -61,6 +62,9 @@ export function renderLiftVelocityControl(context: RendererControlsContext, hint
           })}
         </div>
       </Field>
+      <p className="text-muted-foreground text-xs">
+        Launch speed sets how high the shell rises. It normally bursts when it stops rising.
+      </p>
       {selectedMode === 'custom' ? (
         <SliderField
           label="Custom velocity"
@@ -76,6 +80,18 @@ export function renderLiftVelocityControl(context: RendererControlsContext, hint
           }}
         />
       ) : null}
+      <SliderField
+        label="Maximum flight time"
+        inputKind="number"
+        min={2}
+        max={60}
+        step={0.1}
+        value={design.shellLife}
+        formatValue={(value) => `${value} s`}
+        disabled={disabled}
+        hint="Burst by this time if the shell has not already reached its highest point."
+        onChange={(value) => setRenderValue('shellLife', value)}
+      />
     </div>
   );
 }

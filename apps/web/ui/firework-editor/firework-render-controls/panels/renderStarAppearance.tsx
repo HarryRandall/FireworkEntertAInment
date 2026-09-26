@@ -1,5 +1,5 @@
 'use client';
-import { CalibratedSliderField } from '@/ui/firework-editor/firework-render-controls/ControlFields';
+import { AppearanceField } from '@/ui/firework-editor/firework-render-controls/ControlFields';
 import {
   CONTROL_GRID_CLASS,
   SubSection,
@@ -87,23 +87,25 @@ export function renderStarAppearance(
       </SubSection>
       <SubSection title="Core">
         <div className={CONTROL_GRID_CLASS}>
-          <CalibratedSliderField
+          <AppearanceField
             label="Core blur"
+            inputKind="knob"
             range={coreSoftnessRange}
             value={heads.coreSoftness}
             disabled={controlDisabled}
             hint="Blur through the coloured core. 0% is a hard-edged disc; higher diffuses the centre and edge into a soft orb."
             onChange={(value) => setLayerNestedValue(layerKey, 'head', 'coreSoftness', value)}
           />
-          <CalibratedSliderField
+          <AppearanceField
             label="Brightness"
+            inputKind="knob"
             range={coreBrightnessRange}
             value={heads.coreBrightness}
             disabled={controlDisabled}
             hint="How hot the coloured centre burns. Lower is calmer; higher pushes toward white."
             onChange={(value) => setLayerNestedValue(layerKey, 'head', 'coreBrightness', value)}
           />
-          <CalibratedSliderField
+          <AppearanceField
             label="White dot size"
             range={whiteCoreSizeRange}
             value={heads.whiteCoreSizePercent}
@@ -113,8 +115,9 @@ export function renderStarAppearance(
               setLayerNestedValue(layerKey, 'head', 'whiteCoreSizePercent', value)
             }
           />
-          <CalibratedSliderField
+          <AppearanceField
             label="White dot blur"
+            inputKind="knob"
             range={whiteCoreBlurRange}
             value={heads.whiteCoreBlurPercent}
             disabled={controlDisabled}
@@ -123,7 +126,7 @@ export function renderStarAppearance(
               setLayerNestedValue(layerKey, 'head', 'whiteCoreBlurPercent', value)
             }
           />
-          <CalibratedSliderField
+          <AppearanceField
             label="Core fade"
             range={coreOpacityRange}
             value={heads.coreOpacityFalloff}
@@ -136,7 +139,7 @@ export function renderStarAppearance(
       </SubSection>
       <SubSection title="Glow">
         <div className={CONTROL_GRID_CLASS}>
-          <CalibratedSliderField
+          <AppearanceField
             label="Star glow radius"
             range={glowSizeRange}
             value={heads.glowSize}
@@ -144,15 +147,16 @@ export function renderStarAppearance(
             hint="Size of the coloured bloom attached to the star itself. Low hugs the core; high spreads the close glow outward."
             onChange={(value) => setLayerNestedValue(layerKey, 'head', 'glowSize', value)}
           />
-          <CalibratedSliderField
+          <AppearanceField
             label="Star glow blur"
+            inputKind="knob"
             range={glowSoftnessRange}
             value={heads.glowSoftness}
             disabled={controlDisabled}
             hint="Blur of the close coloured glow. Low is tight and defined; high spreads it into a much softer bloom."
             onChange={(value) => setLayerNestedValue(layerKey, 'head', 'glowSoftness', value)}
           />
-          <CalibratedSliderField
+          <AppearanceField
             label="Star glow fade"
             range={glowOpacityRange}
             value={heads.glowOpacityFalloff}
@@ -160,7 +164,7 @@ export function renderStarAppearance(
             hint="Opacity falloff for the close star glow. Higher values fade it to transparent sooner, removing the outer ring."
             onChange={(value) => setLayerNestedValue(layerKey, 'head', 'glowOpacityFalloff', value)}
           />
-          <CalibratedSliderField
+          <AppearanceField
             label="Background glow size"
             range={backgroundGlowSizeRange}
             value={heads.glowPadding}
@@ -168,16 +172,18 @@ export function renderStarAppearance(
             hint="Size of the large coloured wash behind each star. Lower keeps it tight; higher gives it more room to bloom."
             onChange={(value) => setLayerNestedValue(layerKey, 'head', 'glowPadding', value)}
           />
-          <CalibratedSliderField
+          <AppearanceField
             label="Background glow strength"
+            inputKind="knob"
             range={backgroundGlowStrengthRange}
             value={heads.glowBlur}
             disabled={controlDisabled}
             hint="Brightness of the large coloured wash behind each star. 0% removes it; higher stays coloured rather than turning the whole sprite white."
             onChange={(value) => setLayerNestedValue(layerKey, 'head', 'glowBlur', value)}
           />
-          <CalibratedSliderField
+          <AppearanceField
             label="Background blur"
+            inputKind="knob"
             range={backgroundGlowSoftnessRange}
             value={heads.backgroundGlowSoftness}
             disabled={controlDisabled}
@@ -186,7 +192,7 @@ export function renderStarAppearance(
               setLayerNestedValue(layerKey, 'head', 'backgroundGlowSoftness', value)
             }
           />
-          <CalibratedSliderField
+          <AppearanceField
             label="Background fade"
             range={backgroundGlowOpacityRange}
             value={heads.backgroundGlowOpacityFalloff}

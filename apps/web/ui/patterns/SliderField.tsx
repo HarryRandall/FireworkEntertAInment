@@ -1,7 +1,7 @@
 'use client';
 
 /** Labelled slider with a live value readout and helper text, use for bounded numeric tuning controls. */
-import { useId, type ReactNode } from 'react';
+import { useId, useRef, useState, type ReactNode } from 'react';
 import { Slider as SliderPrimitive } from 'radix-ui';
 import { Field, FieldLabel } from '@/ui/patterns/Field';
 import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
@@ -52,19 +52,23 @@ export function SliderField({
   const display = formatValue ? formatValue(value) : String(value);
   const inputMax = numberInputMax === undefined ? max : numberInputMax;
   const sliderValue = Math.min(max, Math.max(min, value));
+  const [draft, setDraft] = useState<string | null>(null);
+  const editStart = useRef(value);
+  const edited = useRef(false);
+  const cancelled = useRef(false);
+  const inputText = String(Number(value.toPrecision(12)));
 
-  function setNumberValue(next: number) {
-    if (!Number.isFinite(next)) return;
+  function boundedNumber(next: number) {
     const upperBound = inputMax == null ? Number.POSITIVE_INFINITY : inputMax;
     const clamped = Math.min(upperBound, Math.max(min, next));
     const stepped = step >= 1 ? Math.round(clamped / step) * step : clamped;
-    onChange(Math.min(upperBound, Math.max(min, stepped)));
+    return Math.min(upperBound, Math.max(min, stepped));
   }
 
   return (
     <Field className={fullWidth ? 'col-span-full space-y-1.5' : 'space-y-1.5'}>
       <div className="flex items-center gap-1.5">
-        <FieldLabel id={labelId} htmlFor={sliderId} className="text-xs whitespace-nowrap">
+        <FieldLabel id={labelId} htmlFor={sliderId} className="min-w-0 text-xs">
           {label}
         </FieldLabel>
         {hint ? <InfoTooltip text={hint} /> : null}
@@ -104,23 +108,40 @@ export function SliderField({
             min={min}
             max={inputMax ?? undefined}
             step="any"
-            value={value}
+            value={draft ?? inputText}
             disabled={disabled}
             aria-label={
               inputAriaLabel ?? (typeof label === 'string' ? `${label} value` : undefined)
             }
             className="h-7 w-14 shrink-0 [appearance:textfield] rounded-md px-1.5 text-right font-mono text-xs tabular-nums [&::-webkit-inner-spin-button]:m-0 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-            onFocus={(event) => event.currentTarget.select()}
-            onChange={(event) => setNumberValue(event.currentTarget.valueAsNumber)}
+            onFocus={(event) => {
+              editStart.current = value;
+              edited.current = false;
+              cancelled.current = false;
+              setDraft(inputText);
+              event.currentTarget.select();
+            }}
+            onChange={(event) => {
+              edited.current = true;
+              setDraft(event.currentTarget.value);
+              const next = event.currentTarget.valueAsNumber;
+              if (Number.isFinite(next)) onChange(boundedNumber(next));
+            }}
             onBlur={(event) => {
-              const next =
-                event.currentTarget.value === '' ? min : event.currentTarget.valueAsNumber;
-              const upperBound = inputMax == null ? Number.POSITIVE_INFINITY : inputMax;
-              const clamped = Math.min(upperBound, Math.max(min, next));
-              const committed = step >= 1 ? Math.round(clamped / step) * step : clamped;
-              if (Number.isFinite(committed)) {
-                if (event.currentTarget.value === '') onChange(committed);
+              if (edited.current && !cancelled.current) {
+                const next = event.currentTarget.valueAsNumber;
+                const committed = Number.isFinite(next) ? boundedNumber(next) : editStart.current;
+                onChange(committed);
                 onCommit?.(committed);
+              }
+              setDraft(null);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') event.currentTarget.blur();
+              if (event.key === 'Escape') {
+                cancelled.current = true;
+                onChange(editStart.current);
+                event.currentTarget.blur();
               }
             }}
           />
@@ -130,6 +151,9 @@ export function SliderField({
           </span>
         )}
       </div>
+      {showNumberInput && formatValue ? (
+        <span className="text-muted-foreground block text-right text-xs">{display}</span>
+      ) : null}
     </Field>
   );
 }

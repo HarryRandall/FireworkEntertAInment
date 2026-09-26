@@ -63,6 +63,7 @@ export function renderSmokeControls(context: RendererControlsContext) {
         onChange={(value) => setLaunchValue('smoke', 'opacity', round2(value))}
       />
       <SliderField
+        inputKind="number"
         label="Smoke particles"
         min={0}
         max={LAUNCH_SMOKE_PARTICLES_MAX}

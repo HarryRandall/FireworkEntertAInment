@@ -57,7 +57,6 @@ export type { LaunchShellShape } from './launch-schema.ts';
 export {
   StarBurstSchema,
   StarColourPatternSchema,
-  StarFlairSizeRangeSchema,
   StarGravityRangeSchema,
   StarHeadClosingSchema,
   StarHeadOpeningSchema,

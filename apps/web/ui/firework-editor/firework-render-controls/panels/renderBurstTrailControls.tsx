@@ -192,6 +192,7 @@ export function renderBurstTrailControls(
           </p>
           <div className={CONTROL_GRID_CLASS}>
             <SliderField
+              inputKind="number"
               label="Particles per star"
               min={0}
               max={limit.perStar}
@@ -582,6 +583,7 @@ export function renderBurstTrailControls(
         <SubSection title="Brightness and flicker">
           <div className={CONTROL_GRID_CLASS}>
             <SliderField
+              inputKind="knob"
               label="Brightness"
               min={0}
               max={3}

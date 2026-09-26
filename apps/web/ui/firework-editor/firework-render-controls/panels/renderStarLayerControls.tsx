@@ -1,6 +1,6 @@
 'use client';
 import {
-  CalibratedSliderField,
+  AppearanceField,
   SwitchField,
 } from '@/ui/firework-editor/firework-render-controls/ControlFields';
 import {
@@ -105,6 +105,7 @@ export function renderStarLayerControls(
           />
           {showStarCount ? (
             <SliderField
+              inputKind="number"
               label="Star count"
               min={STAR_COUNT_MIN}
               max={STAR_COUNT_MAX}
@@ -151,6 +152,7 @@ export function renderStarLayerControls(
             onChange={(value) => setStarSpeedSpread(layerKey, round2(value))}
           />
           <SliderField
+            inputKind="number"
             label="Hang time"
             min={STAR_LIFE_MIN}
             max={STAR_LIFE_MAX}
@@ -218,7 +220,9 @@ export function renderStarLayerControls(
             hint="Size budget for each glowing star in this layer."
             onChange={(value) => setStarHeadSize(layerKey, value)}
           />
-          <CalibratedSliderField
+          <AppearanceField
+            unit="multiplier"
+            inputKind="knob"
             label="Glow strength"
             range={headGlowStrengthRange}
             value={glowStrength}

@@ -1,4 +1,5 @@
 'use client';
+import { unavailableControlReason } from '@showcrafter/firework-editor/availability';
 import type { RenderControlsProps } from '@showcrafter/firework-editor/types';
 import { useRenderControls } from '@showcrafter/firework-editor/use-render-controls';
 import { renderBurstTrailControls } from './firework-render-controls/panels/renderBurstTrailControls';
@@ -18,6 +19,23 @@ import { StarPartControls } from './firework-render-controls/StarPartControls';
 export type { JsonRecord } from '@showcrafter/firework-editor/types';
 
 export function FireworkRenderControls(props: RenderControlsProps) {
+  const reason = unavailableControlReason(props.design, props.controlScope, props.layer);
+  return (
+    <div className="space-y-4">
+      {reason ? (
+        <p
+          className="text-muted-foreground border-border rounded-md border p-3 text-xs"
+          role="status"
+        >
+          {reason}
+        </p>
+      ) : null}
+      <RenderControlPanels {...props} disabled={props.disabled || Boolean(reason)} />
+    </div>
+  );
+}
+
+function RenderControlPanels(props: RenderControlsProps) {
   const context = useRenderControls(props);
   if (props.part === 'flight')
     return (
@@ -42,15 +60,7 @@ export function FireworkRenderControls(props: RenderControlsProps) {
   }
 
   if (controlScope === 'launchShell') {
-    return (
-      <div className="space-y-5">
-        {renderLiftVelocityControl(
-          context,
-          'Launch speed, which sets the burst height. Small keeps effects low; High throws them taller.',
-        )}
-        {renderLaunchShellParticleControls(context)}
-      </div>
-    );
+    return <>{renderLaunchShellParticleControls(context)}</>;
   }
 
   if (controlScope === 'launchTrail') {

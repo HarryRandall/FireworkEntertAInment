@@ -1,5 +1,4 @@
 'use client';
-import { withCalibrationDefault } from '@showcrafter/firework-editor/calibrated-slider';
 import { isGroundGeometry } from '@showcrafter/fireworks/behaviours';
 import type {
   BurstTrailPreset,
@@ -62,7 +61,6 @@ import type { JsonRecord, RenderControlsProps } from './types.ts';
 export function useRenderControls({
   design,
   defaults,
-  calibrationDefaults,
   mutate,
   disabled = false,
   afterBurst,
@@ -86,62 +84,19 @@ export function useRenderControls({
   const crackleDefaults = readRecord(defaults, 'crackle');
   const soundDefaults = readRecord(defaults, 'sound');
   const mortarDefaults = readRecord(defaults, 'mortar');
-  const calibrationSource = calibrationDefaults ?? defaults;
-  const calibrationStarsRecord = readRecord(calibrationSource, 'stars');
-  const calibrationLayer = controlScope === 'starInner' ? 'core' : 'outer';
-  const calibrationStars =
-    Object.keys(readRecord(readRecord(calibrationStarsRecord, calibrationLayer), 'head')).length > 0
-      ? readRecord(readRecord(calibrationStarsRecord, calibrationLayer), 'head')
-      : readRecord(calibrationStarsRecord, 'heads');
-  const headGlowStrengthRange = withCalibrationDefault(
-    HEAD_GLOW_STRENGTH_RANGE,
-    calibrationStars.glowStrength,
-  );
-  const coreSoftnessRange = withCalibrationDefault(
-    CORE_SOFTNESS_RANGE,
-    calibrationStars.coreSoftness,
-  );
-  const coreBrightnessRange = withCalibrationDefault(
-    CORE_BRIGHTNESS_RANGE,
-    calibrationStars.coreBrightness,
-  );
-  const whiteCoreSizeRange = withCalibrationDefault(
-    WHITE_CORE_SIZE_RANGE,
-    calibrationStars.whiteCoreSizePercent,
-  );
-  const whiteCoreBlurRange = withCalibrationDefault(
-    WHITE_CORE_BLUR_RANGE,
-    calibrationStars.whiteCoreBlurPercent,
-  );
-  const coreOpacityRange = withCalibrationDefault(
-    CORE_OPACITY_RANGE,
-    calibrationStars.coreOpacityFalloff,
-  );
-  const glowSizeRange = withCalibrationDefault(GLOW_SIZE_RANGE, calibrationStars.glowSize);
-  const glowSoftnessRange = withCalibrationDefault(
-    GLOW_SOFTNESS_RANGE,
-    calibrationStars.glowSoftness,
-  );
-  const glowOpacityRange = withCalibrationDefault(
-    GLOW_OPACITY_RANGE,
-    calibrationStars.glowOpacityFalloff,
-  );
-  const backgroundGlowSizeRange = withCalibrationDefault(
-    BACKGROUND_GLOW_SIZE_RANGE,
-    calibrationStars.glowPadding,
-  );
-  const backgroundGlowStrengthRange = withCalibrationDefault(
-    BACKGROUND_GLOW_STRENGTH_RANGE,
-    calibrationStars.glowBlur,
-  );
-  const backgroundGlowSoftnessRange = withCalibrationDefault(
-    BACKGROUND_GLOW_SOFTNESS_RANGE,
-    calibrationStars.backgroundGlowSoftness,
-  );
-  const backgroundGlowOpacityRange = withCalibrationDefault(
-    BACKGROUND_GLOW_OPACITY_RANGE,
-    calibrationStars.backgroundGlowOpacityFalloff,
-  );
+  const headGlowStrengthRange = HEAD_GLOW_STRENGTH_RANGE;
+  const coreSoftnessRange = CORE_SOFTNESS_RANGE;
+  const coreBrightnessRange = CORE_BRIGHTNESS_RANGE;
+  const whiteCoreSizeRange = WHITE_CORE_SIZE_RANGE;
+  const whiteCoreBlurRange = WHITE_CORE_BLUR_RANGE;
+  const coreOpacityRange = CORE_OPACITY_RANGE;
+  const glowSizeRange = GLOW_SIZE_RANGE;
+  const glowSoftnessRange = GLOW_SOFTNESS_RANGE;
+  const glowOpacityRange = GLOW_OPACITY_RANGE;
+  const backgroundGlowSizeRange = BACKGROUND_GLOW_SIZE_RANGE;
+  const backgroundGlowStrengthRange = BACKGROUND_GLOW_STRENGTH_RANGE;
+  const backgroundGlowSoftnessRange = BACKGROUND_GLOW_SOFTNESS_RANGE;
+  const backgroundGlowOpacityRange = BACKGROUND_GLOW_OPACITY_RANGE;
   const isGroundEmitter = isGroundGeometry(design.geometry);
   const headsEnabled = design.stars.outer.head.visible;
   const outerEnabled = design.stars.outer.enabled;
@@ -576,7 +531,6 @@ export function useRenderControls({
   return {
     design,
     defaults,
-    calibrationDefaults,
     mutate,
     disabled,
     afterBurst,
@@ -600,10 +554,6 @@ export function useRenderControls({
     crackleDefaults,
     soundDefaults,
     mortarDefaults,
-    calibrationSource,
-    calibrationStarsRecord,
-    calibrationLayer,
-    calibrationStars,
     headGlowStrengthRange,
     coreSoftnessRange,
     coreBrightnessRange,

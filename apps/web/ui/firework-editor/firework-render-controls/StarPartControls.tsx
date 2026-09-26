@@ -73,6 +73,7 @@ export function StarPartControls({
             onChange={(value) => context.setStarHeadSize(layerKey, value)}
           />
           <RendererField
+            inputKind="knob"
             label="Glow strength"
             value={layer.head.glowStrength}
             min={0}
@@ -89,6 +90,7 @@ export function StarPartControls({
       {part === 'movement' ? (
         <div className="grid gap-5 sm:grid-cols-2">
           <RendererField
+            inputKind="number"
             label="Star count"
             value={layer.count}
             min={STAR_COUNT_MIN}
@@ -115,6 +117,7 @@ export function StarPartControls({
             }
           />
           <RendererField
+            inputKind="number"
             label="Hang time"
             value={rangeMid(layer.burst.life)}
             min={STAR_LIFE_MIN}

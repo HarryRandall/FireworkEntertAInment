@@ -3,18 +3,16 @@
 import { Field, FieldLabel } from '@/ui/patterns/Field';
 import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
 import { Switch } from '@/ui/primitives/switch';
-import type { CalibratedRange } from '@showcrafter/firework-editor/calibrated-slider';
+import type { NumericControlRange } from '@showcrafter/firework-editor/numeric-range';
 import { useId, type ReactNode } from 'react';
 import { RendererField as SliderField } from './RendererField';
 
-function formatPercent(value: number): string {
-  return `${value.toFixed(value % 1 === 0 ? 0 : 1)}%`;
-}
-
-export function CalibratedSliderField({
+export function AppearanceField({
   label,
   value,
   range,
+  unit = 'percent',
+  inputKind = 'slider',
   disabled,
   hint,
   fullWidth,
@@ -22,7 +20,9 @@ export function CalibratedSliderField({
 }: {
   label: string;
   value: number;
-  range: CalibratedRange;
+  range: NumericControlRange;
+  unit?: 'percent' | 'multiplier';
+  inputKind?: 'slider' | 'knob';
   disabled?: boolean;
   hint: ReactNode;
   fullWidth?: boolean;
@@ -31,13 +31,12 @@ export function CalibratedSliderField({
   return (
     <SliderField
       label={label}
+      inputKind={inputKind}
       min={range.min}
       max={range.max}
       step={range.max <= 10 ? 0.01 : 1}
       value={value}
-      formatValue={(number) =>
-        label.toLowerCase().includes('strength') ? `${number.toFixed(2)}×` : `${number}%`
-      }
+      formatValue={(number) => (unit === 'multiplier' ? `${number.toFixed(2)}×` : `${number}%`)}
       disabled={disabled}
       fullWidth={fullWidth}
       hint={hint}

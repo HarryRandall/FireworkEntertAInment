@@ -42,6 +42,7 @@ export function renderStarClosingControls(
     <SubSection title="Closing">
       <div className={CONTROL_GRID_CLASS}>
         <SliderField
+          inputKind="number"
           label="Burn time"
           min={STAR_LIFE_MIN}
           max={STAR_LIFE_MAX}

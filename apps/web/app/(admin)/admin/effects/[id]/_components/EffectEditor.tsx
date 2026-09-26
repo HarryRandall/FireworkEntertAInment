@@ -328,10 +328,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         : canonicaliseEffectModelJson(effect.modelJson),
     [effect.modelJson, parsedModel],
   );
-  const calibrationDefaults = useMemo(
-    () => readRecord(canonicaliseEffectModelJson(effect.modelJson), 'renderDefaults'),
-    [effect.modelJson],
-  );
   const modelRecord = parsedModel.ok ? baseModel : {};
   const renderDefaults = readRecord(modelRecord, 'renderDefaults');
   const selectedStyleDefaults = useMemo(() => {
@@ -1152,7 +1148,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       controls: {
         design: previewDesign,
         defaults: renderDefaults,
-        calibrationDefaults,
+
         disabled: !parsedModel.ok,
       },
       mutate: updateModelDefaultsForStyle,

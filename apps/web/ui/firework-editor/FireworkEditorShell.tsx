@@ -215,7 +215,7 @@ export function FireworkEditorShell({
         </div>
       </div>
       <div
-        className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_minmax(280px,320px)_168px] lg:overflow-hidden"
+        className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_288px_168px] lg:overflow-hidden"
         onKeyDownCapture={(event) => {
           const input =
             event.target instanceof HTMLElement &&
@@ -269,7 +269,7 @@ export function FireworkEditorShell({
             if (event.key.startsWith('Arrow')) commit();
           }}
         >
-          <div className="border-border border-b p-4">
+          <div className="border-border border-b p-3">
             <p className="text-muted-foreground text-xs">
               {part?.path.join(' / ') ?? current?.eyebrow}
             </p>
@@ -278,7 +278,7 @@ export function FireworkEditorShell({
               {part?.description ?? current?.description}
             </p>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto p-4">
+          <div className="min-h-0 flex-1 overflow-y-auto p-3">
             {error ? (
               <InlineAlert tone="danger" title="Could not save" className="mb-5">
                 {error}

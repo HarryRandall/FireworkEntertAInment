@@ -48,7 +48,6 @@ import { ReplayStageBackdrop } from '@/ui/replay/ReplayStageBackdrop';
 import { useAdminBreadcrumbOverride } from '@/ui/shell/AdminShell';
 import {
   DEFAULT_DESIGN,
-  canonicaliseEffectModelJson,
   estimateDesignDurationSeconds,
   validateFireworkDesign,
 } from '@showcrafter/fireworks/design';
@@ -871,11 +870,6 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   function copySelectedStyleDefaultsIntoOverrides(source: JsonRecord): JsonRecord {
     return cloneRecord(source);
   }
-
-  const calibrationDefaults = useMemo(() => {
-    const model = isRecord(baseModel) ? baseModel : {};
-    return readRecord(canonicaliseEffectModelJson(model), 'renderDefaults');
-  }, [baseModel]);
 
   const palette = useMemo(
     () =>
@@ -2089,7 +2083,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       controls: {
         design: previewDesign,
         defaults: overridesRecord,
-        calibrationDefaults,
+
         disabled: !parsedOverrides.ok,
       },
       mutate: mutateOverridesForStyle,

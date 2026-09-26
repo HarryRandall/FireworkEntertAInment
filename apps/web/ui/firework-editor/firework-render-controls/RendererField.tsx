@@ -4,7 +4,6 @@ import { Field, FieldLabel } from '@/ui/patterns/Field';
 import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
 import { Input } from '@/ui/patterns/Input';
 import { SliderField } from '@/ui/patterns/SliderField';
-import { rendererInputKind } from '@showcrafter/firework-editor/input-kinds';
 import {
   useId,
   useLayoutEffect,
@@ -18,9 +17,10 @@ type Props = ComponentProps<typeof SliderField> & { inputKind?: 'slider' | 'numb
 
 export function RendererField(props: Props) {
   const id = useId();
-  const kind = props.inputKind ?? rendererInputKind(props.label);
+  const kind = props.inputKind ?? 'slider';
   const [draft, setDraft] = useState<string | null>(null);
   const skipCommit = useRef(false);
+  const edited = useRef(false);
   const drag = useRef<{ y: number; value: number } | null>(null);
   const latest = useRef(props.value);
   useLayoutEffect(() => {
@@ -29,6 +29,7 @@ export function RendererField(props: Props) {
   const { min, max, step = 1, value, disabled, label, hint, onChange, onCommit } = props;
   const clamp = (next: number) => Math.min(max, Math.max(min, Math.round(next / step) * step));
   const text = props.formatValue?.(value) ?? String(Number(value.toFixed(3)));
+  const inputText = String(Number(value.toPrecision(12)));
 
   function commitNumber() {
     if (skipCommit.current) {
@@ -36,7 +37,13 @@ export function RendererField(props: Props) {
       setDraft(null);
       return;
     }
-    if (draft !== null && draft.trim() && Number.isFinite(Number(draft))) {
+    if (
+      edited.current &&
+      draft !== null &&
+      draft.trim() &&
+      Number.isFinite(Number(draft)) &&
+      Number(draft) !== value
+    ) {
       const next = clamp(Number(draft));
       onChange(next);
       onCommit?.(next);
@@ -121,11 +128,17 @@ export function RendererField(props: Props) {
             min={min}
             max={max}
             step={step}
-            value={draft ?? value}
+            value={draft ?? inputText}
             disabled={disabled}
             className="h-8 font-mono text-xs"
-            onFocus={() => setDraft(String(value))}
-            onChange={(event) => setDraft(event.target.value)}
+            onFocus={() => {
+              edited.current = false;
+              setDraft(inputText);
+            }}
+            onChange={(event) => {
+              edited.current = true;
+              setDraft(event.target.value);
+            }}
             onBlur={commitNumber}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {

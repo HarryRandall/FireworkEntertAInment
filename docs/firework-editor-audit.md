@@ -50,11 +50,41 @@ A count is a maximum over the star's flight, not a promise that every particle i
 visible simultaneously. Short paths, opening visibility, crackle, density curves
 and lifetime can reduce visible particles. The UI must make that distinction.
 
+The next control pass also found and corrected:
+
+- Star sizes below 40 were forced to 40 during spawning. Authored sizes now stay
+  distinct, and implicit random size decay no longer shortens the chosen burn time.
+- A strobe dark size of zero recycled the star permanently. It now hides the head
+  with alpha and allows the next flash. Removed the unused alternate strobe field
+  that could blink even when the Strobe switch was off.
+- Extra effects now use typed numeric definitions with explanations, units and
+  explicit input types. Strobe, crackle and splitting have named groups. Crackle
+  ignition chance is displayed per second, with a reversible conversion to its
+  simulation probability. Field/schema endpoint tests cover all these controls.
+- Removed calibrated-percentage helpers and label-based input selection. Brightness
+  and glow inputs declare their own type and scale. An untouched number field no
+  longer rounds its saved value merely because it received and lost focus.
+- Ground emitters and disabled parent layers show persistent availability reasons.
+  Flight exposes its maximum duration, and Shell no longer repeats Flight settings.
+- Reduced the shared inspector to 288px with compact padding, preserving the
+  far-right parts tree and the mobile drawer.
+- Shared sliders retain the typed draft while previewing, restore the original
+  value on Escape, show units beside exact entry and hide floating-point display
+  noise. Browser checks verified 50% ignition chance, one-step undo, cancellation
+  and preservation of redo when focusing and leaving an unchanged field.
+
+The refreshed 24-composition simulation fixture keeps all timing unchanged.
+Crackle's seeded peak rose from 2,359 to 2,721 particles (15.35%). An isolated
+in-memory experiment restored only the removed random draw and reproduced the
+old 2,359 peak, identifying the changed random sequence as the cause. No dummy
+random draw is retained in the renderer. Multi-seed dense-show frame benchmarks
+remain required; a single-seed count is not performance clearance.
+
 ## Remaining audit and implementation
 
 1. **Control metadata and limits.** Inventory each exposed field against schema,
-   setter, simulation, shader and timing usage. Replace label-based input-type
-   inference with typed definitions. Verify both ends and numerical entry for
+   setter, simulation, shader and timing usage. Extend the typed extra-effect
+   definitions to the remaining controls. Verify both ends and numerical entry for
    every range. Remove schema coercions that reinterpret old percentages.
 2. **Physics and geometry.** Review `Particle.update`'s hidden lateral/downward
    speed caps, mass-based drag, implicit life/size decay and shader sprite limits.

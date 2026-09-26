@@ -211,13 +211,6 @@ function styleDefaultSavedSnapshotFromDetail(
   });
 }
 
-function calibrationDefaultsFromSnapshot(
-  snapshot: StyleDefaultEditorSavedSnapshot,
-): Record<string, unknown> {
-  const parsed = parseJsonObject(snapshot.defaultsText);
-  return parsed.ok ? parsed.value : {};
-}
-
 function isEarlierUpdatedAt(candidate: string, reference: string): boolean {
   const candidateTime = Date.parse(candidate);
   const referenceTime = Date.parse(reference);
@@ -259,9 +252,6 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
     ),
   );
   const [savedSignature, setSavedSignature] = useState(() => incomingSavedSnapshot.signature);
-  const [savedCalibrationDefaults, setSavedCalibrationDefaults] = useState<Record<string, unknown>>(
-    () => calibrationDefaultsFromSnapshot(incomingSavedSnapshot),
-  );
   const savedSnapshotRef = useRef<StyleDefaultEditorSavedSnapshot>(incomingSavedSnapshot);
   const [savedPreviewSnapshot, setSavedPreviewSnapshot] = useState(incomingSavedSnapshot);
   const savedSignatureRef = useRef(savedSignature);
@@ -356,7 +346,6 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
     savedSnapshotRef.current = incomingSnapshot;
     setSavedPreviewSnapshot(incomingSnapshot);
     savedSignatureRef.current = incomingSnapshot.signature;
-    setSavedCalibrationDefaults(calibrationDefaultsFromSnapshot(incomingSnapshot));
     setName(incomingSnapshot.name);
     setDescription(incomingSnapshot.description);
     setKind(incomingSnapshot.kind);
@@ -682,7 +671,6 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       savedSnapshotRef.current = savedSnapshot;
       setSavedPreviewSnapshot(savedSnapshot);
       savedSignatureRef.current = savedSnapshot.signature;
-      setSavedCalibrationDefaults(calibrationDefaultsFromSnapshot(savedSnapshot));
       setSavedSignature(savedSnapshot.signature);
       editorHistory.settle({
         optimisticId: mutation.historyVersionId,
@@ -845,7 +833,6 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       savedSnapshotRef.current = restoredSnapshot;
       setSavedPreviewSnapshot(restoredSnapshot);
       savedSignatureRef.current = restoredSnapshot.signature;
-      setSavedCalibrationDefaults(calibrationDefaultsFromSnapshot(restoredSnapshot));
       setLastSavedUpdatedAt(restoredSnapshot.updatedAt);
       setSavedSignature(restoredSnapshot.signature);
       editorHistory.settle({
@@ -1012,7 +999,6 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
               <FireworkRenderControls
                 design={previewDesign}
                 defaults={customTrailPreviewStarDefaults}
-                calibrationDefaults={defaultTrailPreviewStarDefaults}
                 mutate={mutateTrailPreviewStarDefaults}
                 disabled={!parsedDefaults.ok}
                 showStarCount
@@ -1026,7 +1012,6 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       <FireworkRenderControls
         design={previewDesign}
         defaults={defaultsRecord}
-        calibrationDefaults={savedCalibrationDefaults}
         mutate={mutateDefaults}
         disabled={!parsedDefaults.ok}
         showStarCount={kind === 'star'}

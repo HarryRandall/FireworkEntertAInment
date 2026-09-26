@@ -70,8 +70,6 @@ export const StarGravityRangeSchema = orderedRangeSchema(-2, 1);
 
 export const StarLifeRangeSchema = orderedRangeSchema(0.05, 30);
 
-export const StarFlairSizeRangeSchema = orderedRangeSchema(0, 1000);
-
 export const StarBurstSchema = z
   .object({
     speed: StarSpeedRangeSchema.default([2, 4]),
@@ -87,7 +85,6 @@ export const StarBurstSchema = z
       .min(0)
       .max(STAR_TERMINAL_VELOCITY_MAX)
       .default(STAR_TERMINAL_VELOCITY_MAX),
-    flairSizeStrobe: StarFlairSizeRangeSchema.optional(),
     flairColorMode: z.enum(['bombColor', 'random', 'mixed']).default('mixed'),
   })
   .default({

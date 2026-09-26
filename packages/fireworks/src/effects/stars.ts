@@ -163,7 +163,7 @@ export function effectSpawnEffectStar(
   const glow = clamp(layer.head.glowStrength, 0, 3);
   const headShape = headShapeValue(glow, o.styleIndex ?? 0);
   const particleShape = layer.head.visible === false ? HIDDEN_PARTICLE_SHAPE : headShape;
-  const sizeBudget = Math.max(40, layer.head.size * (o.headSizeScale ?? 1));
+  const sizeBudget = Math.max(0.01, layer.head.size * (o.headSizeScale ?? 1));
   const wantsSplit = o.split === true;
   const splitDelay = o.life * design.split.delayRatio;
   const trailSourceColor =
@@ -290,7 +290,7 @@ export function effectSpawnEffectStar(
     life: o.life,
     // Stars hold their size for their whole life and glow out via the
     // renderer's burn-out fade.
-    decay: 3 + rng.next() * 3,
+    decay: 0,
     condition: wantsSplit ? (p) => p.maxLife - p.life >= splitDelay : undefined,
     action: wantsSplit
       ? (p, dt, t) => effectSplitCrossette(ctx, p, dt, t, design, color, rng, o.audible, budget)
@@ -369,32 +369,21 @@ export function effectStarBehaviour(
   const openingSize = starOpeningSize(layer.head, sizeBudget, elapsedSeconds, openingLifeReference);
   const closingSize = starClosingSize(layer.head, sizeBudget, particle.life, closingLifeReference);
   const dynamicSize = Math.min(openingSize, closingSize);
-  if (layer.head.opening.size.enabled || layer.head.closing.size.enabled) {
-    particle.size = dynamicSize;
-  }
+  particle.size = dynamicSize;
   particle.alpha = starClosingOpacity(layer.head, particle.life, closingLifeReference);
 
-  const flairSizeStrobe = layer.burst.flairSizeStrobe;
-  if (design.strobe.enabled || flairSizeStrobe) {
-    // Golden-ratio hash of the star index gives a stable, evenly spread
-    // subset when only a percentage of stars should strobe.
-    const amount = design.strobe.enabled ? clamp(design.strobe.amountPercent / 100, 0, 1) : 1;
+  if (design.strobe.enabled) {
+    // Stable selection keeps the same stars affected while editing the blink rhythm.
+    const amount = clamp(design.strobe.amountPercent / 100, 0, 1);
     const affected = amount >= 1 || (particle.i * 0.6180339887) % 1 < amount;
     if (affected) {
       const phase = (time * design.strobe.frequencyHz + particle.i * design.strobe.desync) % 1;
       const lit = phase < design.strobe.dutyCycle;
-      if (flairSizeStrobe) {
-        const dimSize = Math.min(flairSizeStrobe[0], flairSizeStrobe[1]);
-        const litSize = Math.max(flairSizeStrobe[0], flairSizeStrobe[1]);
-        particle.size = lit ? litSize : dimSize;
-      } else {
-        const litSize =
-          layer.head.opening.size.enabled || layer.head.closing.size.enabled
-            ? dynamicSize
-            : sizeBudget;
-        particle.size = lit
-          ? Math.max(particle.size, litSize)
-          : litSize * (design.strobe.dimPercent / 100);
+      // Darkness is visibility, not death: size zero would recycle the particle.
+      particle.size = dynamicSize;
+      if (!lit) {
+        if (design.strobe.dimPercent === 0) particle.alpha = 0;
+        else particle.size *= design.strobe.dimPercent / 100;
       }
     }
   }

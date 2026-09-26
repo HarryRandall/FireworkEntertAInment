@@ -1,4 +1,5 @@
 import { Button } from '@/ui/patterns/Button';
+import { unavailableControlReason } from '@showcrafter/firework-editor/availability';
 import { EDITOR_PARTS } from '@showcrafter/firework-editor/parts';
 import { presetSourceStatus } from '@showcrafter/firework-editor/presets';
 import { revertSection, sectionChanged } from '@showcrafter/firework-editor/sections';
@@ -56,7 +57,18 @@ export function rendererTabs({
       definition.part && definition.part !== 'flight'
         ? controls.design.stars[layer].enabled &&
           (definition.part !== 'trails' || controls.design.stars[layer].burstTrail.enabled)
-        : undefined;
+        : definition.id === 'smoke'
+          ? controls.design.launch.smoke.enabled
+          : definition.id === 'fx-strobe'
+            ? controls.design.strobe.enabled
+            : definition.id === 'fx-crackle'
+              ? controls.design.crackle.enabled
+              : definition.id === 'fx-split'
+                ? controls.design.split.enabled
+                : definition.id === 'launch-dot'
+                  ? controls.design.launch.shell.visible
+                  : undefined;
+    const unavailable = unavailableControlReason(controls.design, definition.scope, layer);
     const dirty = saved ? sectionChanged(definition.id, controls.design, saved) : false;
     const source = presetSourceStatus(controls.defaults, definition.kind);
     return {
@@ -67,7 +79,7 @@ export function rendererTabs({
       description: meta.description,
       eyebrow: meta.path.join(' / '),
       icon: Sparkles,
-      enabled,
+      enabled: unavailable ? false : enabled,
       content: (
         <div className="space-y-5">
           {source ? (
