@@ -110,8 +110,9 @@ DEFAULT_RECONSTRUCTION_SYSTEM_PROMPT = (
     "rather than fabricating precision. Use shapeAtPeak aspect ratio, major-axis rotation, anisotropy, "
     "radial variation and angular occupancy as the quantitative geometry evidence. The supported renderer "
     "geometries are sphere, crown, weeping, radial_arms, ring, split_cross, falling_tail, single_tail, "
-    "upward_fan, fragment_cloud, heart, five_point_star, pistil, pearls, fish, waterfall, whirl, bowtie, "
-    "roman_candle and fountain. Use rendererTuning for direct bounded control of burst speed, gravity, star "
+    "upward_fan, fragment_cloud, heart, five_point_star, pearls, fish, waterfall, whirl, bowtie, "
+    "roman_candle and fountain. A pistil uses sphere geometry with shell.pistil enabled. "
+    "Use rendererTuning for direct bounded control of burst speed, gravity, star "
     "lifetime and drag, trail density, persistence, gravity, drag and turbulence, head size, and the "
     "launch, head and trail colours. For aerial shots, timeOffsetSeconds is the sole hidden pre-roll control. "
     "The worker derives canonical lift time from observed burst onset minus that quantised cue time, so "
@@ -119,7 +120,10 @@ DEFAULT_RECONSTRUCTION_SYSTEM_PROMPT = (
     "Never guess a lift velocity because the worker inverts the engine's fixed-step shell physics. For aerial "
     "shells rendererTuning.shellLifeSeconds is only a carrier survival deadline and never controls the fade; "
     "the worker enforces headroom beyond the apex. Use star and trail lifetimes for fade timing. Ground-emitter "
-    "emission timing is derived from the measured sequence or spray duration. rendererTuning.panDegrees is a direct "
+    "emission timing is derived from the measured sequence or spray duration. For fountains use "
+    "rendererTuning.emissionRate for sparks per second (1 to 600, starting prior 140); changing starCount "
+    "does not change fountain density. Roman candle count comes from the observed ejections. "
+    "rendererTuning.panDegrees is a direct "
     "engine-aim correction for trusted-render refinements; otherwise leave it null so the worker inverts the measured "
     "trajectory with the source aspect ratio and carrier physics. Use null only when the measured mapping should remain authoritative. "
     "When refining a candidate, translate every trusted-engine priority issue into concrete rendererTuning "
@@ -772,7 +776,6 @@ def normalize_import_spec(spec, source_name, duration):
             geometry_evidence
             if isinstance(geometry_evidence, dict)
             else {
-                "countPercent": 88,
                 "scaleX": 1,
                 "scaleY": 1,
                 "depthScale": 0.12,

@@ -473,3 +473,19 @@ remain. A separate authenticated browser tab opened the converted Fountain
 Default and showed 126 sparks per second, 7.8 seconds and Saved, without editing
 or saving it. The temporary verification stack was stopped and removed after
 its tests; the working local database and the user's browser tab remain running.
+
+The import integration pass found that Python still emitted removed geometry
+count multipliers, duration ranges, trail version and launch appearance mode.
+Those payloads passed Python's tests but failed the app's strict renderer parser.
+The worker now writes direct layer counts, fountain sparks per second and ground
+emission duration. Roman candle counts come from observed ejections. Short
+fountain windows use the renderer's 0.1-second lower bound. Pistils are spherical
+designs with an explicitly enabled inner layer, not a separate geometry.
+
+`pnpm test:import-contract` now exercises actual Python output through the app's
+strict validator for all 19 supported geometries, including a pistil composition.
+It simulates fountain rates of 12.5, 25 and 600 sparks per second with independent
+durations, plus a four-shot Roman candle. CI's worker job runs this check alongside
+the Python suite. Worker candidate provenance advances with the mapper; renderer
+source bytes and the app/worker/database renderer fingerprint are unchanged.
+Existing import evidence is not rewritten. The worker still requires deployment.
