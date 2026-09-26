@@ -32,7 +32,7 @@ export function isGroundFireworkEffect(design: FireworkDesign): boolean {
 }
 export function estimateFireworkLiftTimeSeconds(design: FireworkDesign, panDegrees = 0): number {
   if (isGroundFireworkEffect(design)) return 0;
-  const liftVelocity = design.liftVelocity ?? 11 + Math.min(design.size / 40, 6);
+  const liftVelocity = design.liftVelocity;
   const panRadians = ((Number.isFinite(panDegrees) ? panDegrees : 0) * Math.PI) / 180;
   const dragK = 0.5 * 0.47 * 1.22 * (Math.PI / 10000);
   const shellMass = 0.5;

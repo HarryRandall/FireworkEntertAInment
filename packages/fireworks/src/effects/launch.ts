@@ -49,7 +49,6 @@ export function effectFire(
   const shellColor = resolveLaunchColor(shell.colour, liftColor, rng).multiplyScalar(
     shell.brightness,
   );
-  const size = design.size;
   if (design.geometry === 'upward_fan') {
     effectFireMine(ctx, design, position, color, rng, options.audible, smokeRng, budget);
     return;
@@ -65,26 +64,14 @@ export function effectFire(
   if (options.audible && design.sound.launch) ctx.sh.playRandomMortar(1.0, rng);
   ctx.lights.newLight({ x: position.x, y: 30, z: position.z }, new THREE.Color(0.7, 0.3, 0), 10);
   effectSpawnMortarSmoke(ctx, position, design, smokeRng);
-  const liftVelocity = design.liftVelocity ?? 11 + Math.min(size / 40, 6);
+  const liftVelocity = design.liftVelocity;
   const panRadians = ((options.panDegrees ?? 0) * Math.PI) / 180;
   const tiltRadians = ((options.tiltDegrees ?? 0) * Math.PI) / 180;
   const lateralVelocity = Math.sin(panRadians) * Math.max(1.2, liftVelocity * 0.62);
   const forwardVelocity = Math.sin(tiltRadians) * Math.max(1.0, liftVelocity * 0.42);
   const verticalVelocity = liftVelocity * Math.max(0.82, Math.cos(panRadians) * 0.96);
   const liftRiseHeight = estimateShellRiseHeight(verticalVelocity, design.shellLife);
-  // Star count can be tiny, but the ascending carrier still needs enough
-  // size budget to survive its decay until apex and trigger detonation.
-  const shellSize = Math.max(size, 110) * shell.sizeScale;
-  // The carrier dies when its size reaches zero (see Particle.update). A small
-  // shell.sizeScale (e.g. the 0.25 used by style-default previews) shrinks the
-  // carrier enough that a high random decay can exhaust it before apex, so
-  // `detonate` never fires and the whole burst silently fails to appear. Cap
-  // the decay so the carrier always outlives its estimated time to apex,
-  // regardless of scale. Full-size shells keep their original decay because
-  // their larger size budget already survives comfortably.
-  const apexSeconds = Math.max(0.1, verticalVelocity / 9.82);
-  const survivalDecay = shellSize / (apexSeconds * 1.6 + 0.5);
-  const shellDecay = Math.min(10 + rng.next() * 20, survivalDecay);
+  const shellSize = shell.size;
   const guidedShellVisible = shell.visible && usesGuidedLiftPath(design.launch.liftParticles);
   let liftPreviousPosition: Pos | null = null;
   ctx.pp.new({
@@ -105,7 +92,7 @@ export function effectFire(
     g: shellColor.g,
     b: shellColor.b,
     life: design.shellLife,
-    decay: shellDecay,
+    decay: 0,
     effect: (p, dt, t) => {
       const previousPosition = liftPreviousPosition;
       effectShellEffect(
@@ -113,10 +100,8 @@ export function effectFire(
         p,
         dt,
         t,
-        seed,
         liftColor,
         design,
-        rng,
         liftRng,
         smokeRng,
         position.y,
@@ -207,7 +192,7 @@ export function effectSpawnGuidedLaunchShell(
 ): void {
   const shell = design.launch.shell;
   const life = Math.max(0.032, dt * 1.8);
-  const size = clamp(shellSize * 0.28, 8, 34);
+  const size = shellSize;
   ctx.pp.new({
     x: point.x,
     y: point.y,
@@ -224,7 +209,7 @@ export function effectSpawnGuidedLaunchShell(
     s: 0.5,
     l: 0.5,
     life,
-    decay: size / life,
+    decay: 0,
   });
 }
 export function effectShellEffect(
@@ -232,10 +217,8 @@ export function effectShellEffect(
   particle: Particle,
   dt: number,
   time: number,
-  seed: 1 | 2 | 3,
   color: THREE.Color,
   design: FireworkDesign,
-  rng: RandomSource,
   liftRng: RandomSource,
   smokeRng: RandomSource,
   liftOriginY: number,
@@ -244,32 +227,10 @@ export function effectShellEffect(
   shellSize: number,
   previousPosition: Pos | null = null,
 ): void {
-  let max = 1;
-  let vx = 0;
-  let vz = 0;
   const liftParticles = design.launch.liftParticles;
   const shellTrail = design.launch.shell.trail;
-  switch (seed) {
-    case 1:
-      max = 8 + rng.next() * 28;
-      break;
-    case 2:
-      // Tiny lateral wobble — was a strong spiral. Don't translate the
-      // shell; just let the trail particles (below) inherit a small drift.
-      particle.vx += (rng.next() - 0.5) * 0.05;
-      particle.vz += (rng.next() - 0.5) * 0.05;
-      max = 6 + rng.next() * 22;
-      break;
-    case 3:
-      particle.size = (rng.next() > 0.5 ? 150 : 10) * design.launch.shell.sizeScale;
-      max = 5 + rng.next() * 14;
-      vx = 2 - rng.next() * 4;
-      vz = 2 - rng.next() * 4;
-      break;
-  }
-  const liftTrailMultiplier = 1;
   const smoke = design.launch.smoke;
-  const baseCount = Math.max(1, Math.floor(max * SHELL_TRAIL_DENSITY * liftTrailMultiplier));
+  const baseCount = Math.floor((8 + liftRng.next() * 28) * SHELL_TRAIL_DENSITY);
   const liftHeightPercent = clamp(liftParticles.height / 100, 0, 1);
   const liftStopY = liftOriginY + liftRiseHeight * liftHeightPercent;
   const liftAge = liftPathAge(particle.y, liftOriginY, liftStopY);
@@ -368,7 +329,6 @@ export function effectShellEffect(
           ? 0
           : particle.vx * liftParticles.motion.inheritedVelocity +
             liftParticles.motion.driftX +
-            vx +
             (liftRng.next() - 0.5) * (liftVelocityScatter + liftParticles.motion.turbulence),
         vy: lockToShellPath
           ? 0
@@ -380,7 +340,6 @@ export function effectShellEffect(
           ? 0
           : particle.vz * liftParticles.motion.inheritedVelocity +
             liftParticles.motion.driftZ +
-            vz +
             (liftRng.next() - 0.5) * (liftVelocityScatter + liftParticles.motion.turbulence),
         r: sparkTone.r,
         g: sparkTone.g,
@@ -426,9 +385,9 @@ export function effectShellEffect(
       drag: 1.35 + smoke.drift * 0.35,
       size: smokeSize,
       alpha: smoke.opacity,
-      vx: vx + smoke.windX + (smokeRng.next() - 0.5) * smoke.drift,
+      vx: smoke.windX + (smokeRng.next() - 0.5) * smoke.drift,
       vy: smoke.height / Math.max(1, smoke.lifeSeconds * 260) + smokeRng.next() * 0.14,
-      vz: vz + smoke.windZ + (smokeRng.next() - 0.5) * smoke.drift,
+      vz: smoke.windZ + (smokeRng.next() - 0.5) * smoke.drift,
       r: smokeColor.r * colourGain,
       g: smokeColor.g * colourGain,
       b: smokeColor.b * colourGain,

@@ -8,6 +8,20 @@ import {
 import { compileFireworkDesign } from '../src/design.ts';
 import { groundEmissionDuration, starEmissionCount } from '../src/emission.ts';
 
+test('launch conversion resolves count-derived defaults without retaining the size multiplier', () => {
+  const input = {
+    stars: { outer: { count: 160, emissionRate: 140 } },
+    launch: { shell: { sizeScale: 0.25 } },
+  };
+  const converted = convertEmissionDesign(input);
+  assert.equal(converted.liftVelocity, 15);
+  assert.deepEqual(converted.launch.shell, { size: 40 });
+  assert.deepEqual(convertEmissionDesign(converted), converted);
+  assert.deepEqual(convertEmissionPart({ launch: { shell: { sizeScale: 0.25 } } }), {
+    launch: { shell: { size: 27.5 } },
+  });
+});
+
 test('waterfall width conversion removes count coupling and is idempotent', () => {
   const input = {
     geometry: 'waterfall',

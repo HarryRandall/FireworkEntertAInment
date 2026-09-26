@@ -50,7 +50,7 @@ function makeNeutralLaunchDefaults(): JsonRecord {
     shell: {
       visible: false,
       shape: 'circle',
-      sizeScale: 0.25,
+      size: 27.5,
       brightness: 0,
       trail: { tubeDiameter: 0, frontAngle: 0, tailAngle: 0, curve: 1 },
     },

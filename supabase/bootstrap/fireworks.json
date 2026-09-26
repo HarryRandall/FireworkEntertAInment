@@ -379,7 +379,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -387,7 +386,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -1260,7 +1260,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -1268,7 +1267,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -2152,7 +2152,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -2160,7 +2159,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -3044,7 +3044,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -3052,7 +3051,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -3925,7 +3925,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -3933,7 +3932,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -4764,7 +4764,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -4772,7 +4771,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -5634,7 +5634,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -5642,7 +5641,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -6515,7 +6515,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -6523,7 +6522,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -7407,7 +7407,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -7415,7 +7414,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -8299,7 +8299,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -8307,7 +8306,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -9193,7 +9193,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -9201,7 +9200,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -10085,7 +10085,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -10093,7 +10092,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -10977,7 +10977,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -10985,7 +10984,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -11858,7 +11858,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -11866,7 +11865,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -12739,7 +12739,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -12747,7 +12746,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -13620,7 +13620,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -13628,7 +13627,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -14515,7 +14515,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -14523,7 +14522,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -15407,7 +15407,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -15415,7 +15414,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -16323,7 +16323,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -16331,7 +16330,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -17226,7 +17226,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -17234,7 +17233,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -18107,7 +18107,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -18115,7 +18114,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -18988,7 +18988,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -18996,7 +18995,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -19869,7 +19869,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -19877,7 +19876,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -20750,7 +20750,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -20758,7 +20757,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -21642,7 +21642,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -21650,7 +21649,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -22523,7 +22523,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -22531,7 +22530,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -23404,7 +23404,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -23412,7 +23411,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -24296,7 +24296,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -24304,7 +24303,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -25188,7 +25188,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -25196,7 +25195,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -26069,7 +26069,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -26077,7 +26076,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -26966,7 +26966,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -26974,7 +26973,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -27858,7 +27858,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -27866,7 +27865,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -28750,7 +28750,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -28758,7 +28757,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -29642,7 +29642,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -29650,7 +29649,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -30536,7 +30536,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -30544,7 +30543,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -31428,7 +31428,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -31436,7 +31435,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -32320,7 +32320,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -32328,7 +32327,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -33203,7 +33203,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -33211,7 +33210,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -34084,7 +34084,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -34092,7 +34091,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -34965,7 +34965,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -34973,7 +34972,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -35835,7 +35835,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -35843,7 +35842,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -36705,7 +36705,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -36713,7 +36712,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -37579,7 +37579,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -37587,7 +37586,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -38418,7 +38418,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -38426,7 +38425,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -39301,7 +39301,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -39309,7 +39308,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -40184,7 +40184,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -40192,7 +40191,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -41065,7 +41065,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -41073,7 +41072,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -41957,7 +41957,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -41965,7 +41964,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -42849,7 +42849,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -42857,7 +42856,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -43882,7 +43882,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -43890,7 +43889,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -44785,7 +44785,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -44793,7 +44792,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -45677,7 +45677,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -45685,7 +45684,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -46558,7 +46558,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -46566,7 +46565,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -47428,7 +47428,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -47436,7 +47435,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -48298,7 +48298,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -48306,7 +48305,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -49170,7 +49170,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -49178,7 +49177,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -50042,7 +50042,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -50050,7 +50049,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -50890,7 +50890,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -50898,7 +50897,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -51771,7 +51771,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -51779,7 +51778,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -52663,7 +52663,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -52671,7 +52670,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -53599,7 +53599,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -53607,7 +53606,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -54513,7 +54513,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -54521,7 +54520,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -55405,7 +55405,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -55413,7 +55412,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -56286,7 +56286,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -56294,7 +56293,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -57167,7 +57167,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -57175,7 +57174,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -58059,7 +58059,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -58067,7 +58066,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -58953,7 +58953,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -58961,7 +58960,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -59845,7 +59845,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -59853,7 +59852,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -60737,7 +60737,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -60745,7 +60744,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -61629,7 +61629,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -61637,7 +61636,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -62512,7 +62512,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -62520,7 +62519,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -63393,7 +63393,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -63401,7 +63400,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -64460,7 +64460,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -64468,7 +64467,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -65376,7 +65376,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -65384,7 +65383,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -66268,7 +66268,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -66276,7 +66275,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -67162,7 +67162,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -67170,7 +67169,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -68054,7 +68054,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -68062,7 +68061,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -68946,7 +68946,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -68954,7 +68953,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -70011,7 +70011,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -70019,7 +70018,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -70925,7 +70925,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -70933,7 +70932,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -71808,7 +71808,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -71816,7 +71815,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -72689,7 +72689,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -72697,7 +72696,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -73572,7 +73572,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -73580,7 +73579,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -74442,7 +74442,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -74450,7 +74449,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -75323,7 +75323,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -75331,7 +75330,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -76204,7 +76204,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -76212,7 +76211,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -77074,7 +77074,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -77082,7 +77081,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -77955,7 +77955,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -77963,7 +77962,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -78849,7 +78849,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -78857,7 +78856,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,
@@ -79741,7 +79741,6 @@
         "shell": {
           "visible": true,
           "shape": "circle",
-          "sizeScale": 1,
           "brightness": 1,
           "glowStrength": 1.5,
           "trail": {
@@ -79749,7 +79748,8 @@
             "frontAngle": 0,
             "tailAngle": 0,
             "curve": 1
-          }
+          },
+          "size": 110
         },
         "liftParticles": {
           "enabled": true,

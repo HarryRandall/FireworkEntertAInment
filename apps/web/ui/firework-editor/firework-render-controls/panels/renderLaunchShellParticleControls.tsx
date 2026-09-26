@@ -13,8 +13,8 @@ import {
   hexToRgbObject,
   LAUNCH_SHELL_BRIGHTNESS_MAX,
   LAUNCH_SHELL_SHAPE_OPTIONS,
-  LAUNCH_SHELL_SIZE_SCALE_MAX,
-  LAUNCH_SHELL_SIZE_SCALE_MIN,
+  LAUNCH_SHELL_SIZE_MAX,
+  LAUNCH_SHELL_SIZE_MIN,
   rgbObjectToHex,
   round2,
 } from '@showcrafter/firework-editor/control-values';
@@ -67,16 +67,15 @@ export function renderLaunchShellParticleControls(context: RendererControlsConte
       />
       <SliderField
         label="Shell size"
-        min={LAUNCH_SHELL_SIZE_SCALE_MIN}
-        max={LAUNCH_SHELL_SIZE_SCALE_MAX}
-        step={0.05}
-        value={shell.sizeScale}
-        formatValue={formatMultiplier}
+        min={LAUNCH_SHELL_SIZE_MIN}
+        max={LAUNCH_SHELL_SIZE_MAX}
+        step={0.1}
+        value={shell.size}
         showNumberInput
         inputAriaLabel="Shell particle size value"
         disabled={disabled || !shellVisible}
-        hint="Size multiplier for the rising carrier particle."
-        onChange={(value) => setLaunchValue('shell', 'sizeScale', round2(value))}
+        hint="Size of the rising shell, independent of the number of stars and the launch path."
+        onChange={(value) => setLaunchValue('shell', 'size', value)}
       />
       <SliderField
         inputKind="slider"

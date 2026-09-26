@@ -225,9 +225,7 @@ export const TRAIL_SPACING_CURVE_MAX = 4;
 
 export const TRAIL_ROTATION_MAX = 8;
 
-export const LAUNCH_SHELL_SIZE_SCALE_MIN = 0.25;
-
-export const LAUNCH_SHELL_SIZE_SCALE_MAX = 4;
+export { LAUNCH_SHELL_SIZE_MIN, LAUNCH_SHELL_SIZE_MAX } from '@showcrafter/fireworks/design';
 
 export const LAUNCH_SHELL_BRIGHTNESS_MAX = 3;
 

@@ -198,6 +198,10 @@ export const ColorSchema = z.union([RgbSchema, z.literal('random')]);
 
 export const DEFAULT_STAR_COUNT = 100;
 export const MAX_STAR_COUNT = 200;
+export const DEFAULT_LIFT_VELOCITY = 13.5;
+export const LAUNCH_SHELL_SIZE_MIN = 1;
+export const LAUNCH_SHELL_SIZE_MAX = 1000;
+export const DEFAULT_LAUNCH_SHELL_SIZE = 110;
 export const DEFAULT_FOUNTAIN_RATE = 140;
 export const MAX_FOUNTAIN_RATE = 600;
 

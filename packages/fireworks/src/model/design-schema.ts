@@ -11,6 +11,7 @@ import {
   HEAD_APPEARANCE_DEFAULTS,
   MAX_STAR_COUNT,
   DEFAULT_STAR_COUNT,
+  DEFAULT_LIFT_VELOCITY,
   DEFAULT_FOUNTAIN_RATE,
   STAR_HEAD_CLOSING_DEFAULTS,
   STAR_HEAD_OPENING_DEFAULTS,
@@ -40,7 +41,7 @@ export const FireworkDesignSchema = z
     /** Fraction of the burst that takes the secondary/accent colour (0..1).
      *  Defaults to ~0.22 in the renderer when omitted. */
     secondaryColorRatio: z.coerce.number().min(0).max(1).optional(),
-    liftVelocity: z.coerce.number().min(0).max(40).optional(),
+    liftVelocity: z.coerce.number().min(0).max(40).default(DEFAULT_LIFT_VELOCITY),
     shellLife: z.coerce.number().min(2).max(60).default(20),
     pattern: z.enum(FIREWORK_PATTERNS).default('fibonacci'),
     geometry: z.enum(FIREWORK_GEOMETRIES).default('sphere'),

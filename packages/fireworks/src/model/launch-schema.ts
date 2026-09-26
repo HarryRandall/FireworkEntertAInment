@@ -8,6 +8,9 @@ import {
   BURST_TRAIL_FLICKER_LIFE_MAX,
   ColorSchema,
   LAUNCH_SHELL_SHAPES,
+  LAUNCH_SHELL_SIZE_MIN,
+  LAUNCH_SHELL_SIZE_MAX,
+  DEFAULT_LAUNCH_SHELL_SIZE,
   RgbSchema,
 } from './fields.ts';
 import { BurstTrailShapeWeightsSchema } from './trail-schema.ts';
@@ -30,7 +33,11 @@ export const LaunchShellSchema = z
     visible: z.boolean().default(true),
     shape: z.enum(LAUNCH_SHELL_SHAPES).default('circle'),
     colour: ColorSchema.optional(),
-    sizeScale: z.coerce.number().min(0.25).max(4).default(1),
+    size: z.coerce
+      .number()
+      .min(LAUNCH_SHELL_SIZE_MIN)
+      .max(LAUNCH_SHELL_SIZE_MAX)
+      .default(DEFAULT_LAUNCH_SHELL_SIZE),
     brightness: z.coerce.number().min(0).max(3).default(1),
     glowStrength: z.coerce
       .number()
@@ -42,7 +49,7 @@ export const LaunchShellSchema = z
   .default({
     visible: true,
     shape: 'circle',
-    sizeScale: 1,
+    size: DEFAULT_LAUNCH_SHELL_SIZE,
     brightness: 1,
     glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
     trail: { tubeDiameter: 0, frontAngle: 0, tailAngle: 0, curve: 1 },
@@ -207,7 +214,7 @@ export const LaunchSchema = z
     shell: {
       visible: true,
       shape: 'circle',
-      sizeScale: 1,
+      size: DEFAULT_LAUNCH_SHELL_SIZE,
       brightness: 1,
       glowStrength: DEFAULT_HEAD_GLOW_STRENGTH,
       trail: { tubeDiameter: 0, frontAngle: 0, tailAngle: 0, curve: 1 },

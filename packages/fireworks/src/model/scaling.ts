@@ -70,7 +70,7 @@ export function scaleDesignForEmphasis(
   });
   const outer = scaleLayer(design.stars.outer);
   const core = scaleLayer(design.stars.core);
-  const liftVelocity = design.liftVelocity ?? 11 + Math.min(design.size / 40, 6);
+  const liftVelocity = design.liftVelocity;
   return {
     ...design,
     size: outer.count,

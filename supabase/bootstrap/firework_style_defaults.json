@@ -152,9 +152,9 @@
             "r": 1
           },
           "visible": true,
-          "sizeScale": 1.1,
           "brightness": 1.35,
-          "glowStrength": 1.1
+          "glowStrength": 1.1,
+          "size": 121.00000000000001
         },
         "liftParticles": {
           "amount": 660,
@@ -407,9 +407,9 @@
             "r": 0.85
           },
           "visible": true,
-          "sizeScale": 0.9,
           "brightness": 1.7,
-          "glowStrength": 2
+          "glowStrength": 2,
+          "size": 99
         },
         "liftParticles": {
           "amount": 220,
@@ -762,9 +762,9 @@
             "r": 1
           },
           "visible": true,
-          "sizeScale": 1,
           "brightness": 1.6,
-          "glowStrength": 1.9
+          "glowStrength": 1.9,
+          "size": 110
         },
         "liftParticles": {
           "amount": 180,
@@ -2406,9 +2406,9 @@
             "tubeDiameter": 0
           },
           "visible": true,
-          "sizeScale": 0.65,
           "brightness": 1.4,
-          "glowStrength": 1.8
+          "glowStrength": 1.8,
+          "size": 71.5
         },
         "liftParticles": {
           "amount": 0,
@@ -3227,9 +3227,9 @@
             "frontAngle": 0,
             "tubeDiameter": 0
           },
-          "sizeScale": 1,
           "brightness": 1,
-          "glowStrength": 1.5
+          "glowStrength": 1.5,
+          "size": 110
         },
         "liftParticles": {
           "amount": 100,
@@ -3772,9 +3772,9 @@
             "r": 0.92
           },
           "visible": true,
-          "sizeScale": 1.15,
           "brightness": 2.2,
-          "glowStrength": 2.4
+          "glowStrength": 2.4,
+          "size": 126.49999999999999
         },
         "liftParticles": {
           "amount": 260,
@@ -4235,9 +4235,9 @@
             "tubeDiameter": 5
           },
           "visible": true,
-          "sizeScale": 1.5,
           "brightness": 1.5,
-          "glowStrength": 1.8
+          "glowStrength": 1.8,
+          "size": 165
         },
         "liftParticles": {
           "amount": 140,

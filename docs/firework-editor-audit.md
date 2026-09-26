@@ -514,3 +514,38 @@ plus the production build. All 68 worker tests, the import contract check, UI
 audit, conversion transaction tests and eight local SQL suites passed. Browser
 verification covered the converted 136.4 value, exact entry, keyboard adjustment
 and one-step undo. Units now display without duplicating the editable value.
+
+Launch speed now has an explicit 13.5 default rather than deriving it from outer
+star count. Shell size is an independent value from 1 to 1,000, replacing its
+count-dependent multiplier. Straight and guided shells honour that size without
+random shrinking or a hidden 8–34 cap. Tiny shells therefore survive until the
+burst. Distribution presets no longer change launch wobble, shell size or launch
+particle density. The unused replay trail guide and its duplicated count/gravity
+rules are removed; active multishot aim markers retain their own disposal helper.
+
+The local launch conversion updated 123 records, retaining originals in
+`.tmp/renderer-backups/launch-before-20260926.json`. It resolves missing flight
+speed and shell multipliers once, preserves explicit values, converts copied
+presets, and verifies a second pass is empty. Bootstrap data is updated, and
+the local database, app and worker agree on migration `20260926000800`'s final
+renderer fingerprint. Hosted environments still need the coordinated release.
+
+Simulation tests cover all distributions, counts of 1 and 200, shell sizes of
+1/27.5/110/500/1,000, guided drawing and a size-1 shell at maximum launch speed.
+All 48 catalogue timings are unchanged; 42 appearance hashes changed as expected
+from removing random launch mutations and separating launch randomness. Peak
+counts rose above 10% for normal Brocade (+12%), Strobe (+64.9%) and Whirl (+33.8%),
+and disabled-colour Strobe (+11%) and Whirl (+17%). A temporary in-memory
+counterfactual restored only pattern-specific launch density: Strobe's peak fell
+from 1,337 to 859 and Whirl from 1,477 to 1,062. These are intentional removal of
+hidden preset suppression, not performance clearance. Explicit launch emission
+rates and dense-show frame measurements remain required before release.
+
+Browser checks verified saved size 110, exact size 1 and one-step undo. The full
+app gate passed with 608 app, 57 package and 11 database-tooling tests, plus the
+production build. Worker/import checks, UI audit, conversion transaction tests
+and eight local SQL suites passed. Seven existing lint warnings remain.
+The count-dependent scene flash and
+the duplicate top-level `size` field remain to remove. Maximum flight time also
+needs a defined outcome when it expires before apex, rather than a disappearing
+carrier.

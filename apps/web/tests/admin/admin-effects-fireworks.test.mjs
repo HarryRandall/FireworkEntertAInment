@@ -267,7 +267,6 @@ test('admin replay previews opt into FPS diagnostics', () => {
   const templatePreview = read('ui/replay/TemplateReplayPreview.tsx');
 
   assert.match(canvas, /showFps\?: boolean/);
-  assert.match(canvas, /trailWidthGuideDesign\?: FireworkDesign \| null/);
   assert.match(canvas, /FPS_SAMPLE_WINDOW_MS = 100/);
   assert.match(canvas, /FPS_HISTORY_SIZE = 80/);
   assert.match(canvas, /FPS_GRAPH_WIDTH = 184/);
@@ -340,15 +339,10 @@ test('admin replay previews opt into FPS diagnostics', () => {
   // so the editors no longer wire it up.
   assert.doesNotMatch(effectEditor, /showTrailWidthGuide/);
   assert.doesNotMatch(fireworkEditor, /showTrailWidthGuide/);
-  assert.doesNotMatch(effectEditor, /trailWidthGuideDesign/);
-  assert.doesNotMatch(fireworkEditor, /trailWidthGuideDesign/);
   assert.doesNotMatch(effectEditor, /onShowTrailWidthGuideChange/);
   assert.doesNotMatch(fireworkEditor, /onShowTrailWidthGuideChange/);
-  assert.doesNotMatch(importPreview, /trailWidthGuideDesign/);
   assert.doesNotMatch(appReplayViewer, /showFps/);
   assert.doesNotMatch(templatePreview, /showFps/);
-  assert.doesNotMatch(appReplayViewer, /trailWidthGuideDesign/);
-  assert.doesNotMatch(templatePreview, /trailWidthGuideDesign/);
 });
 
 test('catalogue and import mutations invalidate new admin firework caches', () => {

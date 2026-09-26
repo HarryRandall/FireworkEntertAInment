@@ -72,6 +72,21 @@ function convertWaterfallWidth(result, source, count) {
   delete result.geometryTuning.waterfall.curtainWidth;
 }
 
+function convertLaunchSettings(result, source, count, complete) {
+  if (complete || source.liftVelocity != null || source.launch?.liftParticles) {
+    result.liftVelocity = source.liftVelocity ?? 11 + Math.min(count / 40, 6);
+  }
+  if (complete || source.launch?.shell) {
+    const shell = source.launch?.shell ?? {};
+    result.launch ??= {};
+    result.launch.shell = {
+      ...shell,
+      size: shell.size ?? Math.max(count, 110) * (shell.sizeScale ?? 1),
+    };
+    delete result.launch.shell.sizeScale;
+  }
+}
+
 export function convertEmissionDesign(input, { includeProvenance = true } = {}) {
   if (!object(input)) throw new Error('Expected an object containing renderer settings.');
   const source = extractBaseDefaults(input);
@@ -107,6 +122,7 @@ export function convertEmissionDesign(input, { includeProvenance = true } = {}) 
   }
   cleanTuning(result.geometryTuning);
   convertWaterfallWidth(result, source, parsed.stars.outer.count);
+  convertLaunchSettings(result, source, parsed.stars.outer.count, true);
   if (includeProvenance) convertProvenance(result, source);
   // Reject converted values outside the new supported ranges, never clamp them.
   compileFireworkDesign({ variantOverrides: result });
@@ -133,6 +149,7 @@ export function convertEmissionPart(input) {
     if (result.geometryTuning.waterfall)
       convertWaterfallWidth(result, input, input.stars?.outer?.count ?? 100);
   }
+  convertLaunchSettings(result, input, input.stars?.outer?.count ?? 100, false);
   convertProvenance(result, input);
   compileFireworkDesign({ variantOverrides: result });
   return result;

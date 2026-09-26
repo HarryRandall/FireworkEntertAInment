@@ -101,7 +101,8 @@
         },
         "launch": {
           "shell": {
-            "shape": "circle"
+            "shape": "circle",
+            "size": 110
           }
         },
         "mortar": {
@@ -408,6 +409,11 @@
           "waterfall": {
             "width": 68.2
           }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
         }
       }
     },
@@ -567,6 +573,11 @@
           "waterfall": {
             "width": 176
           }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
         }
       }
     },
@@ -719,6 +730,11 @@
           },
           "waterfall": {
             "width": 70.4
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
           }
         }
       }
@@ -879,6 +895,11 @@
           "waterfall": {
             "width": 2.2
           }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
         }
       }
     },
@@ -1031,6 +1052,11 @@
           },
           "waterfall": {
             "width": 138.6
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
           }
         }
       }
@@ -1190,6 +1216,11 @@
           },
           "waterfall": {
             "width": 136.4
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
           }
         }
       }
@@ -1389,6 +1420,11 @@
           "waterfall": {
             "width": 132
           }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
         }
       }
     },
@@ -1542,6 +1578,11 @@
           "waterfall": {
             "width": 24.2
           }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
         }
       }
     },
@@ -1694,6 +1735,11 @@
           },
           "waterfall": {
             "width": 158.4
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
           }
         }
       }
@@ -1853,6 +1899,11 @@
           },
           "waterfall": {
             "width": 198
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
           }
         }
       }
@@ -2241,6 +2292,11 @@
           "waterfall": {
             "width": 176
           }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
         }
       }
     },
@@ -2420,6 +2476,11 @@
           "waterfall": {
             "width": 103.4
           }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
         }
       }
     },
@@ -2573,6 +2634,11 @@
           "waterfall": {
             "width": 57.2
           }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
         }
       }
     },
@@ -2725,6 +2791,11 @@
           },
           "waterfall": {
             "width": 154
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
           }
         }
       }
@@ -2885,6 +2956,11 @@
           "waterfall": {
             "width": 13.2
           }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
         }
       }
     },
@@ -3037,6 +3113,11 @@
           },
           "waterfall": {
             "width": 88
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
           }
         }
       }
@@ -3241,6 +3322,11 @@
           },
           "waterfall": {
             "width": 180.4
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
           }
         }
       }
@@ -3533,6 +3619,11 @@
           },
           "waterfall": {
             "width": 72.6
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
           }
         }
       }
@@ -3991,9 +4082,9 @@
               "tubeDiameter": 2
             },
             "visible": true,
-            "sizeScale": 0.85,
             "brightness": 1.65,
-            "glowStrength": 1.9
+            "glowStrength": 1.9,
+            "size": 93.5
           },
           "smoke": {
             "size": 80,
@@ -4257,6 +4348,11 @@
           },
           "waterfall": {
             "width": 94.6
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
           }
         }
       }
@@ -4715,9 +4811,9 @@
               "tubeDiameter": 2.5
             },
             "visible": true,
-            "sizeScale": 0.9,
             "brightness": 1.55,
-            "glowStrength": 1.8
+            "glowStrength": 1.8,
+            "size": 99
           },
           "smoke": {
             "size": 84,
@@ -5005,6 +5101,11 @@
           "waterfall": {
             "width": 8.8
           }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
         }
       }
     },
@@ -5157,6 +5258,11 @@
           },
           "waterfall": {
             "width": 154
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
           }
         }
       }
@@ -5361,6 +5467,9 @@
             "enabled": true,
             "particles": 40,
             "lifeSeconds": 2.3
+          },
+          "shell": {
+            "size": 110
           }
         },
         "mortar": {
@@ -5649,6 +5758,11 @@
           },
           "waterfall": {
             "width": 79.2
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
           }
         }
       }

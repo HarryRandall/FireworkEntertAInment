@@ -117,7 +117,7 @@ export function useRenderControls({
       : typeof mortarDefaults.sound === 'boolean'
         ? mortarDefaults.sound
         : design.sound.launch;
-  const liftVelocity = design.liftVelocity ?? 11 + Math.min(design.size / 40, 6);
+  const liftVelocity = design.liftVelocity;
   const sectionDisabled = {
     liftParticles: disabled || !liftParticlesEnabled,
     smoke: disabled || !smokeEnabled,
