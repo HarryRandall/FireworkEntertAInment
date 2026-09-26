@@ -30,7 +30,7 @@ const [
   { rankAssortmentMusic },
 ] = await Promise.all([
   import('../../lib/fireworks/timing-profile.ts'),
-  import('../../lib/fireworks/design.ts'),
+  import('@showcrafter/fireworks/design'),
   import('../../lib/cue-generation/music-product-matching.ts'),
   import('../../lib/music-recommendations.ts'),
 ]);

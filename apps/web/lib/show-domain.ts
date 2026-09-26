@@ -6,8 +6,8 @@
  * modules; this file is the contract they expose to the rest of the app.
  */
 
-import type { FireworkSpec } from '@/lib/fireworks/spec';
-import type { FireworkDesign, LaunchPosition } from '@/lib/fireworks/design';
+import type { FireworkSpec } from '@showcrafter/fireworks/spec';
+import type { FireworkDesign, LaunchPosition } from '@showcrafter/fireworks/design';
 import type { ShowCover } from '@/lib/cover';
 
 export type ShowStatus = 'draft' | 'complete';
@@ -87,7 +87,7 @@ export type FireworkSpecification = {
   hasLaunchPositionOverrides?: boolean;
   /** Absolute launch positions used by multishot children. */
   launchPositionOverrideIndices?: number[];
-  spec: FireworkSpec;
+  spec: FireworkSpec | null;
   rawSpec: unknown;
   renderDesign: FireworkDesign | null;
   baseEffect: {

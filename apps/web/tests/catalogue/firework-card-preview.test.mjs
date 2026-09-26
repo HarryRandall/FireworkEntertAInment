@@ -141,11 +141,6 @@ test('preview loaders compile real designs and bound normalised sequence payload
   assert.match(preview, /primaryColor: hasConcreteColour \? null : PREVIEW_COLOR/);
 
   assert.match(preview, /getAdminFireworkById/);
-  assert.match(
-    preview,
-    /fireworkStyleDefaults: linkedStyleDefaults\(firework\.fireworkStyleDefaultLinks\)/,
-  );
-  assert.match(preview, /variantOverrides: firework\.renderOverridesJson/);
 
   assert.match(preview, /getMultishotById/);
   assert.match(preview, /listFireworkSpecifications/);

@@ -24,7 +24,10 @@ import {
   type FireworkCardPreviewPersistence,
   type FireworkCardPreviewPayload,
 } from '@/lib/firework-card-preview';
-import { estimateFireworkDesignTiming, isGroundFireworkEffect } from '@/lib/fireworks/timing';
+import {
+  estimateFireworkDesignTiming,
+  isGroundFireworkEffect,
+} from '@showcrafter/fireworks/timing';
 import type { ReplayCue } from '@/lib/show-domain';
 
 const HOVER_INTENT_MS = 500;

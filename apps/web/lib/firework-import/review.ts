@@ -8,8 +8,8 @@ import {
   type ImportReconstructionIssue,
   type ImportReconstructionPlan,
 } from '@/lib/firework-import/reconstruction';
-import { FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION } from '@/lib/firework-import/renderer-contract';
 import { IMPORT_RENDER_METRICS_SCHEMA_VERSION } from '@/lib/firework-import/render-metrics';
+import { FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION } from '@/lib/firework-import/renderer-contract';
 
 export type ImportOutputLike = {
   id: string;

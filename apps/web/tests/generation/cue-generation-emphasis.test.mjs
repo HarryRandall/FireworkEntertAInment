@@ -63,8 +63,8 @@ test('show cue projection, select and mapper thread emphasis through to replay',
 });
 
 test('renderer scales the design by per-cue emphasis in fireCue', () => {
-  const design = read('lib/fireworks/design.ts');
-  const engine = read('lib/fireworks/FireworksEngine.ts');
+  const design = read('../../packages/fireworks/src/model/scaling.ts');
+  const engine = read('../../packages/fireworks/src/FireworksEngine.ts');
 
   assert.match(design, /export function scaleDesignForEmphasis\(/);
   assert.match(design, /const EMPHASIS_SCALE: Record<'normal' \| 'accent' \| 'peak', number> = \{/);

@@ -1,7 +1,7 @@
 /** Static guards for the schema 1.4.0 downbeat-aware beat/slot grid. */
 
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { registerHooks } from 'node:module';
 import { join } from 'node:path';
 import { test } from 'node:test';

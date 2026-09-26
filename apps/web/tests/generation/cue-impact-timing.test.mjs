@@ -12,7 +12,7 @@ import {
   occupiedLaunchPositions,
   productFitsLaunchPositions,
 } from '../../lib/cue-generation/show-options.ts';
-import { Scheduler } from '../../lib/fireworks/Scheduler.ts';
+import { Scheduler } from '@showcrafter/fireworks/Scheduler';
 
 const root = process.cwd();
 

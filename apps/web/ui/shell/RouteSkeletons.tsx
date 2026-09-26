@@ -4,26 +4,8 @@
  * mirrors the layout of a specific page so the swap to real content
  * does not cause large layout shifts.
  */
-import type { ComponentType } from 'react';
 import Link from 'next/link';
-import {
-  ChevronLeft,
-  ChevronRight,
-  CircleDot,
-  Cloud,
-  History,
-  ListFilter,
-  Plus,
-  Rocket,
-  Save,
-  Search,
-  SlidersHorizontal,
-  Sparkles,
-  Undo2,
-  Volume2,
-  Wind,
-  Zap,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, ListFilter, Plus, Save, Search } from 'lucide-react';
 import { ReplayPanelLoadingStage } from '@/ui/replay/ReplayPanelLoadingStage';
 import { Button } from '@/ui/patterns/Button';
 import { Skeleton } from '@/ui/patterns/Feedback';
@@ -861,136 +843,67 @@ export function AdminMultishotEditorSkeleton() {
   );
 }
 
-/** Skeleton for style-default editor pages, which expose a narrow section rail. */
+/** Shared preview, inspector and parts layout while editor records load. */
 export function AdminStyleDefaultEditorSkeleton() {
   return (
     <AdminVisualEditorSkeleton
       label="Loading style default editor"
-      primaryTabs={[
-        { label: 'Details', icon: SlidersHorizontal },
-        { label: 'Trail', icon: Wind },
-      ]}
-      utilityTabs={[{ label: 'JSON', icon: BracesSkeletonIcon }]}
+      parts={['Preset settings', 'Utilities']}
     />
   );
 }
 
 function AdminVisualEditorSkeleton({
   label,
-  primaryTabs = [
-    { label: 'Details', icon: SlidersHorizontal },
-    { label: 'Star', icon: Sparkles },
-    { label: 'Star Inner', icon: CircleDot },
-    { label: 'Trail', icon: Wind },
-    { label: 'Launch', icon: Rocket },
-    { label: 'FX', icon: Zap },
-    { label: 'Smoke', icon: Cloud },
-    { label: 'Sound', icon: Volume2 },
-  ],
-  utilityTabs = [
-    { label: 'History', icon: History },
-    { label: 'JSON', icon: BracesSkeletonIcon },
-  ],
+  parts = ['Launch', 'Burst', 'Trails', 'Extra effects', 'Timing', 'Sound', 'Utilities'],
 }: {
   label: string;
-  primaryTabs?: EditorSkeletonTab[];
-  utilityTabs?: EditorSkeletonTab[];
+  parts?: string[];
 }) {
   return (
     <div
-      className="grid h-full min-h-0 w-full min-w-0 flex-1 overflow-hidden rounded-none bg-[color:var(--color-bg-default)] lg:grid-cols-[minmax(0,1fr)_60px]"
+      className="bg-background flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden"
       aria-label={label}
+      aria-busy="true"
     >
-      <section className="bg-stage-night relative min-h-[520px] overflow-hidden text-white lg:min-h-0">
-        <ReplayPanelLoadingStage />
-
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex flex-col gap-3 px-4 pt-6 pb-4 sm:px-5 sm:pb-5">
-          <div className="flex flex-wrap items-start justify-end gap-3 pr-16 sm:pr-[4.5rem]">
-            <div className="pointer-events-auto flex shrink-0 items-center gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                tabIndex={-1}
-                aria-disabled
-                className="pointer-events-none h-9 rounded-lg border-white/15 bg-white/8 px-3 text-xs text-white backdrop-blur-md hover:bg-white/14 hover:text-white"
-              >
-                <Undo2 size={14} />
-                Revert
-              </Button>
-              <Button
-                type="button"
-                tabIndex={-1}
-                aria-disabled
-                className="text-hl-contrast pointer-events-none h-9 rounded-lg bg-[color:var(--hl)] px-4 text-xs font-semibold hover:bg-[color:var(--hl)]/85"
-              >
-                <Save size={14} />
-                Save
-              </Button>
-            </div>
+      <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_256px_168px] lg:overflow-hidden">
+        <section className="bg-stage-night relative min-h-[320px] overflow-hidden text-white lg:min-h-0">
+          <ReplayPanelLoadingStage />
+        </section>
+        <aside
+          className="border-border min-w-0 border-t lg:border-t-0 lg:border-l"
+          aria-label="Loading settings"
+        >
+          <div className="space-y-5 p-3">
+            {Array.from({ length: 4 }, (_, index) => (
+              <div className="space-y-2" key={index}>
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-8 w-full" />
+              </div>
+            ))}
           </div>
-        </div>
-      </section>
-
-      <aside className="grid min-h-0 border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] lg:grid-cols-[60px] lg:border-t-0 lg:border-l">
-        <div className="order-1 flex min-w-0 gap-1 overflow-x-auto bg-[color:var(--color-bg-muted)] p-2 lg:order-2 lg:flex-col lg:items-center lg:gap-1 lg:overflow-x-visible lg:overflow-y-auto lg:px-0 lg:py-2.5">
-          <nav
-            className="flex min-w-0 gap-1 lg:min-h-0 lg:w-full lg:flex-1 lg:flex-col lg:items-center"
-            aria-label="Editor sections"
-          >
-            {primaryTabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <div
-                  key={tab.label}
-                  className="relative flex h-[46px] min-w-[58px] shrink-0 flex-col items-center justify-center gap-1 rounded-[10px] border border-transparent px-2 text-center text-[color:var(--color-content-subtle)] lg:h-11 lg:w-11 lg:min-w-11 lg:px-1"
-                >
-                  <Icon size={16} />
-                  <span className="max-h-[1.1rem] max-w-full overflow-hidden text-[8.5px] leading-[1.05] font-semibold tracking-normal">
-                    {tab.label}
-                  </span>
-                </div>
-              );
-            })}
-            <div className="hidden flex-1 lg:block" aria-hidden />
+        </aside>
+        <aside className="border-border hidden border-l p-2 lg:block" aria-label="Firework parts">
+          {parts.map((part) => (
             <div
-              className="hidden h-px w-full shrink-0 bg-[color:var(--color-border-subtle)] lg:block"
-              aria-hidden
-            />
-            {utilityTabs.map((tab) => {
-              const Icon = tab.icon;
-              return (
-                <div
-                  key={tab.label}
-                  className="relative flex h-[46px] min-w-[58px] shrink-0 flex-col items-center justify-center gap-1 rounded-[10px] border border-transparent px-2 text-center text-[color:var(--color-content-subtle)] lg:h-11 lg:w-11 lg:min-w-11 lg:px-1"
-                >
-                  <Icon size={16} />
-                  <span className="max-h-[1.1rem] max-w-full overflow-hidden text-[8.5px] leading-[1.05] font-semibold tracking-normal">
-                    {tab.label}
-                  </span>
-                </div>
-              );
-            })}
-          </nav>
-        </div>
-      </aside>
+              key={part}
+              className="text-muted-foreground flex items-center gap-1 px-2 py-1.5 text-xs font-semibold"
+            >
+              <ChevronRight size={12} />
+              {part}
+            </div>
+          ))}
+        </aside>
+      </div>
+      <div className="border-border flex items-center justify-end gap-2 border-t px-3 py-2">
+        <Skeleton className="mr-auto h-3 w-16" />
+        <Skeleton className="h-8 w-24" />
+        <Button size="sm" disabled>
+          <Save size={15} />
+          Save
+        </Button>
+      </div>
     </div>
-  );
-}
-
-type EditorSkeletonTab = {
-  label: string;
-  icon: ComponentType<{ size?: number }>;
-};
-
-function BracesSkeletonIcon({ size = 18 }: { size?: number }) {
-  return (
-    <span
-      className="font-mono text-[18px] leading-none text-current"
-      style={{ fontSize: size }}
-      aria-hidden
-    >
-      {'{}'}
-    </span>
   );
 }
 

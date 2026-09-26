@@ -152,9 +152,9 @@
             "r": 1
           },
           "visible": true,
-          "sizeScale": 1.1,
           "brightness": 1.35,
-          "glowStrength": 1.1
+          "glowStrength": 1.1,
+          "size": 121.00000000000001
         },
         "liftParticles": {
           "amount": 660,
@@ -234,24 +234,21 @@
         "romanCandle": {
           "spread": 0.42,
           "azimuth": 0.28,
-          "minShots": 6,
           "riseBase": 1.15,
           "speedBase": 1.05,
           "depthScale": 0.16,
           "dragPercent": 62,
           "lifePercent": 96,
           "lateralScale": 0.2,
-          "shotsPercent": 12,
           "muzzleScatter": 8,
           "riseVariation": 0.24,
           "speedVariation": 0.24,
-          "durationPercent": 52,
           "headSizePercent": 96,
           "trailLifePercent": 92,
-          "durationMaxSeconds": 12,
-          "durationMinSeconds": 4
+          "durationSeconds": 10.4
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 320,
     "is_archived": false,
@@ -411,9 +408,9 @@
             "r": 0.85
           },
           "visible": true,
-          "sizeScale": 0.9,
           "brightness": 1.7,
-          "glowStrength": 2
+          "glowStrength": 2,
+          "size": 99
         },
         "liftParticles": {
           "amount": 220,
@@ -601,7 +598,8 @@
             "flairColorMode": "mixed"
           },
           "count": 38,
-          "enabled": false
+          "enabled": false,
+          "emissionRate": 53.2
         },
         "outer": {
           "head": {
@@ -671,7 +669,8 @@
             "flairColorMode": "bombColor"
           },
           "count": 80,
-          "enabled": true
+          "enabled": true,
+          "emissionRate": 112
         }
       }
     },
@@ -699,13 +698,13 @@
           "dragPercent": 24,
           "gravityBase": -0.27,
           "lifePercent": 160,
-          "countPercent": 94,
-          "curtainWidth": 3.2,
           "headSizePercent": 70,
           "gravityVariation": 0.22,
-          "fallSpeedVariation": 1.1
+          "fallSpeedVariation": 1.1,
+          "width": 320
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 290,
     "is_archived": false,
@@ -723,13 +722,11 @@
       "geometryTuning": {
         "upwardFan": {
           "fanBase": 0.5,
-          "minCount": 48,
           "riseBase": 18,
           "riseSpeed": 1.35,
           "depthScale": 0.3,
           "dragPercent": 54,
           "lifePercent": 82,
-          "countPercent": 120,
           "fanVariation": 0.62,
           "spawnScatter": 26,
           "riseVariation": 16,
@@ -738,7 +735,8 @@
           "riseSpeedVariation": 0.65,
           "spreadAngleDegrees": 190
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 310,
     "is_archived": false,
@@ -767,9 +765,9 @@
             "r": 1
           },
           "visible": true,
-          "sizeScale": 1,
           "brightness": 1.6,
-          "glowStrength": 1.9
+          "glowStrength": 1.9,
+          "size": 110
         },
         "liftParticles": {
           "amount": 180,
@@ -1074,7 +1072,6 @@
         "fish": {
           "wiggleRate": 13,
           "dragPercent": 50,
-          "countPercent": 82,
           "verticalScale": 0.22,
           "gravityPercent": 48,
           "wiggleStrength": 2.4,
@@ -1084,7 +1081,8 @@
           "trailLifePercent": 68,
           "lifeVariationSeconds": 2.2
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 280,
     "is_archived": false,
@@ -1101,10 +1099,8 @@
       "geometry": "whirl",
       "geometryTuning": {
         "whirl": {
-          "minCount": 40,
           "spinRate": 15,
           "dragPercent": 54,
-          "countPercent": 38,
           "spinStrength": 3.3,
           "verticalBias": -0.08,
           "gravityPercent": 62,
@@ -1113,7 +1109,8 @@
           "trailLifePercent": 82,
           "lifeVariationSeconds": 2.4
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 300,
     "is_archived": false,
@@ -1313,7 +1310,8 @@
             "flairColorMode": "mixed"
           },
           "count": 100,
-          "enabled": true
+          "enabled": true,
+          "emissionRate": 140
         }
       }
     },
@@ -1870,7 +1868,8 @@
             "flairColorMode": "mixed"
           },
           "count": 38,
-          "enabled": false
+          "enabled": false,
+          "emissionRate": 53.2
         },
         "outer": {
           "head": {
@@ -1938,7 +1937,8 @@
             "flairColorMode": "mixed"
           },
           "count": 97,
-          "enabled": true
+          "enabled": true,
+          "emissionRate": 135.8
         }
       }
     },
@@ -2106,7 +2106,7 @@
     "kind": "sound",
     "defaults_json": {
       "sound": {
-        "boom": "auto",
+        "boom": "light",
         "launch": true
       },
       "mortar": {
@@ -2259,7 +2259,8 @@
             "airResistancePercent": 100
           },
           "count": 38,
-          "enabled": false
+          "enabled": false,
+          "emissionRate": 53.2
         },
         "outer": {
           "head": {
@@ -2331,7 +2332,8 @@
             "airResistancePercent": 100
           },
           "count": 100,
-          "enabled": true
+          "enabled": true,
+          "emissionRate": 140
         }
       }
     },
@@ -2409,9 +2411,9 @@
             "tubeDiameter": 0
           },
           "visible": true,
-          "sizeScale": 0.65,
           "brightness": 1.4,
-          "glowStrength": 1.8
+          "glowStrength": 1.8,
+          "size": 71.5
         },
         "liftParticles": {
           "amount": 0,
@@ -2632,7 +2634,8 @@
           "liftVariation": 0.45,
           "spreadVariation": 0.26
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 220,
     "is_archived": false,
@@ -2651,12 +2654,12 @@
         "bowtie": {
           "depthScale": 0.1,
           "lengthBase": 0.94,
-          "countPercent": 88,
           "verticalScale": 0.3,
           "fanAngleDegrees": 126,
           "lengthVariation": 0.14
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 270,
     "is_archived": false,
@@ -2693,7 +2696,8 @@
             "flairColorMode": "mixed"
           },
           "count": 34,
-          "enabled": true
+          "enabled": true,
+          "emissionRate": 47.6
         },
         "outer": {
           "head": {
@@ -2717,7 +2721,8 @@
             "flairColorMode": "bombColor"
           },
           "count": 92,
-          "enabled": true
+          "enabled": true,
+          "emissionRate": 128.8
         }
       }
     },
@@ -2777,11 +2782,11 @@
         "ring": {
           "wobble": 0.12,
           "lifePercent": 92,
-          "countPercent": 76,
           "tiltVariation": 0.75,
           "verticalSquash": 0.98
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 210,
     "is_archived": false,
@@ -2932,12 +2937,12 @@
           "scaleX": 1,
           "scaleY": 1.05,
           "depthScale": 0.035,
-          "countPercent": 92,
           "outlineJitter": 0.018,
           "tiltVariation": 0.18,
           "rotationDegrees": 0
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 250,
     "is_archived": false,
@@ -3231,9 +3236,9 @@
             "frontAngle": 0,
             "tubeDiameter": 0
           },
-          "sizeScale": 1,
           "brightness": 1,
-          "glowStrength": 1.5
+          "glowStrength": 1.5,
+          "size": 110
         },
         "liftParticles": {
           "amount": 100,
@@ -3310,7 +3315,8 @@
           "gravityPercent": 40,
           "spreadVariation": 0.24
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 230,
     "is_archived": false,
@@ -3463,10 +3469,10 @@
           "armLength": 0.92,
           "angleJitter": 0.06,
           "dragPercent": 70,
-          "countPercent": 62,
           "liftVariation": 0.25
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 240,
     "is_archived": false,
@@ -3488,12 +3494,12 @@
           "scaleY": 1.08,
           "depthScale": 0.035,
           "innerRadius": 0.42,
-          "countPercent": 94,
           "outlineJitter": 0.018,
           "tiltVariation": 0.18,
           "rotationDegrees": -90
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 260,
     "is_archived": false,
@@ -3550,19 +3556,16 @@
           "speedBase": 0.7,
           "dragPercent": 105,
           "lifePercent": 72,
-          "ratePercent": 180,
           "lateralScale": 0.42,
           "spawnScatter": 7,
           "speedVariation": 0.65,
-          "durationPercent": 42,
           "headSizePercent": 44,
           "coneAngleDegrees": 38,
-          "minRatePerSecond": 60,
           "trailLifePercent": 58,
-          "durationMaxSeconds": 14,
-          "durationMinSeconds": 4
+          "durationSeconds": 8.4
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 330,
     "is_archived": false,
@@ -3782,9 +3785,9 @@
             "r": 0.92
           },
           "visible": true,
-          "sizeScale": 1.15,
           "brightness": 2.2,
-          "glowStrength": 2.4
+          "glowStrength": 2.4,
+          "size": 126.49999999999999
         },
         "liftParticles": {
           "amount": 260,
@@ -4144,7 +4147,8 @@
             "flairColorMode": "bombColor"
           },
           "count": 84,
-          "enabled": true
+          "enabled": true,
+          "emissionRate": 117.6
         }
       }
     },
@@ -4195,7 +4199,8 @@
             "flairColorMode": "bombColor"
           },
           "count": 82,
-          "enabled": true
+          "enabled": true,
+          "emissionRate": 114.8
         }
       }
     },
@@ -4243,9 +4248,9 @@
             "tubeDiameter": 5
           },
           "visible": true,
-          "sizeScale": 1.5,
           "brightness": 1.5,
-          "glowStrength": 1.8
+          "glowStrength": 1.8,
+          "size": 165
         },
         "liftParticles": {
           "amount": 140,
@@ -4334,7 +4339,8 @@
     "description": "A balanced spherical burst with the current renderer's natural variation.",
     "kind": "geometry",
     "defaults_json": {
-      "geometry": "sphere"
+      "geometry": "sphere",
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 200,
     "is_archived": false,

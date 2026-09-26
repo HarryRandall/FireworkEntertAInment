@@ -16,17 +16,26 @@ type FireworkBrowseCardProps = {
   className?: string;
   persistedPosterUrl?: string | null;
   persistPoster?: boolean;
+  previewError?: string | null;
 };
 
-function PreviewState({ loading, failed }: { loading: boolean; failed: boolean }) {
-  if (failed) {
+function PreviewState({
+  loading,
+  failed,
+  error,
+}: {
+  loading: boolean;
+  failed: boolean;
+  error?: string | null;
+}) {
+  if (failed || error) {
     return (
       <span
         className="flex items-center gap-2 rounded-md border border-white/15 bg-black/65 px-3 py-2 text-xs font-medium text-white shadow-sm"
         role="status"
       >
         <CircleAlert size={15} aria-hidden />
-        Preview unavailable
+        {error ?? 'Preview unavailable'}
       </span>
     );
   }
@@ -59,12 +68,13 @@ export function FireworkBrowseCard({
   className,
   persistedPosterUrl = null,
   persistPoster = false,
+  previewError = null,
 }: FireworkBrowseCardProps) {
   const browsePreview = useFireworkBrowsePreview();
   const mediaRef = useRef<HTMLDivElement | null>(null);
   const posterRef = useRef<HTMLImageElement | null>(null);
   const sessionPosterUrl = browsePreview?.posterUrls.get(previewUrl) ?? null;
-  const posterUrl = sessionPosterUrl ?? persistedPosterUrl;
+  const posterUrl = previewError ? null : (sessionPosterUrl ?? persistedPosterUrl);
   const [loadedPosterUrl, setLoadedPosterUrl] = useState<string | null>(null);
   const [failedPosterUrl, setFailedPosterUrl] = useState<string | null>(null);
   const isActive = browsePreview?.activeId === previewId;
@@ -73,9 +83,16 @@ export function FireworkBrowseCard({
   const isLoading = Boolean(isActive && !isReady && !isFailed);
   const posterLoaded = Boolean(posterUrl && loadedPosterUrl === posterUrl);
   const shouldPersistPoster =
-    persistPoster && (!persistedPosterUrl || failedPosterUrl === persistedPosterUrl);
+    !previewError &&
+    persistPoster &&
+    (!persistedPosterUrl || failedPosterUrl === persistedPosterUrl);
   const queuePosterCapture = browsePreview?.queuePosterCapture;
   const unqueuePosterCapture = browsePreview?.unqueuePosterCapture;
+  const releasePreview = browsePreview?.releasePreview;
+
+  useEffect(() => {
+    if (previewError) releasePreview?.(previewId);
+  }, [previewError, previewId, releasePreview]);
 
   useEffect(() => {
     const image = posterRef.current;
@@ -98,7 +115,7 @@ export function FireworkBrowseCard({
   }, [previewId, previewUrl, queuePosterCapture, shouldPersistPoster, unqueuePosterCapture]);
 
   const startPreview = () => {
-    if (!mediaRef.current) return;
+    if (previewError || !mediaRef.current) return;
     browsePreview?.requestPreview(previewId, previewUrl, mediaRef.current, {
       persist: shouldPersistPoster,
     });
@@ -147,10 +164,10 @@ export function FireworkBrowseCard({
       <div
         className={cn(
           'pointer-events-none absolute inset-0 z-10 flex items-end justify-end p-3 transition-opacity duration-150',
-          isReady && 'opacity-0',
+          isReady && !previewError && 'opacity-0',
         )}
       >
-        <PreviewState loading={isLoading} failed={Boolean(isFailed)} />
+        <PreviewState loading={isLoading} failed={Boolean(isFailed)} error={previewError} />
       </div>
     </div>
   );
@@ -165,7 +182,7 @@ export function FireworkBrowseCard({
       <Link
         href={href}
         prefetch={false}
-        aria-label={`Open ${label}`}
+        aria-label={`Open ${label}${previewError ? `. ${previewError}` : ''}`}
         className={cn('block', cardClasses)}
         onPointerEnter={handlePointerEnter}
         onPointerLeave={handlePointerLeave}
@@ -188,12 +205,13 @@ export function FireworkBrowseCard({
         {media}
         <button
           type="button"
+          disabled={Boolean(previewError)}
           aria-label={`${isActive ? 'Stop' : 'Preview'} ${label}`}
           className="absolute inset-0 z-20 rounded-t-xl focus:outline-none"
           onFocus={startPreview}
           onBlur={stopPreview}
           onClick={() => {
-            if (!mediaRef.current) return;
+            if (previewError || !mediaRef.current) return;
             browsePreview?.togglePreview(previewId, previewUrl, mediaRef.current, {
               persist: shouldPersistPoster,
             });

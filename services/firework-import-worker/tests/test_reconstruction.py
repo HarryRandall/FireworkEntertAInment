@@ -43,7 +43,7 @@ GEOMETRY_CASES = [
     ("fragment_cloud", "crackle", "crackle"),
     ("heart", "heart-shell", "none"),
     ("five_point_star", "outlined-star-shell", "none"),
-    ("pistil", "pistil", "none"),
+    ("sphere", "pistil", "none"),
     ("pearls", "pearls", "pearls"),
     ("fish", "silverFish", "fish"),
     ("waterfall", "waterfall", "waterfall"),
@@ -62,7 +62,6 @@ def make_spec(
     burst_time: float = 1.2, colour: str = "#ff0000", confidence: float = 0.9
 ):
     geometry_evidence = {
-        "countPercent": 88.0,
         "scaleX": 1.0,
         "scaleY": 1.0,
         "depthScale": 0.12,
@@ -668,11 +667,10 @@ class ReconstructionTests(unittest.TestCase):
         self.assertEqual(len(reconstruction["shots"]), 1)
         self.assertEqual(reconstruction["shots"][0]["timeOffsetSeconds"], 0.0)
         self.assertEqual(reconstruction["shots"][0]["observedBurstTimeSeconds"], 0.25)
-        self.assertEqual(shape["minShots"], 4)
-        self.assertEqual(shape["shotsPercent"], 1)
-        self.assertEqual(shape["durationPercent"], 100)
-        self.assertAlmostEqual(shape["durationMinSeconds"], 4.0)
-        self.assertAlmostEqual(shape["durationMaxSeconds"], 4.0)
+        self.assertEqual(
+            reconstruction["designs"][0]["design"]["stars"]["outer"]["count"], 4,
+        )
+        self.assertAlmostEqual(shape["durationSeconds"], 4.0)
         self.assertLess(outer_life[1], 0.5)
         self.assertTrue(
             any(
@@ -705,7 +703,7 @@ class ReconstructionTests(unittest.TestCase):
             "romanCandle"
         ]
         cue_start = reachable["shots"][0]["timeOffsetSeconds"]
-        emission_duration = reachable_shape["durationMinSeconds"]
+        emission_duration = reachable_shape["durationSeconds"]
         rendered_emissions = [
             cue_start + (index + 0.5) * emission_duration / 4 for index in range(4)
         ]
@@ -986,8 +984,17 @@ class ReconstructionTests(unittest.TestCase):
 
         self.assertEqual(len(reconstruction["shots"]), 1)
         self.assertEqual(reconstruction["shots"][0]["timeOffsetSeconds"], 0.5)
-        self.assertAlmostEqual(shape["durationMinSeconds"], 2.25)
-        self.assertAlmostEqual(shape["durationMaxSeconds"], 2.25)
+        self.assertAlmostEqual(shape["durationSeconds"], 2.25)
+        self.assertEqual(design["stars"]["outer"]["emissionRate"], 140)
+
+        spec["effectSpec"]["shots"][0]["rendererTuning"] = renderer_tuning(
+            emissionRate=12.5, starCount=199, shellLifeSeconds=60,
+        )
+        changed = build_renderer_reconstruction(
+            spec, observations, {"hasAudio": False}, {"scores": []},
+        )["designs"][0]["design"]
+        self.assertEqual(changed["stars"]["outer"]["emissionRate"], 12.5)
+        self.assertEqual(changed["geometryTuning"]["fountain"]["durationSeconds"], 2.25)
         self.assertLess(design["stars"]["outer"]["burst"]["life"][1], 0.4)
 
     def test_mixed_aerial_and_roman_shots_are_not_collapsed(self):

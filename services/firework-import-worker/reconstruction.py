@@ -16,7 +16,7 @@ import requests
 
 
 RECONSTRUCTION_CONTRACT_VERSION = 1
-PIPELINE_VERSION = "firework-reconstruction-v10"
+PIPELINE_VERSION = "firework-reconstruction-v11"
 RETRYABLE_STATUS_CODES = {408, 409, 425, 429, 500, 502, 503, 504}
 
 
@@ -49,7 +49,6 @@ ENGINE_GEOMETRIES = [
     "fragment_cloud",
     "heart",
     "five_point_star",
-    "pistil",
     "pearls",
     "fish",
     "waterfall",
@@ -114,7 +113,6 @@ IMPORT_EFFECT_FAMILIES = [
 
 GEOMETRY_EVIDENCE_SCHEMA = _strict_object(
     {
-        "countPercent": {"type": "number", "minimum": 1, "maximum": 200},
         "scaleX": {"type": "number", "minimum": 0.2, "maximum": 2.5},
         "scaleY": {"type": "number", "minimum": 0.2, "maximum": 2.5},
         "depthScale": {"type": "number", "minimum": 0, "maximum": 1.5},
@@ -123,7 +121,6 @@ GEOMETRY_EVIDENCE_SCHEMA = _strict_object(
         "confidence": {"type": "number", "minimum": 0, "maximum": 1},
     },
     [
-        "countPercent",
         "scaleX",
         "scaleY",
         "depthScale",
@@ -142,7 +139,16 @@ RENDERER_TUNING_PROPERTIES = {
     "starLifeMaxSeconds": _nullable({"type": "number", "minimum": 0.05, "maximum": 30}),
     "airResistancePercent": _nullable({"type": "number", "minimum": 0, "maximum": 300}),
     "terminalVelocity": _nullable({"type": "number", "minimum": 0, "maximum": 18}),
-    "starCount": _nullable({"type": "integer", "minimum": 1, "maximum": 100}),
+    "burstFlashIntensity": _nullable({"type": "number", "minimum": 0, "maximum": 4}),
+    "starCount": _nullable({"type": "integer", "minimum": 1, "maximum": 200}),
+    "emissionRate": _nullable(
+        {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 600,
+            "description": "Fountain sparks per second, independent of emission duration.",
+        }
+    ),
     "trailParticlesPerStar": _nullable(
         {"type": "integer", "minimum": 0, "maximum": 2000}
     ),
@@ -1226,7 +1232,7 @@ GEOMETRY_BY_FAMILY = {
     "crackle": "fragment_cloud",
     "heart-shell": "heart",
     "outlined-star-shell": "five_point_star",
-    "pistil": "pistil",
+    "pistil": "sphere",
     "pearls": "pearls",
     "silverFish": "fish",
     "waterfall": "waterfall",
@@ -1367,9 +1373,7 @@ def _geometry_tuning(
     evidence: dict[str, Any],
     *,
     emission_duration_seconds: float | None = None,
-    emission_peak_count: int | None = None,
 ) -> dict[str, Any] | None:
-    count = _clamp(evidence.get("countPercent"), 1, 200, 88)
     scale_x = _clamp(evidence.get("scaleX"), 0.2, 2.5, 1)
     scale_y = _clamp(evidence.get("scaleY"), 0.2, 2.5, 1)
     depth = _clamp(evidence.get("depthScale"), 0, 1.5, 0.12)
@@ -1378,7 +1382,6 @@ def _geometry_tuning(
     groups: dict[str, dict[str, Any]] = {
         "ring": {
             "ring": {
-                "countPercent": min(100, count),
                 "wobble": min(1, depth),
                 "verticalSquash": min(1.5, scale_y),
                 "tiltVariation": min(3, spread * 1.5),
@@ -1388,19 +1391,14 @@ def _geometry_tuning(
         "weeping": {"weeping": {"lift": min(2, scale_y * 0.35), "spread": spread}},
         "radial_arms": {
             "radialArms": {
-                "countPercent": min(100, count),
                 "armLength": min(2, scale_x * 0.74),
                 "angleJitter": min(1, depth),
             }
         },
-        "falling_tail": {
-            "fallingTail": {"countPercent": min(100, count), "spread": spread}
-        },
-        "pearls": {"pearls": {"countPercent": min(100, count), "spread": spread}},
-        "fragment_cloud": {"fragmentCloud": {"countPercent": min(100, count)}},
+        "falling_tail": {"fallingTail": {"spread": spread}},
+        "pearls": {"pearls": {"spread": spread}},
         "heart": {
             "heart": {
-                "countPercent": min(100, count),
                 "scaleX": scale_x,
                 "scaleY": scale_y,
                 "depthScale": min(1, depth),
@@ -1409,7 +1407,6 @@ def _geometry_tuning(
         },
         "five_point_star": {
             "fivePointStar": {
-                "countPercent": min(100, count),
                 "points": 5,
                 "scaleX": scale_x,
                 "scaleY": scale_y,
@@ -1419,25 +1416,21 @@ def _geometry_tuning(
         },
         "bowtie": {
             "bowtie": {
-                "countPercent": min(100, count),
                 "fanAngleDegrees": 10 + spread / 2 * 170,
                 "verticalScale": min(1.5, scale_y),
                 "depthScale": depth,
                 "lengthBase": min(2, scale_x),
             }
         },
-        "fish": {"fish": {"countPercent": count, "verticalScale": min(1.5, scale_y)}},
+        "fish": {"fish": {"verticalScale": min(1.5, scale_y)}},
         "waterfall": {
             "waterfall": {
-                "countPercent": count,
-                "curtainWidth": min(6, scale_x * 2.2),
+                "width": round(scale_x * 220, 4),
                 "sideDrift": min(2, spread * 0.45),
                 "depthDrift": min(2, depth),
             }
         },
-        "whirl": {
-            "whirl": {"countPercent": count, "spinStrength": min(10, spread * 3.6)}
-        },
+        "whirl": {"whirl": {"spinStrength": min(10, spread * 3.6)}},
         "single_tail": {
             "singleTail": {
                 "driftPercent": min(100, spread * 24),
@@ -1446,7 +1439,6 @@ def _geometry_tuning(
         },
         "upward_fan": {
             "upwardFan": {
-                "countPercent": count,
                 "spreadAngleDegrees": 10 + spread / 2 * 290,
                 "depthScale": depth,
             }
@@ -1457,20 +1449,8 @@ def _geometry_tuning(
                 "depthScale": depth,
                 **(
                     {
-                        "shotsPercent": 1,
-                        "minShots": max(1, min(60, int(emission_peak_count or 1))),
-                        "durationPercent": 100,
-                        "durationMinSeconds": _clamp(
-                            emission_duration_seconds,
-                            0.5,
-                            30,
-                            3,
-                        ),
-                        "durationMaxSeconds": _clamp(
-                            emission_duration_seconds,
-                            1,
-                            30,
-                            3,
+                        "durationSeconds": _clamp(
+                            emission_duration_seconds, 0.1, 30, 8,
                         ),
                     }
                     if emission_duration_seconds is not None
@@ -1484,18 +1464,8 @@ def _geometry_tuning(
                 "lateralScale": min(1.5, scale_x * 0.55),
                 **(
                     {
-                        "durationPercent": 100,
-                        "durationMinSeconds": _clamp(
-                            emission_duration_seconds,
-                            0.5,
-                            30,
-                            2.5,
-                        ),
-                        "durationMaxSeconds": _clamp(
-                            emission_duration_seconds,
-                            1,
-                            30,
-                            2.5,
+                        "durationSeconds": _clamp(
+                            emission_duration_seconds, 0.1, 30, 5.2,
                         ),
                     }
                     if emission_duration_seconds is not None
@@ -1660,12 +1630,12 @@ def _aggregate_continuous_ground_observation(
         cadence_reachable = (
             ideal_cue_start_seconds >= 0
             and 0 < emission_interval_seconds
-            and len(emission_times) <= 60
-            and 1 <= emission_duration_seconds <= 30
+            and len(emission_times) <= 200
+            and 0.1 <= emission_duration_seconds <= 30
             and cadence_error_seconds <= max(ENGINE_FIXED_STEP_SECONDS, 0.08)
         )
     elif geometry == "roman_candle":
-        emission_duration_seconds = max(1.0, particle_fade_seconds)
+        emission_duration_seconds = max(0.1, particle_fade_seconds)
         ideal_cue_start_seconds = (
             first_emission_seconds - emission_duration_seconds * 0.5
         )
@@ -1676,7 +1646,7 @@ def _aggregate_continuous_ground_observation(
         )
         cadence_reachable = (
             ideal_cue_start_seconds >= 0
-            and 1 <= emission_duration_seconds <= 30
+            and 0.1 <= emission_duration_seconds <= 30
             and cadence_error_seconds <= ENGINE_FIXED_STEP_SECONDS
         )
     else:
@@ -1691,8 +1661,8 @@ def _aggregate_continuous_ground_observation(
             )
             for burst in bursts
         )
-        emission_duration_seconds = max(0.5, end_seconds - cue_start_seconds)
-        cadence_reachable = 1 <= emission_duration_seconds <= 30
+        emission_duration_seconds = end_seconds - cue_start_seconds
+        cadence_reachable = 0.1 <= emission_duration_seconds <= 30
     strongest = max(
         bursts,
         key=lambda burst: (
@@ -2181,22 +2151,28 @@ def renderer_design_from_spec(
         or launch.get("tailColor")
         or primary
     )
-    star_count = round(
-        _tuned_number(
-            tuning,
-            "starCount",
-            1,
-            100,
-            _clamp(
-                float(shell.get("size") or 3)
-                * float(shell.get("starDensity") or 1)
-                * 22,
+    # Roman candle peaks are individual ejections, not a density multiplier.
+    star_count = (
+        max(1, min(200, int(observation.get("sequencePeakCount") or 1)))
+        if geometry == "roman_candle"
+        else round(
+            _tuned_number(
+                tuning,
+                "starCount",
                 1,
-                100,
-                72,
-            ),
+                200,
+                _clamp(
+                    float(shell.get("size") or 3)
+                    * float(shell.get("starDensity") or 1)
+                    * 22,
+                    1,
+                    200,
+                    100,
+                ),
+            )
         )
     )
+    emission_rate = round(_tuned_number(tuning, "emissionRate", 1, 600, 140), 4)
     speed_range = _ordered_tuned_range(
         tuning,
         "burstSpeedMin",
@@ -2236,7 +2212,6 @@ def renderer_design_from_spec(
         "flairColorMode": "mixed" if secondary else "bombColor",
     }
     burst_trail = {
-        "version": 2,
         "enabled": trail_enabled,
         "preset": PRESET_BY_FAMILY.get(
             family,
@@ -2341,7 +2316,7 @@ def renderer_design_from_spec(
         ground_emission_duration = (
             _clamp(
                 observation.get("emissionDurationSeconds"),
-                0.5,
+                0.1,
                 30,
                 fade_seconds,
             )
@@ -2383,6 +2358,7 @@ def renderer_design_from_spec(
         "colour": {"enabled": True},
         "color": _rgb(primary),
         "secondaryColorRatio": 0.24 if secondary else 0,
+        "burstFlashIntensity": round(_tuned_number(tuning, "burstFlashIntensity", 0, 4, 0.5), 4),
         "liftVelocity": round(lift_velocity, 4),
         "shellLife": round(shell_life, 4),
         "pattern": "strobe" if is_strobe else "fibonacci",
@@ -2392,6 +2368,7 @@ def renderer_design_from_spec(
             "outer": {
                 "enabled": True,
                 "count": star_count,
+                "emissionRate": emission_rate,
                 "color": _rgb(primary),
                 "burst": burst,
                 "burstTrail": burst_trail,
@@ -2406,6 +2383,7 @@ def renderer_design_from_spec(
             "core": {
                 "enabled": bool(shell.get("pistil")),
                 "count": max(1, round(star_count * 0.38)),
+                "emissionRate": round(max(1, emission_rate * 0.38), 4),
                 "color": _rgb(shell.get("pistilColor") or secondary or primary),
             },
         },
@@ -2416,7 +2394,6 @@ def renderer_design_from_spec(
                 "brightness": 1.15,
             },
             "liftParticles": {
-                "appearanceMode": "custom",
                 "enabled": bool(launch.get("enabled", True)) and not is_ground_emitter,
                 "amount": round(
                     _clamp(
@@ -2456,16 +2433,11 @@ def renderer_design_from_spec(
         emission_duration_seconds=(
             _clamp(
                 observation.get("emissionDurationSeconds"),
-                0.5,
+                0.1,
                 30,
                 fade_seconds,
             )
             if geometry in {"roman_candle", "fountain"}
-            else None
-        ),
-        emission_peak_count=(
-            int(observation.get("sequencePeakCount") or 1)
-            if geometry == "roman_candle"
             else None
         ),
     )
@@ -2706,7 +2678,7 @@ def build_renderer_reconstruction(
         ):
             mapping_unknowns.append(
                 "Engine limit: the observed fountain emission window is outside the "
-                "renderer-supported 1 to 30 second range."
+                "renderer-supported 0.1 to 30 second range."
             )
         if (
             _geometry in {"roman_candle", "fountain"}

@@ -2,10 +2,15 @@
 
 /** URL-backed browser for base effects and renderer style defaults. */
 
-import { useMemo, useState } from 'react';
-import { ListFilter, Plus, Search } from 'lucide-react';
-import { createCustomStarEffect } from '../actions';
-import { createStyleDefaultFromKind } from '../style-default-actions';
+import {
+  ADMIN_EFFECTS_BASE_VIEW,
+  adminEffectsViewDescription,
+  adminEffectsViewLabel,
+  type AdminEffectsView,
+} from '@/lib/admin-effects-navigation';
+import type { AdminEffectSummary, AdminStyleDefaultSummary } from '@/lib/admin.types';
+import { fireworkPreviewImageUrl, withFireworkPreviewRevision } from '@/lib/firework-preview-image';
+import { formatStableDateTime } from '@/lib/show-domain';
 import { FireworkBrowseCard } from '@/ui/catalogue/FireworkBrowseCard';
 import { FireworkBrowsePreviewProvider } from '@/ui/catalogue/FireworkBrowsePreviewContext';
 import { Badge } from '@/ui/patterns/Badge';
@@ -13,7 +18,6 @@ import { Button } from '@/ui/patterns/Button';
 import { EmptyNotice } from '@/ui/patterns/Feedback';
 import { Input } from '@/ui/patterns/Input';
 import { SelectField } from '@/ui/patterns/SelectField';
-import { Popover, PopoverContent, PopoverTrigger } from '@/ui/primitives/popover';
 import {
   Dialog,
   DialogClose,
@@ -24,20 +28,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/ui/primitives/dialog';
-import {
-  ADMIN_EFFECTS_BASE_VIEW,
-  adminEffectsViewDescription,
-  adminEffectsViewLabel,
-  type AdminEffectsView,
-} from '@/lib/admin-effects-navigation';
-import type { AdminEffectSummary, AdminStyleDefaultSummary } from '@/lib/admin.types';
+import { Popover, PopoverContent, PopoverTrigger } from '@/ui/primitives/popover';
 import {
   FIREWORK_STYLE_DEFAULT_KINDS,
   styleDefaultKindLabel,
   type FireworkStyleDefaultKind,
-} from '@/lib/fireworks/style-defaults';
-import { fireworkPreviewImageUrl, withFireworkPreviewRevision } from '@/lib/firework-preview-image';
-import { formatStableDateTime } from '@/lib/show-domain';
+} from '@showcrafter/fireworks/style-defaults';
+import { ListFilter, Plus, Search } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { createCustomStarEffect } from '../actions';
+import { createStyleDefaultFromKind } from '../style-default-actions';
 
 type Props = {
   effects: AdminEffectSummary[];
@@ -263,7 +263,7 @@ export function EffectsBrowser({ effects, styleDefaults, initialView }: Props) {
     () =>
       effectsActive
         ? filteredEffects
-            .filter((effect) => !effect.previewImagePath)
+            .filter((effect) => !effect.previewImagePath && effect.renderDiagnostics.length === 0)
             .map((effect) => ({
               id: `effect-${effect.id}`,
               previewUrl: withFireworkPreviewRevision(
@@ -271,12 +271,14 @@ export function EffectsBrowser({ effects, styleDefaults, initialView }: Props) {
                 effect.previewImageRevision,
               ),
             }))
-        : filteredDefaults.map((item) => ({
-            id: `style-default-${item.id}`,
-            previewUrl: styleDefaultPreviewUrl(item),
-            persist: false,
-            displayPoster: true,
-          })),
+        : filteredDefaults
+            .filter((item) => item.renderDiagnostics.length === 0)
+            .map((item) => ({
+              id: `style-default-${item.id}`,
+              previewUrl: styleDefaultPreviewUrl(item),
+              persist: false,
+              displayPoster: true,
+            })),
     [effectsActive, filteredDefaults, filteredEffects],
   );
 
@@ -349,6 +351,9 @@ export function EffectsBrowser({ effects, styleDefaults, initialView }: Props) {
                     )}
                     persistedPosterUrl={fireworkPreviewImageUrl(effect.previewImagePath)}
                     persistPoster
+                    previewError={
+                      effect.renderDiagnostics.length ? 'Invalid render settings' : null
+                    }
                     label={effect.name}
                     href={`/admin/effects/${effect.id}`}
                   >
@@ -377,6 +382,7 @@ export function EffectsBrowser({ effects, styleDefaults, initialView }: Props) {
                     key={item.id}
                     previewId={`style-default-${item.id}`}
                     previewUrl={styleDefaultPreviewUrl(item)}
+                    previewError={item.renderDiagnostics.length ? 'Invalid render settings' : null}
                     label={item.name}
                     href={`/admin/effects/defaults/${item.id}?view=${item.kind}`}
                   >

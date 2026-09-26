@@ -1,5 +1,8 @@
 import 'server-only';
 
+import { validateCatalogueRender } from '@/lib/admin/renderer-validation';
+import { RendererValidationError } from '@showcrafter/fireworks/design';
+
 import { createHash } from 'node:crypto';
 import type { AdminStyleDefaultLinkMap } from '@/lib/admin.types';
 import { getAdminEffectById } from '@/lib/admin/effects.server';
@@ -19,13 +22,9 @@ import {
   canonicaliseEffectModelJson,
   compileFireworkDesign,
   estimateDesignDurationSeconds,
-} from '@/lib/fireworks/design';
-import {
-  compileStyleDefaultPreviewDesign,
-  makeTrailPreviewStarDefaults,
-  orderedStyleDefaultValues,
-} from '@/lib/fireworks/style-defaults';
-import { DEFAULT_FIREWORK_SPEC } from '@/lib/fireworks/spec';
+} from '@showcrafter/fireworks/design';
+import { orderedStyleDefaultValues } from '@showcrafter/fireworks/style-defaults';
+import { DEFAULT_FIREWORK_SPEC } from '@showcrafter/fireworks/spec';
 import { SHOW_CARD_PREVIEW_WINDOW_SECONDS } from '@/lib/show-preview';
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
 import {
@@ -198,6 +197,12 @@ async function loadEffectPreview(id: string): Promise<FireworkCardPreviewPayload
     return null;
   }
 
+  const validation = validateCatalogueRender({
+    kind: 'effect',
+    recordId: id,
+    settings: effect.modelJson,
+  });
+  if (!validation.ok) throw new RendererValidationError(validation.diagnostics);
   const baseModel = canonicaliseEffectModelJson(effect.modelJson);
   const effectStyleDefaults = linkedStyleDefaults(effect.styleDefaultLinks);
   const hasConcreteColour = [baseModel, ...effectStyleDefaults].some(hasConcreteRendererColour);
@@ -240,11 +245,14 @@ async function loadStyleDefaultPreview(id: string): Promise<FireworkCardPreviewP
   const styleDefault = await getAdminStyleDefaultPreviewSourceById(id);
   if (!styleDefault) return null;
 
-  const design = compileStyleDefaultPreviewDesign(
-    styleDefault.kind,
-    styleDefault.defaultsJson,
-    styleDefault.kind === 'trail' ? makeTrailPreviewStarDefaults() : undefined,
-  );
+  const validation = validateCatalogueRender({
+    kind: 'style-default',
+    recordId: id,
+    settings: styleDefault.defaultsJson,
+    styleKind: styleDefault.kind,
+  });
+  if (!validation.ok) throw new RendererValidationError(validation.diagnostics);
+  const design = validation.design;
   const durationSeconds = Math.max(
     MIN_PREVIEW_DURATION_SECONDS,
     Math.ceil(
@@ -279,13 +287,13 @@ async function loadFireworkPreview(id: string): Promise<FireworkCardPreviewPaylo
     return null;
   }
 
-  const design = compileFireworkDesign({
-    baseModel: firework.effectModelJson,
-    fireworkStyleDefaults: linkedStyleDefaults(firework.fireworkStyleDefaultLinks),
-    variantOverrides: firework.renderOverridesJson,
-    primaryColor: firework.primaryColor ?? firework.colorPalette[0] ?? null,
-    colorPalette: firework.colorPalette,
+  const validation = validateCatalogueRender({
+    kind: 'firework',
+    recordId: id,
+    settings: firework.renderOverridesJson,
   });
+  if (!validation.ok) throw new RendererValidationError(validation.diagnostics);
+  const design = validation.design;
   const specification: FireworkSpecification = {
     id: firework.id,
     slug: firework.slug,
@@ -392,7 +400,8 @@ export async function loadAdminFireworkCardPreview(
     if (kind === 'firework') return await loadFireworkPreview(id);
     return await loadMultishotPreview(id);
   } catch (error) {
-    if (error instanceof FireworkCardPreviewReadError) throw error;
+    if (error instanceof FireworkCardPreviewReadError || error instanceof RendererValidationError)
+      throw error;
     throw new FireworkCardPreviewReadError(`Could not load ${kind} card preview.`, error);
   }
 }

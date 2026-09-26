@@ -1,58 +1,53 @@
 'use client';
-
-import dynamic from 'next/dynamic';
+import { validateCatalogueRender } from '@/lib/admin/renderer-validation';
 import {
-  Archive,
-  Braces,
-  Cloud,
-  History,
-  Rocket,
-  Shapes,
-  SlidersHorizontal,
-  Sparkles,
-  Volume2,
-  Wind,
-  Zap,
-  type LucideIcon,
-} from 'lucide-react';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
+  DEFAULT_DESIGN,
+  RendererValidationError,
+  type RenderResult,
+} from '@showcrafter/fireworks/design';
+
+import { useDraftHistory } from '@showcrafter/firework-editor/use-draft-history';
+
 import {
   archiveStyleDefault,
   restoreStyleDefaultEditorVersion,
   updateStyleDefault,
 } from '@/app/(admin)/admin/effects/style-default-actions';
+import type { AdminEditorVersion, AdminStyleDefaultDetail } from '@/lib/admin.types';
+import { canApplySavedEditorSnapshot } from '@/lib/admin/editor-save-state';
+import { parseStyleDefaultEditorSnapshot } from '@/lib/admin/editor-snapshots';
+import type { Json } from '@/lib/database.types';
+import type { ReplayCue } from '@/lib/show-domain';
 import { EditorHistoryPanel, JsonReadOnlyPanel } from '@/ui/firework-editor/EditorInspectorPanels';
+import {
+  EditorPreviewTransport,
+  FireworkEditorShell,
+  type FireworkEditorShellTab,
+} from '@/ui/firework-editor/FireworkEditorShell';
+import { FireworkRenderControls } from '@/ui/firework-editor/FireworkRenderControls';
 import {
   PREVIEW_LAUNCH_POSITIONS,
   estimateLaunchPreviewDurationSeconds,
   estimateLaunchPreviewTicks,
   estimatePreviewTicks,
 } from '@/ui/firework-editor/editor-preview-timing';
-import {
-  EditorPreviewTransport,
-  FireworkEditorShell,
-  type FireworkEditorShellTab,
-} from '@/ui/firework-editor/FireworkEditorShell';
+import { PanelSection } from '@/ui/firework-editor/firework-render-controls/ControlSections';
+import { usePreviewFullscreen } from '@/ui/firework-editor/previewFullscreen';
+import { firstRendererTab, rendererTabs } from '@/ui/firework-editor/renderer-tabs';
 import {
   makeOptimisticEditorVersion,
   useEditorHistory,
 } from '@/ui/firework-editor/useEditorHistory';
-import { usePreviewFullscreen } from '@/ui/firework-editor/previewFullscreen';
-import { useAdminBreadcrumbOverride } from '@/ui/shell/AdminShell';
-import { ReplayStageBackdrop } from '@/ui/replay/ReplayStageBackdrop';
-import { FireworkRenderControls } from '@/ui/firework-editor/FireworkRenderControls';
-import { PanelSection } from '@/ui/firework-editor/firework-render-controls/ControlSections';
 import { Button } from '@/ui/patterns/Button';
 import { Field, FieldLabel } from '@/ui/patterns/Field';
 import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
 import { Input, Textarea } from '@/ui/patterns/Input';
 import { SelectField } from '@/ui/patterns/SelectField';
 import { toast } from '@/ui/patterns/toast';
-import { canApplySavedEditorSnapshot } from '@/lib/admin/editor-save-state';
-import { parseStyleDefaultEditorSnapshot } from '@/lib/admin/editor-snapshots';
-import type { AdminEditorVersion, AdminStyleDefaultDetail } from '@/lib/admin.types';
-import type { Json } from '@/lib/database.types';
-import { estimateDesignDurationSeconds } from '@/lib/fireworks/design';
+import { ReplayStageBackdrop } from '@/ui/replay/ReplayStageBackdrop';
+import { useAdminBreadcrumbOverride } from '@/ui/shell/AdminShell';
+import { estimateDesignDurationSeconds } from '@showcrafter/fireworks/design';
+import { DEFAULT_FIREWORK_SPEC } from '@showcrafter/fireworks/spec';
 import {
   FIREWORK_STYLE_DEFAULT_KINDS,
   compileStyleDefaultPreviewDesign,
@@ -61,9 +56,10 @@ import {
   normaliseStyleDefaultJson,
   styleDefaultKindLabel,
   type FireworkStyleDefaultKind,
-} from '@/lib/fireworks/style-defaults';
-import { DEFAULT_FIREWORK_SPEC } from '@/lib/fireworks/spec';
-import type { ReplayCue } from '@/lib/show-domain';
+} from '@showcrafter/fireworks/style-defaults';
+import { Archive, Braces, History, SlidersHorizontal } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 type ParsedJson = { ok: true; value: Record<string, unknown> } | { ok: false; error: string };
 type TrailPreviewStarMode = 'none' | 'default' | 'custom';
@@ -93,18 +89,6 @@ const TRAIL_PREVIEW_STAR_OPTIONS = [
   { value: 'default', label: 'Default star' },
   { value: 'custom', label: 'Custom star' },
 ];
-
-const KIND_ICON: Record<FireworkStyleDefaultKind, LucideIcon> = {
-  geometry: Shapes,
-  star: Sparkles,
-  trail: Wind,
-  launch: Rocket,
-  smoke: Cloud,
-  strobe: Zap,
-  crackle: Zap,
-  split: Sparkles,
-  sound: Volume2,
-};
 
 function parseJsonObject(text: string): ParsedJson {
   try {
@@ -175,7 +159,18 @@ function styleDefaultSavedSnapshotFromFields(
     kind: fields.kind,
     sortOrder: String(fields.sortOrder),
     isArchived: fields.isArchived,
-    defaultsText: JSON.stringify(defaultsJson, null, 2),
+    defaultsText: JSON.stringify(
+      validateCatalogueRender({
+        kind: 'style-default',
+        recordId: fields.id,
+        styleKind: fields.kind,
+        settings: fields.defaultsJson,
+      }).ok
+        ? defaultsJson
+        : fields.defaultsJson,
+      null,
+      2,
+    ),
     signature: styleDefaultEditorSignature({
       name: fields.name,
       description: fields.description ?? '',
@@ -200,13 +195,6 @@ function styleDefaultSavedSnapshotFromDetail(
     isArchived: styleDefault.isArchived,
     defaultsJson: styleDefault.defaultsJson,
   });
-}
-
-function calibrationDefaultsFromSnapshot(
-  snapshot: StyleDefaultEditorSavedSnapshot,
-): Record<string, unknown> {
-  const parsed = parseJsonObject(snapshot.defaultsText);
-  return parsed.ok ? parsed.value : {};
 }
 
 function isEarlierUpdatedAt(candidate: string, reference: string): boolean {
@@ -241,22 +229,14 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
   const [trailPreviewStarMode, setTrailPreviewStarMode] = useState<TrailPreviewStarMode>('none');
   const [customTrailPreviewStarDefaults, setCustomTrailPreviewStarDefaults] = useState<
     Record<string, unknown>
-  >(() => makeTrailPreviewStarDefaults());
-  const [defaultsText, setDefaultsText] = useState(() =>
-    JSON.stringify(
-      normaliseStyleDefaultJson(styleDefault.kind, styleDefault.defaultsJson),
-      null,
-      2,
-    ),
-  );
+  >(() => makeTrailPreviewStarDefaults(styleDefault.kind === 'innerTrail' ? 'core' : 'outer'));
+  const [defaultsText, setDefaultsText] = useState(incomingSavedSnapshot.defaultsText);
   const [savedSignature, setSavedSignature] = useState(() => incomingSavedSnapshot.signature);
-  const [savedCalibrationDefaults, setSavedCalibrationDefaults] = useState<Record<string, unknown>>(
-    () => calibrationDefaultsFromSnapshot(incomingSavedSnapshot),
-  );
   const savedSnapshotRef = useRef<StyleDefaultEditorSavedSnapshot>(incomingSavedSnapshot);
+  const [savedPreviewSnapshot, setSavedPreviewSnapshot] = useState(incomingSavedSnapshot);
   const savedSignatureRef = useRef(savedSignature);
   const editorTargetIdRef = useRef(styleDefault.id);
-  const [activeTab, setActiveTab] = useState<string>(styleDefault.kind);
+  const [activeTab, setActiveTab] = useState<string>(firstRendererTab(styleDefault.kind));
   const [restoringVersionId, setRestoringVersionId] = useState<string | null>(null);
   const [archiving, setArchiving] = useState(false);
   const editorHistory = useEditorHistory({
@@ -274,22 +254,74 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
     () => (parsedDefaults.ok ? parsedDefaults.value : {}),
     [parsedDefaults],
   );
-  const defaultTrailPreviewStarDefaults = useMemo(() => makeTrailPreviewStarDefaults(), []);
+  const defaultTrailPreviewStarDefaults = useMemo(
+    () => makeTrailPreviewStarDefaults(kind === 'innerTrail' ? 'core' : 'outer'),
+    [kind],
+  );
   const trailPreviewStarDefaults =
     trailPreviewStarMode === 'custom'
       ? customTrailPreviewStarDefaults
       : trailPreviewStarMode === 'default'
         ? defaultTrailPreviewStarDefaults
         : undefined;
-  const previewDesign = useMemo(
-    () =>
-      compileStyleDefaultPreviewDesign(
-        kind,
-        parsedDefaults.ok ? parsedDefaults.value : styleDefault.defaultsJson,
-        trailPreviewStarDefaults,
-      ),
-    [kind, parsedDefaults, styleDefault.defaultsJson, trailPreviewStarDefaults],
-  );
+  const renderResult = useMemo<RenderResult>(() => {
+    if (!parsedDefaults.ok)
+      return { ok: false, diagnostics: [{ path: [], message: parsedDefaults.error }] };
+    const source = validateCatalogueRender({
+      kind: 'style-default',
+      recordId: styleDefault.id,
+      styleKind: kind,
+      settings: parsedDefaults.value,
+    });
+    if (!source.ok) return source;
+    try {
+      return {
+        ok: true,
+        design: compileStyleDefaultPreviewDesign(
+          kind,
+          parsedDefaults.value,
+          trailPreviewStarDefaults,
+        ),
+      };
+    } catch (error) {
+      if (error instanceof RendererValidationError)
+        return { ok: false, diagnostics: error.diagnostics };
+      throw error;
+    }
+  }, [styleDefault.id, kind, parsedDefaults, trailPreviewStarDefaults]);
+  const previewDesign = renderResult.ok ? renderResult.design : DEFAULT_DESIGN;
+  const renderError = renderResult.ok
+    ? null
+    : renderResult.diagnostics
+        .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+        .join('; ');
+  const [showSaved, setShowSaved] = useState(false);
+  const savedRenderResult = useMemo<RenderResult>(() => {
+    const source = validateCatalogueRender({
+      kind: 'style-default',
+      recordId: styleDefault.id,
+      styleKind: savedPreviewSnapshot.kind,
+      settings: JSON.parse(savedPreviewSnapshot.defaultsText),
+    });
+    if (!source.ok) return source;
+    try {
+      return {
+        ok: true,
+        design: compileStyleDefaultPreviewDesign(
+          savedPreviewSnapshot.kind,
+          JSON.parse(savedPreviewSnapshot.defaultsText),
+          trailPreviewStarDefaults,
+        ),
+      };
+    } catch (error) {
+      if (error instanceof RendererValidationError)
+        return { ok: false, diagnostics: error.diagnostics };
+      throw error;
+    }
+  }, [styleDefault.id, savedPreviewSnapshot, trailPreviewStarDefaults]);
+  const displayedDesign =
+    showSaved && savedRenderResult.ok ? savedRenderResult.design : previewDesign;
+  const displayedKind = showSaved ? savedPreviewSnapshot.kind : kind;
   const sortOrderNumber = Number.isFinite(Number(sortOrder)) ? Number(sortOrder) : 0;
   const currentSignature = useMemo(
     () =>
@@ -328,8 +360,8 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
     if (sameStyleDefault && currentSignatureRef.current !== savedSignatureRef.current) return;
 
     savedSnapshotRef.current = incomingSnapshot;
+    setSavedPreviewSnapshot(incomingSnapshot);
     savedSignatureRef.current = incomingSnapshot.signature;
-    setSavedCalibrationDefaults(calibrationDefaultsFromSnapshot(incomingSnapshot));
     setName(incomingSnapshot.name);
     setDescription(incomingSnapshot.description);
     setKind(incomingSnapshot.kind);
@@ -337,9 +369,11 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
     setIsArchived(incomingSnapshot.isArchived);
     setLastSavedUpdatedAt(incomingSnapshot.updatedAt);
     setTrailPreviewStarMode('none');
-    setCustomTrailPreviewStarDefaults(makeTrailPreviewStarDefaults());
+    setCustomTrailPreviewStarDefaults(
+      makeTrailPreviewStarDefaults(incomingSnapshot.kind === 'innerTrail' ? 'core' : 'outer'),
+    );
     setDefaultsText(incomingSnapshot.defaultsText);
-    setActiveTab(incomingSnapshot.kind);
+    setActiveTab(firstRendererTab(incomingSnapshot.kind));
     setRestoringVersionId(null);
     setArchiving(false);
     setError(null);
@@ -351,25 +385,31 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
     return () => setAdminBreadcrumb(null);
   }, [name, setAdminBreadcrumb, styleDefault.name]);
 
-  const heads = previewDesign.stars.outer.head;
+  const heads = displayedDesign.stars.outer.head;
   const previewDuration = useMemo(() => {
-    const estimated =
-      kind === 'launch'
+    const durationFor = (design: typeof previewDesign, previewKind: FireworkStyleDefaultKind) =>
+      previewKind === 'launch'
         ? estimateLaunchPreviewDurationSeconds({
-            design: previewDesign,
+            design,
             cueTimeSeconds: PREVIEW_CUE_TIME_SECONDS,
           })
-        : PREVIEW_CUE_TIME_SECONDS + estimateDesignDurationSeconds(previewDesign);
-    return Math.max(kind === 'launch' ? 2.5 : 4, Math.ceil(estimated * 2) / 2);
-  }, [kind, previewDesign]);
+        : PREVIEW_CUE_TIME_SECONDS + estimateDesignDurationSeconds(design);
+    const estimated = Math.max(
+      durationFor(previewDesign, kind),
+      savedRenderResult.ok ? durationFor(savedRenderResult.design, savedPreviewSnapshot.kind) : 0,
+    );
+    return Math.max(4, Math.ceil(estimated * 2) / 2);
+  }, [kind, previewDesign, savedRenderResult, savedPreviewSnapshot.kind]);
   const previewTicks = useMemo(() => {
     const params = {
-      design: previewDesign,
+      design: displayedDesign,
       cueTimeSeconds: PREVIEW_CUE_TIME_SECONDS,
       previewDuration,
     };
-    return kind === 'launch' ? estimateLaunchPreviewTicks(params) : estimatePreviewTicks(params);
-  }, [kind, previewDesign, previewDuration]);
+    return displayedKind === 'launch'
+      ? estimateLaunchPreviewTicks(params)
+      : estimatePreviewTicks(params);
+  }, [displayedKind, displayedDesign, previewDuration]);
 
   const previewCue = useMemo<ReplayCue>(
     () => ({
@@ -406,7 +446,17 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       styleDefault.slug,
     ],
   );
-  const previewCues = useMemo(() => [previewCue], [previewCue]);
+  const previewCues = useMemo(() => {
+    if (!showSaved) return renderResult.ok ? [previewCue] : [];
+    return savedRenderResult.ok
+      ? [
+          {
+            ...previewCue,
+            firework: { ...previewCue.firework, renderDesign: savedRenderResult.design },
+          },
+        ]
+      : [];
+  }, [previewCue, showSaved, savedRenderResult, renderResult.ok]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -488,6 +538,11 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
     const nextKind =
       FIREWORK_STYLE_DEFAULT_KINDS.find((candidate) => candidate === value) ?? 'star';
     setKind(nextKind);
+    setActiveTab(firstRendererTab(nextKind));
+    setTrailPreviewStarMode('none');
+    setCustomTrailPreviewStarDefaults(
+      makeTrailPreviewStarDefaults(nextKind === 'innerTrail' ? 'core' : 'outer'),
+    );
     if (!parsedDefaults.ok) return;
     const nextDesign = compileStyleDefaultPreviewDesign(
       nextKind,
@@ -508,8 +563,8 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
     updater(draft);
     setCustomTrailPreviewStarDefaults(
       extractStyleDefaultsFromDesign(
-        compileStyleDefaultPreviewDesign('trail', defaultsRecord, draft),
-        'star',
+        compileStyleDefaultPreviewDesign(kind, defaultsRecord, draft),
+        kind === 'innerTrail' ? 'innerStar' : 'star',
       ),
     );
   }
@@ -535,7 +590,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
     setSortOrder(snapshot.sortOrder);
     setIsArchived(snapshot.isArchived);
     setDefaultsText(snapshot.defaultsText);
-    setActiveTab(snapshot.kind);
+    if (snapshot.kind !== kind) setActiveTab(firstRendererTab(snapshot.kind));
   }
 
   function beginOptimisticMutation(
@@ -544,12 +599,8 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
     visibleSnapshot = optimisticSnapshot,
   ) {
     const historyVersionId = crypto.randomUUID();
-    const previousSavedSnapshot = savedSnapshotRef.current;
     const localSnapshot = currentLocalSnapshot();
-    savedSnapshotRef.current = optimisticSnapshot;
-    savedSignatureRef.current = optimisticSnapshot.signature;
     currentSignatureRef.current = visibleSnapshot.signature;
-    setSavedSignature(optimisticSnapshot.signature);
     applySnapshot(visibleSnapshot);
     editorHistory.begin(
       makeOptimisticEditorVersion({
@@ -564,7 +615,6 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       historyVersionId,
       localSnapshot,
       optimisticSnapshot,
-      previousSavedSnapshot,
       visibleSnapshot,
     };
   }
@@ -572,11 +622,6 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
   function rollbackOptimisticMutation(mutation: ReturnType<typeof beginOptimisticMutation>) {
     if (editorTargetIdRef.current !== mutation.targetId) return;
     editorHistory.discard(mutation.historyVersionId);
-    if (savedSignatureRef.current === mutation.optimisticSnapshot.signature) {
-      savedSnapshotRef.current = mutation.previousSavedSnapshot;
-      savedSignatureRef.current = mutation.previousSavedSnapshot.signature;
-      setSavedSignature(mutation.previousSavedSnapshot.signature);
-    }
     if (currentSignatureRef.current === mutation.visibleSnapshot.signature) {
       currentSignatureRef.current = mutation.localSnapshot.signature;
       applySnapshot(mutation.localSnapshot);
@@ -633,8 +678,8 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       const savedSnapshot = styleDefaultSavedSnapshotFromFields(result.saved);
       setLastSavedUpdatedAt(savedSnapshot.updatedAt);
       savedSnapshotRef.current = savedSnapshot;
+      setSavedPreviewSnapshot(savedSnapshot);
       savedSignatureRef.current = savedSnapshot.signature;
-      setSavedCalibrationDefaults(calibrationDefaultsFromSnapshot(savedSnapshot));
       setSavedSignature(savedSnapshot.signature);
       editorHistory.settle({
         optimisticId: mutation.historyVersionId,
@@ -714,6 +759,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
           currentSignatureRef.current,
         );
       savedSnapshotRef.current = savedSnapshot;
+      setSavedPreviewSnapshot(savedSnapshot);
       savedSignatureRef.current = savedSnapshot.signature;
       setLastSavedUpdatedAt(savedSnapshot.updatedAt);
       setSavedSignature(savedSnapshot.signature);
@@ -738,7 +784,9 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
     applySnapshot(savedSnapshot);
     setLastSavedUpdatedAt(savedSnapshot.updatedAt);
     setTrailPreviewStarMode('none');
-    setCustomTrailPreviewStarDefaults(makeTrailPreviewStarDefaults());
+    setCustomTrailPreviewStarDefaults(
+      makeTrailPreviewStarDefaults(savedSnapshot.kind === 'innerTrail' ? 'core' : 'outer'),
+    );
     setError(null);
     savedSignatureRef.current = savedSnapshot.signature;
     setSavedSignature(savedSnapshot.signature);
@@ -794,8 +842,8 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
         currentSignatureRef.current,
       );
       savedSnapshotRef.current = restoredSnapshot;
+      setSavedPreviewSnapshot(restoredSnapshot);
       savedSignatureRef.current = restoredSnapshot.signature;
-      setSavedCalibrationDefaults(calibrationDefaultsFromSnapshot(restoredSnapshot));
       setLastSavedUpdatedAt(restoredSnapshot.updatedAt);
       setSavedSignature(restoredSnapshot.signature);
       editorHistory.settle({
@@ -823,7 +871,8 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       interactive
       controlsVisible={previewReady}
       showStarfield={false}
-      showFps
+      showFps={false}
+      showCameraControls={false}
       primeSnapshots
       primeOnCueChanges={false}
       showLoadingBar={false}
@@ -939,9 +988,9 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
     </div>
   );
 
-  const kindControls = (
+  const previewCarrierControls = (
     <div className="space-y-5">
-      {kind === 'trail' ? (
+      {kind === 'trail' || kind === 'innerTrail' ? (
         <PanelSection
           title="Preview star"
           titleAccessory={
@@ -962,27 +1011,15 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
               <FireworkRenderControls
                 design={previewDesign}
                 defaults={customTrailPreviewStarDefaults}
-                calibrationDefaults={defaultTrailPreviewStarDefaults}
                 mutate={mutateTrailPreviewStarDefaults}
                 disabled={!parsedDefaults.ok}
                 showStarCount
-                controlScope="star"
+                controlScope={kind === 'innerTrail' ? 'starInner' : 'star'}
               />
             ) : null}
           </div>
         </PanelSection>
       ) : null}
-
-      <FireworkRenderControls
-        design={previewDesign}
-        defaults={defaultsRecord}
-        calibrationDefaults={savedCalibrationDefaults}
-        mutate={mutateDefaults}
-        disabled={!parsedDefaults.ok}
-        showStarCount={kind === 'star'}
-        showLaunch={kind === 'launch'}
-        controlScope={kind}
-      />
     </div>
   );
 
@@ -991,7 +1028,6 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       ? normaliseStyleDefaultJson(kind, parsedDefaults.value)
       : { error: parsedDefaults.error }
   ) as Json;
-  const kindLabel = styleDefaultKindLabel(kind);
   const tabs: FireworkEditorShellTab[] = [
     {
       id: 'details',
@@ -1001,14 +1037,21 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       title: 'Details',
       content: detailsContent,
     },
-    {
-      id: kind,
-      label: kindLabel,
-      icon: KIND_ICON[kind],
-      eyebrow: 'Defaults',
-      title: `${kindLabel} defaults`,
-      content: kindControls,
-    },
+    ...rendererTabs({
+      kinds: [kind],
+      controls: { design: previewDesign, defaults: defaultsRecord, disabled: !renderResult.ok },
+      mutate: (_kind, updater) => mutateDefaults(updater),
+      preset: () => null,
+      saved: savedRenderResult.ok ? savedRenderResult.design : undefined,
+    }).map((tab) => ({
+      ...tab,
+      content: (
+        <div className="space-y-5">
+          {tab.content}
+          {previewCarrierControls}
+        </div>
+      ),
+    })),
     {
       id: 'history',
       label: 'History',
@@ -1036,14 +1079,23 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
     },
   ];
 
+  const draftHistory = useDraftHistory({
+    recordKey: styleDefault.id,
+    value: currentLocalSnapshot(),
+    signature: currentSignature,
+    restore: applySnapshot,
+  });
+
   return (
     <FireworkEditorShell
+      history={draftHistory}
+      comparison={{ saved: showSaved, onChange: setShowSaved }}
       title={name || styleDefault.name}
       chips={[{ label: 'Status', value: isArchived ? 'Archived' : null, icon: Archive }]}
       dirty={isDirty}
       saving={isPending}
       saveLabel="Save"
-      saveDisabled={!parsedDefaults.ok || isPending}
+      saveDisabled={Boolean(renderError) || isPending}
       revertDisabled={!isDirty || isPending}
       onSave={save}
       onRevert={revertLocalChanges}
@@ -1054,6 +1106,10 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       transport={transport}
       transportPlaying={isPlaying}
       error={error}
+      renderDiagnostics={{
+        recordId: styleDefault.id,
+        issues: renderResult.ok ? [] : renderResult.diagnostics,
+      }}
       fullscreen={isFullscreen}
       onExitFullscreen={exitFullscreen}
     />

@@ -26,14 +26,13 @@ registerHooks({
 const {
   ImportReconstructionValidationError,
   IMPORT_RECONSTRUCTION_EFFECT_SLUGS,
-  adaptLegacyImportedFireworkSpec,
   buildImportReconstructionPersistencePlan,
   parseImportReconstruction,
   parseImportReconstructionOrThrow,
   reconstructionToReplayCues,
 } = await import('../../lib/firework-import/reconstruction.ts');
 const { DEFAULT_DESIGN, estimateDesignDurationSeconds } =
-  await import('../../lib/fireworks/design.ts');
+  await import('@showcrafter/fireworks/design');
 const { importedSpecToReplayCues, latestImportedSpecFromOutputs, parseImportedFireworkSpec } =
   await import('../../lib/firework-import/jobs.ts');
 
@@ -370,54 +369,6 @@ test('contract enforces current base effects, database bounds, and used design k
   }
 });
 
-test('legacy V3-normalised specs retain every shot through the explicit compatibility adapter', () => {
-  const legacy = adaptLegacyImportedFireworkSpec({
-    name: 'Legacy fan',
-    description: 'Two inferred shots.',
-    durationSeconds: 5,
-    heightMeters: 35,
-    caliber: '25mm',
-    confidence: 0.67,
-    fieldConfidence: { shellType: 0.8 },
-    spec: {
-      shellType: 'ring',
-      spreadSize: 4,
-      starLifeMs: 1_400,
-      color: '#ff0000',
-      shots: [
-        {
-          timeOffsetSeconds: 0,
-          color: '#ff0000',
-          position: { x: -10, y: 0, z: 0 },
-          panDegrees: -12,
-          tiltDegrees: 10,
-          scale: 0.8,
-          seedOffset: 11,
-        },
-        {
-          timeOffsetSeconds: 1.25,
-          color: '#00ff00',
-          position: { x: 10, y: 0, z: 0 },
-          panDegrees: 12,
-          tiltDegrees: 10,
-          scale: 1.2,
-          seedOffset: 22,
-        },
-      ],
-    },
-  });
-  assert.equal(legacy.success, true);
-  if (!legacy.success) return;
-
-  assert.equal(legacy.data.shots.length, 2);
-  assert.equal(reconstructionToReplayCues(legacy.data).length, 2);
-  assert.deepEqual(
-    legacy.data.shots.map((shot) => shot.seed),
-    [11, 22],
-  );
-  assert.equal(legacy.data.observations.unknowns[0].includes('legacy'), true);
-});
-
 test('import job parsing prefers nested worker reconstruction and previews every native shot', () => {
   const payload = {
     reconstruction: reconstructionInput(),
@@ -451,33 +402,14 @@ test('import job parsing prefers nested worker reconstruction and previews every
   );
 });
 
-test('invalid native payload falls back through marked lossy V3 reconstruction', () => {
-  const invalidNative = reconstructionInput();
-  invalidNative.designs[0].effectSlug = 'not-real';
-  const parsed = parseImportedFireworkSpec({
-    reconstruction: invalidNative,
-    spec: {
-      name: 'Legacy fallback',
-      description: 'Two legacy shots.',
-      durationSeconds: 4,
-      heightMeters: 30,
-      caliber: '25mm',
-      confidence: 0.6,
-      spec: {
-        shellType: 'ring',
-        spreadSize: 4,
-        starLifeMs: 1_400,
-        color: '#ff0000',
-        shots: [
-          { timeOffsetSeconds: 0, color: '#ff0000', seedOffset: 10 },
-          { timeOffsetSeconds: 1, color: '#00ff00', seedOffset: 20 },
-        ],
-      },
-    },
-  });
-
-  assert.ok(parsed);
-  assert.equal(parsed.reconstruction?.shots.length, 2);
-  assert.equal(parsed.reconstruction?.observations.unknowns[0].includes('legacy'), true);
-  assert.equal(importedSpecToReplayCues(parsed).length, 2);
+test('invalid renderer-native evidence is rejected without a lossy substitute', () => {
+  assert.equal(
+    parseImportedFireworkSpec({
+      name: 'Incomplete',
+      durationSeconds: 5,
+      confidence: 1,
+      spec: { shellType: 'crysanthemum', spreadSize: 4, starLifeMs: 1400 },
+    }),
+    null,
+  );
 });

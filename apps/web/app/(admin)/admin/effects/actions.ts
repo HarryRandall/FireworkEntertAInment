@@ -2,32 +2,33 @@
 
 /** Admin base-effect actions. Base effects are colourless shared firework patterns. */
 
-import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
-import { supabaseFetchLong } from '@/lib/supabase/fetch';
+import { saveEditorRecord } from '@/lib/admin/editor-persistence.server';
+import { requirePermission } from '@/lib/access/current-profile.server';
+import type { AdminEditorVersion, AdminStyleDefaultOption } from '@/lib/admin.types';
 import {
   invalidateAdminEffectsCache,
   invalidateAdminFireworksCache,
   invalidateAdminMultishotsCache,
   invalidateAdminStyleDefaultsCache,
 } from '@/lib/admin/cache-keys';
-import { requirePermission } from '@/lib/access/current-profile.server';
-import type { AdminEditorVersion, AdminStyleDefaultOption } from '@/lib/admin.types';
-import type { CurrentProfile } from '@/lib/access/types';
-import { makeEffectEditorSnapshot, parseEffectEditorSnapshot } from '@/lib/admin/editor-snapshots';
+import { parseEffectEditorSnapshot } from '@/lib/admin/editor-snapshots';
 import { isMissingEditorVersionSchemaError } from '@/lib/admin/style-default-schema';
 import type { Database, Json } from '@/lib/database.types';
-import { canonicaliseEffectModelJson, fireworkDesignFragmentError } from '@/lib/fireworks/design';
+import { invalidateFireworkCatalogueCaches } from '@/lib/shows/cache-keys';
+import { supabaseFetchLong } from '@/lib/supabase/fetch';
+import { createClient } from '@/lib/supabase/server';
 import {
-  emptyStyleDefaultIdMap,
+  canonicaliseEffectModelJson,
+  fireworkDesignFragmentError,
+} from '@showcrafter/fireworks/design';
+import {
   FIREWORK_STYLE_DEFAULT_KINDS,
   type FireworkStyleDefaultKind,
-} from '@/lib/fireworks/style-defaults';
-import { invalidateFireworkCatalogueCaches } from '@/lib/shows/cache-keys';
-import { isSupabaseTransientNetworkError } from '@/lib/supabase/errors';
+} from '@showcrafter/fireworks/style-defaults';
+import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { z } from 'zod';
 
 type EffectRow = Database['public']['Tables']['firework_effects']['Row'];
 type StyleDefaultRow = Database['public']['Tables']['firework_style_defaults']['Row'];
@@ -60,10 +61,6 @@ type Result =
 type CreateStyleDefaultAndUpdateEffectResult =
   | (Extract<Result, { ok: true }> & { styleDefault: AdminStyleDefaultOption })
   | Extract<Result, { ok: false }>;
-type ActionSupabase = ReturnType<typeof createClient>;
-
-const EFFECT_MUTATION_SELECT =
-  'id, name, description, pattern_key, sort_order, model_json, updated_at';
 
 const StyleDefaultKindSchema = z.enum(FIREWORK_STYLE_DEFAULT_KINDS);
 const StyleDefaultAssignmentsSchema = z.partialRecord(
@@ -206,10 +203,6 @@ function styleDefaultSlug(name: string, kind: FireworkStyleDefaultKind): string 
   return `${base}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
-function adminLabel(profile: CurrentProfile): string {
-  return profile.fullName || profile.email || 'Platform admin';
-}
-
 function mapSavedEffect(row: EffectMutationRow): SavedEffect {
   return {
     id: row.id,
@@ -232,149 +225,6 @@ function mapCreatedStyleDefault(row: StyleDefaultMutationRow): AdminStyleDefault
   };
 }
 
-function readSnapshotRecord(value: Json | null): Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
-}
-
-function fieldChanges(previousSnapshot: Json | null, nextSnapshot: Json, fields: string[]): Json {
-  const previous = readSnapshotRecord(previousSnapshot);
-  const next = readSnapshotRecord(nextSnapshot);
-  const changes: Record<string, Json> = {};
-  for (const field of fields) {
-    const before = previous[field];
-    const after = next[field];
-    if (JSON.stringify(before) === JSON.stringify(after)) continue;
-    changes[field] = { before: (before ?? null) as Json, after: (after ?? null) as Json };
-  }
-  return changes;
-}
-
-function summariseEffectChanges(changesJson: Json): string {
-  const labels: Record<string, string> = {
-    name: 'name',
-    description: 'description',
-    patternKey: 'pattern',
-    sortOrder: 'sort order',
-    modelJson: 'model JSON',
-  };
-  const fields = Object.keys(readSnapshotRecord(changesJson));
-  if (fields.length === 0) return 'Saved without visible field changes';
-  const visible = fields.slice(0, 3).map((field) => labels[field] ?? field);
-  const extra = fields.length > visible.length ? ` +${fields.length - visible.length}` : '';
-  return `Updated ${visible.join(', ')}${extra}`;
-}
-
-async function loadEffectEditorSnapshot(
-  supabase: ActionSupabase,
-  effectId: string,
-): Promise<{ ok: true; snapshot: Json | null } | { ok: false; error: string }> {
-  const { data, error } = await supabase
-    .from('firework_effects')
-    .select('id, name, description, pattern_key, sort_order, model_json, updated_at')
-    .eq('id', effectId)
-    .maybeSingle();
-
-  if (error) return { ok: false, error: error.message };
-  if (!data) return { ok: true, snapshot: null };
-
-  return {
-    ok: true,
-    snapshot: makeEffectEditorSnapshot({
-      kind: 'effect',
-      id: data.id,
-      name: data.name,
-      description: data.description,
-      patternKey: data.pattern_key,
-      sortOrder: data.sort_order,
-      styleDefaultIds: emptyStyleDefaultIdMap(),
-      modelJson: data.model_json ?? {},
-      updatedAt: data.updated_at,
-    }),
-  };
-}
-
-async function recordEffectVersion(
-  supabase: ActionSupabase,
-  version: AdminEditorVersion,
-): Promise<boolean> {
-  const effectId = version.fireworkEffectId;
-  if (!effectId) return false;
-
-  const row = {
-    id: version.id,
-    target_kind: 'effect',
-    firework_effect_id: effectId,
-    action: version.action,
-    summary: version.summary,
-    snapshot_json: version.snapshotJson,
-    previous_snapshot_json: version.previousSnapshotJson,
-    changes_json: version.changesJson,
-    created_by: version.createdBy,
-    created_by_label: version.createdByLabel,
-    created_at: version.createdAt,
-  } as const;
-
-  async function isRecorded(targetEffectId: string): Promise<boolean> {
-    const { data, error } = await supabase
-      .from('firework_editor_versions')
-      .select('id')
-      .eq('id', version.id)
-      .eq('target_kind', 'effect')
-      .eq('firework_effect_id', targetEffectId)
-      .maybeSingle();
-    if (error && !isMissingEditorVersionSchemaError(error)) {
-      console.error('[recordEffectVersion] history confirmation failed:', error);
-    }
-    return Boolean(data);
-  }
-
-  const first = await supabase.from('firework_editor_versions').insert(row);
-  if (!first.error) return true;
-  if (isMissingEditorVersionSchemaError(first.error)) return false;
-  if (await isRecorded(effectId)) return true;
-
-  if (isSupabaseTransientNetworkError(first.error)) {
-    const retry = await supabase.from('firework_editor_versions').insert(row);
-    if (!retry.error || (await isRecorded(effectId))) return true;
-    if (!isMissingEditorVersionSchemaError(retry.error)) {
-      console.error('[recordEffectVersion] history retry failed:', retry.error);
-    }
-    return false;
-  }
-
-  console.error('[recordEffectVersion] history insert failed:', first.error);
-  return false;
-}
-
-function makeEffectVersion(input: {
-  effectId: string;
-  action: 'update' | 'restore';
-  summary: string;
-  snapshotJson: Json;
-  previousSnapshotJson: Json | null;
-  changesJson: Json;
-  profile: CurrentProfile;
-  historyVersionId?: string;
-}): AdminEditorVersion {
-  return {
-    id: input.historyVersionId ?? crypto.randomUUID(),
-    targetKind: 'effect',
-    fireworkId: null,
-    fireworkEffectId: input.effectId,
-    fireworkStyleDefaultId: null,
-    action: input.action,
-    summary: input.summary,
-    snapshotJson: input.snapshotJson,
-    previousSnapshotJson: input.previousSnapshotJson,
-    changesJson: input.changesJson,
-    createdBy: input.profile.id,
-    createdByLabel: adminLabel(input.profile),
-    createdAt: new Date().toISOString(),
-  };
-}
-
 /** Persist one base effect with optimistic conflict detection. */
 export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Promise<Result> {
   const profile = await requirePermission('admin.manage_catalogue');
@@ -389,9 +239,6 @@ export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Pr
   if (!model.ok) return { ok: false, error: model.error };
 
   const supabase = createClient(await cookies(), supabaseFetchLong);
-  const previousSnapshot = await loadEffectEditorSnapshot(supabase, parsed.data.id);
-  if (!previousSnapshot.ok) return previousSnapshot;
-
   const patch = {
     name: parsed.data.name,
     description: parsed.data.description || null,
@@ -399,58 +246,17 @@ export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Pr
     sort_order: parsed.data.sortOrder,
     model_json: model.value,
   };
-  const result = await supabase
-    .from('firework_effects')
-    .update(patch)
-    .eq('id', parsed.data.id)
-    .eq('updated_at', parsed.data.expectedUpdatedAt)
-    .select(EFFECT_MUTATION_SELECT)
-    .maybeSingle();
-
-  const { data, error } = result;
-  if (error) return { ok: false, error: error.message };
-  if (!data) {
-    return {
-      ok: false,
-      error: 'This effect changed in another session. Refresh before saving again.',
-    };
-  }
-
-  const saved = mapSavedEffect(data as EffectMutationRow);
-  const snapshotJson = makeEffectEditorSnapshot({
+  const result = await saveEditorRecord(supabase, {
     kind: 'effect',
-    id: saved.id,
-    name: saved.name,
-    description: saved.description,
-    patternKey: saved.patternKey,
-    sortOrder: saved.sortOrder,
-    styleDefaultIds: emptyStyleDefaultIdMap(),
-    modelJson: saved.modelJson,
-    updatedAt: saved.updatedAt,
-  });
-  const changesJson = fieldChanges(previousSnapshot.snapshot, snapshotJson, [
-    'name',
-    'description',
-    'patternKey',
-    'sortOrder',
-    'modelJson',
-  ]);
-  const historyVersion = makeEffectVersion({
-    effectId: saved.id,
-    action: 'update',
-    summary: summariseEffectChanges(changesJson),
-    snapshotJson,
-    previousSnapshotJson: previousSnapshot.snapshot,
-    changesJson,
-    profile,
+    id: parsed.data.id,
+    expectedUpdatedAt: parsed.data.expectedUpdatedAt,
+    patch,
     historyVersionId: parsed.data.historyVersionId,
   });
-  const historyRecorded = await recordEffectVersion(supabase, historyVersion).catch(
-    (historyError: unknown) => {
-      console.error('[updateEffect] version history failed:', historyError);
-      return false;
-    },
-  );
+  if (!result.ok) return result;
+  const saved = mapSavedEffect(result.saved);
+  const historyVersion = result.historyVersion;
+  const historyRecorded = true;
 
   await Promise.all([
     invalidateAdminEffectsCache(parsed.data.id),
@@ -482,74 +288,33 @@ export async function createStyleDefaultAndUpdateEffect(
   if (!defaults.ok) return { ok: false, error: defaults.error };
 
   const supabase = createClient(await cookies(), supabaseFetchLong);
-  const previousSnapshot = await loadEffectEditorSnapshot(supabase, parsed.data.effect.id);
-  if (!previousSnapshot.ok) return previousSnapshot;
-
-  const { data, error } = await supabase.rpc('create_style_default_and_update_effect', {
-    p_effect_id: parsed.data.effect.id,
-    p_expected_updated_at: parsed.data.effect.expectedUpdatedAt,
-    p_effect_name: parsed.data.effect.name,
-    p_effect_description: parsed.data.effect.description || '',
-    p_pattern_key: parsed.data.effect.patternKey,
-    p_sort_order: parsed.data.effect.sortOrder,
-    p_model_json: model.value,
-    p_style_slug: styleDefaultSlug(parsed.data.styleDefault.name, parsed.data.styleDefault.kind),
-    p_style_name: parsed.data.styleDefault.name,
-    p_style_description: parsed.data.styleDefault.description || '',
-    p_style_kind: parsed.data.styleDefault.kind,
-    p_style_defaults_json: defaults.value,
-  });
-
-  if (error) return { ok: false, error: error.message };
-  const payload = readSnapshotRecord(data as Json | null);
-  if (payload.ok !== true) {
-    if (payload.code === 'conflict') {
-      return {
-        ok: false,
-        error: 'This effect changed in another session. Refresh before saving again.',
-      };
-    }
-    return { ok: false, error: 'Could not create the style default and save the effect.' };
-  }
-
-  const saved = mapSavedEffect(payload.effect as unknown as EffectMutationRow);
-  const styleDefault = mapCreatedStyleDefault(
-    payload.styleDefault as unknown as StyleDefaultMutationRow,
-  );
-  const snapshotJson = makeEffectEditorSnapshot({
+  const result = await saveEditorRecord(supabase, {
     kind: 'effect',
-    id: saved.id,
-    name: saved.name,
-    description: saved.description,
-    patternKey: saved.patternKey,
-    sortOrder: saved.sortOrder,
-    styleDefaultIds: emptyStyleDefaultIdMap(),
-    modelJson: saved.modelJson,
-    updatedAt: saved.updatedAt,
-  });
-  const changesJson = fieldChanges(previousSnapshot.snapshot, snapshotJson, [
-    'name',
-    'description',
-    'patternKey',
-    'sortOrder',
-    'modelJson',
-  ]);
-  const historyVersion = makeEffectVersion({
-    effectId: saved.id,
-    action: 'update',
-    summary: summariseEffectChanges(changesJson),
-    snapshotJson,
-    previousSnapshotJson: previousSnapshot.snapshot,
-    changesJson,
-    profile,
-    historyVersionId: parsed.data.effect.historyVersionId,
-  });
-  const historyRecorded = await recordEffectVersion(supabase, historyVersion).catch(
-    (historyError: unknown) => {
-      console.error('[createStyleDefaultAndUpdateEffect] version history failed:', historyError);
-      return false;
+    id: parsed.data.effect.id,
+    expectedUpdatedAt: parsed.data.effect.expectedUpdatedAt,
+    patch: {
+      name: parsed.data.effect.name,
+      description: parsed.data.effect.description || null,
+      pattern_key: parsed.data.effect.patternKey,
+      sort_order: parsed.data.effect.sortOrder,
+      model_json: model.value,
     },
-  );
+    historyVersionId: parsed.data.effect.historyVersionId,
+    inlineStyle: {
+      slug: styleDefaultSlug(parsed.data.styleDefault.name, parsed.data.styleDefault.kind),
+      name: parsed.data.styleDefault.name,
+      description: parsed.data.styleDefault.description || null,
+      kind: parsed.data.styleDefault.kind,
+      defaults_json: defaults.value,
+    },
+  });
+  if (!result.ok) return result;
+  if (!result.styleDefault)
+    return { ok: false, error: 'Could not confirm the saved preset. Refresh before retrying.' };
+  const saved = mapSavedEffect(result.saved);
+  const styleDefault = mapCreatedStyleDefault(result.styleDefault);
+  const historyVersion = result.historyVersion;
+  const historyRecorded = true;
 
   await Promise.all([
     invalidateAdminEffectsCache(saved.id),
@@ -608,9 +373,6 @@ export async function restoreEffectEditorVersion(
     return { ok: false, error: `That version has invalid renderer settings: ${rendererError}` };
   }
 
-  const previousSnapshot = await loadEffectEditorSnapshot(supabase, parsed.data.effectId);
-  if (!previousSnapshot.ok) return previousSnapshot;
-
   const patch = {
     name: snapshot.name,
     description: snapshot.description,
@@ -618,58 +380,18 @@ export async function restoreEffectEditorVersion(
     sort_order: snapshot.sortOrder,
     model_json: restoredModel as Json,
   };
-  const result = await supabase
-    .from('firework_effects')
-    .update(patch)
-    .eq('id', parsed.data.effectId)
-    .eq('updated_at', parsed.data.expectedUpdatedAt)
-    .select(EFFECT_MUTATION_SELECT)
-    .maybeSingle();
-
-  const { data, error } = result;
-  if (error) return { ok: false, error: error.message };
-  if (!data) {
-    return {
-      ok: false,
-      error: 'This effect changed in another session. Refresh before restoring.',
-    };
-  }
-
-  const saved = mapSavedEffect(data as EffectMutationRow);
-  const snapshotJson = makeEffectEditorSnapshot({
+  const result = await saveEditorRecord(supabase, {
     kind: 'effect',
-    id: saved.id,
-    name: saved.name,
-    description: saved.description,
-    patternKey: saved.patternKey,
-    sortOrder: saved.sortOrder,
-    styleDefaultIds: emptyStyleDefaultIdMap(),
-    modelJson: saved.modelJson,
-    updatedAt: saved.updatedAt,
-  });
-  const changesJson = fieldChanges(previousSnapshot.snapshot, snapshotJson, [
-    'name',
-    'description',
-    'patternKey',
-    'sortOrder',
-    'modelJson',
-  ]);
-  const historyVersion = makeEffectVersion({
-    effectId: saved.id,
-    action: 'restore',
-    summary: `Restored version from ${version.created_by_label}`,
-    snapshotJson,
-    previousSnapshotJson: previousSnapshot.snapshot,
-    changesJson,
-    profile,
+    id: parsed.data.effectId,
+    expectedUpdatedAt: parsed.data.expectedUpdatedAt,
+    patch,
     historyVersionId: parsed.data.historyVersionId,
+    restoreVersionId: parsed.data.versionId,
   });
-  const historyRecorded = await recordEffectVersion(supabase, historyVersion).catch(
-    (historyError: unknown) => {
-      console.error('[restoreEffectEditorVersion] version history failed:', historyError);
-      return false;
-    },
-  );
+  if (!result.ok) return result;
+  const saved = mapSavedEffect(result.saved);
+  const historyVersion = result.historyVersion;
+  const historyRecorded = true;
 
   await Promise.all([
     invalidateAdminEffectsCache(parsed.data.effectId),

@@ -1,52 +1,15 @@
 'use client';
+import { validateCatalogueRender } from '@/lib/admin/renderer-validation';
+import { rendererTabs } from '@/ui/firework-editor/renderer-tabs';
+import { applyCopiedPreset, resetCopiedPreset } from '@showcrafter/firework-editor/presets';
 
-import dynamic from 'next/dynamic';
-import {
-  Braces,
-  Circle,
-  CircleDot,
-  Cloud,
-  GanttChartSquare,
-  History,
-  Repeat,
-  Shapes,
-  SlidersHorizontal,
-  Sparkles,
-  Volume2,
-  Waves,
-  Wind,
-  Zap,
-} from 'lucide-react';
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useDraftHistory } from '@showcrafter/firework-editor/use-draft-history';
+
 import {
   createStyleDefaultAndUpdateEffect,
   restoreEffectEditorVersion,
   updateEffect,
 } from '@/app/(admin)/admin/effects/actions';
-import { EditorHistoryPanel, JsonReadOnlyPanel } from '@/ui/firework-editor/EditorInspectorPanels';
-import { EditorStyleDefaultControls } from '@/ui/firework-editor/EditorSectionPanels';
-import {
-  PREVIEW_LAUNCH_POSITIONS,
-  estimatePreviewTicks,
-} from '@/ui/firework-editor/editor-preview-timing';
-import {
-  EditorPreviewTransport,
-  FireworkEditorShell,
-  type FireworkEditorShellTab,
-} from '@/ui/firework-editor/FireworkEditorShell';
-import {
-  makeOptimisticEditorVersion,
-  useEditorHistory,
-} from '@/ui/firework-editor/useEditorHistory';
-import { usePreviewFullscreen } from '@/ui/firework-editor/previewFullscreen';
-import { useAdminBreadcrumbOverride } from '@/ui/shell/AdminShell';
-import { ReplayStageBackdrop } from '@/ui/replay/ReplayStageBackdrop';
-import { FireworkRenderControls } from '@/ui/firework-editor/FireworkRenderControls';
-import { FireworkTimelineControls } from '@/ui/firework-editor/FireworkTimelineControls';
-import { Field, FieldLabel } from '@/ui/patterns/Field';
-import { Input, Textarea } from '@/ui/patterns/Input';
-import type { SelectOption } from '@/ui/patterns/SelectField';
-import { toast } from '@/ui/patterns/toast';
 import type {
   AdminEditorVersion,
   AdminEffectDetail,
@@ -55,24 +18,49 @@ import type {
 import { canApplySavedEditorSnapshot } from '@/lib/admin/editor-save-state';
 import { parseEffectEditorSnapshot } from '@/lib/admin/editor-snapshots';
 import type { Json } from '@/lib/database.types';
+import type { ReplayCue } from '@/lib/show-domain';
 import {
+  PREVIEW_LAUNCH_POSITIONS,
+  estimatePreviewTicks,
+} from '@/ui/firework-editor/editor-preview-timing';
+import { EditorHistoryPanel, JsonReadOnlyPanel } from '@/ui/firework-editor/EditorInspectorPanels';
+import { EditorStyleDefaultControls } from '@/ui/firework-editor/EditorSectionPanels';
+import {
+  EditorPreviewTransport,
+  FireworkEditorShell,
+  type FireworkEditorShellTab,
+} from '@/ui/firework-editor/FireworkEditorShell';
+import { FireworkTimelineControls } from '@/ui/firework-editor/FireworkTimelineControls';
+import { usePreviewFullscreen } from '@/ui/firework-editor/previewFullscreen';
+import {
+  makeOptimisticEditorVersion,
+  useEditorHistory,
+} from '@/ui/firework-editor/useEditorHistory';
+import { Field, FieldLabel } from '@/ui/patterns/Field';
+import { Input, Textarea } from '@/ui/patterns/Input';
+import type { SelectOption } from '@/ui/patterns/SelectField';
+import { toast } from '@/ui/patterns/toast';
+import { ReplayStageBackdrop } from '@/ui/replay/ReplayStageBackdrop';
+import { useAdminBreadcrumbOverride } from '@/ui/shell/AdminShell';
+import {
+  DEFAULT_DESIGN,
   canonicaliseEffectModelJson,
-  compileFireworkDesign,
   estimateDesignDurationSeconds,
-} from '@/lib/fireworks/design';
-import { isGroundFireworkEffect } from '@/lib/fireworks/timing';
+  validateFireworkDesign,
+} from '@showcrafter/fireworks/design';
+import { DEFAULT_FIREWORK_SPEC } from '@showcrafter/fireworks/spec';
 import {
   FIREWORK_STYLE_DEFAULT_KINDS,
-  extractStyleDefaultsFromDesign,
   NO_STYLE_DEFAULT_VALUE,
   emptyStyleDefaultIdMap,
-  orderedStyleDefaultValues,
-  removeStyleDefaultOverridesFromRecord,
+  extractStyleDefaultsFromDesign,
   styleDefaultKindLabel,
   type FireworkStyleDefaultKind,
-} from '@/lib/fireworks/style-defaults';
-import { DEFAULT_FIREWORK_SPEC } from '@/lib/fireworks/spec';
-import type { ReplayCue } from '@/lib/show-domain';
+} from '@showcrafter/fireworks/style-defaults';
+import { isGroundFireworkEffect } from '@showcrafter/fireworks/timing';
+import { Braces, GanttChartSquare, History, SlidersHorizontal } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 type ParsedJson = { ok: true; value: Record<string, unknown> } | { ok: false; error: string };
 type JsonRecord = Record<string, unknown>;
@@ -264,7 +252,14 @@ function effectSavedSnapshotFromFields(
     description: fields.description ?? '',
     patternKey: fields.patternKey,
     sortOrder,
-    modelText: JSON.stringify(modelJson, null, 2),
+    modelText: JSON.stringify(
+      validateCatalogueRender({ kind: 'effect', recordId: fields.id, settings: fields.modelJson })
+        .ok
+        ? modelJson
+        : fields.modelJson,
+      null,
+      2,
+    ),
     styleDefaultIds: fields.styleDefaultIds,
     signature: effectEditorSignature({
       name: fields.name,
@@ -314,14 +309,13 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   const [description, setDescription] = useState(effect.description ?? '');
   const [patternKey, setPatternKey] = useState(effect.patternKey);
   const [sortOrder, setSortOrder] = useState(String(effect.sortOrder));
-  const [modelText, setModelText] = useState(() =>
-    JSON.stringify(canonicaliseEffectModelJson(effect.modelJson), null, 2),
-  );
+  const [modelText, setModelText] = useState(() => incomingSavedSnapshot.modelText);
   const [styleDefaultIds, setStyleDefaultIds] = useState(() => initialStyleDefaultIds(effect));
   const [createdStyleDefaults, setCreatedStyleDefaults] = useState<LocalStyleDefaultOptions>({});
   const [lastSavedUpdatedAt, setLastSavedUpdatedAt] = useState(effect.updatedAt);
   const [savedSignature, setSavedSignature] = useState(() => incomingSavedSnapshot.signature);
   const savedSnapshotRef = useRef<EffectEditorSavedSnapshot>(incomingSavedSnapshot);
+  const [savedPreviewSnapshot, setSavedPreviewSnapshot] = useState(incomingSavedSnapshot);
   const savedSignatureRef = useRef(savedSignature);
   const editorTargetIdRef = useRef(effect.id);
   const [activeTab, setActiveTab] = useState('details');
@@ -340,10 +334,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         : canonicaliseEffectModelJson(effect.modelJson),
     [effect.modelJson, parsedModel],
   );
-  const calibrationDefaults = useMemo(
-    () => readRecord(canonicaliseEffectModelJson(effect.modelJson), 'renderDefaults'),
-    [effect.modelJson],
-  );
   const modelRecord = parsedModel.ok ? baseModel : {};
   const renderDefaults = readRecord(modelRecord, 'renderDefaults');
   const selectedStyleDefaults = useMemo(() => {
@@ -359,16 +349,9 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     return selected;
   }, [createdStyleDefaults, effect.styleDefaultLinks, effect.styleDefaults, styleDefaultIds]);
   function copySelectedStyleDefaultsIntoModel(source: JsonRecord): JsonRecord {
-    const draft = cloneRecord(canonicaliseEffectModelJson(source));
-    const existingDefaults = cloneRecord(readRecord(draft, 'renderDefaults'));
-    const copiedDefaults: JsonRecord = {};
-    for (const option of orderedStyleDefaultValues(selectedStyleDefaults)) {
-      if (isRecord(option?.defaultsJson)) mergeRecordInto(copiedDefaults, option.defaultsJson);
-    }
-    mergeRecordInto(copiedDefaults, existingDefaults);
-    draft.renderDefaults = copiedDefaults;
-    return draft;
+    return cloneRecord(canonicaliseEffectModelJson(source));
   }
+
   const saveStyleDefaultIds = useMemo(
     () => toSaveStyleDefaultIds(styleDefaultIds),
     [styleDefaultIds],
@@ -414,6 +397,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     if (sameEffect && currentSignatureRef.current !== savedSignatureRef.current) return;
 
     savedSnapshotRef.current = incomingSnapshot;
+    setSavedPreviewSnapshot(incomingSnapshot);
     savedSignatureRef.current = incomingSnapshot.signature;
     setName(incomingSnapshot.name);
     setDescription(incomingSnapshot.description);
@@ -433,23 +417,50 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     setAdminBreadcrumb({ label: name || effect.name });
     return () => setAdminBreadcrumb(null);
   }, [effect.name, name, setAdminBreadcrumb]);
-  const previewDesign = useMemo(
-    () =>
-      compileFireworkDesign({
-        baseModel,
-        effectStyleDefaults: orderedStyleDefaultValues(selectedStyleDefaults).map(
-          (item) => item?.defaultsJson,
-        ),
-        primaryColor: modelHasColour ? null : PREVIEW_COLOR,
-      }),
-    [baseModel, modelHasColour, selectedStyleDefaults],
-  );
+  const renderResult = useMemo(() => {
+    const source = validateCatalogueRender({
+      kind: 'effect',
+      recordId: effect.id,
+      settings: parsedModel.ok ? parsedModel.value : null,
+    });
+    return source.ok
+      ? validateFireworkDesign({ baseModel, primaryColor: modelHasColour ? null : PREVIEW_COLOR })
+      : source;
+  }, [effect.id, parsedModel, baseModel, modelHasColour]);
+
+  // Invalid settings remain editable, but never become preview particles.
+  const previewDesign = renderResult.ok ? renderResult.design : DEFAULT_DESIGN;
+  const renderError = !parsedModel.ok
+    ? parsedModel.error
+    : !renderResult.ok
+      ? renderResult.diagnostics
+          .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+          .join('; ')
+      : null;
+
+  const [showSaved, setShowSaved] = useState(false);
+  const savedRenderResult = useMemo(() => {
+    const model = JSON.parse(savedPreviewSnapshot.modelText);
+    const source = validateCatalogueRender({
+      kind: 'effect',
+      recordId: effect.id,
+      settings: model,
+    });
+    return source.ok
+      ? validateFireworkDesign({
+          baseModel: model,
+          primaryColor: hasConcreteRendererColor(model) ? null : PREVIEW_COLOR,
+        })
+      : source;
+  }, [effect.id, savedPreviewSnapshot]);
+  const displayedDesign =
+    showSaved && savedRenderResult.ok ? savedRenderResult.design : previewDesign;
 
   // Head-orb appearance is saved on the effect's renderDefaults, so the sliders
   // read from the compiled design and write straight back into the model. The
   // canvas preview reflects the saved look, and fireworks built on this effect
   // inherit it as their starting point.
-  const heads = previewDesign.stars.outer.head;
+  const heads = displayedDesign.stars.outer.head;
   const glowPadding = heads.glowPadding;
   const whiteCoreSizePercent = heads.whiteCoreSizePercent;
   const whiteCoreBlurPercent = heads.whiteCoreBlurPercent;
@@ -464,17 +475,22 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   const backgroundGlowSoftness = heads.backgroundGlowSoftness;
 
   const previewDuration = useMemo(() => {
-    const estimated = PREVIEW_CUE_TIME_SECONDS + estimateDesignDurationSeconds(previewDesign);
+    const estimated =
+      PREVIEW_CUE_TIME_SECONDS +
+      Math.max(
+        estimateDesignDurationSeconds(previewDesign),
+        savedRenderResult.ok ? estimateDesignDurationSeconds(savedRenderResult.design) : 0,
+      );
     return Math.max(4, Math.ceil(estimated * 2) / 2);
-  }, [previewDesign]);
+  }, [previewDesign, savedRenderResult]);
   const previewTicks = useMemo(
     () =>
       estimatePreviewTicks({
-        design: previewDesign,
+        design: displayedDesign,
         cueTimeSeconds: PREVIEW_CUE_TIME_SECONDS,
         previewDuration,
       }),
-    [previewDesign, previewDuration],
+    [displayedDesign, previewDuration],
   );
 
   const previewCue = useMemo<ReplayCue>(
@@ -519,7 +535,18 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       sortOrderNumber,
     ],
   );
-  const previewCues = useMemo(() => [previewCue], [previewCue]);
+  const previewCues = useMemo(() => {
+    if (showSaved)
+      return savedRenderResult.ok
+        ? [
+            {
+              ...previewCue,
+              firework: { ...previewCue.firework, renderDesign: savedRenderResult.design },
+            },
+          ]
+        : [];
+    return renderError ? [] : [previewCue];
+  }, [previewCue, renderError, showSaved, savedRenderResult]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -637,16 +664,23 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
 
   function resetLocalStyleDefaults(kind: FireworkStyleDefaultKind) {
     updateModelDefaults((defaults) => {
-      removeStyleDefaultOverridesFromRecord(defaults, kind);
+      resetCopiedPreset(defaults, kind);
     });
   }
 
   function handleStyleDefaultChange(kind: FireworkStyleDefaultKind, value: string) {
-    if (value !== NO_STYLE_DEFAULT_VALUE) {
-      updateModelDefaults((defaults) => {
-        removeStyleDefaultOverridesFromRecord(defaults, kind);
-      });
+    const option = [...effect.styleDefaults[kind], ...(createdStyleDefaults[kind] ?? [])].find(
+      (item) => item.id === value,
+    );
+    if (option) {
+      const checked = validateFireworkDesign({ variantOverrides: option.defaultsJson });
+      if (!checked.ok) {
+        setError(checked.diagnostics.map((issue) => issue.message).join('; '));
+        return;
+      }
+      updateModelDefaults((defaults) => applyCopiedPreset(defaults, kind, option));
     }
+    setError(null);
     setStyleDefaultIds((current) => ({ ...current, [kind]: value }));
   }
 
@@ -714,12 +748,8 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     action: 'update' | 'restore',
   ) {
     const historyVersionId = crypto.randomUUID();
-    const previousSavedSnapshot = savedSnapshotRef.current;
     const localSnapshot = currentLocalSnapshot();
-    savedSnapshotRef.current = optimisticSnapshot;
-    savedSignatureRef.current = optimisticSnapshot.signature;
     currentSignatureRef.current = optimisticSnapshot.signature;
-    setSavedSignature(optimisticSnapshot.signature);
     applySnapshot(optimisticSnapshot);
     editorHistory.begin(
       makeOptimisticEditorVersion({
@@ -734,18 +764,12 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       historyVersionId,
       localSnapshot,
       optimisticSnapshot,
-      previousSavedSnapshot,
     };
   }
 
   function rollbackOptimisticMutation(mutation: ReturnType<typeof beginOptimisticMutation>) {
     if (editorTargetIdRef.current !== mutation.targetId) return;
     editorHistory.discard(mutation.historyVersionId);
-    if (savedSignatureRef.current === mutation.optimisticSnapshot.signature) {
-      savedSnapshotRef.current = mutation.previousSavedSnapshot;
-      savedSignatureRef.current = mutation.previousSavedSnapshot.signature;
-      setSavedSignature(mutation.previousSavedSnapshot.signature);
-    }
     if (currentSignatureRef.current === mutation.optimisticSnapshot.signature) {
       currentSignatureRef.current = mutation.localSnapshot.signature;
       applySnapshot(mutation.localSnapshot);
@@ -755,8 +779,8 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   function saveCurrentStyleAsDefault(kind: FireworkStyleDefaultKind, styleName: string) {
     if (isPending) return;
     setError(null);
-    if (!parsedModel.ok) {
-      setError(parsedModel.error);
+    if (renderError || !parsedModel.ok) {
+      setError(renderError ?? (!parsedModel.ok ? parsedModel.error : null));
       return;
     }
     const savedModel = copySelectedStyleDefaultsIntoModel(parsedModel.value);
@@ -833,6 +857,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         styleDefaultIds: clearedStyleDefaultIds,
       });
       savedSnapshotRef.current = savedSnapshot;
+      setSavedPreviewSnapshot(savedSnapshot);
       savedSignatureRef.current = savedSnapshot.signature;
       setSavedSignature(savedSnapshot.signature);
       editorHistory.settle({
@@ -853,8 +878,8 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   function saveEffect() {
     if (isPending) return;
     setError(null);
-    if (!parsedModel.ok) {
-      setError(parsedModel.error);
+    if (renderError || !parsedModel.ok) {
+      setError(renderError ?? (!parsedModel.ok ? parsedModel.error : null));
       return;
     }
     const savedModel = copySelectedStyleDefaultsIntoModel(parsedModel.value);
@@ -892,6 +917,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         styleDefaultIds: clearedStyleDefaultIds,
       });
       savedSnapshotRef.current = savedSnapshot;
+      setSavedPreviewSnapshot(savedSnapshot);
       savedSignatureRef.current = savedSnapshot.signature;
       setSavedSignature(savedSnapshot.signature);
       editorHistory.settle({
@@ -971,6 +997,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         currentSignatureRef.current,
       );
       savedSnapshotRef.current = restoredSnapshot;
+      setSavedPreviewSnapshot(restoredSnapshot);
       savedSignatureRef.current = restoredSnapshot.signature;
       setLastSavedUpdatedAt(restoredSnapshot.updatedAt);
       setSavedSignature(restoredSnapshot.signature);
@@ -989,18 +1016,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     });
   }
 
-  const previewMenuActions = useMemo(
-    () => [
-      {
-        id: 'loop',
-        label: isLooping ? 'Disable looping' : 'Enable looping',
-        active: isLooping,
-        onClick: () => setIsLooping((looping) => !looping),
-        icon: <Repeat size={16} strokeWidth={2} />,
-      },
-    ],
-    [isLooping],
-  );
   const preview = (
     <LazyFireworkReplayCanvas
       cues={previewCues}
@@ -1011,8 +1026,8 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       interactive
       controlsVisible
       showStarfield={false}
-      cameraMenuActions={previewMenuActions}
-      showFps
+      showFps={false}
+      showCameraControls={false}
       primeSnapshots
       primeOnCueChanges={false}
       showLoadingBar
@@ -1044,6 +1059,8 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       duration={previewDuration}
       isPlaying={isPlaying}
       fullscreen={isFullscreen}
+      isLooping={isLooping}
+      onLoopToggle={() => setIsLooping((looping) => !looping)}
       loading={!previewReady}
       loadingProgress={previewLoadingProgress}
       ticks={previewTicks}
@@ -1114,6 +1131,9 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         disabled={!parsedModel.ok}
         saveDisabled={isPending}
         onSave={(styleName) => saveCurrentStyleAsDefault(kind, styleName)}
+        resetDisabled={
+          !isRecord(renderDefaults.presetSources) || !renderDefaults.presetSources[kind]
+        }
         onReset={() => resetLocalStyleDefaults(kind)}
       />
     );
@@ -1129,227 +1149,17 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       title: 'Details',
       content: detailsContent,
     },
-    {
-      id: 'geometry',
-      label: 'Geometry',
-      icon: Shapes,
-      eyebrow: 'Shape',
-      title: 'Geometry',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={renderDefaults}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => updateModelDefaultsForStyle('geometry', updater)}
-            disabled={!parsedModel.ok}
-            controlScope="geometry"
-          />
-          {renderStyleDefaultControls('geometry')}
-        </div>
-      ),
-    },
-    {
-      id: 'launch-dot',
-      label: 'Launch Dot',
-      icon: Circle,
-      eyebrow: 'Ascent',
-      title: 'Launch dot',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={renderDefaults}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => updateModelDefaultsForStyle('launch', updater)}
-            disabled={!parsedModel.ok}
-            showLaunch
-            controlScope="launchShell"
-          />
-          {renderStyleDefaultControls('launch')}
-        </div>
-      ),
-    },
-    {
-      id: 'launch-trail',
-      label: 'Launch Trail',
-      icon: Waves,
-      eyebrow: 'Ascent',
-      title: 'Launch trail',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={renderDefaults}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => updateModelDefaultsForStyle('launch', updater)}
-            disabled={!parsedModel.ok}
-            showLaunch
-            controlScope="launchTrail"
-          />
-          {renderStyleDefaultControls('launch')}
-        </div>
-      ),
-    },
-    {
-      id: 'smoke',
-      label: 'Smoke',
-      icon: Cloud,
-      eyebrow: 'Atmosphere',
-      title: 'Smoke',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={renderDefaults}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => updateModelDefaultsForStyle('smoke', updater)}
-            disabled={!parsedModel.ok}
-            controlScope="smoke"
-          />
-          {renderStyleDefaultControls('smoke')}
-        </div>
-      ),
-    },
-    {
-      id: 'star',
-      label: 'Star',
-      icon: Sparkles,
-      eyebrow: 'Appearance',
-      title: 'Star & glow',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={renderDefaults}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => updateModelDefaultsForStyle('star', updater)}
-            disabled={!parsedModel.ok}
-            showStarCount
-            controlScope="star"
-          />
-          {renderStyleDefaultControls('star')}
-        </div>
-      ),
-    },
-    {
-      id: 'star-inner',
-      label: 'Star Inner',
-      icon: CircleDot,
-      eyebrow: 'Appearance',
-      title: 'Star Inner',
-      content: (
-        <FireworkRenderControls
-          design={previewDesign}
-          defaults={renderDefaults}
-          calibrationDefaults={calibrationDefaults}
-          mutate={(updater) => updateModelDefaultsForStyle('star', updater)}
-          disabled={!parsedModel.ok}
-          showStarCount
-          controlScope="starInner"
-        />
-      ),
-    },
-    {
-      id: 'trail',
-      label: 'Trail',
-      icon: Wind,
-      eyebrow: 'Appearance',
-      title: 'Trail',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={renderDefaults}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => updateModelDefaultsForStyle('trail', updater)}
-            disabled={!parsedModel.ok}
-            controlScope="trail"
-          />
-          {renderStyleDefaultControls('trail')}
-        </div>
-      ),
-    },
-    {
-      id: 'fx-strobe',
-      label: 'Strobe',
-      icon: Zap,
-      eyebrow: 'Effects',
-      title: 'Strobe',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={renderDefaults}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => updateModelDefaultsForStyle('strobe', updater)}
-            disabled={!parsedModel.ok}
-            controlScope="strobe"
-          />
-          {renderStyleDefaultControls('strobe')}
-        </div>
-      ),
-    },
-    {
-      id: 'fx-crackle',
-      label: 'Crackle',
-      icon: Zap,
-      eyebrow: 'Effects',
-      title: 'Crackle',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={renderDefaults}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => updateModelDefaultsForStyle('crackle', updater)}
-            disabled={!parsedModel.ok}
-            controlScope="crackle"
-          />
-          {renderStyleDefaultControls('crackle')}
-        </div>
-      ),
-    },
-    {
-      id: 'fx-split',
-      label: 'Split',
-      icon: Zap,
-      eyebrow: 'Effects',
-      title: 'Split',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={renderDefaults}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => updateModelDefaultsForStyle('split', updater)}
-            disabled={!parsedModel.ok}
-            controlScope="split"
-          />
-          {previewDesign.split.enabled ? renderStyleDefaultControls('split') : null}
-        </div>
-      ),
-    },
-    {
-      id: 'sound',
-      label: 'Sound',
-      icon: Volume2,
-      eyebrow: 'Audio',
-      title: 'Sound',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={renderDefaults}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => updateModelDefaultsForStyle('sound', updater)}
-            disabled={!parsedModel.ok}
-            controlScope="sound"
-          />
-          {renderStyleDefaultControls('sound')}
-        </div>
-      ),
-    },
+    ...rendererTabs({
+      saved: savedRenderResult.ok ? savedRenderResult.design : undefined,
+      controls: {
+        design: previewDesign,
+        defaults: renderDefaults,
+
+        disabled: !parsedModel.ok,
+      },
+      mutate: updateModelDefaultsForStyle,
+      preset: renderStyleDefaultControls,
+    }),
     {
       id: 'timeline',
       label: 'Timeline',
@@ -1393,13 +1203,22 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     },
   ].filter((tab) => !isGroundEmitter || (tab.id !== 'launch-dot' && tab.id !== 'launch-trail'));
 
+  const draftHistory = useDraftHistory({
+    recordKey: effect.id,
+    value: currentLocalSnapshot(),
+    signature: currentSignature,
+    restore: applySnapshot,
+  });
+
   return (
     <FireworkEditorShell
+      history={draftHistory}
+      comparison={{ saved: showSaved, onChange: setShowSaved }}
       title={name || effect.name}
       dirty={isDirty}
       saving={isPending}
       saveLabel="Save"
-      saveDisabled={!parsedModel.ok || isPending}
+      saveDisabled={Boolean(renderError) || isPending}
       revertDisabled={!isDirty || isPending}
       onSave={saveEffect}
       onRevert={revertLocalChanges}
@@ -1410,6 +1229,14 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       transport={transport}
       transportPlaying={isPlaying}
       error={error}
+      renderDiagnostics={{
+        recordId: effect.id,
+        issues: !parsedModel.ok
+          ? [{ path: [], message: parsedModel.error }]
+          : !renderResult.ok
+            ? renderResult.diagnostics
+            : [],
+      }}
       fullscreen={isFullscreen}
       onExitFullscreen={exitFullscreen}
     />

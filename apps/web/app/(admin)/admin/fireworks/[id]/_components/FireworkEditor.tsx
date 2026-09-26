@@ -1,71 +1,16 @@
 'use client';
+import { validateCatalogueRender } from '@/lib/admin/renderer-validation';
+import { fireworkColourMetadata } from '@showcrafter/firework-editor/colour-metadata';
+import { rendererTabs } from '@/ui/firework-editor/renderer-tabs';
+import { applyCopiedPreset, resetCopiedPreset } from '@showcrafter/firework-editor/presets';
 
-import dynamic from 'next/dynamic';
-import {
-  Braces,
-  Circle,
-  CircleDot,
-  Cloud,
-  GanttChartSquare,
-  History,
-  Palette,
-  Plus,
-  Repeat,
-  Shapes,
-  SlidersHorizontal,
-  Sparkles,
-  Volume2,
-  Waves,
-  Wind,
-  X,
-  Zap,
-} from 'lucide-react';
-import {
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-  type PointerEvent as ReactPointerEvent,
-} from 'react';
+import { useDraftHistory } from '@showcrafter/firework-editor/use-draft-history';
+
 import {
   createStyleDefaultAndUpdateFirework,
   restoreFireworkEditorVersion,
   updateFirework,
 } from '@/app/(admin)/admin/fireworks/actions';
-import { EditorHistoryPanel, JsonReadOnlyPanel } from '@/ui/firework-editor/EditorInspectorPanels';
-import { EditorStyleDefaultControls } from '@/ui/firework-editor/EditorSectionPanels';
-import {
-  PREVIEW_LAUNCH_POSITIONS,
-  estimatePreviewTicks,
-} from '@/ui/firework-editor/editor-preview-timing';
-import {
-  EditorPreviewTransport,
-  FireworkEditorShell,
-  type FireworkEditorShellTab,
-} from '@/ui/firework-editor/FireworkEditorShell';
-import {
-  makeOptimisticEditorVersion,
-  useEditorHistory,
-} from '@/ui/firework-editor/useEditorHistory';
-import { usePreviewFullscreen } from '@/ui/firework-editor/previewFullscreen';
-import { useAdminBreadcrumbOverride } from '@/ui/shell/AdminShell';
-import { ReplayStageBackdrop } from '@/ui/replay/ReplayStageBackdrop';
-import {
-  FireworkRenderControls,
-  type JsonRecord,
-} from '@/ui/firework-editor/FireworkRenderControls';
-import { FireworkTimelineControls } from '@/ui/firework-editor/FireworkTimelineControls';
-import { Button } from '@/ui/patterns/Button';
-import { ColorPicker } from '@/ui/patterns/ColorPicker';
-import { Field, FieldLabel } from '@/ui/patterns/Field';
-import { Input, Textarea } from '@/ui/patterns/Input';
-import { SelectField, type SelectOption } from '@/ui/patterns/SelectField';
-import { SliderField } from '@/ui/patterns/SliderField';
-import { Switch } from '@/ui/primitives/switch';
-import { toast } from '@/ui/patterns/toast';
 import type {
   AdminEditorVersion,
   AdminFireworkDetail,
@@ -74,30 +19,52 @@ import type {
 import { canApplySavedEditorSnapshot } from '@/lib/admin/editor-save-state';
 import { parseFireworkEditorSnapshot } from '@/lib/admin/editor-snapshots';
 import type { Json } from '@/lib/database.types';
+import type { ReplayCue } from '@/lib/show-domain';
 import {
-  canonicaliseEffectModelJson,
-  compileFireworkDesign,
+  PREVIEW_LAUNCH_POSITIONS,
+  estimatePreviewTicks,
+} from '@/ui/firework-editor/editor-preview-timing';
+import { EditorHistoryPanel, JsonReadOnlyPanel } from '@/ui/firework-editor/EditorInspectorPanels';
+import { EditorStyleDefaultControls } from '@/ui/firework-editor/EditorSectionPanels';
+import {
+  EditorPreviewTransport,
+  FireworkEditorShell,
+  type FireworkEditorShellTab,
+} from '@/ui/firework-editor/FireworkEditorShell';
+import { type JsonRecord } from '@/ui/firework-editor/FireworkRenderControls';
+import { FireworkTimelineControls } from '@/ui/firework-editor/FireworkTimelineControls';
+import { usePreviewFullscreen } from '@/ui/firework-editor/previewFullscreen';
+import {
+  makeOptimisticEditorVersion,
+  useEditorHistory,
+} from '@/ui/firework-editor/useEditorHistory';
+import { Field, FieldLabel } from '@/ui/patterns/Field';
+import { Input, Textarea } from '@/ui/patterns/Input';
+import { SelectField, type SelectOption } from '@/ui/patterns/SelectField';
+import { toast } from '@/ui/patterns/toast';
+import { ReplayStageBackdrop } from '@/ui/replay/ReplayStageBackdrop';
+import { useAdminBreadcrumbOverride } from '@/ui/shell/AdminShell';
+import {
+  DEFAULT_DESIGN,
   estimateDesignDurationSeconds,
-} from '@/lib/fireworks/design';
-import { isGroundFireworkEffect, roundTimelineSeconds } from '@/lib/fireworks/timing';
+  validateFireworkDesign,
+} from '@showcrafter/fireworks/design';
+import { DEFAULT_FIREWORK_SPEC } from '@showcrafter/fireworks/spec';
 import {
   FIREWORK_STYLE_DEFAULT_KINDS,
-  extractStyleDefaultsFromDesign,
   NO_STYLE_DEFAULT_VALUE,
   emptyStyleDefaultIdMap,
-  orderedStyleDefaultValues,
-  removeStyleDefaultOverridesFromRecord,
+  extractStyleDefaultsFromDesign,
   styleDefaultKindLabel,
   type FireworkStyleDefaultKind,
-} from '@/lib/fireworks/style-defaults';
-import { DEFAULT_FIREWORK_SPEC, FIREWORK_COLOR_VALUES, hexToRgb } from '@/lib/fireworks/spec';
-import type { ReplayCue } from '@/lib/show-domain';
+} from '@showcrafter/fireworks/style-defaults';
+import { isGroundFireworkEffect, roundTimelineSeconds } from '@showcrafter/fireworks/timing';
+import { Braces, CircleDot, GanttChartSquare, History, SlidersHorizontal } from 'lucide-react';
+import dynamic from 'next/dynamic';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
 
 type ParsedJson = { ok: true; value: JsonRecord } | { ok: false; error: string };
 
-type StarColourMode = 'solid' | 'random' | 'bands' | 'stripes';
-type StarColourAxis = 'vertical' | 'horizontal';
-type ColourStop = { id: string; hex: string; share: number };
 type LocalStyleDefaultOptions = Partial<
   Record<FireworkStyleDefaultKind, AdminStyleDefaultOption[]>
 >;
@@ -113,25 +80,6 @@ const PREVIEW_START_SECONDS = 0;
 // fast scrub does not re-render the whole editor on every input event. The
 // engine ref and the transport's local thumb still update at full input rate.
 const SCRUB_COMMIT_INTERVAL_MS = 67;
-const DEFAULT_ACCENT_RATIO = 0.22;
-const HEX = /^#[0-9a-fA-F]{6}$/;
-const MAX_STAR_COLOURS = 6;
-const STAR_PATTERN_COUNT_MIN = 1;
-const STAR_PATTERN_COUNT_MAX = 6;
-const DEFAULT_COLOUR_SWATCHES = FIREWORK_COLOR_VALUES;
-
-const STAR_COLOUR_MODE_OPTIONS = [
-  { value: 'solid', label: 'Solid' },
-  { value: 'random', label: 'Random mix' },
-  { value: 'bands', label: 'Bottom to top' },
-  { value: 'stripes', label: 'Stripes' },
-];
-
-const STAR_COLOUR_AXIS_OPTIONS = [
-  { value: 'vertical', label: 'Vertical' },
-  { value: 'horizontal', label: 'Horizontal' },
-];
-
 function parseJsonObject(text: string): ParsedJson {
   try {
     const value = JSON.parse(text);
@@ -201,107 +149,6 @@ function cloneRecord(value: JsonRecord): JsonRecord {
   return JSON.parse(JSON.stringify(value)) as JsonRecord;
 }
 
-function cloneJsonValue<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T;
-}
-
-function mergeRecordInto(target: JsonRecord, source: JsonRecord) {
-  for (const [key, value] of Object.entries(source)) {
-    if (isRecord(value)) {
-      mergeRecordInto(ensureRecord(target, key), value);
-    } else {
-      target[key] = cloneJsonValue(value);
-    }
-  }
-}
-
-function readRecord(parent: JsonRecord, key: string): JsonRecord {
-  return isRecord(parent[key]) ? (parent[key] as JsonRecord) : {};
-}
-
-function ensureRecord(parent: JsonRecord, key: string): JsonRecord {
-  if (!isRecord(parent[key])) parent[key] = {};
-  return parent[key] as JsonRecord;
-}
-
-function hexToRgbObject(hex: string): { r: number; g: number; b: number } {
-  const [r, g, b] = hexToRgb(hex);
-  return { r, g, b };
-}
-
-function rgbObjectToHex(value: unknown): string | null {
-  if (!isRecord(value)) return null;
-  const r = Number(value.r);
-  const g = Number(value.g);
-  const b = Number(value.b);
-  if (![r, g, b].every(Number.isFinite)) return null;
-  const toByte = (channel: number) => Math.max(0, Math.min(255, Math.round(channel * 255)));
-  return `#${[toByte(r), toByte(g), toByte(b)]
-    .map((channel) => channel.toString(16).padStart(2, '0'))
-    .join('')}`;
-}
-
-function readInitialAccentAmount(overrides: JsonRecord): number {
-  const raw = Number(overrides.secondaryColorRatio);
-  return Number.isFinite(raw) ? Math.min(0.6, Math.max(0.05, raw)) : DEFAULT_ACCENT_RATIO;
-}
-
-function isStarColourMode(value: unknown): value is StarColourMode {
-  return value === 'solid' || value === 'random' || value === 'bands' || value === 'stripes';
-}
-
-function isStarColourAxis(value: unknown): value is StarColourAxis {
-  return value === 'vertical' || value === 'horizontal';
-}
-
-function initialColourMode(overrides: JsonRecord): StarColourMode {
-  const pattern = readRecord(readRecord(readRecord(overrides, 'stars'), 'outer'), 'colourPattern');
-  return isStarColourMode(pattern.mode) ? pattern.mode : 'solid';
-}
-
-function initialColourAxis(overrides: JsonRecord): StarColourAxis {
-  const pattern = readRecord(readRecord(readRecord(overrides, 'stars'), 'outer'), 'colourPattern');
-  return isStarColourAxis(pattern.axis) ? pattern.axis : 'vertical';
-}
-
-function clampStarPatternCount(value: number): number {
-  if (!Number.isFinite(value)) return 3;
-  return Math.min(STAR_PATTERN_COUNT_MAX, Math.max(STAR_PATTERN_COUNT_MIN, Math.round(value)));
-}
-
-function applyColourToOverrides(
-  record: JsonRecord,
-  colour: {
-    mainColor: string | null;
-    accentColor: string | null;
-    accentShare: number;
-    colourMode: StarColourMode;
-    colourAxis: StarColourAxis;
-    validColourStops: ColourStop[];
-  },
-): JsonRecord {
-  const base = cloneRecord(record);
-  delete base.pistil;
-  if (colour.accentColor && colour.colourMode === 'random')
-    base.secondaryColorRatio = Number((colour.accentShare / 100).toFixed(3));
-  else delete base.secondaryColorRatio;
-
-  const stars = ensureRecord(base, 'stars');
-  const outer = ensureRecord(stars, 'outer');
-  if (colour.mainColor) outer.color = hexToRgbObject(colour.mainColor);
-  else delete outer.color;
-  outer.colourPattern = {
-    mode: colour.colourMode,
-    axis: colour.colourAxis,
-    count: clampStarPatternCount(colour.validColourStops.length),
-    colours: colour.validColourStops.map((stop) => ({
-      color: hexToRgbObject(stop.hex),
-      weight: stop.share,
-    })),
-  };
-  return base;
-}
-
 function toSaveStyleDefaultIds(
   ids: Record<FireworkStyleDefaultKind, string>,
 ): Record<FireworkStyleDefaultKind, string | null> {
@@ -341,305 +188,6 @@ function fireworkEditorSignature(fields: {
   });
 }
 
-function colourPatternQuestion(mode: StarColourMode): string {
-  if (mode === 'stripes') return 'Stripe direction';
-  if (mode === 'bands') return 'Colour direction';
-  return 'Direction';
-}
-
-function defaultAccentHex(mainColor: string | null): string {
-  const main = mainColor?.toLowerCase() ?? null;
-  return DEFAULT_COLOUR_SWATCHES.find((hex) => hex.toLowerCase() !== main) ?? '#1e7fff';
-}
-
-function nextDefaultColour(existing: ColourStop[], mainColor: string | null): string {
-  const used = new Set(existing.map((stop) => stop.hex.toLowerCase()));
-  return (
-    DEFAULT_COLOUR_SWATCHES.find((hex) => !used.has(hex.toLowerCase())) ??
-    defaultAccentHex(mainColor)
-  );
-}
-
-function normaliseColourShares(stops: ColourStop[]): ColourStop[] {
-  if (stops.length === 0) return stops;
-  if (stops.length === 1) return [{ ...stops[0], share: 100 }];
-  const total = stops.reduce((sum, stop) => sum + Math.max(0, stop.share), 0);
-  const rawShares =
-    total > 0
-      ? stops.map((stop) => (Math.max(0, stop.share) / total) * 100)
-      : stops.map(() => 100 / stops.length);
-  const rounded = rawShares.map((share) => Math.max(1, Math.round(share)));
-  let diff = 100 - rounded.reduce((sum, share) => sum + share, 0);
-  while (diff !== 0) {
-    const index =
-      diff > 0 ? rounded.indexOf(Math.max(...rounded)) : rounded.findIndex((share) => share > 1);
-    if (index < 0) break;
-    rounded[index] += diff > 0 ? 1 : -1;
-    diff += diff > 0 ? -1 : 1;
-  }
-  return stops.map((stop, index) => ({ ...stop, share: rounded[index] ?? 1 }));
-}
-
-function colourShareBoundaries(stops: ColourStop[]): number[] {
-  return stops.slice(0, -1).reduce<number[]>((acc, stop, index) => {
-    const previous = acc[index - 1] ?? 0;
-    acc.push(previous + stop.share);
-    return acc;
-  }, []);
-}
-
-function moveColourBoundary(stops: ColourStop[], index: number, percent: number): ColourStop[] {
-  const normalisedStops = normaliseColourShares(stops);
-  if (normalisedStops.length <= 1) return normalisedStops;
-  const boundaries = colourShareBoundaries(normalisedStops);
-  const minSegment = Math.min(12, Math.floor(90 / normalisedStops.length));
-  const nextBoundaries = [...boundaries];
-  const min = (nextBoundaries[index - 1] ?? 0) + minSegment;
-  const max = (nextBoundaries[index + 1] ?? 100) - minSegment;
-  nextBoundaries[index] = Math.min(max, Math.max(min, percent));
-  const nextShares = normalisedStops.map((stop, stopIndex) => {
-    const start = nextBoundaries[stopIndex - 1] ?? 0;
-    const end = nextBoundaries[stopIndex] ?? 100;
-    return { ...stop, share: Math.max(1, Math.round(end - start)) };
-  });
-  return normaliseColourShares(nextShares);
-}
-
-function rebalanceColourShare(stops: ColourStop[], id: string, share: number): ColourStop[] {
-  if (stops.length <= 1) return normaliseColourShares(stops);
-  const fixedShare = Math.min(95, Math.max(1, Math.round(share)));
-  const others = stops.filter((stop) => stop.id !== id);
-  const remaining = 100 - fixedShare;
-  const otherTotal = others.reduce((sum, stop) => sum + Math.max(0, stop.share), 0);
-  const next = stops.map((stop) => {
-    if (stop.id === id) return { ...stop, share: fixedShare };
-    const share =
-      otherTotal > 0
-        ? Math.round((Math.max(0, stop.share) / otherTotal) * remaining)
-        : Math.round(remaining / others.length);
-    return { ...stop, share: Math.max(1, share) };
-  });
-  return normaliseColourShares(next);
-}
-
-function colourStopLabel(mode: StarColourMode, index: number, count: number): string {
-  if (mode === 'bands') {
-    if (count === 2) return index === 0 ? 'Bottom' : 'Top';
-    if (count === 3) return ['Bottom', 'Middle', 'Top'][index] ?? `Band ${index + 1}`;
-    return `Band ${index + 1}`;
-  }
-  if (mode === 'stripes') return `Stripe ${index + 1}`;
-  if (index === 0) return 'Star';
-  return index === 1 ? 'Star accent' : `Mix ${index + 1}`;
-}
-
-function CompactColourInput({
-  value,
-  disabled,
-  onChange,
-}: {
-  value: string;
-  disabled?: boolean;
-  onChange: (hex: string) => void;
-}) {
-  const picker = HEX.test(value) ? value.toLowerCase() : '#ffffff';
-  return (
-    <ColorPicker
-      label="Colour"
-      value={picker}
-      disabled={disabled}
-      showValue={false}
-      className="h-8 w-8 justify-center rounded-full border-0 bg-transparent p-0 shadow-none hover:border-transparent"
-      swatchClassName="h-7 w-7 rounded-full"
-      onChange={onChange}
-    />
-  );
-}
-
-function ColourPatternBar({
-  stops,
-  disabled,
-  onChange,
-}: {
-  stops: ColourStop[];
-  disabled?: boolean;
-  onChange: (stops: ColourStop[]) => void;
-}) {
-  const barRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{
-    index: number;
-    latestStops: ColourStop[];
-    originStops: ColourStop[];
-    pointerId: number;
-  } | null>(null);
-  const [draftColourStops, setDraftColourStops] = useState<ColourStop[] | null>(null);
-  const [activeBoundaryIndex, setActiveBoundaryIndex] = useState<number | null>(null);
-  const normalisedStops = normaliseColourShares(draftColourStops ?? stops);
-  const boundaries = colourShareBoundaries(normalisedStops);
-
-  function updateBoundary(index: number, percent: number) {
-    onChange(moveColourBoundary(normalisedStops, index, percent));
-  }
-
-  function pointerPercent(clientX: number): number {
-    const rect = barRef.current?.getBoundingClientRect();
-    if (!rect || rect.width <= 0) return 0;
-    return Math.min(100, Math.max(0, ((clientX - rect.left) / rect.width) * 100));
-  }
-
-  function beginHandleDrag(index: number, event: ReactPointerEvent<HTMLButtonElement>) {
-    if (disabled) return;
-    event.preventDefault();
-    event.currentTarget.focus();
-    const originStops = normaliseColourShares(stops);
-    const latestStops = moveColourBoundary(originStops, index, pointerPercent(event.clientX));
-    dragRef.current = {
-      index,
-      latestStops,
-      originStops,
-      pointerId: event.pointerId,
-    };
-    setActiveBoundaryIndex(index);
-    setDraftColourStops(latestStops);
-    event.currentTarget.setPointerCapture(event.pointerId);
-  }
-
-  function continueHandleDrag(index: number, event: ReactPointerEvent<HTMLButtonElement>) {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId || drag.index !== index) return;
-    event.preventDefault();
-    const latestStops = moveColourBoundary(drag.originStops, index, pointerPercent(event.clientX));
-    drag.latestStops = latestStops;
-    setDraftColourStops(latestStops);
-  }
-
-  function commitHandleDrag(event: ReactPointerEvent<HTMLButtonElement>) {
-    const drag = dragRef.current;
-    if (!drag || drag.pointerId !== event.pointerId) return;
-    event.preventDefault();
-    const latestStops = drag.latestStops;
-    dragRef.current = null;
-    setActiveBoundaryIndex(null);
-    setDraftColourStops(null);
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-    onChange(latestStops);
-  }
-
-  if (normalisedStops.length === 0) return null;
-
-  return (
-    <div className="space-y-2">
-      <div
-        ref={barRef}
-        className="relative flex h-8 touch-none overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] select-none"
-      >
-        {normalisedStops.map((stop) => (
-          <div
-            key={stop.id}
-            className={['h-full min-w-1', activeBoundaryIndex === null ? 'transition-[width]' : '']
-              .filter(Boolean)
-              .join(' ')}
-            style={{
-              width: `${stop.share}%`,
-              backgroundColor: HEX.test(stop.hex) ? stop.hex : '#ffffff',
-            }}
-          />
-        ))}
-        {boundaries.map((boundary, index) => (
-          <button
-            key={`${normalisedStops[index]?.id ?? index}-handle`}
-            type="button"
-            aria-label={`Move colour split ${index + 1}`}
-            className="focus-visible:ring-ring/60 absolute top-1/2 h-8 w-5 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize touch-none rounded-full outline-none focus-visible:ring-2 disabled:cursor-not-allowed"
-            style={{ left: `${boundary}%` }}
-            disabled={disabled}
-            onPointerDown={(event) => beginHandleDrag(index, event)}
-            onPointerMove={(event) => continueHandleDrag(index, event)}
-            onPointerUp={commitHandleDrag}
-            onPointerCancel={commitHandleDrag}
-            onLostPointerCapture={commitHandleDrag}
-            onKeyDown={(event) => {
-              if (disabled) return;
-              if (event.key === 'ArrowLeft') {
-                event.preventDefault();
-                updateBoundary(index, boundary - 2);
-              }
-              if (event.key === 'ArrowRight') {
-                event.preventDefault();
-                updateBoundary(index, boundary + 2);
-              }
-            }}
-          >
-            <span className="mx-auto block h-6 w-1.5 rounded-full bg-white shadow-[0_0_0_1px_rgba(0,0,0,0.24),0_1px_4px_rgba(0,0,0,0.26)]" />
-          </button>
-        ))}
-      </div>
-      {normalisedStops.length > 1 ? (
-        <div className="flex gap-1">
-          {normalisedStops.map((stop) => (
-            <span
-              key={`${stop.id}-share`}
-              className="text-muted-foreground min-w-0 text-center font-mono text-[10px] tabular-nums"
-              style={{ width: `${stop.share}%` }}
-            >
-              {Math.round(stop.share)}%
-            </span>
-          ))}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function buildInitialColourStops(
-  firework: Pick<AdminFireworkDetail, 'primaryColor' | 'secondaryColor' | 'colorPalette'>,
-  overrides: JsonRecord,
-): ColourStop[] {
-  const pattern = readRecord(readRecord(readRecord(overrides, 'stars'), 'outer'), 'colourPattern');
-  const patternColours = Array.isArray(pattern.colours) ? pattern.colours : [];
-  const patternStops = patternColours
-    .map((entry, index): ColourStop | null => {
-      if (!isRecord(entry)) return null;
-      const hex = rgbObjectToHex(entry.color);
-      if (!hex) return null;
-      const share = Number(entry.weight);
-      return {
-        id: `initial-pattern-${index}`,
-        hex,
-        share: Number.isFinite(share) ? Math.max(1, Math.round(share)) : 100,
-      };
-    })
-    .filter((stop): stop is ColourStop => Boolean(stop));
-  if (patternStops.length > 0)
-    return normaliseColourShares(patternStops).slice(0, MAX_STAR_COLOURS);
-
-  const outerColor = rgbObjectToHex(
-    readRecord(readRecord(readRecord(overrides, 'stars'), 'outer'), 'color'),
-  );
-  const mainHex = outerColor ?? firework.primaryColor ?? '#ff0043';
-  const accentShare = Math.round(readInitialAccentAmount(overrides) * 100);
-  const stops: ColourStop[] = [{ id: 'initial-main', hex: mainHex, share: 100 }];
-  const accent =
-    firework.secondaryColor ??
-    firework.colorPalette.find((hex) => hex.toLowerCase() !== mainHex.toLowerCase()) ??
-    null;
-  if (accent) {
-    stops[0].share = 100 - accentShare;
-    stops.push({ id: 'initial-accent', hex: accent, share: accentShare });
-  }
-
-  return normaliseColourShares(stops);
-}
-
-function nextAddedColourStopIndex(stops: ColourStop[]): number {
-  return stops.reduce((next, stop) => {
-    const match = /^added-(\d+)$/.exec(stop.id);
-    return match ? Math.max(next, Number(match[1]) + 1) : next;
-  }, stops.length);
-}
-
 type FireworkEditorSavedSnapshot = {
   id: string;
   updatedAt: string;
@@ -650,9 +198,6 @@ type FireworkEditorSavedSnapshot = {
   caliber: string;
   durationSeconds: string;
   heightMeters: string;
-  colourStops: ColourStop[];
-  colourMode: StarColourMode;
-  colourAxis: StarColourAxis;
   overridesText: string;
   signature: string;
 };
@@ -679,29 +224,14 @@ function fireworkSavedSnapshotFromFields(
   fields: FireworkEditorSnapshotFields,
 ): FireworkEditorSavedSnapshot {
   const overrides = isRecord(fields.renderOverridesJson) ? fields.renderOverridesJson : {};
-  const colourStops = buildInitialColourStops(fields, overrides);
-  const validColourStops = normaliseColourShares(
-    colourStops.filter((stop) => HEX.test(stop.hex)),
-  ).slice(0, MAX_STAR_COLOURS);
-  const mainColor = validColourStops[0]?.hex ?? null;
-  const accentColor = validColourStops[1]?.hex ?? null;
-  const palette = Array.from(
-    new Set(validColourStops.map((stop) => stop.hex.toLowerCase()).filter(Boolean)),
-  );
-  const initialMode = initialColourMode(overrides);
-  const colourMode = initialMode === 'solid' && colourStops.length > 1 ? 'random' : initialMode;
-  const colourAxis = initialColourAxis(overrides);
+  const {
+    primaryColor: mainColor,
+    secondaryColor: accentColor,
+    colorPalette: palette,
+  } = fireworkColourMetadata(overrides);
   const caliber = fields.caliber ?? '';
   const durationSeconds = fields.durationSeconds == null ? '' : String(fields.durationSeconds);
   const heightMeters = fields.heightMeters == null ? '' : String(fields.heightMeters);
-  const mergedOverrides = applyColourToOverrides(overrides, {
-    mainColor,
-    accentColor,
-    accentShare: validColourStops[1]?.share ?? 0,
-    colourMode,
-    colourAxis,
-    validColourStops,
-  });
 
   return {
     id: fields.id,
@@ -713,10 +243,7 @@ function fireworkSavedSnapshotFromFields(
     caliber,
     durationSeconds,
     heightMeters,
-    colourStops,
-    colourMode,
-    colourAxis,
-    overridesText: JSON.stringify(overrides, null, 2),
+    overridesText: JSON.stringify(fields.renderOverridesJson, null, 2),
     signature: fireworkEditorSignature({
       name: fields.name,
       description: fields.description ?? '',
@@ -728,7 +255,7 @@ function fireworkSavedSnapshotFromFields(
       secondaryColor: accentColor,
       colorPalette: palette,
       styleDefaultIds: toSaveStyleDefaultIds(fields.styleDefaultIds),
-      renderOverridesJson: mergedOverrides,
+      renderOverridesJson: overrides,
     }),
   };
 }
@@ -766,7 +293,6 @@ function isEarlierUpdatedAt(candidate: string, reference: string): boolean {
 export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) {
   const setAdminBreadcrumb = useAdminBreadcrumbOverride();
   const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
-  const colourToggleId = useId();
   const [isPending, startTransition] = useTransition();
   const incomingSavedSnapshot = useMemo(
     () => fireworkSavedSnapshotFromDetail(firework),
@@ -782,11 +308,6 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   const startedAtRef = useRef(0);
   const lastScrubCommitRef = useRef(0);
   const pendingScrubRef = useRef<number | null>(null);
-  const initialOverrides = useMemo<JsonRecord>(
-    () => (isRecord(firework.renderOverridesJson) ? firework.renderOverridesJson : {}),
-    [firework.renderOverridesJson],
-  );
-
   const [name, setName] = useState(firework.name);
   const [description, setDescription] = useState(firework.description ?? '');
   const [effectId, setEffectId] = useState(
@@ -801,25 +322,13 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   const [heightMeters, setHeightMeters] = useState(
     firework.heightMeters == null ? '' : String(firework.heightMeters),
   );
-  const initialColourStops = useMemo(
-    () => buildInitialColourStops(firework, initialOverrides),
-    [firework, initialOverrides],
-  );
-  const [colourStops, setColourStops] = useState<ColourStop[]>(initialColourStops);
-  const [colourMode, setColourMode] = useState<StarColourMode>(() => {
-    const initialMode = initialColourMode(initialOverrides);
-    return initialMode === 'solid' && initialColourStops.length > 1 ? 'random' : initialMode;
-  });
-  const [colourAxis, setColourAxis] = useState<StarColourAxis>(() =>
-    initialColourAxis(initialOverrides),
-  );
-  const nextColourStopIdRef = useRef(nextAddedColourStopIndex(initialColourStops));
   const [overridesText, setOverridesText] = useState(
-    JSON.stringify(firework.renderOverridesJson ?? {}, null, 2),
+    JSON.stringify(firework.renderOverridesJson, null, 2),
   );
   const [lastSavedUpdatedAt, setLastSavedUpdatedAt] = useState(firework.updatedAt);
   const [savedSignature, setSavedSignature] = useState(() => incomingSavedSnapshot.signature);
   const savedSnapshotRef = useRef<FireworkEditorSavedSnapshot>(incomingSavedSnapshot);
+  const [savedPreviewSnapshot, setSavedPreviewSnapshot] = useState(incomingSavedSnapshot);
   const savedSignatureRef = useRef(savedSignature);
   const editorTargetIdRef = useRef(firework.id);
   const [activeTab, setActiveTab] = useState('colour');
@@ -836,25 +345,12 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     [parsedOverrides],
   );
 
-  const validColourStops = useMemo(
-    () =>
-      normaliseColourShares(colourStops.filter((stop) => HEX.test(stop.hex))).slice(
-        0,
-        MAX_STAR_COLOURS,
-      ),
-    [colourStops],
-  );
-  const mainColor = validColourStops[0]?.hex ?? null;
-  const accentColor = validColourStops[1]?.hex ?? null;
-  const accentShare = validColourStops[1]?.share ?? 0;
-  const positionalColourMode = colourMode === 'bands' || colourMode === 'stripes';
-  const colourDefaults = readRecord(overridesRecord, 'colour');
-  const colourEnabled = typeof colourDefaults.enabled === 'boolean' ? colourDefaults.enabled : true;
+  const {
+    primaryColor: mainColor,
+    secondaryColor: accentColor,
+    colorPalette: palette,
+  } = useMemo(() => fireworkColourMetadata(overridesRecord), [overridesRecord]);
 
-  const baseModel = useMemo(
-    () => (firework.effectModels[effectId] ?? firework.effectModelJson) as Json,
-    [effectId, firework.effectModels, firework.effectModelJson],
-  );
   const selectedFireworkStyleDefaults = useMemo(() => {
     const selected: Partial<Record<FireworkStyleDefaultKind, AdminStyleDefaultOption | null>> = {};
     for (const kind of FIREWORK_STYLE_DEFAULT_KINDS) {
@@ -873,52 +369,9 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     styleDefaultIds,
   ]);
   function copySelectedStyleDefaultsIntoOverrides(source: JsonRecord): JsonRecord {
-    const copiedDefaults: JsonRecord = {};
-    for (const option of orderedStyleDefaultValues(selectedFireworkStyleDefaults)) {
-      if (isRecord(option?.defaultsJson)) mergeRecordInto(copiedDefaults, option.defaultsJson);
-    }
-    mergeRecordInto(copiedDefaults, source);
-    return copiedDefaults;
+    return cloneRecord(source);
   }
-  const calibrationDefaults = useMemo(() => {
-    const model = isRecord(baseModel) ? baseModel : {};
-    return readRecord(canonicaliseEffectModelJson(model), 'renderDefaults');
-  }, [baseModel]);
 
-  const palette = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          validColourStops
-            .map((stop) => stop.hex)
-            .filter((hex): hex is string => Boolean(hex))
-            .map((hex) => hex.toLowerCase()),
-        ),
-      ),
-    [validColourStops],
-  );
-
-  /** Overrides merged with the colour choices, used for both preview and save. */
-  const mergedOverrides = useMemo<JsonRecord>(
-    () =>
-      applyColourToOverrides(overridesRecord, {
-        mainColor,
-        accentColor,
-        accentShare,
-        colourMode,
-        colourAxis,
-        validColourStops,
-      }),
-    [
-      overridesRecord,
-      mainColor,
-      accentColor,
-      accentShare,
-      colourMode,
-      colourAxis,
-      validColourStops,
-    ],
-  );
   const saveStyleDefaultIds = useMemo(
     () => toSaveStyleDefaultIds(styleDefaultIds),
     [styleDefaultIds],
@@ -936,7 +389,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
         secondaryColor: accentColor,
         colorPalette: palette,
         styleDefaultIds: saveStyleDefaultIds,
-        renderOverridesJson: mergedOverrides,
+        renderOverridesJson: overridesRecord,
       }),
     [
       accentColor,
@@ -946,7 +399,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       effectId,
       heightMeters,
       mainColor,
-      mergedOverrides,
+      overridesRecord,
       name,
       palette,
       saveStyleDefaultIds,
@@ -972,6 +425,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     if (sameFirework && currentSignatureRef.current !== savedSignatureRef.current) return;
 
     savedSnapshotRef.current = incomingSnapshot;
+    setSavedPreviewSnapshot(incomingSnapshot);
     savedSignatureRef.current = incomingSnapshot.signature;
     setName(incomingSnapshot.name);
     setDescription(incomingSnapshot.description);
@@ -981,34 +435,49 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     setCaliber(incomingSnapshot.caliber);
     setDurationSeconds(incomingSnapshot.durationSeconds);
     setHeightMeters(incomingSnapshot.heightMeters);
-    setColourStops(incomingSnapshot.colourStops.map((stop) => ({ ...stop })));
-    setColourMode(incomingSnapshot.colourMode);
-    setColourAxis(incomingSnapshot.colourAxis);
-    nextColourStopIdRef.current = nextAddedColourStopIndex(incomingSnapshot.colourStops);
     setOverridesText(incomingSnapshot.overridesText);
     setLastSavedUpdatedAt(incomingSnapshot.updatedAt);
     setRestoringVersionId(null);
     setSavedSignature(incomingSnapshot.signature);
   }, [incomingSavedSnapshot]);
 
-  const previewDesign = useMemo(
+  const renderResult = useMemo(
     () =>
-      compileFireworkDesign({
-        baseModel,
-        fireworkStyleDefaults: orderedStyleDefaultValues(selectedFireworkStyleDefaults).map(
-          (item) => item?.defaultsJson,
-        ),
-        variantOverrides: mergedOverrides,
-        primaryColor: mainColor,
-        colorPalette: palette.length ? palette : null,
+      validateCatalogueRender({
+        kind: 'firework',
+        recordId: firework.id,
+        settings: parsedOverrides.ok ? parsedOverrides.value : null,
       }),
-    [baseModel, mergedOverrides, mainColor, palette, selectedFireworkStyleDefaults],
+    [firework.id, parsedOverrides],
   );
+
+  // Invalid settings remain editable, but never become preview particles.
+  const previewDesign = renderResult.ok ? renderResult.design : DEFAULT_DESIGN;
+  const renderError = !parsedOverrides.ok
+    ? parsedOverrides.error
+    : !renderResult.ok
+      ? renderResult.diagnostics
+          .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+          .join('; ')
+      : null;
+
+  const [showSaved, setShowSaved] = useState(false);
+  const savedRenderResult = useMemo(
+    () =>
+      validateCatalogueRender({
+        kind: 'firework',
+        recordId: firework.id,
+        settings: JSON.parse(savedPreviewSnapshot.overridesText),
+      }),
+    [firework.id, savedPreviewSnapshot],
+  );
+  const displayedDesign =
+    showSaved && savedRenderResult.ok ? savedRenderResult.design : previewDesign;
 
   // Head-orb appearance is saved into the firework's render overrides, so the
   // sliders read from the compiled design and write straight back. A firework
   // inherits its effect's saved look and customises it from here.
-  const heads = previewDesign.stars.outer.head;
+  const heads = displayedDesign.stars.outer.head;
   const glowPadding = heads.glowPadding;
   const whiteCoreSizePercent = heads.whiteCoreSizePercent;
   const whiteCoreBlurPercent = heads.whiteCoreBlurPercent;
@@ -1023,9 +492,14 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   const backgroundGlowSoftness = heads.backgroundGlowSoftness;
 
   const previewDuration = useMemo(() => {
-    const estimated = PREVIEW_CUE_TIME_SECONDS + estimateDesignDurationSeconds(previewDesign);
+    const estimated =
+      PREVIEW_CUE_TIME_SECONDS +
+      Math.max(
+        estimateDesignDurationSeconds(previewDesign),
+        savedRenderResult.ok ? estimateDesignDurationSeconds(savedRenderResult.design) : 0,
+      );
     return Math.max(4, Math.ceil(estimated * 2) / 2);
-  }, [previewDesign]);
+  }, [previewDesign, savedRenderResult]);
   useEffect(() => {
     if (!timelineDurationSyncPendingRef.current) return;
     timelineDurationSyncPendingRef.current = false;
@@ -1034,11 +508,11 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   const previewTicks = useMemo(
     () =>
       estimatePreviewTicks({
-        design: previewDesign,
+        design: displayedDesign,
         cueTimeSeconds: PREVIEW_CUE_TIME_SECONDS,
         previewDuration,
       }),
-    [previewDesign, previewDuration],
+    [displayedDesign, previewDuration],
   );
 
   const selectedEffect = firework.effectOptions.find((option) => option.id === effectId) ?? null;
@@ -1067,7 +541,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
         caliber: caliber || null,
         shotCount: 1,
         spec: DEFAULT_FIREWORK_SPEC,
-        rawSpec: mergedOverrides,
+        rawSpec: overridesRecord,
         renderDesign: previewDesign,
         baseEffect: selectedEffect
           ? {
@@ -1086,13 +560,28 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       firework.id,
       firework.slug,
       name,
-      mergedOverrides,
+      overridesRecord,
       previewDesign,
       previewDuration,
       selectedEffect,
     ],
   );
-  const previewCues = useMemo(() => [previewCue], [previewCue]);
+  const previewCues = useMemo(() => {
+    if (showSaved)
+      return savedRenderResult.ok
+        ? [
+            {
+              ...previewCue,
+              firework: {
+                ...previewCue.firework,
+                caliber: savedPreviewSnapshot.caliber || null,
+                renderDesign: savedRenderResult.design,
+              },
+            },
+          ]
+        : [];
+    return renderError ? [] : [previewCue];
+  }, [previewCue, renderError, showSaved, savedRenderResult, savedPreviewSnapshot.caliber]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -1154,28 +643,11 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     setPreviewTime(pending);
   }
 
-  function mutateOverrides(updater: (defaults: JsonRecord) => void) {
-    if (!parsedOverrides.ok) return;
-    const draft = cloneRecord(parsedOverrides.value);
-    updater(draft);
-    setOverridesText(JSON.stringify(draft, null, 2));
-  }
-
   function markStyleDefaultCustom(kind: FireworkStyleDefaultKind) {
     setStyleDefaultIds((current) => {
       if (current[kind] === NO_STYLE_DEFAULT_VALUE) return current;
       return { ...current, [kind]: NO_STYLE_DEFAULT_VALUE };
     });
-  }
-
-  function shouldMaterialiseStyleDefault(kind: FireworkStyleDefaultKind): boolean {
-    return styleDefaultIds[kind] !== NO_STYLE_DEFAULT_VALUE;
-  }
-
-  function materialiseStyleDefault(kind: FireworkStyleDefaultKind, defaults: JsonRecord) {
-    if (!shouldMaterialiseStyleDefault(kind)) return false;
-    mergeRecordInto(defaults, extractStyleDefaultsFromDesign(previewDesign, kind));
-    return styleDefaultIds[kind] !== NO_STYLE_DEFAULT_VALUE;
   }
 
   function mutateOverridesForStyle(
@@ -1184,10 +656,9 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   ) {
     if (!parsedOverrides.ok) return;
     const draft = cloneRecord(parsedOverrides.value);
-    const shouldMarkCustom = materialiseStyleDefault(kind, draft);
     updater(draft);
     setOverridesText(JSON.stringify(draft, null, 2));
-    if (shouldMarkCustom) markStyleDefaultCustom(kind);
+    markStyleDefaultCustom(kind);
   }
 
   function mutateOverridesForTimeline(
@@ -1196,7 +667,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   ) {
     if (!parsedOverrides.ok) return;
     const draft = cloneRecord(parsedOverrides.value);
-    const customKinds = kinds.filter((kind) => materialiseStyleDefault(kind, draft));
+    const customKinds = kinds.filter((kind) => styleDefaultIds[kind] !== NO_STYLE_DEFAULT_VALUE);
     updater(draft);
     timelineDurationSyncPendingRef.current = true;
     setOverridesText(JSON.stringify(draft, null, 2));
@@ -1209,101 +680,44 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     }
   }
 
-  function materialiseStyleDefaultInOverrides(kind: FireworkStyleDefaultKind) {
-    mutateOverridesForStyle(kind, () => {});
-  }
-
-  function setColourEnabled(value: boolean) {
-    mutateOverrides((draft) => {
-      const colour = ensureRecord(draft, 'colour');
-      colour.enabled = value;
-    });
-  }
-
-  function updateColourStopHex(id: string, hex: string) {
-    materialiseStyleDefaultInOverrides('star');
-    setColourStops((stops) =>
-      stops.map((stop) => (stop.id === id ? { ...stop, hex: hex.toLowerCase() } : stop)),
-    );
-  }
-
-  function updateColourStopShare(id: string, share: number) {
-    materialiseStyleDefaultInOverrides('star');
-    setColourStops((stops) => rebalanceColourShare(stops, id, share));
-  }
-
-  function updateColourStopShares(nextStops: ColourStop[]) {
-    materialiseStyleDefaultInOverrides('star');
-    const shareById = new Map(nextStops.map((stop) => [stop.id, stop.share]));
-    setColourStops((stops) =>
-      normaliseColourShares(
-        stops.map((stop) => ({
-          ...stop,
-          share: shareById.get(stop.id) ?? stop.share,
-        })),
-      ),
-    );
-  }
-
-  function updateColourMode(value: string) {
-    if (!isStarColourMode(value)) return;
-    materialiseStyleDefaultInOverrides('star');
-    setColourMode(value);
-  }
-
-  function updateColourAxis(value: string) {
-    if (!isStarColourAxis(value)) return;
-    materialiseStyleDefaultInOverrides('star');
-    setColourAxis(value);
-  }
-
-  function removeColourStop(id: string) {
-    materialiseStyleDefaultInOverrides('star');
-    setColourStops((stops) => normaliseColourShares(stops.filter((stop) => stop.id !== id)));
-  }
-
-  function addColor() {
-    materialiseStyleDefaultInOverrides('star');
-    const id = `added-${nextColourStopIdRef.current}`;
-    nextColourStopIdRef.current += 1;
-    setColourStops((stops) => {
-      if (stops.length >= MAX_STAR_COLOURS) return stops;
-      const newShare = Math.max(10, Math.round(100 / (stops.length + 1)));
-      const next = stops.map((stop) => ({
-        ...stop,
-        share: stop.share * ((100 - newShare) / 100),
-      }));
-      return normaliseColourShares([
-        ...next,
-        { id, hex: nextDefaultColour(stops, mainColor), share: newShare },
-      ]);
-    });
-    if (colourMode === 'solid') setColourMode('random');
-  }
-
   function resetLocalStyleDefaults(kind: FireworkStyleDefaultKind) {
-    mutateOverrides((draft) => {
-      removeStyleDefaultOverridesFromRecord(draft, kind);
+    mutateOverridesForStyle(kind, (defaults) => {
+      resetCopiedPreset(defaults, kind);
     });
   }
 
   function handleStyleDefaultChange(kind: FireworkStyleDefaultKind, value: string) {
-    if (value !== NO_STYLE_DEFAULT_VALUE) {
-      mutateOverrides((draft) => {
-        removeStyleDefaultOverridesFromRecord(draft, kind);
-      });
+    const option = [...firework.styleDefaults[kind], ...(createdStyleDefaults[kind] ?? [])].find(
+      (item) => item.id === value,
+    );
+    if (option) {
+      const checked = validateFireworkDesign({ variantOverrides: option.defaultsJson });
+      if (!checked.ok) {
+        setError(checked.diagnostics.map((issue) => issue.message).join('; '));
+        return;
+      }
+      mutateOverridesForStyle(kind, (defaults) => applyCopiedPreset(defaults, kind, option));
     }
+    setError(null);
     setStyleDefaultIds((current) => ({ ...current, [kind]: value }));
   }
 
   function handleEffectIdChange(nextEffectId: string) {
     if (nextEffectId === effectId) return;
+    const model = firework.effectModels[nextEffectId];
+    if (!model) {
+      setError('This effect has no render settings and cannot be applied.');
+      return;
+    }
+    const copied = validateFireworkDesign({ baseModel: model });
+    if (!copied.ok) {
+      setError(copied.diagnostics.map((issue) => issue.message).join('; '));
+      return;
+    }
+    setError(null);
     setEffectId(nextEffectId);
-    // Swap to the new effect's template: drop firework-level preset selections so the
-    // new effect's inherited defaults drive the preview, and clear overrides tuned for
-    // the previous effect so they do not shadow the new base model.
     setStyleDefaultIds(emptyStyleDefaultIdMap());
-    setOverridesText(JSON.stringify({}, null, 2));
+    setOverridesText(JSON.stringify(copied.design, null, 2));
   }
 
   async function persistFirework(args: {
@@ -1358,9 +772,6 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       caliber,
       durationSeconds,
       heightMeters,
-      colourStops: colourStops.map((stop) => ({ ...stop })),
-      colourMode,
-      colourAxis,
       overridesText,
       signature: currentSignature,
     };
@@ -1374,13 +785,6 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     setCaliber(snapshot.caliber);
     setDurationSeconds(snapshot.durationSeconds);
     setHeightMeters(snapshot.heightMeters);
-    setColourStops(snapshot.colourStops.map((stop) => ({ ...stop })));
-    setColourMode(snapshot.colourMode);
-    setColourAxis(snapshot.colourAxis);
-    nextColourStopIdRef.current = Math.max(
-      nextColourStopIdRef.current,
-      nextAddedColourStopIndex(snapshot.colourStops),
-    );
     setOverridesText(snapshot.overridesText);
   }
 
@@ -1389,12 +793,8 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     action: 'update' | 'restore',
   ) {
     const historyVersionId = crypto.randomUUID();
-    const previousSavedSnapshot = savedSnapshotRef.current;
     const localSnapshot = currentLocalSnapshot();
-    savedSnapshotRef.current = optimisticSnapshot;
-    savedSignatureRef.current = optimisticSnapshot.signature;
     currentSignatureRef.current = optimisticSnapshot.signature;
-    setSavedSignature(optimisticSnapshot.signature);
     applySnapshot(optimisticSnapshot);
     editorHistory.begin(
       makeOptimisticEditorVersion({
@@ -1409,18 +809,12 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       historyVersionId,
       localSnapshot,
       optimisticSnapshot,
-      previousSavedSnapshot,
     };
   }
 
   function rollbackOptimisticMutation(mutation: ReturnType<typeof beginOptimisticMutation>) {
     if (editorTargetIdRef.current !== mutation.targetId) return;
     editorHistory.discard(mutation.historyVersionId);
-    if (savedSignatureRef.current === mutation.optimisticSnapshot.signature) {
-      savedSnapshotRef.current = mutation.previousSavedSnapshot;
-      savedSignatureRef.current = mutation.previousSavedSnapshot.signature;
-      setSavedSignature(mutation.previousSavedSnapshot.signature);
-    }
     if (currentSignatureRef.current === mutation.optimisticSnapshot.signature) {
       currentSignatureRef.current = mutation.localSnapshot.signature;
       applySnapshot(mutation.localSnapshot);
@@ -1430,21 +824,14 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   function saveCurrentStyleAsDefault(kind: FireworkStyleDefaultKind, styleName: string) {
     if (isPending) return;
     setError(null);
-    if (!effectId || !mainColor || !parsedOverrides.ok) {
-      setError('Pick a base effect and main colour, then click Save to keep this preset.');
+    if (!effectId || renderError || !parsedOverrides.ok) {
+      setError(renderError ?? 'Choose a base effect before saving this preset.');
       return;
     }
-    const copiedOverrides = copySelectedStyleDefaultsIntoOverrides(mergedOverrides);
+    const copiedOverrides = copySelectedStyleDefaultsIntoOverrides(overridesRecord);
     const clearedStyleDefaultIds = emptyStyleDefaultIdMap();
     const clearedSaveMap = toSaveStyleDefaultIds(clearedStyleDefaultIds);
-    const nextMerged = applyColourToOverrides(copiedOverrides, {
-      mainColor,
-      accentColor,
-      accentShare,
-      colourMode,
-      colourAxis,
-      validColourStops,
-    });
+    const nextMerged = copiedOverrides;
     const optimisticSnapshot = fireworkSavedSnapshotFromFields({
       id: firework.id,
       updatedAt: lastSavedUpdatedAt,
@@ -1526,6 +913,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
         styleDefaultIds: clearedStyleDefaultIds,
       });
       savedSnapshotRef.current = savedSnapshot;
+      setSavedPreviewSnapshot(savedSnapshot);
       savedSignatureRef.current = savedSnapshot.signature;
       setSavedSignature(savedSnapshot.signature);
       editorHistory.settle({
@@ -1546,19 +934,15 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   function save() {
     if (isPending) return;
     setError(null);
-    if (!parsedOverrides.ok) {
-      setError(parsedOverrides.error);
+    if (renderError || !parsedOverrides.ok) {
+      setError(renderError ?? (!parsedOverrides.ok ? parsedOverrides.error : null));
       return;
     }
     if (!effectId) {
       setError('Choose a base effect.');
       return;
     }
-    if (!mainColor) {
-      setError('Pick a main colour.');
-      return;
-    }
-    const copiedOverrides = copySelectedStyleDefaultsIntoOverrides(mergedOverrides);
+    const copiedOverrides = copySelectedStyleDefaultsIntoOverrides(overridesRecord);
     const clearedStyleDefaultIds = emptyStyleDefaultIdMap();
     const clearedSaveMap = toSaveStyleDefaultIds(clearedStyleDefaultIds);
     const optimisticSnapshot = fireworkSavedSnapshotFromFields({
@@ -1598,6 +982,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
         styleDefaultIds: clearedStyleDefaultIds,
       });
       savedSnapshotRef.current = savedSnapshot;
+      setSavedPreviewSnapshot(savedSnapshot);
       savedSignatureRef.current = savedSnapshot.signature;
       setSavedSignature(savedSnapshot.signature);
       editorHistory.settle({
@@ -1683,6 +1068,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
         currentSignatureRef.current,
       );
       savedSnapshotRef.current = restoredSnapshot;
+      setSavedPreviewSnapshot(restoredSnapshot);
       savedSignatureRef.current = restoredSnapshot.signature;
       setLastSavedUpdatedAt(restoredSnapshot.updatedAt);
       setSavedSignature(restoredSnapshot.signature);
@@ -1705,207 +1091,6 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     value: option.id,
     label: option.name,
   }));
-  const canAddColor = colourStops.length < MAX_STAR_COLOURS;
-  const starColourControls = (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <FieldLabel htmlFor={colourToggleId}>Colour</FieldLabel>
-          <p className="mt-1 text-sm leading-relaxed text-[color:var(--color-content-muted)]">
-            Use saved star colours for this firework.
-          </p>
-        </div>
-        <Switch
-          id={colourToggleId}
-          aria-label="Colour"
-          checked={colourEnabled}
-          onCheckedChange={setColourEnabled}
-          disabled={!parsedOverrides.ok}
-        />
-      </div>
-      <div className={['space-y-6', !colourEnabled ? 'opacity-55' : ''].filter(Boolean).join(' ')}>
-        <div className="space-y-4">
-          <Field>
-            <FieldLabel>Pattern</FieldLabel>
-            <div
-              role="radiogroup"
-              aria-label="Star colour pattern"
-              className="grid grid-cols-4 gap-1 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-subtle)] p-1"
-            >
-              {STAR_COLOUR_MODE_OPTIONS.map((option) => {
-                const selected = colourMode === option.value;
-                const label =
-                  option.value === 'random'
-                    ? 'Random'
-                    : option.value === 'bands'
-                      ? 'Bands'
-                      : option.label;
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={selected}
-                    disabled={!colourEnabled}
-                    onClick={() => updateColourMode(option.value)}
-                    className={[
-                      'min-h-9 rounded-md px-2 text-sm font-medium transition',
-                      selected
-                        ? 'bg-[color:var(--color-bg-default)] text-[color:var(--color-content-emphasis)] shadow-xs'
-                        : 'text-[color:var(--color-content-subtle)] hover:text-[color:var(--color-content-emphasis)]',
-                    ].join(' ')}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-          </Field>
-          {positionalColourMode ? (
-            <Field>
-              <FieldLabel>{colourPatternQuestion(colourMode)}</FieldLabel>
-              <div
-                role="radiogroup"
-                aria-label={colourPatternQuestion(colourMode)}
-                className="grid grid-cols-2 gap-1 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-subtle)] p-1"
-              >
-                {STAR_COLOUR_AXIS_OPTIONS.map((option) => {
-                  const selected = colourAxis === option.value;
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      role="radio"
-                      aria-checked={selected}
-                      disabled={!colourEnabled}
-                      onClick={() => updateColourAxis(option.value)}
-                      className={[
-                        'min-h-9 rounded-md px-2 text-sm font-medium transition',
-                        selected
-                          ? 'bg-[color:var(--color-bg-default)] text-[color:var(--color-content-emphasis)] shadow-xs'
-                          : 'text-[color:var(--color-content-subtle)] hover:text-[color:var(--color-content-emphasis)]',
-                      ].join(' ')}
-                    >
-                      {option.label}
-                    </button>
-                  );
-                })}
-              </div>
-            </Field>
-          ) : null}
-        </div>
-
-        <ColourPatternBar
-          stops={validColourStops}
-          disabled={!colourEnabled || validColourStops.length <= 1}
-          onChange={updateColourStopShares}
-        />
-
-        <div className="overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)]">
-          {colourStops.map((stop, index) => {
-            const title = colourStopLabel(colourMode, index, colourStops.length);
-            return (
-              <div
-                key={stop.id}
-                className="space-y-3 border-t border-[color:var(--color-border-subtle)] p-3 first:border-t-0"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-2">
-                    <CompactColourInput
-                      value={stop.hex}
-                      disabled={!colourEnabled}
-                      onChange={(hex) => updateColourStopHex(stop.id, hex)}
-                    />
-                    <span className="truncate text-sm font-semibold text-[color:var(--color-content-emphasis)]">
-                      {title}
-                    </span>
-                    {colourStops.length > 1 ? (
-                      <span className="text-muted-foreground font-mono text-xs tabular-nums">
-                        {Math.round(stop.share)}%
-                      </span>
-                    ) : null}
-                  </div>
-                  <button
-                    type="button"
-                    aria-label="Remove colour"
-                    className="text-[color:var(--color-content-subtle)] hover:text-[color:var(--color-content-emphasis)]"
-                    onClick={() => removeColourStop(stop.id)}
-                    disabled={!colourEnabled || colourStops.length <= 1}
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={addColor}
-          className="w-fit"
-          disabled={!canAddColor || !colourEnabled}
-        >
-          <Plus size={16} />
-          Add colour
-        </Button>
-
-        {colourMode === 'random' && colourStops.length === 2 ? (
-          <div className="border-t border-[color:var(--color-border-subtle)] pt-5">
-            <SliderField
-              label="Accent share"
-              min={1}
-              max={95}
-              step={1}
-              value={Math.round(colourStops[1]?.share ?? 0)}
-              formatValue={(value) => `${value}%`}
-              disabled={!colourEnabled}
-              onChange={(value) => {
-                const accent = colourStops[1];
-                if (accent) updateColourStopShare(accent.id, value);
-              }}
-            />
-          </div>
-        ) : null}
-
-        {colourMode === 'random' && colourStops.length > 2 ? (
-          <div className="space-y-4 border-t border-[color:var(--color-border-subtle)] pt-5">
-            {colourStops.map((stop, index) => (
-              <SliderField
-                key={stop.id}
-                label={
-                  index === 1
-                    ? 'Accent share'
-                    : `${colourStopLabel(colourMode, index, colourStops.length)} share`
-                }
-                min={1}
-                max={95}
-                step={1}
-                value={Math.round(stop.share)}
-                formatValue={(value) => `${value}%`}
-                disabled={!colourEnabled || colourStops.length <= 1}
-                onChange={(value) => updateColourStopShare(stop.id, value)}
-              />
-            ))}
-          </div>
-        ) : null}
-      </div>
-    </div>
-  );
-
-  const previewMenuActions = useMemo(
-    () => [
-      {
-        id: 'loop',
-        label: isLooping ? 'Disable looping' : 'Enable looping',
-        active: isLooping,
-        onClick: () => setIsLooping((looping) => !looping),
-        icon: <Repeat size={16} strokeWidth={2} />,
-      },
-    ],
-    [isLooping],
-  );
   const preview = (
     <LazyFireworkReplayCanvas
       cues={previewCues}
@@ -1916,8 +1101,8 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       interactive
       controlsVisible
       showStarfield={false}
-      cameraMenuActions={previewMenuActions}
-      showFps
+      showFps={false}
+      showCameraControls={false}
       primeSnapshots
       primeOnCueChanges={false}
       showLoadingBar
@@ -1949,6 +1134,8 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       duration={previewDuration}
       isPlaying={isPlaying}
       fullscreen={isFullscreen}
+      isLooping={isLooping}
+      onLoopToggle={() => setIsLooping((looping) => !looping)}
       loading={!previewReady}
       loadingProgress={previewLoadingProgress}
       ticks={previewTicks}
@@ -1981,8 +1168,11 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
           selectedFireworkStyleDefaults[kind] ?? firework.fireworkStyleDefaultLinks[kind] ?? null,
         )}
         disabled={!parsedOverrides.ok}
-        saveDisabled={isPending || (kind === 'star' && !mainColor)}
+        saveDisabled={isPending || Boolean(renderError)}
         onSave={(styleName) => saveCurrentStyleAsDefault(kind, styleName)}
+        resetDisabled={
+          !isRecord(overridesRecord.presetSources) || !overridesRecord.presetSources[kind]
+        }
         onReset={() => resetLocalStyleDefaults(kind)}
       />
     );
@@ -2053,235 +1243,16 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       title: 'Details',
       content: detailsContent,
     },
-    {
-      id: 'colour',
-      label: 'Colour',
-      icon: Palette,
-      eyebrow: 'Appearance',
-      title: 'Colour',
-      content: starColourControls,
-    },
-    {
-      id: 'geometry',
-      label: 'Geometry',
-      icon: Shapes,
-      eyebrow: 'Shape',
-      title: 'Geometry',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={overridesRecord}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => mutateOverridesForStyle('geometry', updater)}
-            disabled={!parsedOverrides.ok}
-            controlScope="geometry"
-          />
-          {renderStyleDefaultControls('geometry')}
-        </div>
-      ),
-    },
-    {
-      id: 'launch-dot',
-      label: 'Launch Dot',
-      icon: Circle,
-      eyebrow: 'Ascent',
-      title: 'Launch dot',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={overridesRecord}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => mutateOverridesForStyle('launch', updater)}
-            disabled={!parsedOverrides.ok}
-            showLaunch
-            controlScope="launchShell"
-          />
-          {renderStyleDefaultControls('launch')}
-        </div>
-      ),
-    },
-    {
-      id: 'launch-trail',
-      label: 'Launch Trail',
-      icon: Waves,
-      eyebrow: 'Ascent',
-      title: 'Launch trail',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={overridesRecord}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => mutateOverridesForStyle('launch', updater)}
-            disabled={!parsedOverrides.ok}
-            showLaunch
-            controlScope="launchTrail"
-          />
-          {renderStyleDefaultControls('launch')}
-        </div>
-      ),
-    },
-    {
-      id: 'smoke',
-      label: 'Smoke',
-      icon: Cloud,
-      eyebrow: 'Atmosphere',
-      title: 'Smoke',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={overridesRecord}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => mutateOverridesForStyle('smoke', updater)}
-            disabled={!parsedOverrides.ok}
-            controlScope="smoke"
-          />
-          {renderStyleDefaultControls('smoke')}
-        </div>
-      ),
-    },
-    {
-      id: 'star',
-      label: 'Star',
-      icon: Sparkles,
-      eyebrow: 'Appearance',
-      title: 'Star & glow',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={overridesRecord}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => mutateOverridesForStyle('star', updater)}
-            disabled={!parsedOverrides.ok}
-            showStarCount
-            controlScope="star"
-          />
-          {renderStyleDefaultControls('star')}
-        </div>
-      ),
-    },
-    {
-      id: 'star-inner',
-      label: 'Star Inner',
-      icon: CircleDot,
-      eyebrow: 'Appearance',
-      title: 'Star Inner',
-      content: (
-        <FireworkRenderControls
-          design={previewDesign}
-          defaults={overridesRecord}
-          calibrationDefaults={calibrationDefaults}
-          mutate={(updater) => mutateOverridesForStyle('star', updater)}
-          disabled={!parsedOverrides.ok}
-          showStarCount
-          controlScope="starInner"
-        />
-      ),
-    },
-    {
-      id: 'trail',
-      label: 'Trail',
-      icon: Wind,
-      eyebrow: 'Appearance',
-      title: 'Trail',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={overridesRecord}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => mutateOverridesForStyle('trail', updater)}
-            disabled={!parsedOverrides.ok}
-            controlScope="trail"
-          />
-          {renderStyleDefaultControls('trail')}
-        </div>
-      ),
-    },
-    {
-      id: 'fx-strobe',
-      label: 'Strobe',
-      icon: Zap,
-      eyebrow: 'Effects',
-      title: 'Strobe',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={overridesRecord}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => mutateOverridesForStyle('strobe', updater)}
-            disabled={!parsedOverrides.ok}
-            controlScope="strobe"
-          />
-          {renderStyleDefaultControls('strobe')}
-        </div>
-      ),
-    },
-    {
-      id: 'fx-crackle',
-      label: 'Crackle',
-      icon: Zap,
-      eyebrow: 'Effects',
-      title: 'Crackle',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={overridesRecord}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => mutateOverridesForStyle('crackle', updater)}
-            disabled={!parsedOverrides.ok}
-            controlScope="crackle"
-          />
-          {renderStyleDefaultControls('crackle')}
-        </div>
-      ),
-    },
-    {
-      id: 'fx-split',
-      label: 'Split',
-      icon: Zap,
-      eyebrow: 'Effects',
-      title: 'Split',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={overridesRecord}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => mutateOverridesForStyle('split', updater)}
-            disabled={!parsedOverrides.ok}
-            controlScope="split"
-          />
-          {previewDesign.split.enabled ? renderStyleDefaultControls('split') : null}
-        </div>
-      ),
-    },
-    {
-      id: 'sound',
-      label: 'Sound',
-      icon: Volume2,
-      eyebrow: 'Audio',
-      title: 'Sound',
-      content: (
-        <div className="space-y-5">
-          <FireworkRenderControls
-            design={previewDesign}
-            defaults={overridesRecord}
-            calibrationDefaults={calibrationDefaults}
-            mutate={(updater) => mutateOverridesForStyle('sound', updater)}
-            disabled={!parsedOverrides.ok}
-            controlScope="sound"
-          />
-          {renderStyleDefaultControls('sound')}
-        </div>
-      ),
-    },
+    ...rendererTabs({
+      saved: savedRenderResult.ok ? savedRenderResult.design : undefined,
+      controls: {
+        design: previewDesign,
+        defaults: overridesRecord,
+        disabled: !parsedOverrides.ok,
+      },
+      mutate: mutateOverridesForStyle,
+      preset: renderStyleDefaultControls,
+    }),
     {
       id: 'timeline',
       label: 'Timeline',
@@ -2319,18 +1290,27 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       icon: Braces,
       eyebrow: 'Advanced',
       title: 'Render overrides JSON',
-      content: <JsonReadOnlyPanel value={mergedOverrides as Json} />,
+      content: <JsonReadOnlyPanel value={overridesRecord as Json} />,
     },
   ].filter((tab) => !isGroundEmitter || (tab.id !== 'launch-dot' && tab.id !== 'launch-trail'));
 
+  const draftHistory = useDraftHistory({
+    recordKey: firework.id,
+    value: currentLocalSnapshot(),
+    signature: currentSignature,
+    restore: applySnapshot,
+  });
+
   return (
     <FireworkEditorShell
+      history={draftHistory}
+      comparison={{ saved: showSaved, onChange: setShowSaved }}
       title={name || firework.name}
       chips={[{ label: 'Calibre', value: caliber.trim() || firework.caliber, icon: CircleDot }]}
       dirty={isDirty}
       saving={isPending}
       saveLabel="Save"
-      saveDisabled={!parsedOverrides.ok || isPending}
+      saveDisabled={Boolean(renderError) || isPending}
       revertDisabled={!isDirty || isPending}
       onSave={save}
       onRevert={revertLocalChanges}
@@ -2341,6 +1321,14 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       transport={transport}
       transportPlaying={isPlaying}
       error={error}
+      renderDiagnostics={{
+        recordId: firework.id,
+        issues: !parsedOverrides.ok
+          ? [{ path: [], message: parsedOverrides.error }]
+          : !renderResult.ok
+            ? renderResult.diagnostics
+            : [],
+      }}
       fullscreen={isFullscreen}
       onExitFullscreen={exitFullscreen}
     />

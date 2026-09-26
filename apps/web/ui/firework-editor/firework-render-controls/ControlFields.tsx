@@ -1,27 +1,18 @@
 'use client';
 
-import { useId, type ReactNode } from 'react';
-import {
-  CALIBRATED_APPEARANCE_MAX,
-  CALIBRATED_APPEARANCE_MIN,
-  CALIBRATED_APPEARANCE_STEP,
-  calibratedToRaw,
-  rawToCalibrated,
-  type CalibratedRange,
-} from '@/ui/firework-editor/firework-render-controls/calibrated-slider';
 import { Field, FieldLabel } from '@/ui/patterns/Field';
 import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
-import { SliderField } from '@/ui/patterns/SliderField';
 import { Switch } from '@/ui/primitives/switch';
+import type { NumericControlRange } from '@showcrafter/firework-editor/numeric-range';
+import { useId, type ReactNode } from 'react';
+import { RendererField as SliderField } from './RendererField';
 
-function formatPercent(value: number): string {
-  return `${value.toFixed(value % 1 === 0 ? 0 : 1)}%`;
-}
-
-export function CalibratedSliderField({
+export function AppearanceField({
   label,
   value,
   range,
+  unit = 'percent',
+  inputKind = 'slider',
   disabled,
   hint,
   fullWidth,
@@ -29,7 +20,9 @@ export function CalibratedSliderField({
 }: {
   label: string;
   value: number;
-  range: CalibratedRange;
+  range: NumericControlRange;
+  unit?: 'percent' | 'multiplier';
+  inputKind?: 'slider';
   disabled?: boolean;
   hint: ReactNode;
   fullWidth?: boolean;
@@ -38,15 +31,16 @@ export function CalibratedSliderField({
   return (
     <SliderField
       label={label}
-      min={CALIBRATED_APPEARANCE_MIN}
-      max={CALIBRATED_APPEARANCE_MAX}
-      step={CALIBRATED_APPEARANCE_STEP}
-      value={rawToCalibrated(value, range)}
-      formatValue={formatPercent}
+      inputKind={inputKind}
+      min={range.min}
+      max={range.max}
+      step={range.max <= 10 ? 0.01 : 1}
+      value={value}
+      formatValue={(number) => (unit === 'multiplier' ? `${number.toFixed(2)}×` : `${number}%`)}
       disabled={disabled}
       fullWidth={fullWidth}
       hint={hint}
-      onChange={(next) => onChange(calibratedToRaw(next, range))}
+      onChange={onChange}
     />
   );
 }

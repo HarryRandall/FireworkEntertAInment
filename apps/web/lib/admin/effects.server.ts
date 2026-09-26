@@ -1,3 +1,4 @@
+import { validateCatalogueRender } from './renderer-validation';
 import 'server-only';
 
 import { getCachedJson, setCachedJson } from '@/lib/server-cache';
@@ -7,21 +8,17 @@ import {
   resolveFireworkPreviewImage,
   type FireworkPreviewImageRelation,
 } from '@/lib/firework-preview-image';
-import { emptyStyleDefaultIdMap } from '@/lib/fireworks/style-defaults';
-import {
-  ADMIN_CACHE_TTL_SECONDS,
-  getAdminEffectCacheKey,
-  getAdminEffectsCacheKey,
-} from './cache-keys';
+import { emptyStyleDefaultIdMap } from '@showcrafter/fireworks/style-defaults';
+import { ADMIN_CACHE_TTL_SECONDS, getAdminEffectsCacheKey } from './cache-keys';
 import { listEffectEditorVersions } from './editor-versions.server';
 import { buildEffectPreview } from './effect-preview';
 import { requirePermission } from '@/lib/access/current-profile.server';
-import { describeSupabaseError, isMissingStyleDefaultSchemaError } from './style-default-schema';
+import { describeSupabaseError } from './style-default-schema';
 import { listAdminStyleDefaultOptions } from './style-defaults.server';
 import { getServerClient } from './supabase';
 
 type ServerClient = Awaited<ReturnType<typeof getServerClient>>;
-type CachedAdminEffectDetail = Omit<AdminEffectDetail, 'history'>;
+type AdminEffectDetailWithoutHistory = Omit<AdminEffectDetail, 'history'>;
 
 type BaseEffectRow = Pick<
   Database['public']['Tables']['firework_effects']['Row'],
@@ -40,7 +37,13 @@ type BaseEffectRow = Pick<
 };
 
 function mapBaseEffectSummary(row: BaseEffectRow): AdminEffectSummary {
+  const renderResult = validateCatalogueRender({
+    kind: 'effect',
+    recordId: row.id,
+    settings: row.model_json,
+  });
   return {
+    renderDiagnostics: renderResult.ok ? [] : renderResult.diagnostics,
     id: row.id,
     slug: row.slug,
     name: row.name,
@@ -61,7 +64,7 @@ function mapBaseEffectSummary(row: BaseEffectRow): AdminEffectSummary {
   };
 }
 
-function mapBaseEffectDetail(row: BaseEffectRow): CachedAdminEffectDetail {
+function mapBaseEffectDetail(row: BaseEffectRow): AdminEffectDetailWithoutHistory {
   return {
     ...mapBaseEffectSummary(row),
     modelJson: row.model_json as Json,
@@ -72,6 +75,8 @@ function mapBaseEffectDetail(row: BaseEffectRow): CachedAdminEffectDetail {
     styleDefaults: {
       geometry: [],
       star: [],
+      innerStar: [],
+      innerTrail: [],
       trail: [],
       launch: [],
       smoke: [],
@@ -85,8 +90,6 @@ function mapBaseEffectDetail(row: BaseEffectRow): CachedAdminEffectDetail {
 
 const BASE_EFFECT_SELECT =
   'id, slug, name, description, pattern_key, model_json, sort_order, source, updated_at, fireworks(id), firework_preview_images(source_revision, renderer_version, storage_path)';
-const LEGACY_BASE_EFFECT_SELECT =
-  'id, slug, name, description, pattern_key, model_json, sort_order, source, updated_at, fireworks(id), firework_preview_images(source_revision, renderer_version, storage_path)';
 
 async function selectBaseEffects(supabase: ServerClient) {
   const result = await supabase
@@ -95,13 +98,7 @@ async function selectBaseEffects(supabase: ServerClient) {
     .order('sort_order', { ascending: true })
     .order('name', { ascending: true });
 
-  if (!isMissingStyleDefaultSchemaError(result.error)) return result;
-
-  return supabase
-    .from('firework_effects')
-    .select(LEGACY_BASE_EFFECT_SELECT)
-    .order('sort_order', { ascending: true })
-    .order('name', { ascending: true });
+  return result;
 }
 
 async function selectBaseEffectById(supabase: ServerClient, effectId: string) {
@@ -111,13 +108,7 @@ async function selectBaseEffectById(supabase: ServerClient, effectId: string) {
     .eq('id', effectId)
     .maybeSingle();
 
-  if (!isMissingStyleDefaultSchemaError(result.error)) return result;
-
-  return supabase
-    .from('firework_effects')
-    .select(LEGACY_BASE_EFFECT_SELECT)
-    .eq('id', effectId)
-    .maybeSingle();
+  return result;
 }
 
 /** Returns every colourless base effect for the admin effects browser. */
@@ -146,15 +137,8 @@ export async function listAdminEffects(): Promise<AdminEffectSummary[]> {
 export async function getAdminEffectById(effectId: string): Promise<AdminEffectDetail | null> {
   if (!(await requirePermission('admin.manage_catalogue'))) return null;
 
-  const cacheKey = getAdminEffectCacheKey(effectId);
+  // Editor baselines must be current even when cache invalidation is unavailable.
   const supabase = await getServerClient();
-  const cached = await getCachedJson<CachedAdminEffectDetail>(cacheKey);
-  if (cached) {
-    return {
-      ...cached,
-      history: await listEffectEditorVersions(supabase, effectId),
-    };
-  }
 
   const { data, error } = await selectBaseEffectById(supabase, effectId);
 
@@ -169,10 +153,9 @@ export async function getAdminEffectById(effectId: string): Promise<AdminEffectD
     listAdminStyleDefaultOptions(),
     listEffectEditorVersions(supabase, row.id),
   ]);
-  const mapped: CachedAdminEffectDetail = {
+  const mapped: AdminEffectDetailWithoutHistory = {
     ...mapBaseEffectDetail(row),
     styleDefaults,
   };
-  await setCachedJson(cacheKey, mapped, ADMIN_CACHE_TTL_SECONDS);
   return { ...mapped, history };
 }

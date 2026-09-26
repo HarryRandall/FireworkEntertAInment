@@ -1,11 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type {
   AdminEditorVersion,
   AdminEditorVersionAction,
   AdminEditorVersionTargetKind,
 } from '@/lib/admin.types';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 const HISTORY_LIMIT = 24;
 

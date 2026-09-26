@@ -606,8 +606,8 @@ function requestedColourFamilies(text: string): string[] {
 
 function productColourFamilies(product: FireworkSpecification): Set<string> {
   const values = [
-    product.spec.color,
-    ...(product.spec.colorPalette ?? []),
+    product.spec?.color,
+    ...(product.spec?.colorPalette ?? []),
     product.variant?.primaryColor,
     product.variant?.secondaryColor,
     ...(product.variant?.colorPalette ?? []),
@@ -650,8 +650,8 @@ function productSearchText(product: FireworkSpecification): string {
   return [
     product.name,
     product.description,
-    product.spec.color,
-    ...(product.spec.colorPalette ?? []),
+    product.spec?.color,
+    ...(product.spec?.colorPalette ?? []),
     product.variant?.primaryColor,
     product.variant?.secondaryColor,
     ...(product.variant?.colorPalette ?? []),

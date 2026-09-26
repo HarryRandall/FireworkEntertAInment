@@ -1,4 +1,5 @@
 'use client';
+import { FIREWORK_SOUND_ASSETS } from '@/lib/fireworks/assets';
 
 /**
  * FireworkReplayCanvas — Three.js canvas that simulates firework cues
@@ -27,20 +28,16 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import type { ReplayCue } from '@/lib/show-domain';
-import { FireworksEngine, type SnapshotCacheData } from '@/lib/fireworks/FireworksEngine';
-import type { FireworkSceneMode } from '@/lib/fireworks/World';
-import {
-  DEFAULT_LAUNCH_POSITIONS,
-  type FireworkDesign,
-  type LaunchPosition,
-} from '@/lib/fireworks/design';
+import { FireworksEngine, type SnapshotCacheData } from '@showcrafter/fireworks/FireworksEngine';
+import type { FireworkSceneMode } from '@showcrafter/fireworks/World';
+import { DEFAULT_LAUNCH_POSITIONS, type LaunchPosition } from '@showcrafter/fireworks/design';
 import {
   DEFAULT_FIREWORK_HEAD_STYLE,
   DEFAULT_FIREWORK_RENDER_TUNING,
   type FireworkHeadStyle,
   type FireworkRenderTuning,
-} from '@/lib/fireworks/render-tuning';
-import { replaySimulationCacheKey } from '@/lib/fireworks/replay-cache-key';
+} from '@showcrafter/fireworks/render-tuning';
+import { replaySimulationCacheKey } from '@showcrafter/fireworks/replay-cache-key';
 import {
   FIREWORKS_ENGINE_FIXED_STEP_SECONDS,
   quantiseFireworksEngineTimeSeconds,
@@ -126,7 +123,6 @@ type Props = {
   primeOnCueChanges?: boolean;
   renderTuning?: Partial<FireworkRenderTuning>;
   headStyle?: Partial<FireworkHeadStyle>;
-  trailWidthGuideDesign?: FireworkDesign | null;
   /**
    * Render extra horizontal WebGL width while the visible frame clips the middle.
    * Multishot uses this so opening the side inspector keeps the scene scale
@@ -257,21 +253,6 @@ const FPS_GRAPH_HEIGHT = 40;
 const FPS_GRAPH_MAX = 120;
 const FPS_CURVE_TENSION = 0.22;
 const FPS_SMOOTHING_FACTOR = 0.16;
-const TRAIL_WIDTH_GUIDE_RINGS = 7;
-const TRAIL_WIDTH_GUIDE_SEGMENTS = 10;
-const TRAIL_WIDTH_GUIDE_MATERIAL_OPACITY = 0.58;
-const TRAIL_WIDTH_GUIDE_STAR_INDEX = 0;
-const TRAIL_WIDTH_GUIDE_MAX_SPREAD_ANGLE = 80;
-const TRAIL_WIDTH_GUIDE_SPREAD_SCALE = 0.055;
-const TRAIL_WIDTH_GUIDE_MAX_SPREAD = 180;
-const GUIDE_GRAVITY = -9.82;
-const GUIDE_STAR_MIN_GRAVITY = -1.85;
-const GUIDE_STAR_MAX_GRAVITY = 0.28;
-const PATTERN_SEED: Record<FireworkDesign['pattern'], 1 | 2 | 3> = {
-  fibonacci: 1,
-  wave: 2,
-  strobe: 3,
-};
 
 /**
  * Pan the whole camera rig (camera + target together) up by `lift` units. Used
@@ -334,293 +315,6 @@ function buildFpsGraphPath(samples: number[], currentFps: number | null): string
     },
     `M ${first.x.toFixed(2)} ${first.y.toFixed(2)}`,
   );
-}
-
-function clamp01(value: number): number {
-  return Math.max(0, Math.min(1, value));
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
-
-function rangeMid(range: [number, number]): number {
-  return (range[0] + range[1]) / 2;
-}
-
-function trailWidthGuideRadiusAt(
-  design: FireworkDesign,
-  positionPercent: number,
-  distanceBehindHead: number,
-  visibleTrailLength: number,
-): number {
-  const width = design.burstTrail.width;
-  const t = Math.pow(clamp01(positionPercent / 100), width.curve);
-  const tailAngle = clamp(width.tail, 0, TRAIL_WIDTH_GUIDE_MAX_SPREAD_ANGLE);
-  const frontAngle = clamp(width.front, 0, TRAIL_WIDTH_GUIDE_MAX_SPREAD_ANGLE);
-  const frontDistance = Math.max(0, visibleTrailLength - distanceBehindHead);
-  const tailRadius =
-    Math.tan((tailAngle * Math.PI) / 180) *
-    distanceBehindHead *
-    TRAIL_WIDTH_GUIDE_SPREAD_SCALE *
-    (1 - t);
-  const frontRadius =
-    Math.tan((frontAngle * Math.PI) / 180) * frontDistance * TRAIL_WIDTH_GUIDE_SPREAD_SCALE * t;
-  const radius = tailRadius + frontRadius;
-  return clamp(radius, 0, TRAIL_WIDTH_GUIDE_MAX_SPREAD);
-}
-
-function fibonacciDirection(index: number, count: number): THREE.Vector3 {
-  const offset = 2 / count;
-  const inc = Math.PI * (3.0 - Math.sqrt(5.0));
-  const y = index * offset - 1 + offset / 2;
-  const r = Math.sqrt(Math.max(0, 1 - y * y));
-  const phi = ((index + 1.0) % count) * inc;
-  return new THREE.Vector3(Math.cos(phi) * r, y, Math.sin(phi) * r);
-}
-
-function burstParticleCount(design: FireworkDesign): number {
-  switch (design.geometry) {
-    case 'radial_arms':
-      return Math.max(1, Math.round(design.size * 0.46));
-    case 'falling_tail':
-      return Math.max(1, Math.round(design.size * 0.62));
-    case 'pearls':
-      return Math.max(1, Math.round(design.size * 0.18));
-    case 'ring':
-      return Math.max(1, Math.round(design.size * 0.72));
-    case 'bowtie':
-      return Math.max(1, Math.round(design.size * 0.82));
-    case 'fragment_cloud':
-      return Math.max(1, Math.round(design.size * 0.9));
-    default:
-      return Math.max(1, Math.round(design.size));
-  }
-}
-
-function buildTrailWidthGuideVelocity(design: FireworkDesign): THREE.Vector3 {
-  const speed = rangeMid(design.burst.speed);
-  if (design.geometry === 'upward_fan') return new THREE.Vector3(0, speed * 1.625, 0);
-  if (design.geometry === 'single_tail') return new THREE.Vector3(0, speed * 0.2, speed);
-
-  const count = burstParticleCount(design);
-  const index = Math.min(TRAIL_WIDTH_GUIDE_STAR_INDEX, count - 1);
-  const direction = fibonacciDirection(index, count);
-
-  switch (design.geometry) {
-    case 'ring': {
-      const angle = (index / count) * Math.PI * 2;
-      return new THREE.Vector3(Math.cos(angle) * speed, Math.sin(angle) * speed * 0.96, 0);
-    }
-    case 'crown':
-    case 'weeping': {
-      const lateral = Math.sqrt(direction.x * direction.x + direction.z * direction.z) || 1;
-      const lift = design.geometry === 'weeping' ? 0.575 : 0.86;
-      return new THREE.Vector3(
-        (direction.x / lateral) * speed * 0.825,
-        speed * lift,
-        (direction.z / lateral) * speed * 0.825,
-      );
-    }
-    case 'radial_arms': {
-      const arms = 7;
-      const arm = index % arms;
-      const angle = (arm / arms) * Math.PI * 2;
-      const length = 0.74 + Math.floor(index / arms) / Math.max(1, count / arms);
-      return new THREE.Vector3(
-        Math.cos(angle) * speed * length,
-        speed * 0.44,
-        Math.sin(angle) * speed * length,
-      );
-    }
-    case 'falling_tail': {
-      const lateral = Math.sqrt(direction.x * direction.x + direction.z * direction.z) || 1;
-      return new THREE.Vector3(
-        (direction.x / lateral) * speed * 0.53,
-        -speed * 0.26,
-        (direction.z / lateral) * speed * 0.53,
-      );
-    }
-    case 'pearls': {
-      const angle = (index / count) * Math.PI * 2;
-      return new THREE.Vector3(
-        Math.cos(angle) * speed * 0.59,
-        speed * 0.675,
-        Math.sin(angle) * speed * 0.59,
-      );
-    }
-    case 'fragment_cloud':
-      return direction.multiplyScalar(speed * 1.11);
-    case 'bowtie': {
-      const half = Math.floor(count / 2);
-      const lobe = index < half ? 1 : -1;
-      const withinLobe = lobe === 1 ? index : index - half;
-      const lobeCount = lobe === 1 ? half : count - half;
-      const t = lobeCount > 1 ? withinLobe / (lobeCount - 1) : 0.5;
-      const fan = (t - 0.5) * Math.PI * 0.62;
-      return new THREE.Vector3(
-        lobe * Math.cos(fan) * speed * 0.92,
-        Math.sin(fan) * speed * 0.34,
-        0,
-      );
-    }
-    default: {
-      const warble = PATTERN_SEED[design.pattern] === 2 ? 1.03 : 1;
-      return direction.multiplyScalar(speed * warble);
-    }
-  }
-}
-
-function guideStarGravity(design: FireworkDesign): number {
-  const gravity = clamp(
-    rangeMid(design.burst.gravity),
-    GUIDE_STAR_MIN_GRAVITY,
-    GUIDE_STAR_MAX_GRAVITY,
-  );
-  switch (design.geometry) {
-    case 'weeping':
-      return clamp(gravity * 0.52, GUIDE_STAR_MIN_GRAVITY, -0.08);
-    case 'falling_tail':
-    case 'waterfall':
-      return clamp(gravity * 0.45, GUIDE_STAR_MIN_GRAVITY, -0.05);
-    case 'pearls':
-      return clamp(gravity * 1.15, GUIDE_STAR_MIN_GRAVITY, -0.18);
-    default:
-      return gravity;
-  }
-}
-
-function shellApexSeconds(design: FireworkDesign, cue?: ReplayCue): number {
-  const liftVelocity = design.liftVelocity ?? 11 + Math.min(design.size / 40, 6);
-  const panRadians = ((cue?.shotPanDegrees ?? 0) * Math.PI) / 180;
-  const vy = liftVelocity * Math.max(0.82, Math.cos(panRadians) * 0.96);
-  return Math.max(0, vy / Math.abs(GUIDE_GRAVITY));
-}
-
-function trailWidthGuideBurstCentre(
-  design: FireworkDesign,
-  cues: ReplayCue[],
-  launchPositions: LaunchPosition[],
-): THREE.Vector3 {
-  const cue = cues[0];
-  const idx = cue?.launchPositionIndex ?? 0;
-  const basePos = launchPositions[idx] ?? DEFAULT_LAUNCH_POSITIONS[0];
-  const override = cue?.shotPositionOverride;
-  const x = basePos.x + (override?.x ?? 0);
-  const y = basePos.y + (override?.y ?? 0);
-  const z = basePos.z + (override?.z ?? 0);
-  const liftVelocity = design.liftVelocity ?? 11 + Math.min(design.size / 40, 6);
-  const panRadians = ((cue?.shotPanDegrees ?? 0) * Math.PI) / 180;
-  const tiltRadians = ((cue?.shotTiltDegrees ?? 0) * Math.PI) / 180;
-  const vx = Math.sin(panRadians) * Math.max(1.2, liftVelocity * 0.62);
-  const vz = Math.sin(tiltRadians) * Math.max(1.0, liftVelocity * 0.42);
-  const vy = liftVelocity * Math.max(0.82, Math.cos(panRadians) * 0.96);
-  const apexSeconds = shellApexSeconds(design, cue);
-
-  return new THREE.Vector3(
-    x + vx * apexSeconds * 100,
-    y + (vy * apexSeconds + 0.5 * GUIDE_GRAVITY * apexSeconds * apexSeconds) * 100,
-    z + vz * apexSeconds * 100,
-  );
-}
-
-function pushLine(vertices: number[], a: THREE.Vector3, b: THREE.Vector3): void {
-  vertices.push(a.x, a.y, a.z, b.x, b.y, b.z);
-}
-
-function createTrailWidthGuide(
-  design: FireworkDesign,
-  elapsed: number,
-  cues: ReplayCue[],
-  launchPositions: LaunchPosition[],
-): THREE.Group | null {
-  if (!design.burstTrail.enabled || design.burstTrail.particlesPerStar <= 0) return null;
-
-  const cue = cues[0];
-  const starAge = Math.max(0, elapsed - (cue?.timeSeconds ?? 0) - shellApexSeconds(design, cue));
-  const starLife = Math.max(0.01, rangeMid(design.burst.life));
-  const visibleAge = Math.min(starAge, starLife);
-  if (visibleAge <= 0) return null;
-
-  const velocity = buildTrailWidthGuideVelocity(design);
-  const displacement = velocity
-    .clone()
-    .multiplyScalar(visibleAge * 100)
-    .add(new THREE.Vector3(0, 0.5 * guideStarGravity(design) * visibleAge * visibleAge * 100, 0));
-  const pathLength = displacement.length();
-  if (pathLength <= 1) return null;
-
-  const direction = displacement.normalize();
-  const burstCentre = trailWidthGuideBurstCentre(design, cues, launchPositions);
-  const vertices: number[] = [];
-
-  const worldUp =
-    Math.abs(direction.y) > 0.92 ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 1, 0);
-  const right = new THREE.Vector3().crossVectors(direction, worldUp);
-  if (right.lengthSq() < 1e-5) right.set(1, 0, 0);
-  right.normalize();
-  const up = new THREE.Vector3().crossVectors(right, direction).normalize();
-  let previousRing: THREE.Vector3[] | null = null;
-
-  for (let ringIndex = 0; ringIndex < TRAIL_WIDTH_GUIDE_RINGS; ringIndex++) {
-    const progress = ringIndex / (TRAIL_WIDTH_GUIDE_RINGS - 1);
-    const distanceBehindHead = pathLength * (1 - progress);
-    const radius = Math.max(
-      0,
-      trailWidthGuideRadiusAt(design, progress * 100, distanceBehindHead, pathLength),
-    );
-    const centre = burstCentre.clone().addScaledVector(direction, pathLength * progress);
-    const ring = Array.from({ length: TRAIL_WIDTH_GUIDE_SEGMENTS }, (_, segmentIndex) => {
-      const angle = (segmentIndex / TRAIL_WIDTH_GUIDE_SEGMENTS) * Math.PI * 2;
-      return centre
-        .clone()
-        .addScaledVector(right, Math.cos(angle) * radius)
-        .addScaledVector(up, Math.sin(angle) * radius);
-    });
-
-    for (let segmentIndex = 0; segmentIndex < TRAIL_WIDTH_GUIDE_SEGMENTS; segmentIndex++) {
-      pushLine(vertices, ring[segmentIndex], ring[(segmentIndex + 1) % TRAIL_WIDTH_GUIDE_SEGMENTS]);
-      if (previousRing) pushLine(vertices, previousRing[segmentIndex], ring[segmentIndex]);
-    }
-
-    previousRing = ring;
-  }
-
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-  const material = new THREE.LineBasicMaterial({
-    color: 0x9eefff,
-    transparent: true,
-    opacity: TRAIL_WIDTH_GUIDE_MATERIAL_OPACITY,
-    depthWrite: false,
-    depthTest: false,
-    toneMapped: false,
-  });
-  const lines = new THREE.LineSegments(geometry, material);
-  lines.name = 'trail-width-guide-lines';
-  lines.renderOrder = 9;
-
-  const group = new THREE.Group();
-  group.name = 'trail-width-guide';
-  group.userData.trailWidthGuide = true;
-  group.add(lines);
-  return group;
-}
-
-function disposeTrailWidthGuide(group: THREE.Group | null): void {
-  if (!group) return;
-  group.traverse((child) => {
-    const object = child as THREE.Object3D & {
-      geometry?: THREE.BufferGeometry;
-      material?: THREE.Material | THREE.Material[];
-    };
-    object.geometry?.dispose();
-    if (Array.isArray(object.material)) {
-      object.material.forEach((material) => material.dispose());
-    } else {
-      object.material?.dispose();
-    }
-  });
 }
 
 export type FireworkReplayCanvasMenuAction = {
@@ -692,6 +386,15 @@ function aimMarkerEndpoint(marker: AimMarker): THREE.Vector3 {
   return aimMarkerDirection(marker.panDegrees, marker.tiltDegrees).multiplyScalar(
     AIM_MARKER_LENGTH,
   );
+}
+
+function disposeAimMarkerGroup(group: THREE.Group): void {
+  group.traverse((child) => {
+    if (!(child instanceof THREE.Mesh) && !(child instanceof THREE.Line)) return;
+    child.geometry.dispose();
+    const materials = Array.isArray(child.material) ? child.material : [child.material];
+    for (const material of materials) material.dispose();
+  });
 }
 
 function buildAimMarkerGroup(markers: AimMarker[], selectedId: string | null): THREE.Group {
@@ -813,7 +516,6 @@ export function FireworkReplayCanvas({
   primeOnCueChanges = true,
   renderTuning = DEFAULT_FIREWORK_RENDER_TUNING,
   headStyle = DEFAULT_FIREWORK_HEAD_STYLE,
-  trailWidthGuideDesign = null,
   renderOverscanPx = 0,
   onSceneReady,
   onPrimeProgress,
@@ -841,7 +543,6 @@ export function FireworkReplayCanvas({
   const composerRef = useRef<EffectComposer | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
   const sceneRef = useRef<THREE.Scene | null>(null);
-  const trailWidthGuideRef = useRef<THREE.Group | null>(null);
   const aimMarkersGroupRef = useRef<THREE.Group | null>(null);
   const aimMarkersRef = useRef<AimMarker[]>(aimMarkers ?? []);
   const selectedMarkerIdRef = useRef<string | null>(selectedMarkerId);
@@ -1041,20 +742,6 @@ export function FireworkReplayCanvas({
     () => launchPositions.map((p) => `${p.x},${p.y},${p.z}`).join('|'),
     [launchPositions],
   );
-  const trailWidthGuideKey = trailWidthGuideDesign
-    ? [
-        trailWidthGuideDesign.burstTrail.enabled ? 'on' : 'off',
-        trailWidthGuideDesign.burstTrail.particlesPerStar,
-        trailWidthGuideDesign.geometry,
-        trailWidthGuideDesign.pattern,
-        trailWidthGuideDesign.size,
-        trailWidthGuideDesign.burst.speed.join(','),
-        trailWidthGuideDesign.burst.life.join(','),
-        trailWidthGuideDesign.burstTrail.width.front,
-        trailWidthGuideDesign.burstTrail.width.tail,
-        trailWidthGuideDesign.burstTrail.width.curve,
-      ].join('|')
-    : 'none';
 
   useEffect(() => {
     showViewHelperRef.current = showViewHelper;
@@ -1185,6 +872,7 @@ export function FireworkReplayCanvas({
 
     const engine = new FireworksEngine(scene, launchPositions, renderer, sceneMode, {
       showStarfield,
+      soundAssets: FIREWORK_SOUND_ASSETS,
     });
     engine.attachListenerToCamera(camera);
     engine.setMuted(muted);
@@ -1456,11 +1144,6 @@ export function FireworkReplayCanvas({
       document.removeEventListener('pointerdown', unlockAudio, { capture: true });
       document.removeEventListener('keydown', unlockAudio, { capture: true });
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
-      if (trailWidthGuideRef.current) {
-        scene.remove(trailWidthGuideRef.current);
-        disposeTrailWidthGuide(trailWidthGuideRef.current);
-        trailWidthGuideRef.current = null;
-      }
       controls.removeEventListener('start', onControlsStart);
       controls.removeEventListener('change', onControlsChange);
       controls.removeEventListener('end', onControlsEnd);
@@ -1571,38 +1254,6 @@ export function FireworkReplayCanvas({
     positionsKey,
   ]);
 
-  useEffect(() => {
-    const scene = sceneRef.current;
-    if (!scene) return;
-
-    const guide = trailWidthGuideDesign
-      ? createTrailWidthGuide(
-          trailWidthGuideDesign,
-          playbackRef?.current ?? elapsed,
-          cues,
-          launchPositions,
-        )
-      : null;
-    if (trailWidthGuideRef.current) {
-      scene.remove(trailWidthGuideRef.current);
-      disposeTrailWidthGuide(trailWidthGuideRef.current);
-      trailWidthGuideRef.current = null;
-    }
-    if (guide) {
-      scene.add(guide);
-      trailWidthGuideRef.current = guide;
-    }
-    forceRenderRef.current = true;
-
-    return () => {
-      if (!guide || trailWidthGuideRef.current !== guide) return;
-      scene.remove(guide);
-      disposeTrailWidthGuide(guide);
-      trailWidthGuideRef.current = null;
-      forceRenderRef.current = true;
-    };
-  }, [cues, elapsed, launchPositions, playbackRef, trailWidthGuideDesign, trailWidthGuideKey]);
-
   // Aim-marker overlay: rebuild the in-scene markers whenever the shot set or
   // the selection changes. Gated behind `aimMarkers` so non-editor consumers
   // never pay for this. `aimMarkersKey` is the value surrogate for the array.
@@ -1613,7 +1264,7 @@ export function FireworkReplayCanvas({
     if (!scene) return;
     if (aimMarkersGroupRef.current) {
       scene.remove(aimMarkersGroupRef.current);
-      disposeTrailWidthGuide(aimMarkersGroupRef.current);
+      disposeAimMarkerGroup(aimMarkersGroupRef.current);
       aimMarkersGroupRef.current = null;
     }
     const markers = aimMarkers ?? [];
@@ -1626,7 +1277,7 @@ export function FireworkReplayCanvas({
     return () => {
       if (aimMarkersGroupRef.current) {
         scene.remove(aimMarkersGroupRef.current);
-        disposeTrailWidthGuide(aimMarkersGroupRef.current);
+        disposeAimMarkerGroup(aimMarkersGroupRef.current);
         aimMarkersGroupRef.current = null;
         forceRenderRef.current = true;
       }

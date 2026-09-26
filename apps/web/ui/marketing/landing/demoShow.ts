@@ -5,8 +5,8 @@
  * preview renders with the exact same renderer the app uses for shows. No
  * database or network access is required: designs are compiled in-memory.
  */
-import { compileFireworkDesign, type FireworkDesign } from '@/lib/fireworks/design';
-import { DEFAULT_FIREWORK_SPEC } from '@/lib/fireworks/spec';
+import { compileFireworkDesign, type FireworkDesign } from '@showcrafter/fireworks/design';
+import { DEFAULT_FIREWORK_SPEC } from '@showcrafter/fireworks/spec';
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
 
 export const DEMO_SHOW_DURATION_SECONDS = 30;

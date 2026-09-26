@@ -683,6 +683,7 @@ export type Database = {
           name: string
           primary_color: string | null
           render_overrides_json: Json
+          render_snapshot_json: Json | null
           secondary_color: string | null
           slug: string
           source: string
@@ -702,6 +703,7 @@ export type Database = {
           name: string
           primary_color?: string | null
           render_overrides_json?: Json
+          render_snapshot_json?: Json | null
           secondary_color?: string | null
           slug: string
           source?: string
@@ -721,6 +723,7 @@ export type Database = {
           name?: string
           primary_color?: string | null
           render_overrides_json?: Json
+          render_snapshot_json?: Json | null
           secondary_color?: string | null
           slug?: string
           source?: string
@@ -2588,45 +2591,6 @@ export type Database = {
         }
         Returns: Json
       }
-      create_style_default_and_update_effect: {
-        Args: {
-          p_effect_description: string
-          p_effect_id: string
-          p_effect_name: string
-          p_expected_updated_at: string
-          p_model_json: Json
-          p_pattern_key: string
-          p_sort_order: number
-          p_style_defaults_json: Json
-          p_style_description: string
-          p_style_kind: string
-          p_style_name: string
-          p_style_slug: string
-        }
-        Returns: Json
-      }
-      create_style_default_and_update_firework: {
-        Args: {
-          p_caliber: string
-          p_color_palette: string[]
-          p_duration_seconds: number
-          p_expected_updated_at: string
-          p_firework_description: string
-          p_firework_effect_id: string
-          p_firework_id: string
-          p_firework_name: string
-          p_height_meters: number
-          p_primary_color: string
-          p_render_overrides_json: Json
-          p_secondary_color: string
-          p_style_defaults_json: Json
-          p_style_description: string
-          p_style_kind: string
-          p_style_name: string
-          p_style_slug: string
-        }
-        Returns: Json
-      }
       current_firework_import_render_validator_version: {
         Args: never
         Returns: string
@@ -2870,6 +2834,19 @@ export type Database = {
       resolve_reconciled_show_generation_credit: {
         Args: { p_outcome: string; p_reason: string; p_show_id: string }
         Returns: undefined
+      }
+      save_firework_editor: {
+        Args: {
+          p_action?: string
+          p_expected_updated_at: string
+          p_history_id: string
+          p_id: string
+          p_inline_style?: Json
+          p_kind: string
+          p_patch: Json
+          p_restore_version_id?: string
+        }
+        Returns: Json
       }
       schedule_cue_generation_retry: {
         Args: {

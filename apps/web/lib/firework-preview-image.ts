@@ -5,10 +5,11 @@
  * of the preview request URL, preventing an in-memory renderer capture from an
  * older visual source being reused after an editor save.
  */
-// v2: posters captured at 1280x800 for high-density displays. Bumping the
-// version invalidates the blurry 640x400 v1 posters so the admin backfill
-// re-captures every card at the new resolution.
-export const FIREWORK_PREVIEW_RENDERER_VERSION = 'v2';
+import { FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION } from './firework-import/renderer-contract';
+
+// Both the capture dimensions and renderer bytes determine whether a poster
+// can be reused. Source edits are tracked separately by the manifest revision.
+export const FIREWORK_PREVIEW_RENDERER_VERSION = `1280x800-${FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION.slice(-64)}`;
 export const FIREWORK_PREVIEW_BUCKET = 'firework-previews';
 
 export type FireworkPreviewImageManifest = {

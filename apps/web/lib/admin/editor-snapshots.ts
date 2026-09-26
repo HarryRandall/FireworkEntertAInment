@@ -4,7 +4,7 @@ import {
   FIREWORK_STYLE_DEFAULT_KINDS,
   isFireworkStyleDefaultKind,
   type FireworkStyleDefaultKind,
-} from '@/lib/fireworks/style-defaults';
+} from '@showcrafter/fireworks/style-defaults';
 
 export type FireworkEditorSnapshot = {
   kind: 'firework';

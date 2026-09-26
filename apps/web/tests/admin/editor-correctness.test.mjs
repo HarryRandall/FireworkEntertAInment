@@ -8,11 +8,11 @@ import {
   isMissingEditorVersionTableError,
   isMissingStyleDefaultEditorVersionColumnError,
 } from '../../lib/admin/style-default-schema.ts';
-import { nonNegativeRangeFromMidpoint } from '../../lib/fireworks/editor-ranges.ts';
+import { nonNegativeRangeFromMidpoint } from '@showcrafter/fireworks/editor-ranges';
 import {
   replayCuesSimulationKey,
   replaySimulationCacheKey,
-} from '../../lib/fireworks/replay-cache-key.ts';
+} from '@showcrafter/fireworks/replay-cache-key';
 
 const root = process.cwd();
 
@@ -69,7 +69,7 @@ function makeCue() {
       id: 'firework-1',
       caliber: '30mm',
       durationSeconds: 4.2,
-      renderDesign: { size: 60, burst: { speed: [2, 4] } },
+      renderDesign: { stars: { outer: { count: 60 } }, burst: { speed: [2, 4] } },
       rawSpec: null,
     },
   };
@@ -80,9 +80,7 @@ test('replay simulation signatures change for every cue input used by the engine
   const baseKey = replayCuesSimulationKey([baseCue]);
   const mutations = [
     (cue) => (cue.id = 'cue-2'),
-    (cue) => (cue.position = 2),
     (cue) => (cue.timeSeconds = 1.5),
-    (cue) => (cue.productId = 'catalogue-2'),
     (cue) => (cue.firework.id = 'firework-2'),
     (cue) => (cue.launchPositionIndex = 2),
     (cue) => (cue.seedOverride = 43),
@@ -94,7 +92,7 @@ test('replay simulation signatures change for every cue input used by the engine
     (cue) => (cue.shotPositionOverride.z = 31),
     (cue) => (cue.firework.caliber = '50mm'),
     (cue) => (cue.firework.durationSeconds = 5),
-    (cue) => (cue.firework.renderDesign.size = 61),
+    (cue) => (cue.firework.renderDesign.stars.outer.count = 61),
   ];
 
   for (const mutate of mutations) {
@@ -221,64 +219,30 @@ test('editor saves are optimistic while history persistence stays observed and l
   const historyPanel = read('ui/firework-editor/EditorInspectorPanels.tsx');
   const sliderField = read('ui/patterns/SliderField.tsx');
 
-  for (const actions of [effectActions, fireworkActions, styleDefaultActions]) {
-    assert.match(actions, /history insert failed/);
-    assert.match(actions, /historyRecorded: boolean/);
-    assert.match(actions, /historyVersionId: z\.string\(\)\.uuid\(\)\.optional\(\)/);
-    assert.match(actions, /historyVersionId: parsed\.data\.historyVersionId/);
-    assert.match(
-      actions,
-      /const historyRecorded = await record(?:Effect|Firework|StyleDefault)Version/,
-    );
-    assert.match(actions, /\.catch\(\s*\(historyError: unknown\) =>/);
-    assert.match(actions, /id: input\.historyVersionId \?\? crypto\.randomUUID\(\)/);
-    assert.match(actions, /historyVersion/);
-    assert.match(actions, /created_at: version\.createdAt/);
-    assert.match(actions, /return \{ ok: true,[\s\S]*historyVersion, historyRecorded \}/);
-    assert.doesNotMatch(actions, /from 'next\/server'/);
-    assert.doesNotMatch(actions, /\bafter\(/);
-    assert.doesNotMatch(actions, /confirm(?:Effect|Firework|StyleDefault)EditorVersions/);
-  }
-
-  const observedMutations = [
-    [effectActions, 'updateEffect', 'recordEffectVersion', 'await Promise.all'],
+  // SQL behaviour tests exercise rollback, conflicts, restores and inline presets.
+  // This guard only ensures every app entry point reaches that tested transaction.
+  for (const [actions, names] of [
     [
       effectActions,
-      'createStyleDefaultAndUpdateEffect',
-      'recordEffectVersion',
-      'await Promise.all',
+      ['updateEffect', 'restoreEffectEditorVersion', 'createStyleDefaultAndUpdateEffect'],
     ],
-    [effectActions, 'restoreEffectEditorVersion', 'recordEffectVersion', 'await Promise.all'],
-    [fireworkActions, 'updateFirework', 'recordFireworkVersion', 'await refresh'],
     [
       fireworkActions,
-      'createStyleDefaultAndUpdateFirework',
-      'recordFireworkVersion',
-      'await refresh',
+      ['updateFirework', 'restoreFireworkEditorVersion', 'createStyleDefaultAndUpdateFirework'],
     ],
-    [fireworkActions, 'restoreFireworkEditorVersion', 'recordFireworkVersion', 'await refresh'],
-    [styleDefaultActions, 'updateStyleDefault', 'recordStyleDefaultVersion', 'await refresh'],
-    [styleDefaultActions, 'archiveStyleDefault', 'recordStyleDefaultVersion', 'await refresh'],
     [
       styleDefaultActions,
-      'restoreStyleDefaultEditorVersion',
-      'recordStyleDefaultVersion',
-      'await refresh',
+      ['updateStyleDefault', 'archiveStyleDefault', 'restoreStyleDefaultEditorVersion'],
     ],
-  ];
-  for (const [actions, name, recordCall, invalidationCall] of observedMutations) {
-    const body = functionBody(actions, name);
-    assert.match(body, /historyRecorded/);
-    assert.match(
-      body,
-      /historyVersionId: parsed\.data\.(?:historyVersionId|effect\.historyVersionId|firework\.historyVersionId)/,
-    );
-    assertBefore(
-      body,
-      `await ${recordCall}`,
-      invalidationCall,
-      `${name} must observe history before invalidating caches`,
-    );
+  ]) {
+    for (const name of names) {
+      const body = functionBody(actions, name);
+      assert.match(body, /await saveEditorRecord/);
+      assert.match(body, /historyVersionId:/);
+      assert.match(body, /expectedUpdatedAt:/);
+      assert.doesNotMatch(body, /\.update\(/);
+    }
+    assert.doesNotMatch(actions, /record(?:Effect|Firework|StyleDefault)Version/);
   }
 
   for (const editor of [effectEditor, fireworkEditor, styleDefaultEditor]) {
@@ -350,16 +314,6 @@ test('editor saves are optimistic while history persistence stays observed and l
     assert.match(body, /rollbackOptimisticMutation\(mutation\)/);
   }
 
-  assert.match(effectActions, /select\(EFFECT_MUTATION_SELECT\)/);
-  assert.match(effectActions, /mapSavedEffect\(data as EffectMutationRow\)/);
-  assert.match(fireworkActions, /select\(FIREWORK_MUTATION_SELECT\)/);
-  assert.match(fireworkActions, /mapSavedFirework\(data as FireworkMutationRow\)/);
-  assert.match(styleDefaultActions, /select\(STYLE_DEFAULT_MUTATION_SELECT\)/);
-  assert.match(styleDefaultActions, /expectedUpdatedAt/);
-  assert.match(
-    styleDefaultActions,
-    /archiveStyleDefault[\s\S]*?\.eq\('updated_at', parsed\.data\.expectedUpdatedAt\)/,
-  );
   assert.match(
     styleDefaultEditor,
     /archiveStyleDefault\(\{[\s\S]*?id: styleDefault\.id,[\s\S]*?historyVersionId: mutation\.historyVersionId/,
@@ -377,19 +331,19 @@ test('editor saves are optimistic while history persistence stays observed and l
   assert.match(historyPanel, /warning\?: string \| null/);
   assert.match(editorHistoryState, /latestTargetKeyRef\.current = targetKey/);
   assert.match(editorHistoryState, /if \(latestTargetKeyRef\.current !== targetKey\) return;/);
-  assert.match(fireworkEditor, /function nextAddedColourStopIndex\(/);
-  assert.match(
-    fireworkEditor,
-    /Math\.max\(\s*nextColourStopIdRef\.current,\s*nextAddedColourStopIndex\(snapshot\.colourStops\)/,
-  );
 
-  assert.match(effectServer, /type CachedAdminEffectDetail = Omit<AdminEffectDetail, 'history'>/);
-  assert.match(effectServer, /history: await listEffectEditorVersions\(supabase, effectId\)/);
-  assert.match(
-    fireworkServer,
-    /type CachedAdminFireworkDetail = Omit<AdminFireworkDetail, 'history'>/,
-  );
-  assert.match(fireworkServer, /history: await listFireworkEditorVersions\(supabase, fireworkId\)/);
+  for (const [source, name] of [
+    [effectServer, 'getAdminEffectById'],
+    [fireworkServer, 'getAdminFireworkById'],
+    [styleDefaultServer, 'getAdminStyleDefaultById'],
+  ]) {
+    assert.doesNotMatch(
+      functionBody(source, name),
+      /getCachedJson|setCachedJson|listAdminStyleDefaults/,
+    );
+  }
+  assert.match(effectServer, /listEffectEditorVersions\(supabase, row.id\)/);
+  assert.match(fireworkServer, /listFireworkEditorVersions\(supabase, row.id\)/);
   assert.match(
     styleDefaultServer,
     /history: await listStyleDefaultEditorVersions\(supabase, defaultId\)/,

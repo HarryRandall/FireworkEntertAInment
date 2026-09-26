@@ -41,17 +41,17 @@ export function getAdminCatalogueCacheKey(): string {
 
 /** Cache key for the reusable effect-spec list. */
 export function getAdminEffectsCacheKey(): string {
-  return `${ADMIN_CACHE_PREFIX}:effects:preview-v1`;
+  return `${ADMIN_CACHE_PREFIX}:effects:validated-render`;
 }
 
 /** Cache key for one effect-spec detail view. */
 export function getAdminEffectCacheKey(effectId: string): string {
-  return `${ADMIN_CACHE_PREFIX}:effects:${effectId}:preview-v1`;
+  return `${ADMIN_CACHE_PREFIX}:effects:${effectId}:validated-render`;
 }
 
 /** Cache key for reusable firework star/trail defaults. */
 export function getAdminStyleDefaultsCacheKey(): string {
-  return `${ADMIN_CACHE_PREFIX}:style-defaults`;
+  return `${ADMIN_CACHE_PREFIX}:style-defaults:validated-render`;
 }
 
 /** Cache key for one reusable firework star/trail default. */
@@ -61,12 +61,12 @@ export function getAdminStyleDefaultCacheKey(defaultId: string): string {
 
 /** Cache key for product-level fireworks joined to their effect shots. */
 export function getAdminFireworksCacheKey(): string {
-  return `${ADMIN_CACHE_PREFIX}:fireworks:preview-v1`;
+  return `${ADMIN_CACHE_PREFIX}:fireworks:validated-render`;
 }
 
 /** Cache key for one product-level firework detail editor. */
 export function getAdminFireworkCacheKey(productId: string): string {
-  return `${ADMIN_CACHE_PREFIX}:fireworks:${productId}:preview-v1`;
+  return `${ADMIN_CACHE_PREFIX}:fireworks:${productId}:validated-render`;
 }
 
 /** Cache key for the multishot composition list. */

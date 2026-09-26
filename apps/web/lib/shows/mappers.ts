@@ -2,11 +2,11 @@
  * Pure mappers from `shows.*` row projections to the domain types in
  * {@link ../show-domain}. No I/O — safe to import from anywhere.
  */
-import { parseLaunchPositions } from '@/lib/fireworks/design';
-import { compileFireworkDesign } from '@/lib/fireworks/design';
+import { parseLaunchPositions } from '@showcrafter/fireworks/design';
+import { validateFireworkDesign } from '@showcrafter/fireworks/design';
 import { parseCover } from '@/lib/cover';
 import { resolveFireworkPreviewImage } from '@/lib/firework-preview-image';
-import { safeParseFireworkSpec } from '@/lib/fireworks/spec';
+import { safeParseFireworkSpec } from '@showcrafter/fireworks/spec';
 import type {
   FireworkSpecification,
   Show,
@@ -142,17 +142,13 @@ export function mapFireworkVariantSpecification(
   row: FireworkVariantProjection,
   index = 0,
   shotCaliber: string | null = null,
-  legacySpec: unknown = null,
 ): FireworkSpecification {
   const effect = firstEffect(row.firework_effects);
   const caliber = shotCaliber ?? row.caliber;
-  const renderDesign = compileFireworkDesign({
-    baseModel: effect?.model_json,
-    variantOverrides: row.render_overrides_json,
-    primaryColor: row.primary_color,
-    colorPalette: row.color_palette,
-    legacySpec,
-  });
+  const renderResult =
+    row.render_snapshot_json == null
+      ? { ok: false as const, diagnostics: [{ path: [], message: 'Render snapshot is missing.' }] }
+      : validateFireworkDesign({ variantOverrides: row.render_snapshot_json });
 
   return {
     id: row.id,
@@ -167,8 +163,8 @@ export function mapFireworkVariantSpecification(
     shotCount: null,
     ...resolveFireworkPreviewImage(row.firework_preview_images),
     spec: safeParseFireworkSpec(row.variant_json),
-    rawSpec: row.render_overrides_json,
-    renderDesign,
+    rawSpec: row.render_snapshot_json,
+    renderDesign: renderResult.ok ? renderResult.design : null,
     baseEffect: effect
       ? {
           id: effect.id,

@@ -3,7 +3,7 @@ import {
   isFireworkStyleDefaultKind,
   styleDefaultKindLabel,
   type FireworkStyleDefaultKind,
-} from '@/lib/fireworks/style-defaults';
+} from '@showcrafter/fireworks/style-defaults';
 
 export const ADMIN_EFFECTS_BASE_VIEW = 'base' as const;
 

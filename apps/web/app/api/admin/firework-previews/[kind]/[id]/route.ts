@@ -1,3 +1,5 @@
+import { RendererValidationError } from '@showcrafter/fireworks/design';
+import { FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION } from '@/lib/firework-import/renderer-contract';
 import { NextResponse } from 'next/server';
 import sharp from 'sharp';
 import { requirePermission } from '@/lib/access/current-profile.server';
@@ -187,6 +189,17 @@ export async function GET(_request: Request, context: RouteContext) {
     if (!preview) return response({ error: 'not_found' }, 404);
     return response(preview);
   } catch (error) {
+    if (error instanceof RendererValidationError) {
+      return response(
+        {
+          error: 'invalid_render_settings',
+          diagnostics: error.diagnostics,
+          recordId: id,
+          rendererFingerprint: FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION,
+        },
+        422,
+      );
+    }
     if (error instanceof FireworkCardPreviewReadError) {
       console.error(`[firework-card-preview] admin ${kind}/${id} read failed:`, error);
       return response({ error: 'temporarily_unavailable' }, 503);
@@ -230,6 +243,17 @@ export async function POST(request: Request, context: RouteContext) {
     }
     return response({ ok: true, path: result.path }, result.alreadyExisted ? 200 : 201);
   } catch (error) {
+    if (error instanceof RendererValidationError) {
+      return response(
+        {
+          error: 'invalid_render_settings',
+          diagnostics: error.diagnostics,
+          recordId: id,
+          rendererFingerprint: FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION,
+        },
+        422,
+      );
+    }
     if (error instanceof FireworkCardPreviewReadError) {
       console.error(`[firework-card-preview] admin ${kind}/${id} persistence read failed:`, error);
       return response({ error: 'temporarily_unavailable' }, 503);

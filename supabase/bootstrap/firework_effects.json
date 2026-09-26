@@ -10,7 +10,8 @@
       "geometry": "sphere",
       "trailProfile": "spark",
       "renderDefaults": {
-        "size": 75,
+        "geometry": "sphere",
+        "trailProfile": "spark",
         "burst": {
           "life": [
             2,
@@ -30,7 +31,7 @@
           "enabled": true
         },
         "sound": {
-          "boom": "auto",
+          "boom": "light",
           "launch": true
         },
         "split": {
@@ -41,7 +42,9 @@
         },
         "stars": {
           "core": {
-            "enabled": false
+            "enabled": false,
+            "count": 100,
+            "emissionRate": 140
           },
           "outer": {
             "head": {
@@ -91,12 +94,14 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 105
           }
         },
         "launch": {
           "shell": {
-            "shape": "circle"
+            "shape": "circle",
+            "size": 110
           }
         },
         "mortar": {
@@ -114,7 +119,6 @@
           "probability": 0
         },
         "pattern": "fibonacci",
-        "geometry": "sphere",
         "shellLife": 5,
         "burstTrail": {
           "stops": [
@@ -235,7 +239,18 @@
           "particlesPerStar": 280
         },
         "liftVelocity": 15,
-        "trailProfile": "spark"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 165
+          }
+        },
+        "burstFlashIntensity": 0.25
       }
     },
     "sort_order": 20,
@@ -254,7 +269,8 @@
       "geometry": "falling_tail",
       "trailProfile": "waterfall",
       "renderDefaults": {
-        "size": 50,
+        "geometry": "falling_tail",
+        "trailProfile": "waterfall",
         "burst": {
           "life": [
             4,
@@ -285,7 +301,9 @@
         },
         "stars": {
           "core": {
-            "enabled": false
+            "enabled": false,
+            "count": 62,
+            "emissionRate": 140
           },
           "outer": {
             "head": {
@@ -322,7 +340,7 @@
               ],
               "flairColorMode": "bombColor"
             },
-            "count": 50,
+            "count": 31,
             "enabled": true,
             "burstTrail": {
               "width": {
@@ -353,7 +371,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 70
           }
         },
         "trail": {
@@ -377,10 +396,25 @@
           "probability": 0.05
         },
         "pattern": "fibonacci",
-        "geometry": "falling_tail",
         "shellLife": 6,
         "liftVelocity": 18,
-        "trailProfile": "waterfall"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 68.2
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 80,
@@ -399,7 +433,8 @@
       "geometry": "weeping",
       "trailProfile": "long_hang",
       "renderDefaults": {
-        "size": 80,
+        "geometry": "weeping",
+        "trailProfile": "long_hang",
         "burst": {
           "life": [
             5,
@@ -430,7 +465,9 @@
         },
         "stars": {
           "core": {
-            "enabled": false
+            "enabled": false,
+            "count": 100,
+            "emissionRate": 140
           },
           "outer": {
             "head": {
@@ -498,7 +535,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 112
           }
         },
         "trail": {
@@ -522,10 +560,25 @@
           "probability": 0
         },
         "pattern": "fibonacci",
-        "geometry": "weeping",
         "shellLife": 6,
         "liftVelocity": 15,
-        "trailProfile": "long_hang"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 176
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
+        },
+        "burstFlashIntensity": 0.3
       }
     },
     "sort_order": 40,
@@ -544,7 +597,8 @@
       "geometry": "whirl",
       "trailProfile": "whirl",
       "renderDefaults": {
-        "size": 60,
+        "geometry": "whirl",
+        "trailProfile": "whirl",
         "burst": {
           "life": [
             2,
@@ -575,7 +629,9 @@
         },
         "stars": {
           "core": {
-            "enabled": false
+            "enabled": false,
+            "count": 28,
+            "emissionRate": 140
           },
           "outer": {
             "head": {
@@ -612,7 +668,7 @@
               ],
               "flairColorMode": "bombColor"
             },
-            "count": 60,
+            "count": 32,
             "enabled": true,
             "burstTrail": {
               "width": {
@@ -643,7 +699,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 84
           }
         },
         "mortar": {
@@ -661,10 +718,25 @@
           "probability": 0
         },
         "pattern": "wave",
-        "geometry": "whirl",
         "shellLife": 4,
         "liftVelocity": 16,
-        "trailProfile": "whirl"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 70.4
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 135,
@@ -683,7 +755,8 @@
       "geometry": "single_tail",
       "trailProfile": "thick_tail",
       "renderDefaults": {
-        "size": 6,
+        "geometry": "single_tail",
+        "trailProfile": "thick_tail",
         "burst": {
           "life": [
             3,
@@ -714,7 +787,9 @@
         },
         "stars": {
           "core": {
-            "enabled": false
+            "enabled": false,
+            "count": 1,
+            "emissionRate": 140
           },
           "outer": {
             "head": {
@@ -751,7 +826,7 @@
               ],
               "flairColorMode": "bombColor"
             },
-            "count": 6,
+            "count": 1,
             "enabled": true,
             "burstTrail": {
               "width": {
@@ -782,7 +857,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 40
           }
         },
         "trail": {
@@ -806,10 +882,25 @@
           "probability": 0
         },
         "pattern": "fibonacci",
-        "geometry": "single_tail",
         "shellLife": 8,
         "liftVelocity": 15,
-        "trailProfile": "thick_tail"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3.2
+          },
+          "waterfall": {
+            "width": 2.2
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 90,
@@ -828,7 +919,8 @@
       "geometry": "upward_fan",
       "trailProfile": "glitter",
       "renderDefaults": {
-        "size": 70,
+        "geometry": "upward_fan",
+        "trailProfile": "glitter",
         "burst": {
           "life": [
             1,
@@ -859,7 +951,9 @@
         },
         "stars": {
           "core": {
-            "enabled": false
+            "enabled": false,
+            "count": 90,
+            "emissionRate": 140
           },
           "outer": {
             "head": {
@@ -896,7 +990,7 @@
               ],
               "flairColorMode": "bombColor"
             },
-            "count": 70,
+            "count": 63,
             "enabled": true,
             "burstTrail": {
               "width": {
@@ -927,7 +1021,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 98
           }
         },
         "mortar": {
@@ -945,10 +1040,25 @@
           "probability": 0.08
         },
         "pattern": "fibonacci",
-        "geometry": "upward_fan",
         "shellLife": 8,
         "liftVelocity": 16,
-        "trailProfile": "glitter"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3.2
+          },
+          "waterfall": {
+            "width": 138.6
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
+        },
+        "burstFlashIntensity": 0.13
       }
     },
     "sort_order": 100,
@@ -967,7 +1077,8 @@
       "geometry": "waterfall",
       "trailProfile": "waterfall",
       "renderDefaults": {
-        "size": 80,
+        "geometry": "waterfall",
+        "trailProfile": "waterfall",
         "burst": {
           "life": [
             3.5,
@@ -998,7 +1109,9 @@
         },
         "stars": {
           "core": {
-            "enabled": false
+            "enabled": false,
+            "count": 78,
+            "emissionRate": 140
           },
           "outer": {
             "head": {
@@ -1035,7 +1148,7 @@
               ],
               "flairColorMode": "bombColor"
             },
-            "count": 80,
+            "count": 62,
             "enabled": true,
             "burstTrail": {
               "width": {
@@ -1066,7 +1179,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 112
           }
         },
         "trail": {
@@ -1090,10 +1204,25 @@
           "probability": 0
         },
         "pattern": "fibonacci",
-        "geometry": "waterfall",
         "shellLife": 3,
         "liftVelocity": 18,
-        "trailProfile": "waterfall"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 136.4
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
+        },
+        "burstFlashIntensity": 0.12
       }
     },
     "sort_order": 130,
@@ -1112,7 +1241,8 @@
       "geometry": "sphere",
       "trailProfile": "spark",
       "renderDefaults": {
-        "size": 60,
+        "geometry": "sphere",
+        "trailProfile": "spark",
         "burst": {
           "life": [
             1.4,
@@ -1132,7 +1262,7 @@
           "enabled": true
         },
         "sound": {
-          "boom": "auto",
+          "boom": "light",
           "launch": true
         },
         "split": {
@@ -1189,7 +1319,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 42
           },
           "outer": {
             "head": {
@@ -1257,7 +1388,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 84
           }
         },
         "mortar": {
@@ -1275,10 +1407,25 @@
           "probability": 0
         },
         "pattern": "fibonacci",
-        "geometry": "sphere",
         "shellLife": 5,
         "liftVelocity": 20,
-        "trailProfile": "spark"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 132
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
+        },
+        "burstFlashIntensity": 0.1
       }
     },
     "sort_order": 108,
@@ -1297,7 +1444,8 @@
       "geometry": "pearls",
       "trailProfile": "pearls",
       "renderDefaults": {
-        "size": 60,
+        "geometry": "pearls",
+        "trailProfile": "pearls",
         "burst": {
           "life": [
             1.6,
@@ -1328,7 +1476,9 @@
         },
         "stars": {
           "core": {
-            "enabled": false
+            "enabled": false,
+            "count": 18,
+            "emissionRate": 140
           },
           "outer": {
             "head": {
@@ -1365,7 +1515,7 @@
               ],
               "flairColorMode": "bombColor"
             },
-            "count": 60,
+            "count": 11,
             "enabled": true,
             "burstTrail": {
               "width": {
@@ -1396,7 +1546,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 84
           }
         },
         "mortar": {
@@ -1414,10 +1565,25 @@
           "probability": 0
         },
         "pattern": "fibonacci",
-        "geometry": "pearls",
         "shellLife": 4,
         "liftVelocity": 22,
-        "trailProfile": "pearls"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 24.2
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 105,
@@ -1436,7 +1602,8 @@
       "geometry": "fragment_cloud",
       "trailProfile": "crackle",
       "renderDefaults": {
-        "size": 80,
+        "geometry": "fragment_cloud",
+        "trailProfile": "crackle",
         "burst": {
           "life": [
             1.2,
@@ -1467,7 +1634,9 @@
         },
         "stars": {
           "core": {
-            "enabled": false
+            "enabled": false,
+            "count": 90,
+            "emissionRate": 140
           },
           "outer": {
             "head": {
@@ -1504,7 +1673,7 @@
               ],
               "flairColorMode": "bombColor"
             },
-            "count": 80,
+            "count": 72,
             "enabled": true,
             "burstTrail": {
               "width": {
@@ -1535,7 +1704,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 112
           }
         },
         "mortar": {
@@ -1553,10 +1723,25 @@
           "probability": 0.12
         },
         "pattern": "fibonacci",
-        "geometry": "fragment_cloud",
         "shellLife": 2.8,
         "liftVelocity": 18,
-        "trailProfile": "crackle"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 158.4
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
+        },
+        "burstFlashIntensity": 0.22
       }
     },
     "sort_order": 120,
@@ -1575,7 +1760,8 @@
       "geometry": "fountain",
       "trailProfile": "glitter",
       "renderDefaults": {
-        "size": 90,
+        "geometry": "fountain",
+        "trailProfile": "glitter",
         "burst": {
           "life": [
             1.2,
@@ -1606,7 +1792,9 @@
         },
         "stars": {
           "core": {
-            "enabled": false
+            "enabled": false,
+            "count": 100,
+            "emissionRate": 140
           },
           "outer": {
             "head": {
@@ -1674,7 +1862,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 126
           }
         },
         "trail": {
@@ -1698,10 +1887,25 @@
           "probability": 0.05
         },
         "pattern": "fibonacci",
-        "geometry": "fountain",
         "shellLife": 30,
         "liftVelocity": 8,
-        "trailProfile": "glitter"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 7.8
+          },
+          "romanCandle": {
+            "durationSeconds": 10
+          },
+          "waterfall": {
+            "width": 198
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
+        },
+        "burstFlashIntensity": 0.4
       }
     },
     "sort_order": 145,
@@ -1720,7 +1924,8 @@
       "geometry": "crown",
       "trailProfile": "glitter",
       "renderDefaults": {
-        "size": 90,
+        "geometry": "crown",
+        "trailProfile": "glitter",
         "burst": {
           "life": [
             3.42,
@@ -1819,7 +2024,8 @@
               "flairColorMode": "mixed"
             },
             "count": 38,
-            "enabled": false
+            "enabled": false,
+            "emissionRate": 53.2
           },
           "outer": {
             "head": {
@@ -1896,7 +2102,8 @@
               "lifetime": {
                 "percent": 1.29
               }
-            }
+            },
+            "emissionRate": 112
           }
         },
         "trail": {
@@ -1954,7 +2161,6 @@
           "probability": 0.04
         },
         "pattern": "fibonacci",
-        "geometry": "crown",
         "shellLife": 6,
         "burstTrail": {
           "stops": [
@@ -2075,7 +2281,23 @@
           "particlesPerStar": 610
         },
         "liftVelocity": 17.42,
-        "trailProfile": "glitter"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 176
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
+        },
+        "burstFlashIntensity": 0.3
       }
     },
     "sort_order": 35,
@@ -2094,7 +2316,8 @@
       "geometry": "ring",
       "trailProfile": "none",
       "renderDefaults": {
-        "size": 65,
+        "geometry": "ring",
+        "trailProfile": "none",
         "burst": {
           "life": [
             1.6,
@@ -2114,7 +2337,7 @@
           "enabled": false
         },
         "sound": {
-          "boom": "auto",
+          "boom": "light",
           "launch": true
         },
         "split": {
@@ -2171,7 +2394,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 1.4
           },
           "outer": {
             "head": {
@@ -2208,7 +2432,7 @@
               ],
               "flairColorMode": "bombColor"
             },
-            "count": 65,
+            "count": 47,
             "enabled": true,
             "burstTrail": {
               "preset": "none",
@@ -2220,7 +2444,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 91
           }
         },
         "mortar": {
@@ -2238,10 +2463,25 @@
           "probability": 0
         },
         "pattern": "fibonacci",
-        "geometry": "ring",
         "shellLife": 5,
         "liftVelocity": 21,
-        "trailProfile": "none"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 103.4
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 65,
@@ -2260,7 +2500,8 @@
       "geometry": "bowtie",
       "trailProfile": "spark",
       "renderDefaults": {
-        "size": 32,
+        "geometry": "bowtie",
+        "trailProfile": "spark",
         "burst": {
           "life": [
             1.6,
@@ -2291,7 +2532,9 @@
         },
         "stars": {
           "core": {
-            "enabled": false
+            "enabled": false,
+            "count": 82,
+            "emissionRate": 140
           },
           "outer": {
             "head": {
@@ -2328,7 +2571,7 @@
               ],
               "flairColorMode": "bombColor"
             },
-            "count": 32,
+            "count": 26,
             "enabled": true,
             "burstTrail": {
               "width": {
@@ -2359,7 +2602,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 44.8
           }
         },
         "mortar": {
@@ -2377,10 +2621,25 @@
           "probability": 0
         },
         "pattern": "fibonacci",
-        "geometry": "bowtie",
         "shellLife": 5,
         "liftVelocity": 20,
-        "trailProfile": "spark"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 57.2
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 78,
@@ -2399,7 +2658,8 @@
       "geometry": "split_cross",
       "trailProfile": "spark",
       "renderDefaults": {
-        "size": 70,
+        "geometry": "split_cross",
+        "trailProfile": "spark",
         "burst": {
           "life": [
             1.4,
@@ -2430,7 +2690,9 @@
         },
         "stars": {
           "core": {
-            "enabled": false
+            "enabled": false,
+            "count": 100,
+            "emissionRate": 140
           },
           "outer": {
             "head": {
@@ -2498,7 +2760,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 98
           }
         },
         "mortar": {
@@ -2516,10 +2779,25 @@
           "probability": 0
         },
         "pattern": "fibonacci",
-        "geometry": "split_cross",
         "shellLife": 7,
         "liftVelocity": 15,
-        "trailProfile": "spark"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 154
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
+        },
+        "burstFlashIntensity": 0.2
       }
     },
     "sort_order": 75,
@@ -2538,7 +2816,8 @@
       "geometry": "radial_arms",
       "trailProfile": "thick_tail",
       "renderDefaults": {
-        "size": 12,
+        "geometry": "radial_arms",
+        "trailProfile": "thick_tail",
         "burst": {
           "life": [
             3,
@@ -2569,7 +2848,9 @@
         },
         "stars": {
           "core": {
-            "enabled": false
+            "enabled": false,
+            "count": 46,
+            "emissionRate": 140
           },
           "outer": {
             "head": {
@@ -2606,7 +2887,7 @@
               ],
               "flairColorMode": "bombColor"
             },
-            "count": 12,
+            "count": 6,
             "enabled": true,
             "burstTrail": {
               "width": {
@@ -2637,7 +2918,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 40
           }
         },
         "trail": {
@@ -2661,10 +2943,25 @@
           "probability": 0
         },
         "pattern": "fibonacci",
-        "geometry": "radial_arms",
         "shellLife": 6,
         "liftVelocity": 22,
-        "trailProfile": "thick_tail"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 13.2
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 50,
@@ -2683,7 +2980,8 @@
       "geometry": "split_cross",
       "trailProfile": "thick_tail",
       "renderDefaults": {
-        "size": 40,
+        "geometry": "split_cross",
+        "trailProfile": "thick_tail",
         "burst": {
           "life": [
             1.6,
@@ -2714,7 +3012,9 @@
         },
         "stars": {
           "core": {
-            "enabled": false
+            "enabled": false,
+            "count": 100,
+            "emissionRate": 140
           },
           "outer": {
             "head": {
@@ -2782,7 +3082,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 56
           }
         },
         "mortar": {
@@ -2800,10 +3101,25 @@
           "probability": 0
         },
         "pattern": "fibonacci",
-        "geometry": "split_cross",
         "shellLife": 3,
         "liftVelocity": 20,
-        "trailProfile": "thick_tail"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 88
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 70,
@@ -2822,7 +3138,8 @@
       "geometry": "sphere",
       "trailProfile": "glitter",
       "renderDefaults": {
-        "size": 82,
+        "geometry": "sphere",
+        "trailProfile": "glitter",
         "burst": {
           "life": [
             4,
@@ -2899,7 +3216,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 33.6
           },
           "outer": {
             "head": {
@@ -2967,7 +3285,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 114.8
           }
         },
         "trail": {
@@ -2991,10 +3310,25 @@
           "probability": 0.05
         },
         "pattern": "fibonacci",
-        "geometry": "sphere",
         "shellLife": 6,
         "liftVelocity": 23,
-        "trailProfile": "glitter"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 180.4
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
+        },
+        "burstFlashIntensity": 0.32
       }
     },
     "sort_order": 110,
@@ -3013,7 +3347,8 @@
       "geometry": "crown",
       "trailProfile": "glitter",
       "renderDefaults": {
-        "size": 270,
+        "geometry": "crown",
+        "trailProfile": "glitter",
         "burst": {
           "life": [
             1.15,
@@ -3064,7 +3399,8 @@
               ],
               "airResistancePercent": 76
             },
-            "count": 50
+            "count": 50,
+            "emissionRate": 70
           },
           "outer": {
             "head": {
@@ -3080,7 +3416,8 @@
                 -0.75
               ]
             },
-            "count": 33
+            "count": 33,
+            "emissionRate": 46.2
           }
         },
         "trail": {
@@ -3137,7 +3474,6 @@
           "probability": 0
         },
         "pattern": "wave",
-        "geometry": "crown",
         "burstTrail": {
           "stops": [
             {
@@ -3268,12 +3604,28 @@
           "particlesPerStar": 120
         },
         "liftVelocity": 12.6,
-        "trailProfile": "glitter",
         "secondaryColor": {
           "b": 0.88,
           "g": 0.98,
           "r": 1
-        }
+        },
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 5.2
+          },
+          "romanCandle": {
+            "durationSeconds": 8
+          },
+          "waterfall": {
+            "width": 72.6
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 30,
@@ -3292,7 +3644,8 @@
       "geometry": "five_point_star",
       "trailProfile": "spark",
       "renderDefaults": {
-        "size": 100,
+        "geometry": "five_point_star",
+        "trailProfile": "spark",
         "burst": {
           "life": [
             2.5,
@@ -3393,7 +3746,7 @@
               ],
               "flairColorMode": "mixed"
             },
-            "count": 60,
+            "count": 59,
             "enabled": true,
             "burstTrail": {
               "stops": [
@@ -3507,7 +3860,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 84
           },
           "outer": {
             "head": {
@@ -3576,7 +3930,7 @@
               ],
               "flairColorMode": "bombColor"
             },
-            "count": 100,
+            "count": 98,
             "enabled": true,
             "burstTrail": {
               "stops": [
@@ -3701,7 +4055,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 140
           }
         },
         "trail": {
@@ -3726,9 +4081,9 @@
               "tubeDiameter": 2
             },
             "visible": true,
-            "sizeScale": 0.85,
             "brightness": 1.65,
-            "glowStrength": 1.9
+            "glowStrength": 1.9,
+            "size": 93.5
           },
           "smoke": {
             "size": 80,
@@ -3837,10 +4192,8 @@
           "fragmentSpeedVariationPercent": 60
         },
         "pattern": "fibonacci",
-        "geometry": "five_point_star",
         "shellLife": 5,
         "liftVelocity": 21,
-        "trailProfile": "spark",
         "geometryTuning": {
           "fivePointStar": {
             "points": 5,
@@ -3848,12 +4201,21 @@
             "scaleY": 1.08,
             "depthScale": 0.02,
             "innerRadius": 0.4,
-            "countPercent": 98,
             "outlineJitter": 0.01,
             "tiltVariation": 0.08,
             "rotationDegrees": -90
+          },
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 215.6
           }
-        }
+        },
+        "burstFlashIntensity": 0.48
       }
     },
     "sort_order": 155,
@@ -3872,7 +4234,8 @@
       "geometry": "ring",
       "trailProfile": "none",
       "renderDefaults": {
-        "size": 60,
+        "geometry": "ring",
+        "trailProfile": "none",
         "burst": {
           "life": [
             1.8,
@@ -3903,7 +4266,9 @@
         },
         "stars": {
           "core": {
-            "enabled": false
+            "enabled": false,
+            "count": 72,
+            "emissionRate": 140
           },
           "outer": {
             "head": {
@@ -3940,7 +4305,7 @@
               ],
               "flairColorMode": "bombColor"
             },
-            "count": 60,
+            "count": 43,
             "enabled": true,
             "burstTrail": {
               "preset": "none",
@@ -3952,7 +4317,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 84
           }
         },
         "mortar": {
@@ -3970,10 +4336,25 @@
           "probability": 0
         },
         "pattern": "fibonacci",
-        "geometry": "ring",
         "shellLife": 3.2,
         "liftVelocity": 22,
-        "trailProfile": "none"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 94.6
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 60,
@@ -3992,7 +4373,8 @@
       "geometry": "heart",
       "trailProfile": "spark",
       "renderDefaults": {
-        "size": 100,
+        "geometry": "heart",
+        "trailProfile": "spark",
         "burst": {
           "life": [
             2.6,
@@ -4093,7 +4475,7 @@
               ],
               "flairColorMode": "mixed"
             },
-            "count": 56,
+            "count": 54,
             "enabled": true,
             "burstTrail": {
               "stops": [
@@ -4207,7 +4589,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 78.4
           },
           "outer": {
             "head": {
@@ -4276,7 +4659,7 @@
               ],
               "flairColorMode": "bombColor"
             },
-            "count": 100,
+            "count": 96,
             "enabled": true,
             "burstTrail": {
               "stops": [
@@ -4401,7 +4784,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 140
           }
         },
         "trail": {
@@ -4426,9 +4810,9 @@
               "tubeDiameter": 2.5
             },
             "visible": true,
-            "sizeScale": 0.9,
             "brightness": 1.55,
-            "glowStrength": 1.8
+            "glowStrength": 1.8,
+            "size": 99
           },
           "smoke": {
             "size": 84,
@@ -4537,21 +4921,28 @@
           "fragmentSpeedVariationPercent": 65
         },
         "pattern": "fibonacci",
-        "geometry": "heart",
         "shellLife": 5.2,
         "liftVelocity": 20,
-        "trailProfile": "spark",
         "geometryTuning": {
           "heart": {
             "scaleX": 1.04,
             "scaleY": 1.12,
             "depthScale": 0.025,
-            "countPercent": 96,
             "outlineJitter": 0.012,
             "tiltVariation": 0.1,
             "rotationDegrees": 0
+          },
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 211.2
           }
-        }
+        },
+        "burstFlashIntensity": 0.46
       }
     },
     "sort_order": 150,
@@ -4570,7 +4961,8 @@
       "geometry": "roman_candle",
       "trailProfile": "thick_tail",
       "renderDefaults": {
-        "size": 30,
+        "geometry": "roman_candle",
+        "trailProfile": "thick_tail",
         "burst": {
           "life": [
             1,
@@ -4601,7 +4993,9 @@
         },
         "stars": {
           "core": {
-            "enabled": false
+            "enabled": false,
+            "count": 8,
+            "emissionRate": 140
           },
           "outer": {
             "head": {
@@ -4638,7 +5032,7 @@
               ],
               "flairColorMode": "bombColor"
             },
-            "count": 30,
+            "count": 4,
             "enabled": true,
             "burstTrail": {
               "width": {
@@ -4669,7 +5063,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 42
           }
         },
         "trail": {
@@ -4693,10 +5088,25 @@
           "probability": 0
         },
         "pattern": "fibonacci",
-        "geometry": "roman_candle",
         "shellLife": 14,
         "liftVelocity": 14,
-        "trailProfile": "thick_tail"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 3.64
+          },
+          "romanCandle": {
+            "durationSeconds": 5.6
+          },
+          "waterfall": {
+            "width": 8.8
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 140,
@@ -4715,7 +5125,8 @@
       "geometry": "sphere",
       "trailProfile": "blink",
       "renderDefaults": {
-        "size": 70,
+        "geometry": "sphere",
+        "trailProfile": "blink",
         "burst": {
           "life": [
             2.5,
@@ -4746,7 +5157,9 @@
         },
         "stars": {
           "core": {
-            "enabled": false
+            "enabled": false,
+            "count": 100,
+            "emissionRate": 140
           },
           "outer": {
             "head": {
@@ -4814,7 +5227,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 98
           }
         },
         "mortar": {
@@ -4832,10 +5246,25 @@
           "probability": 0
         },
         "pattern": "strobe",
-        "geometry": "sphere",
         "shellLife": 3,
         "liftVelocity": 20,
-        "trailProfile": "blink"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 154
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
+        },
+        "burstFlashIntensity": 0.2
       }
     },
     "sort_order": 115,
@@ -4854,7 +5283,8 @@
       "geometry": "sphere",
       "trailProfile": "none",
       "renderDefaults": {
-        "size": 115,
+        "geometry": "sphere",
+        "trailProfile": "none",
         "burst": {
           "life": [
             0.88,
@@ -4874,7 +5304,7 @@
           "enabled": false
         },
         "sound": {
-          "boom": "auto",
+          "boom": "light",
           "launch": true
         },
         "split": {
@@ -4952,7 +5382,8 @@
               "flairColorMode": "mixed"
             },
             "count": 38,
-            "enabled": false
+            "enabled": false,
+            "emissionRate": 53.2
           },
           "outer": {
             "head": {
@@ -5022,7 +5453,8 @@
               "flairColorMode": "bombColor"
             },
             "count": 80,
-            "enabled": true
+            "enabled": true,
+            "emissionRate": 112
           }
         },
         "launch": {
@@ -5034,6 +5466,9 @@
             "enabled": true,
             "particles": 40,
             "lifeSeconds": 2.3
+          },
+          "shell": {
+            "size": 110
           }
         },
         "mortar": {
@@ -5051,7 +5486,6 @@
           "probability": 0
         },
         "pattern": "fibonacci",
-        "geometry": "sphere",
         "shellLife": 4.2,
         "burstTrail": {
           "stops": [
@@ -5161,7 +5595,18 @@
           "particlesPerStar": 0
         },
         "liftVelocity": 17,
-        "trailProfile": "none"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 176
+          }
+        },
+        "burstFlashIntensity": 0.3
       }
     },
     "sort_order": 10,
@@ -5180,7 +5625,8 @@
       "geometry": "fish",
       "trailProfile": "fish",
       "renderDefaults": {
-        "size": 50,
+        "geometry": "fish",
+        "trailProfile": "fish",
         "burst": {
           "life": [
             1.8,
@@ -5211,7 +5657,9 @@
         },
         "stars": {
           "core": {
-            "enabled": false
+            "enabled": false,
+            "count": 72,
+            "emissionRate": 140
           },
           "outer": {
             "head": {
@@ -5248,7 +5696,7 @@
               ],
               "flairColorMode": "bombColor"
             },
-            "count": 50,
+            "count": 36,
             "enabled": true,
             "burstTrail": {
               "width": {
@@ -5279,7 +5727,8 @@
               "mode": "solid",
               "count": 1,
               "colours": []
-            }
+            },
+            "emissionRate": 70
           }
         },
         "mortar": {
@@ -5297,10 +5746,25 @@
           "probability": 0.06
         },
         "pattern": "fibonacci",
-        "geometry": "fish",
         "shellLife": 3,
         "liftVelocity": 18,
-        "trailProfile": "fish"
+        "geometryTuning": {
+          "fountain": {
+            "durationSeconds": 2.5
+          },
+          "romanCandle": {
+            "durationSeconds": 3
+          },
+          "waterfall": {
+            "width": 79.2
+          }
+        },
+        "launch": {
+          "shell": {
+            "size": 110
+          }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 125,

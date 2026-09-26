@@ -109,7 +109,7 @@ import {
   MULTISHOT_PAN_LIMIT_DEGREES,
   MULTISHOT_TILT_LIMIT_DEGREES,
 } from '@/lib/admin/multishot-constraints';
-import type { LaunchPosition } from '@/lib/fireworks/design';
+import { DEFAULT_LIFT_VELOCITY, type LaunchPosition } from '@showcrafter/fireworks/design';
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
 import { formatDuration } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';
@@ -282,8 +282,7 @@ function burstCentre(
   tiltDegrees: number,
 ): { x: number; y: number; z: number } {
   const design = spec?.renderDesign;
-  const size = design?.size ?? 100;
-  const liftVelocity = design?.liftVelocity ?? 11 + Math.min(size / 40, 6);
+  const liftVelocity = design?.liftVelocity ?? DEFAULT_LIFT_VELOCITY;
   const panR = (panDegrees * Math.PI) / 180;
   const tiltR = (tiltDegrees * Math.PI) / 180;
   const vx = Math.sin(panR) * Math.max(1.2, liftVelocity * 0.62);

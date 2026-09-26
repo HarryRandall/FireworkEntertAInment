@@ -1,8 +1,8 @@
-import type { FireworkDesign, LaunchPosition } from '@/lib/fireworks/design';
+import type { FireworkDesign, LaunchPosition } from '@showcrafter/fireworks/design';
 import {
   estimateFireworkDesignTiming,
   estimateFireworkLiftTimeSeconds,
-} from '@/lib/fireworks/timing';
+} from '@showcrafter/fireworks/timing';
 import type { EditorPreviewTick } from './FireworkEditorShell';
 
 /** Single origin launch position shared by the admin editor previews. */

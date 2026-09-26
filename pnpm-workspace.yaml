@@ -1,5 +1,6 @@
 packages:
   - apps/*
+  - packages/*
 
 # Preserve the dependency fixes from the npm lockfile.
 overrides:

@@ -4,7 +4,7 @@
  * the server action, and the cue pipeline all use one source of truth.
  */
 
-import type { LaunchPosition } from '../fireworks/launch-positions';
+import type { LaunchPosition } from '@showcrafter/fireworks/launch-positions';
 
 /* === Firework types ===================================================== */
 

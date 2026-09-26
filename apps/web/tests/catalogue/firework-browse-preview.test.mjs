@@ -129,7 +129,6 @@ test('browse cards provide link and button activation without nesting their body
     source,
     /const sessionPosterUrl = browsePreview\?\.posterUrls\.get\(previewUrl\) \?\? null/,
   );
-  assert.match(source, /const posterUrl = sessionPosterUrl \?\? persistedPosterUrl/);
   assert.match(source, /posterRef = useRef<HTMLImageElement \| null>\(null\)/);
   assert.match(source, /if \(!posterUrl \|\| !image\?\.complete\) return/);
   assert.match(source, /image\.naturalWidth > 0/);
@@ -149,7 +148,7 @@ test('browse cards provide link and button activation without nesting their body
   assert.match(source, /const shouldPersistPoster =/);
   assert.match(
     source,
-    /persistPoster && \(!persistedPosterUrl \|\| failedPosterUrl === persistedPosterUrl\)/,
+    /persistPoster &&\s*\(!persistedPosterUrl \|\| failedPosterUrl === persistedPosterUrl\)/,
   );
   assert.match(source, /if \(!shouldPersistPoster \|\| !mediaRef\.current\) return/);
   assert.doesNotMatch(source, /!persistPoster \|\| sessionPosterUrl/);

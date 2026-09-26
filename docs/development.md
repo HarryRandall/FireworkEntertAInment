@@ -44,6 +44,7 @@ stay relative to the app. Cross-service tests use explicit repository paths.
 pnpm --filter @showcrafter/web exec node --experimental-strip-types --test tests/auth/auth-flow-correctness.test.mjs
 pnpm test:analyser
 pnpm test:worker
+pnpm test:import-contract
 SHOWCRAFTER_RUN_CROSS_LANGUAGE_CONTRACT=1 services/music-analyser/.venv/bin/python services/music-analyser/tests/test_schema_validation.py
 ```
 
@@ -53,6 +54,9 @@ shared UI behaviour changes. Keep servers stopped while builds replace their
 output, or use an isolated `NEXT_DIST_DIR`.
 
 CI runs web checks, both Python suites, and the Python-to-Zod-to-planner contract.
+The import contract check runs actual worker output through strict app validation
+for every renderer geometry and simulates ground emissions. It uses the worker's
+local virtual environment when present, otherwise `python`; `PYTHON` overrides it.
 The scheduled analyser regression uses the checked-in real-audio fixtures.
 
 ## Database

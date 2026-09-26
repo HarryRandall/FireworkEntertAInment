@@ -51,8 +51,8 @@ const [
   import('../../lib/cue-generation/fast-planner.ts'),
   import('../../lib/cue-generation/quality.ts'),
   import('../../lib/cue-generation/choreography-repair.ts'),
-  import('../../lib/fireworks/design.ts'),
-  import('../../lib/fireworks/spec.ts'),
+  import('@showcrafter/fireworks/design'),
+  import('@showcrafter/fireworks/spec'),
 ]);
 
 const brief = {

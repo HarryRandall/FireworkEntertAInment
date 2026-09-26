@@ -48,6 +48,16 @@ const redPalette = [{ hex: '#ff0033', weight: 1 }];
 const bluePalette = [{ hex: '#1166ff', weight: 1 }];
 
 test('import renderer contract fingerprints every capture-affecting source', () => {
+  const rendererFiles = readdirSync(join(root, '../../packages/fireworks/src'), { recursive: true })
+    .filter((path) => path.endsWith('.ts'))
+    .map((path) => `../../packages/fireworks/src/${path}`);
+  for (const path of rendererFiles) {
+    assert.ok(
+      FIREWORKS_ENGINE_IMPORT_RENDERER_SOURCE_FILES.includes(path),
+      `Missing renderer module: ${path}`,
+    );
+  }
+
   const fingerprint = createHash('sha256');
   for (const path of [...FIREWORKS_ENGINE_IMPORT_RENDERER_SOURCE_FILES].sort()) {
     fingerprint.update(path);
@@ -62,10 +72,26 @@ test('import renderer contract fingerprints every capture-affecting source', () 
   );
 });
 
-test('import renderer contract stays aligned across the app and worker', () => {
+test('import renderer contract stays aligned across the app, worker and latest database migration', () => {
   const worker = read('../../services/firework-import-worker/engine_validation.py');
   const workerVersion = worker.match(/^RENDERER_VERSION = "([^"]+)"$/m)?.[1];
   assert.equal(workerVersion, FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION);
+  const migrations = readdirSync(join(root, '../../supabase/migrations'))
+    .filter((path) => path.endsWith('.sql'))
+    .sort()
+    .reverse();
+  const definition = migrations
+    .map((path) => read(`../../supabase/migrations/${path}`))
+    .find((sql) =>
+      /create or replace function public\.current_firework_import_renderer_contract_version\(\)/i.test(
+        sql,
+      ),
+    );
+  assert.ok(definition, 'Database must declare the required renderer fingerprint');
+  const databaseVersion = definition.match(
+    /select '(showcrafter\.fireworks-engine\.import-renderer[^']+)'::text/,
+  )?.[1];
+  assert.equal(databaseVersion, FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION);
 });
 
 function frame(timeSeconds, activity, options = {}) {
@@ -306,7 +332,7 @@ test('protected page and harness keep credentials server-side and use exact repl
   const contentSecurityPolicy = read('lib/security/import-render-csp.ts');
   const themeProvider = read('ui/theme/ThemeProvider.tsx');
   const worker = read('../../services/firework-import-worker/worker.py');
-  const engine = read('lib/fireworks/FireworksEngine.ts');
+  const engine = read('../../packages/fireworks/src/FireworksEngine.ts');
 
   assert.match(page, /isAuthorisedImportRenderRequest/);
   assert.match(page, /notFound\(\)/);
@@ -336,7 +362,7 @@ test('protected page and harness keep credentials server-side and use exact repl
   assert.match(harness, /ENGINE_READY_TIMEOUT_MS/);
   assert.match(harness, /requiredProductDurationSeconds/);
   assert.match(harness, /rendererVersion: FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION/);
-  assert.match(engine, /FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION/);
+  assert.match(engine, /rendererFingerprint/);
   assert.match(replay, /engine\.setElapsed\(next\)/);
   assert.match(replay, /const nextFrame = Math\.min\(targetFrame, capturedFrame \+ 15\)/);
   assert.match(replay, /quantiseFireworksEngineTimeSeconds\(requestedElapsed\)/);
