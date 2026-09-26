@@ -51,3 +51,13 @@ test('gravity editing respects both bounds without moving the chosen average', (
     assert.ok(rangeHalfWidth(range) <= 0.5);
   }
 });
+
+test('fountain rate edits preserve duration, star count and the other layer', () => {
+  const document = compileFireworkDesign({ variantOverrides: { geometry: 'fountain' } });
+  for (const layer of ['outer', 'core']) {
+    const before = structuredClone(document);
+    controlsFor(document).setStarEmissionRate(layer, 12.5);
+    before.stars[layer].emissionRate = 12.5;
+    assert.deepEqual(document, before);
+  }
+});

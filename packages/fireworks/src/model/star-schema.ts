@@ -53,6 +53,9 @@ import {
   DEFAULT_STAR_OPENING_COLOUR,
   HEAD_APPEARANCE_DEFAULTS,
   MAX_STAR_COUNT,
+  DEFAULT_STAR_COUNT,
+  DEFAULT_FOUNTAIN_RATE,
+  MAX_FOUNTAIN_RATE,
   orderedRangeSchema,
   RgbSchema,
   STAR_AIR_RESISTANCE_PERCENT_MAX,
@@ -272,7 +275,8 @@ export const StarColourPatternSchema = z
 export const StarLayerSchema = z
   .object({
     enabled: z.boolean().default(true),
-    count: z.coerce.number().int().min(1).max(MAX_STAR_COUNT).default(MAX_STAR_COUNT),
+    count: z.coerce.number().int().min(1).max(MAX_STAR_COUNT).default(DEFAULT_STAR_COUNT),
+    emissionRate: z.coerce.number().min(1).max(MAX_FOUNTAIN_RATE).default(DEFAULT_FOUNTAIN_RATE),
     color: ColorSchema.optional(),
     colourPattern: StarColourPatternSchema,
     burst: StarBurstSchema,
@@ -281,7 +285,8 @@ export const StarLayerSchema = z
   })
   .default({
     enabled: true,
-    count: MAX_STAR_COUNT,
+    count: DEFAULT_STAR_COUNT,
+    emissionRate: DEFAULT_FOUNTAIN_RATE,
     burst: {
       speed: [2, 4],
       gravity: [-0.24, -0.02],

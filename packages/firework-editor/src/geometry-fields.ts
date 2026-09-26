@@ -20,10 +20,10 @@ export type GeometryTuningSlider = {
   max: number;
   step: number;
   hint: string;
+  inputKind?: 'slider' | 'number';
 };
 
 export const PERCENT_HINTS = {
-  count: 'Percentage of the star count this shape actually uses.',
   life: 'Star burn time relative to the burst life setting. 100% is unchanged.',
   gravity: 'How strongly gravity pulls these stars, relative to the burst gravity.',
   drag: 'Air resistance relative to a standard star. Lower drifts further.',
@@ -33,14 +33,6 @@ export const PERCENT_HINTS = {
 
 export const GEOMETRY_TUNING_SLIDERS: Record<GeometryTuningGroupKey, GeometryTuningSlider[]> = {
   ring: [
-    {
-      key: 'countPercent',
-      label: 'Ring stars',
-      min: 1,
-      max: 100,
-      step: 1,
-      hint: PERCENT_HINTS.count,
-    },
     {
       key: 'wobble',
       label: 'Wobble',
@@ -169,14 +161,6 @@ export const GEOMETRY_TUNING_SLIDERS: Record<GeometryTuningGroupKey, GeometryTun
       hint: 'Number of straight spokes the stars group into.',
     },
     {
-      key: 'countPercent',
-      label: 'Arm stars',
-      min: 1,
-      max: 100,
-      step: 1,
-      hint: PERCENT_HINTS.count,
-    },
-    {
       key: 'angleJitter',
       label: 'Arm scatter',
       min: 0,
@@ -211,14 +195,6 @@ export const GEOMETRY_TUNING_SLIDERS: Record<GeometryTuningGroupKey, GeometryTun
     { key: 'dragPercent', label: 'Drag', min: 10, max: 300, step: 1, hint: PERCENT_HINTS.drag },
   ],
   fallingTail: [
-    {
-      key: 'countPercent',
-      label: 'Tail stars',
-      min: 1,
-      max: 100,
-      step: 1,
-      hint: PERCENT_HINTS.count,
-    },
     {
       key: 'spread',
       label: 'Spread',
@@ -271,14 +247,6 @@ export const GEOMETRY_TUNING_SLIDERS: Record<GeometryTuningGroupKey, GeometryTun
   ],
   pearls: [
     {
-      key: 'countPercent',
-      label: 'Pearl stars',
-      min: 1,
-      max: 100,
-      step: 1,
-      hint: PERCENT_HINTS.count,
-    },
-    {
       key: 'spread',
       label: 'Spread',
       min: 0,
@@ -330,14 +298,6 @@ export const GEOMETRY_TUNING_SLIDERS: Record<GeometryTuningGroupKey, GeometryTun
   ],
   fragmentCloud: [
     {
-      key: 'countPercent',
-      label: 'Cloud stars',
-      min: 1,
-      max: 100,
-      step: 1,
-      hint: PERCENT_HINTS.count,
-    },
-    {
       key: 'speedBase',
       label: 'Base speed',
       min: 0.1,
@@ -355,14 +315,6 @@ export const GEOMETRY_TUNING_SLIDERS: Record<GeometryTuningGroupKey, GeometryTun
     },
   ],
   heart: [
-    {
-      key: 'countPercent',
-      label: 'Outline stars',
-      min: 1,
-      max: 100,
-      step: 1,
-      hint: PERCENT_HINTS.count,
-    },
     {
       key: 'scaleX',
       label: 'Width',
@@ -413,14 +365,6 @@ export const GEOMETRY_TUNING_SLIDERS: Record<GeometryTuningGroupKey, GeometryTun
     },
   ],
   fivePointStar: [
-    {
-      key: 'countPercent',
-      label: 'Outline stars',
-      min: 1,
-      max: 100,
-      step: 1,
-      hint: PERCENT_HINTS.count,
-    },
     {
       key: 'points',
       label: 'Points',
@@ -488,14 +432,6 @@ export const GEOMETRY_TUNING_SLIDERS: Record<GeometryTuningGroupKey, GeometryTun
   ],
   bowtie: [
     {
-      key: 'countPercent',
-      label: 'Lobe stars',
-      min: 1,
-      max: 100,
-      step: 1,
-      hint: PERCENT_HINTS.count,
-    },
-    {
       key: 'fanAngleDegrees',
       label: 'Fan angle',
       min: 10,
@@ -537,14 +473,6 @@ export const GEOMETRY_TUNING_SLIDERS: Record<GeometryTuningGroupKey, GeometryTun
     },
   ],
   fish: [
-    {
-      key: 'countPercent',
-      label: 'Swarm size',
-      min: 1,
-      max: 200,
-      step: 1,
-      hint: 'Swarm count as a percentage of the star count.',
-    },
     {
       key: 'verticalScale',
       label: 'Flatten',
@@ -620,14 +548,6 @@ export const GEOMETRY_TUNING_SLIDERS: Record<GeometryTuningGroupKey, GeometryTun
     },
   ],
   waterfall: [
-    {
-      key: 'countPercent',
-      label: 'Curtain stars',
-      min: 1,
-      max: 200,
-      step: 1,
-      hint: 'Curtain count as a percentage of the star count.',
-    },
     {
       key: 'curtainWidth',
       label: 'Curtain width',
@@ -727,22 +647,6 @@ export const GEOMETRY_TUNING_SLIDERS: Record<GeometryTuningGroupKey, GeometryTun
     },
   ],
   whirl: [
-    {
-      key: 'countPercent',
-      label: 'Whirl stars',
-      min: 1,
-      max: 200,
-      step: 1,
-      hint: 'Whirl count as a percentage of the star count.',
-    },
-    {
-      key: 'minCount',
-      label: 'Minimum stars',
-      min: 1,
-      max: 200,
-      step: 1,
-      hint: 'Lower bound on the whirl count regardless of shell size.',
-    },
     {
       key: 'verticalBias',
       label: 'Vertical bias',
@@ -869,22 +773,6 @@ export const GEOMETRY_TUNING_SLIDERS: Record<GeometryTuningGroupKey, GeometryTun
   ],
   upwardFan: [
     {
-      key: 'countPercent',
-      label: 'Fan stars',
-      min: 1,
-      max: 200,
-      step: 1,
-      hint: PERCENT_HINTS.count,
-    },
-    {
-      key: 'minCount',
-      label: 'Minimum stars',
-      min: 1,
-      max: 200,
-      step: 1,
-      hint: 'Lower bound on the fan count regardless of shell size.',
-    },
-    {
       key: 'spreadAngleDegrees',
       label: 'Fan angle',
       min: 10,
@@ -984,44 +872,13 @@ export const GEOMETRY_TUNING_SLIDERS: Record<GeometryTuningGroupKey, GeometryTun
   ],
   romanCandle: [
     {
-      key: 'shotsPercent',
-      label: 'Shots',
-      min: 1,
-      max: 100,
-      step: 1,
-      hint: 'Shot count as a percentage of the star count.',
-    },
-    {
-      key: 'minShots',
-      label: 'Minimum shots',
-      min: 1,
-      max: 60,
-      step: 1,
-      hint: 'Lower bound on the shot count regardless of shell size.',
-    },
-    {
-      key: 'durationPercent',
-      label: 'Sequence length',
-      min: 5,
-      max: 100,
-      step: 1,
-      hint: 'Length of the firing sequence relative to the shell life.',
-    },
-    {
-      key: 'durationMinSeconds',
-      label: 'Minimum length',
-      min: 0.5,
+      key: 'durationSeconds',
+      label: 'Sequence duration',
+      min: 0.1,
       max: 30,
-      step: 0.5,
-      hint: 'Shortest allowed sequence, in seconds.',
-    },
-    {
-      key: 'durationMaxSeconds',
-      label: 'Maximum length',
-      min: 1,
-      max: 30,
-      step: 0.5,
-      hint: 'Longest allowed sequence, in seconds.',
+      step: 0.1,
+      inputKind: 'number',
+      hint: 'How long this ground effect emits, in seconds.',
     },
     {
       key: 'spread',
@@ -1123,44 +980,13 @@ export const GEOMETRY_TUNING_SLIDERS: Record<GeometryTuningGroupKey, GeometryTun
   ],
   fountain: [
     {
-      key: 'durationPercent',
-      label: 'Spray length',
-      min: 5,
-      max: 100,
-      step: 1,
-      hint: 'Length of the spray relative to the shell life.',
-    },
-    {
-      key: 'durationMinSeconds',
-      label: 'Minimum length',
-      min: 0.5,
+      key: 'durationSeconds',
+      label: 'Emission duration',
+      min: 0.1,
       max: 30,
-      step: 0.5,
-      hint: 'Shortest allowed spray, in seconds.',
-    },
-    {
-      key: 'durationMaxSeconds',
-      label: 'Maximum length',
-      min: 1,
-      max: 30,
-      step: 0.5,
-      hint: 'Longest allowed spray, in seconds.',
-    },
-    {
-      key: 'ratePercent',
-      label: 'Spark rate',
-      min: 10,
-      max: 600,
-      step: 1,
-      hint: 'Sparks per second as a percentage of the star count.',
-    },
-    {
-      key: 'minRatePerSecond',
-      label: 'Minimum rate',
-      min: 1,
-      max: 400,
-      step: 1,
-      hint: 'Lower bound on sparks per second.',
+      step: 0.1,
+      inputKind: 'number',
+      hint: 'How long this ground effect emits, in seconds.',
     },
     {
       key: 'coneAngleDegrees',

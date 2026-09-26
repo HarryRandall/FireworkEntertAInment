@@ -10,7 +10,7 @@
       "fadeFinishSeconds": 8.166666666666666,
       "endSeconds": 8.166666666666666
     },
-    "simulationMs": 65
+    "simulationMs": 60
   },
   {
     "slug": "chrysanthemum",
@@ -23,7 +23,7 @@
       "fadeFinishSeconds": 8.649999999999997,
       "endSeconds": 8.649999999999997
     },
-    "simulationMs": 64
+    "simulationMs": 88
   },
   {
     "slug": "brocade",
@@ -36,7 +36,7 @@
       "fadeFinishSeconds": 7.733333333333334,
       "endSeconds": 7.733333333333334
     },
-    "simulationMs": 52
+    "simulationMs": 68
   },
   {
     "slug": "kamuro",
@@ -49,7 +49,7 @@
       "fadeFinishSeconds": 8.849999999999996,
       "endSeconds": 10.149999999999997
     },
-    "simulationMs": 90
+    "simulationMs": 72
   },
   {
     "slug": "willow",
@@ -62,7 +62,7 @@
       "fadeFinishSeconds": 13.349999999999998,
       "endSeconds": 13.349999999999998
     },
-    "simulationMs": 121
+    "simulationMs": 118
   },
   {
     "slug": "palm",
@@ -75,7 +75,7 @@
       "fadeFinishSeconds": 8.649999999999997,
       "endSeconds": 8.649999999999997
     },
-    "simulationMs": 36
+    "simulationMs": 37
   },
   {
     "slug": "ring",
@@ -88,7 +88,7 @@
       "fadeFinishSeconds": 7.479999999999997,
       "endSeconds": 7.479999999999997
     },
-    "simulationMs": 40
+    "simulationMs": 44
   },
   {
     "slug": "saturn",
@@ -101,7 +101,7 @@
       "fadeFinishSeconds": 4.509999999999998,
       "endSeconds": 6.529999999999998
     },
-    "simulationMs": 17
+    "simulationMs": 21
   },
   {
     "slug": "crossette",
@@ -114,7 +114,7 @@
       "fadeFinishSeconds": 8.466666666666665,
       "endSeconds": 8.466666666666665
     },
-    "simulationMs": 59
+    "simulationMs": 64
   },
   {
     "slug": "double_break",
@@ -127,7 +127,7 @@
       "fadeFinishSeconds": 9.03333333333333,
       "endSeconds": 9.03333333333333
     },
-    "simulationMs": 65
+    "simulationMs": 68
   },
   {
     "slug": "bowtie",
@@ -140,7 +140,7 @@
       "fadeFinishSeconds": 8.466666666666665,
       "endSeconds": 8.466666666666665
     },
-    "simulationMs": 75
+    "simulationMs": 51
   },
   {
     "slug": "horsetail",
@@ -153,7 +153,7 @@
       "fadeFinishSeconds": 12.166666666666666,
       "endSeconds": 13.466666666666667
     },
-    "simulationMs": 106
+    "simulationMs": 91
   },
   {
     "slug": "comet",
@@ -166,7 +166,7 @@
       "fadeFinishSeconds": 8.783333333333328,
       "endSeconds": 8.783333333333328
     },
-    "simulationMs": 22
+    "simulationMs": 24
   },
   {
     "slug": "mine",
@@ -179,7 +179,7 @@
       "fadeFinishSeconds": 4.68,
       "endSeconds": 5.9799999999999995
     },
-    "simulationMs": 39
+    "simulationMs": 35
   },
   {
     "slug": "pearls",
@@ -192,7 +192,7 @@
       "fadeFinishSeconds": 6.179999999999998,
       "endSeconds": 6.629999999999997
     },
-    "simulationMs": 24
+    "simulationMs": 42
   },
   {
     "slug": "pistil",
@@ -205,7 +205,7 @@
       "fadeFinishSeconds": 4.566666666666665,
       "endSeconds": 6.446666666666664
     },
-    "simulationMs": 24
+    "simulationMs": 28
   },
   {
     "slug": "nishiki",
@@ -218,7 +218,7 @@
       "fadeFinishSeconds": 8.249999999999996,
       "endSeconds": 9.549999999999997
     },
-    "simulationMs": 59
+    "simulationMs": 68
   },
   {
     "slug": "strobe",
@@ -231,7 +231,7 @@
       "fadeFinishSeconds": 8.466666666666665,
       "endSeconds": 8.466666666666665
     },
-    "simulationMs": 54
+    "simulationMs": 60
   },
   {
     "slug": "crackle",
@@ -244,7 +244,7 @@
       "fadeFinishSeconds": 8.266666666666666,
       "endSeconds": 9.566666666666666
     },
-    "simulationMs": 63
+    "simulationMs": 68
   },
   {
     "slug": "silverFish",
@@ -257,11 +257,11 @@
       "fadeFinishSeconds": 4.366666666666665,
       "endSeconds": 6.246666666666664
     },
-    "simulationMs": 45
+    "simulationMs": 52
   },
   {
     "slug": "waterfall",
-    "hash": "b06035ff7a6aaa3a3d51bf8d6f5d480fac60d1bf77ce7b786240d0050f501d8c",
+    "hash": "3eab411dbf2cc485ff05fc3573d9c77483f45795a563442d15f7cb52aa51d3f1",
     "peakParticles": 2572,
     "timing": {
       "liftTimeSeconds": 1.7666666666666653,
@@ -270,7 +270,7 @@
       "fadeFinishSeconds": 10.541666666666666,
       "endSeconds": 10.541666666666666
     },
-    "simulationMs": 108
+    "simulationMs": 122
   },
   {
     "slug": "whirl",
@@ -283,7 +283,7 @@
       "fadeFinishSeconds": 4.566666666666666,
       "endSeconds": 6.046666666666665
     },
-    "simulationMs": 27
+    "simulationMs": 30
   },
   {
     "slug": "roman_candle",
@@ -309,6 +309,6 @@
       "fadeFinishSeconds": 11.7,
       "endSeconds": 13
     },
-    "simulationMs": 92
+    "simulationMs": 99
   }
 ]

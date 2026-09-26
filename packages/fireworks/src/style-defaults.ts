@@ -305,6 +305,7 @@ function starPresetSettings(layer: FireworkStarLayer): JsonRecord {
   return {
     enabled: layer.enabled,
     count: layer.count,
+    emissionRate: layer.emissionRate,
     burst: cloneJson(layer.burst),
     head: cloneJson(layer.head),
     ...(layer.color ? { color: cloneJson(layer.color) } : {}),
@@ -449,7 +450,15 @@ export function removeStyleDefaultOverridesFromRecord(
     case 'star':
     case 'innerStar': {
       const layer = kind === 'star' ? 'outer' : 'core';
-      for (const field of ['head', 'enabled', 'count', 'burst', 'color', 'colourPattern'])
+      for (const field of [
+        'head',
+        'enabled',
+        'count',
+        'emissionRate',
+        'burst',
+        'color',
+        'colourPattern',
+      ])
         deleteNested(defaults, ['stars', layer, field]);
       return;
     }

@@ -1,6 +1,7 @@
 import type { FireworkStarLayer, LaunchShellShape } from '@showcrafter/fireworks/design';
 import {
   BURST_TRAIL_FRONT_SPREAD_ANGLE_MAX,
+  MAX_STAR_COUNT,
   FIREWORK_PATTERNS,
   FIREWORK_TRAIL_PROFILES,
 } from '@showcrafter/fireworks/design';
@@ -158,7 +159,7 @@ export const LIFT_APPEARANCE_OPTIONS = [
 
 export const STAR_COUNT_MIN = 1;
 
-export const STAR_COUNT_MAX = 100;
+export const STAR_COUNT_MAX = MAX_STAR_COUNT;
 
 export const STAR_SIZE_MIN = 10;
 

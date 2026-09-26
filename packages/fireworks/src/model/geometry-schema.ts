@@ -1,16 +1,12 @@
 import { z } from 'zod';
 
 /**
- * Per-geometry shape tuning. Every value here was previously a hardcoded
- * constant inside the renderer ({@link Effects}); the defaults are exactly
- * those constants, so designs without an explicit `geometryTuning` block
- * render identically to before. Only the group matching the design's
- * `geometry` is read, and the values save with the effect JSON like any
- * other design field.
+ * Shape-specific settings. Only the group matching the design's geometry is
+ * read. Star counts and fountain rates belong to the individual star layers;
+ * ground emission duration is shared by both layers.
  */
 export const GEOMETRY_TUNING_DEFAULTS = {
   ring: {
-    countPercent: 72,
     wobble: 0.18,
     verticalSquash: 0.96,
     tiltVariation: 1.1,
@@ -28,7 +24,6 @@ export const GEOMETRY_TUNING_DEFAULTS = {
   },
   radialArms: {
     arms: 7,
-    countPercent: 46,
     angleJitter: 0.1,
     armLength: 0.74,
     lift: 0.22,
@@ -36,7 +31,6 @@ export const GEOMETRY_TUNING_DEFAULTS = {
     dragPercent: 82,
   },
   fallingTail: {
-    countPercent: 62,
     spread: 0.28,
     spreadVariation: 0.5,
     sink: 0.05,
@@ -46,7 +40,6 @@ export const GEOMETRY_TUNING_DEFAULTS = {
     dragPercent: 58,
   },
   pearls: {
-    countPercent: 18,
     spread: 0.45,
     spreadVariation: 0.28,
     lift: 0.5,
@@ -55,9 +48,8 @@ export const GEOMETRY_TUNING_DEFAULTS = {
     gravityPercent: 115,
     dragPercent: 135,
   },
-  fragmentCloud: { countPercent: 90, speedBase: 0.72, speedVariation: 0.78 },
+  fragmentCloud: { speedBase: 0.72, speedVariation: 0.78 },
   heart: {
-    countPercent: 88,
     scaleX: 1,
     scaleY: 1,
     depthScale: 0.08,
@@ -66,7 +58,6 @@ export const GEOMETRY_TUNING_DEFAULTS = {
     rotationDegrees: 0,
   },
   fivePointStar: {
-    countPercent: 86,
     points: 5,
     innerRadius: 0.44,
     scaleX: 1,
@@ -77,7 +68,6 @@ export const GEOMETRY_TUNING_DEFAULTS = {
     rotationDegrees: -90,
   },
   bowtie: {
-    countPercent: 82,
     fanAngleDegrees: 111.6,
     verticalScale: 0.34,
     depthScale: 0.16,
@@ -85,7 +75,6 @@ export const GEOMETRY_TUNING_DEFAULTS = {
     lengthVariation: 0.22,
   },
   fish: {
-    countPercent: 72,
     verticalScale: 0.25,
     lifeBaseSeconds: 0.8,
     lifeVariationSeconds: 1.8,
@@ -98,7 +87,6 @@ export const GEOMETRY_TUNING_DEFAULTS = {
     trailLifePercent: 60,
   },
   waterfall: {
-    countPercent: 78,
     curtainWidth: 2.2,
     scatterX: 28,
     scatterZ: 24,
@@ -114,8 +102,6 @@ export const GEOMETRY_TUNING_DEFAULTS = {
     headSizePercent: 75,
   },
   whirl: {
-    countPercent: 28,
-    minCount: 32,
     verticalBias: -0.15,
     spinStrength: 2.4,
     spinRate: 18,
@@ -136,8 +122,6 @@ export const GEOMETRY_TUNING_DEFAULTS = {
     trailLifePercent: 125,
   },
   upwardFan: {
-    countPercent: 90,
-    minCount: 36,
     spreadAngleDegrees: 165.6,
     fanBase: 0.45,
     fanVariation: 0.8,
@@ -153,11 +137,7 @@ export const GEOMETRY_TUNING_DEFAULTS = {
     trailLifePercent: 60,
   },
   romanCandle: {
-    shotsPercent: 8,
-    minShots: 4,
-    durationPercent: 40,
-    durationMinSeconds: 3,
-    durationMaxSeconds: 10,
+    durationSeconds: 8,
     spread: 0.55,
     azimuth: 0.4,
     speedBase: 0.95,
@@ -173,11 +153,7 @@ export const GEOMETRY_TUNING_DEFAULTS = {
     trailLifePercent: 85,
   },
   fountain: {
-    durationPercent: 26,
-    durationMinSeconds: 2.5,
-    durationMaxSeconds: 10,
-    ratePercent: 140,
-    minRatePerSecond: 40,
+    durationSeconds: 5.2,
     // Exactly the old 0.85 rad cone so default fountains are unchanged.
     coneAngleDegrees: (0.85 * 180) / Math.PI,
     speedBase: 0.45,
@@ -200,7 +176,6 @@ export const GeometryTuningSchema = z
     ring: z
       .object({
         /** Percentage of the layer's star count used by the ring. */
-        countPercent: percent(72, 1, 100),
         /** Out-of-plane jitter so the hoop doesn't read as a razor line. */
         wobble: z.coerce.number().min(0).max(1).default(0.18),
         /** Vertical scale of the hoop; 1 is a perfect circle. */
@@ -244,7 +219,6 @@ export const GeometryTuningSchema = z
       .object({
         /** Number of spokes. */
         arms: z.coerce.number().int().min(2).max(24).default(7),
-        countPercent: percent(46, 1, 100),
         /** Random angular scatter of each star off its spoke, in radians. */
         angleJitter: z.coerce.number().min(0).max(1).default(0.1),
         /** Base length of each spoke relative to burst speed. */
@@ -257,7 +231,6 @@ export const GeometryTuningSchema = z
     /** Horsetail: stars pushed out sideways and immediately sinking. */
     fallingTail: z
       .object({
-        countPercent: percent(62, 1, 100),
         spread: z.coerce.number().min(0).max(2).default(0.28),
         spreadVariation: z.coerce.number().min(0).max(2).default(0.5),
         /** Initial downward speed. */
@@ -271,7 +244,6 @@ export const GeometryTuningSchema = z
     /** Pearls: a sparse ring of slow, bright individual stars. */
     pearls: z
       .object({
-        countPercent: percent(18, 1, 100),
         spread: z.coerce.number().min(0).max(2).default(0.45),
         spreadVariation: z.coerce.number().min(0).max(2).default(0.28),
         lift: z.coerce.number().min(-1).max(2).default(0.5),
@@ -284,7 +256,6 @@ export const GeometryTuningSchema = z
     /** Fragment cloud: an irregular scatter with uneven star speeds. */
     fragmentCloud: z
       .object({
-        countPercent: percent(90, 1, 100),
         /** Minimum speed factor applied to each star. */
         speedBase: z.coerce.number().min(0.1).max(2).default(0.72),
         /** Random extra speed on top of the base. */
@@ -294,7 +265,6 @@ export const GeometryTuningSchema = z
     /** Heart outline: a planar parametric heart with editable thickness and orientation. */
     heart: z
       .object({
-        countPercent: percent(88, 1, 100),
         scaleX: z.coerce.number().min(0.2).max(2.5).default(1),
         scaleY: z.coerce.number().min(0.2).max(2.5).default(1),
         depthScale: z.coerce.number().min(0).max(1).default(0.08),
@@ -306,7 +276,6 @@ export const GeometryTuningSchema = z
     /** Outlined star polygon. Five points by default, with editable point count. */
     fivePointStar: z
       .object({
-        countPercent: percent(86, 1, 100),
         points: z.coerce.number().int().min(3).max(12).default(5),
         innerRadius: z.coerce.number().min(0.08).max(0.95).default(0.44),
         scaleX: z.coerce.number().min(0.2).max(2.5).default(1),
@@ -320,7 +289,6 @@ export const GeometryTuningSchema = z
     /** Bow tie: two opposed fans fired in a flat plane. */
     bowtie: z
       .object({
-        countPercent: percent(82, 1, 100),
         /** Total opening angle of each fan, in degrees. */
         fanAngleDegrees: z.coerce.number().min(10).max(180).default(111.6),
         /** Vertical thickness of the fans. */
@@ -336,7 +304,6 @@ export const GeometryTuningSchema = z
     fish: z
       .object({
         /** Percentage of the design size used as the swarm count. */
-        countPercent: percent(72, 1, 200),
         /** Vertical flattening of the swarm; 1 is a full sphere. */
         verticalScale: z.coerce.number().min(0).max(1.5).default(0.25),
         lifeBaseSeconds: z.coerce.number().min(0.1).max(8).default(0.8),
@@ -357,7 +324,6 @@ export const GeometryTuningSchema = z
     /** Waterfall: a wide curtain of stars pouring straight down. */
     waterfall: z
       .object({
-        countPercent: percent(78, 1, 200),
         /** Curtain width relative to the design size. */
         curtainWidth: z.coerce.number().min(0.2).max(6).default(2.2),
         /** Random horizontal scatter of each spawn point, in world units. */
@@ -383,9 +349,7 @@ export const GeometryTuningSchema = z
     /** Whirl: spinning shower with corkscrew arms. */
     whirl: z
       .object({
-        countPercent: percent(28, 1, 200),
         /** Minimum number of stars regardless of design size. */
-        minCount: z.coerce.number().int().min(1).max(200).default(32),
         /** Vertical bias of the initial throw; negative sends more stars down. */
         verticalBias: z.coerce.number().min(-1).max(1).default(-0.15),
         /** Strength of the spiral force. */
@@ -420,9 +384,7 @@ export const GeometryTuningSchema = z
     upwardFan: z
       .object({
         /** Percentage of the star count used by the fan. */
-        countPercent: percent(90, 1, 200),
         /** Lower bound on the fan count regardless of shell size. */
-        minCount: z.coerce.number().int().min(1).max(200).default(36),
         /** Total sideways opening angle of the fan, in degrees. */
         spreadAngleDegrees: z.coerce.number().min(10).max(300).default(165.6),
         /** Minimum sideways throw factor. */
@@ -447,13 +409,9 @@ export const GeometryTuningSchema = z
     /** Roman candle: staggered single shots from a ground tube. */
     romanCandle: z
       .object({
+        durationSeconds: z.coerce.number().min(0.1).max(30).default(8),
         /** Shots as a percentage of the star count. */
-        shotsPercent: percent(8, 1, 100),
-        minShots: z.coerce.number().int().min(1).max(60).default(4),
         /** Sequence length as a percentage of the shell life. */
-        durationPercent: percent(40, 5, 100),
-        durationMinSeconds: z.coerce.number().min(0.5).max(30).default(3),
-        durationMaxSeconds: z.coerce.number().min(1).max(30).default(10),
         /** Sideways aim wobble per shot, in radians. */
         spread: z.coerce.number().min(0).max(2).default(0.55),
         /** Front-to-back aim wobble per shot, in radians. */
@@ -478,13 +436,9 @@ export const GeometryTuningSchema = z
     /** Fountain: a steady ground glitter spray with no mortar burst. */
     fountain: z
       .object({
+        durationSeconds: z.coerce.number().min(0.1).max(30).default(5.2),
         /** Spray length as a percentage of the shell life. */
-        durationPercent: percent(26, 5, 100),
-        durationMinSeconds: z.coerce.number().min(0.5).max(30).default(2.5),
-        durationMaxSeconds: z.coerce.number().min(1).max(30).default(10),
         /** Sparks per second as a percentage of the star count. */
-        ratePercent: percent(140, 10, 600),
-        minRatePerSecond: z.coerce.number().min(1).max(400).default(40),
         /** Total opening angle of the spray cone, in degrees. */
         coneAngleDegrees: z.coerce
           .number()

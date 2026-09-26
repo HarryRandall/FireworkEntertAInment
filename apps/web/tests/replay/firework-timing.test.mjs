@@ -49,16 +49,12 @@ function design(overrides = {}) {
       singleTail: { lifePercent: 90, trailLifePercent: 125 },
       upwardFan: { lifePercent: 72, trailLifePercent: 60 },
       romanCandle: {
-        durationPercent: 40,
-        durationMinSeconds: 3,
-        durationMaxSeconds: 10,
+        durationSeconds: 8,
         lifePercent: 92,
         trailLifePercent: 85,
       },
       fountain: {
-        durationPercent: 26,
-        durationMinSeconds: 2.5,
-        durationMaxSeconds: 10,
+        durationSeconds: 5.2,
         lifePercent: 60,
         trailLifePercent: 40,
       },
@@ -143,7 +139,7 @@ test('ground emitters skip lift and include their sequence duration', () => {
       ...base.geometryTuning,
       romanCandle: {
         ...base.geometryTuning.romanCandle,
-        durationPercent: 100,
+        durationSeconds: 10,
         lifePercent: 300,
       },
     },

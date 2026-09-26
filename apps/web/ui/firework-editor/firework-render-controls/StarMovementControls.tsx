@@ -17,6 +17,7 @@ import type { RendererControlsContext } from '@showcrafter/firework-editor/use-r
 import {
   STAR_AIR_RESISTANCE_PERCENT_MAX,
   STAR_TERMINAL_VELOCITY_MAX,
+  MAX_FOUNTAIN_RATE,
   type StarLayerKey,
 } from '@showcrafter/fireworks/design';
 import { CONTROL_GRID_CLASS, SubSection } from './ControlSections';
@@ -40,10 +41,21 @@ export function StarMovementControls({
         <p className="text-muted-foreground text-xs">{availability.reason}</p>
       ) : null}
       <div className={CONTROL_GRID_CLASS}>
-        {availability.count && showCount ? (
+        {context.design.geometry === 'fountain' && showCount ? (
           <RendererField
             inputKind="number"
-            label="Star count"
+            label="Sparks per second"
+            value={layer.emissionRate}
+            min={1}
+            max={MAX_FOUNTAIN_RATE}
+            step={0.1}
+            disabled={disabled}
+            onChange={(value) => context.setStarEmissionRate(layerKey, value)}
+          />
+        ) : availability.count && showCount ? (
+          <RendererField
+            inputKind="number"
+            label={context.design.geometry === 'roman_candle' ? 'Shot count' : 'Star count'}
             value={layer.count}
             min={STAR_COUNT_MIN}
             max={STAR_COUNT_MAX}

@@ -196,7 +196,10 @@ export const RgbSchema = z.object({
 
 export const ColorSchema = z.union([RgbSchema, z.literal('random')]);
 
-export const MAX_STAR_COUNT = 100;
+export const DEFAULT_STAR_COUNT = 100;
+export const MAX_STAR_COUNT = 200;
+export const DEFAULT_FOUNTAIN_RATE = 140;
+export const MAX_FOUNTAIN_RATE = 600;
 
 export function orderedRangeSchema(min: number, max: number) {
   return z

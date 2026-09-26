@@ -1,6 +1,6 @@
 import { estimateFireworkDesignTiming } from '../timing.ts';
 import type { FireworkDesign, FireworkStarLayer } from './schema.ts';
-import { MAX_STAR_COUNT } from './schema.ts';
+import { MAX_STAR_COUNT, MAX_FOUNTAIN_RATE } from './schema.ts';
 
 export const CALIBER_BASELINE_MM = 30;
 
@@ -22,6 +22,7 @@ export function scaleDesignForCaliber(
   const scale = mm / CALIBER_BASELINE_MM;
   const scaleLayer = (layer: FireworkStarLayer): FireworkStarLayer => ({
     ...layer,
+    emissionRate: Math.max(1, Math.min(MAX_FOUNTAIN_RATE, layer.emissionRate * scale)),
     count: Math.round(Math.max(1, Math.min(MAX_STAR_COUNT, layer.count * scale))),
     burst: {
       ...layer.burst,
@@ -60,6 +61,7 @@ export function scaleDesignForEmphasis(
   const scale = EMPHASIS_SCALE[emphasis];
   const scaleLayer = (layer: FireworkStarLayer): FireworkStarLayer => ({
     ...layer,
+    emissionRate: Math.max(1, Math.min(MAX_FOUNTAIN_RATE, layer.emissionRate * scale)),
     count: Math.round(Math.max(1, Math.min(MAX_STAR_COUNT, layer.count * scale))),
     burst: {
       ...layer.burst,

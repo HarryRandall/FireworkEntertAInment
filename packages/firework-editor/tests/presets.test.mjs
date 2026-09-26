@@ -186,3 +186,32 @@ test('reverting launch and burst audio leaves crackle audio unchanged', () => {
   assert.deepEqual(draft.sound, saved.sound);
   assert.equal(draft.crackle.soundVolume, 0.2);
 });
+
+test('copied fountain rates reset and revert without changing siblings or duration', () => {
+  for (const [kind, layer, section] of [
+    ['star', 'outer', 'star-movement'],
+    ['innerStar', 'core', 'inner-movement'],
+  ]) {
+    const draft = compileFireworkDesign({ variantOverrides: { geometry: 'fountain' } });
+    const sibling = layer === 'outer' ? 'core' : 'outer';
+    const other = structuredClone(draft.stars[sibling]);
+    const duration = draft.geometryTuning.fountain.durationSeconds;
+    const source = {
+      id: kind,
+      name: 'Slow sparks',
+      defaultsJson: { stars: { [layer]: { emissionRate: 12.5 } } },
+    };
+    applyCopiedPreset(draft, kind, source);
+    assert.equal(draft.stars[layer].emissionRate, 12.5);
+    assert.deepEqual(draft.stars[sibling], other);
+    assert.equal(draft.geometryTuning.fountain.durationSeconds, duration);
+    const saved = structuredClone(draft);
+    source.defaultsJson.stars[layer].emissionRate = 60;
+    draft.stars[layer].emissionRate = 30;
+    resetCopiedPreset(draft, kind);
+    assert.equal(draft.stars[layer].emissionRate, 12.5);
+    draft.stars[layer].emissionRate = 90;
+    revertSection(section, draft, saved);
+    assert.equal(draft.stars[layer].emissionRate, 12.5);
+  }
+});

@@ -190,10 +190,9 @@ export function effectFireFountain(
   };
   const trailStarCount = Math.max(
     1,
-    Math.ceil(ratesPerSecond.outer * duration) + Math.ceil(ratesPerSecond.core * duration),
+    starEmissionCount(design, 'outer') + starEmissionCount(design, 'core'),
   );
   let elapsed = 0;
-  const carry = { outer: 0, core: 0 };
   const emitted = { outer: 0, core: 0 };
   ctx.lights.newLight({ x: position.x, y: 70, z: position.z }, color, 11);
   if (audible && design.sound.launch && budget.crackleSoundsRemaining > 0) {
@@ -214,14 +213,12 @@ export function effectFireFountain(
     life: duration + 0.5,
     decay: 0.1,
     effect: (p, dt) => {
-      const emissionDt = Math.min(dt, Math.max(0, duration - elapsed));
-      elapsed += dt;
+      elapsed = Math.min(duration, elapsed + dt);
       for (const layerKey of ['outer', 'core'] as const) {
         const layer = design.stars[layerKey];
         if (!layer.enabled) continue;
-        carry[layerKey] += ratesPerSecond[layerKey] * emissionDt;
-        const toEmit = Math.floor(carry[layerKey]);
-        carry[layerKey] -= toEmit;
+        const target = Math.floor(ratesPerSecond[layerKey] * elapsed + 1e-9);
+        const toEmit = target - emitted[layerKey];
         for (let i = 0; i < toEmit; i++) {
           const starIndex = emitted[layerKey];
           emitted[layerKey] += 1;

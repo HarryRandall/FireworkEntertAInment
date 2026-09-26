@@ -156,6 +156,7 @@ function trail(spec: BurstTrailSpec): Record<string, unknown> {
 function starLayer(opts: {
   enabled?: boolean;
   count?: number;
+  emissionRate?: number;
   speed?: [number, number];
   gravity?: [number, number];
   life?: [number, number];
@@ -165,6 +166,7 @@ function starLayer(opts: {
   return {
     enabled: opts.enabled ?? true,
     count: opts.count,
+    emissionRate: opts.emissionRate,
     burst: {
       speed: opts.speed,
       gravity: opts.gravity,
@@ -224,6 +226,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 100 },
       stars: {
         outer: starLayer({
+          emissionRate: 112,
           count: 80,
           speed: [2.4, 4.0],
           gravity: [-0.5, 0.0],
@@ -253,7 +256,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
           },
           burstTrail: trail({ preset: 'none' }),
         }),
-        core: { enabled: false },
+        core: { emissionRate: 140, count: 100, enabled: false },
       },
     },
   }),
@@ -286,6 +289,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 110 },
       stars: {
         outer: starLayer({
+          emissionRate: 105,
           count: 75,
           speed: [1.6, 3.0],
           gravity: [-0.7, -0.2],
@@ -297,7 +301,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
             particlesPerStar: 96,
           }),
         }),
-        core: { enabled: false },
+        core: { emissionRate: 140, count: 100, enabled: false },
       },
     },
   }),
@@ -335,6 +339,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 70 },
       stars: {
         outer: starLayer({
+          emissionRate: 67.2,
           count: 48,
           speed: [1.45, 2.85],
           gravity: [-0.82, -0.34],
@@ -342,7 +347,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
           head: head({ size: 900, glowStrength: 1.2 }),
           burstTrail: trail({ preset: 'denseBrocade', colourMode: 'gold', particlesPerStar: 80 }),
         }),
-        core: { enabled: false },
+        core: { emissionRate: 140, count: 100, enabled: false },
       },
     },
   }),
@@ -379,6 +384,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 90 },
       stars: {
         outer: starLayer({
+          emissionRate: 78.4,
           count: 56,
           speed: [1.2, 2.4],
           gravity: [-1.1, -0.5],
@@ -386,7 +392,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
           head: head({ size: 700, glowStrength: 2.2 }),
           burstTrail: trail({ preset: 'denseBrocade', colourMode: 'gold', particlesPerStar: 80 }),
         }),
-        core: { enabled: false },
+        core: { emissionRate: 140, count: 100, enabled: false },
       },
     },
   }),
@@ -420,6 +426,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 120 },
       stars: {
         outer: starLayer({
+          emissionRate: 112,
           count: 80,
           speed: [0.8, 1.8],
           gravity: [-1.3, -0.7],
@@ -436,7 +443,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
             brightness: 1.1,
           }),
         }),
-        core: { enabled: false },
+        core: { emissionRate: 140, count: 100, enabled: false },
       },
     },
   }),
@@ -471,14 +478,15 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 120 },
       stars: {
         outer: starLayer({
-          count: 12,
+          emissionRate: 40,
+          count: 6,
           speed: [2.2, 3.8],
           gravity: [-1.2, -0.6],
           life: [3.0, 5.0],
           head: head({ size: 600, glowStrength: 2.2 }),
           burstTrail: trail({ preset: 'cometTail', colourMode: 'gold', particlesPerStar: 120 }),
         }),
-        core: { enabled: false },
+        core: { emissionRate: 140, count: 46, enabled: false },
       },
     },
   }),
@@ -511,14 +519,15 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 95 },
       stars: {
         outer: starLayer({
-          count: 60,
+          emissionRate: 84,
+          count: 43,
           speed: [1.4, 1.9],
           gravity: [-0.15, 0.05],
           life: [1.8, 2.6],
           head: head({ size: 200, glowStrength: 1.6 }),
           burstTrail: trail({ preset: 'none' }),
         }),
-        core: { enabled: false },
+        core: { emissionRate: 140, count: 72, enabled: false },
       },
     },
   }),
@@ -551,7 +560,8 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 100 },
       stars: {
         outer: starLayer({
-          count: 65,
+          emissionRate: 91,
+          count: 47,
           speed: [1.0, 2.8],
           gravity: [-0.3, 0.0],
           life: [1.6, 3.0],
@@ -559,6 +569,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
           burstTrail: trail({ preset: 'none' }),
         }),
         core: starLayer({
+          emissionRate: 1.4,
           count: 1,
           speed: [0, 0],
           gravity: [0, 0],
@@ -601,6 +612,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 110 },
       stars: {
         outer: starLayer({
+          emissionRate: 56,
           count: 40,
           speed: [1.6, 2.4],
           gravity: [-0.3, 0.0],
@@ -608,7 +620,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
           head: head({ size: 220, glowStrength: 1.5 }),
           burstTrail: trail({ preset: 'cometTail', colourMode: 'starFade', particlesPerStar: 90 }),
         }),
-        core: { enabled: false },
+        core: { emissionRate: 140, count: 100, enabled: false },
       },
     },
   }),
@@ -644,6 +656,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 120 },
       stars: {
         outer: starLayer({
+          emissionRate: 98,
           count: 70,
           speed: [1.4, 2.8],
           gravity: [-0.6, -0.1],
@@ -655,7 +668,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
             particlesPerStar: 96,
           }),
         }),
-        core: { enabled: false },
+        core: { emissionRate: 140, count: 100, enabled: false },
       },
     },
   }),
@@ -690,7 +703,8 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 100 },
       stars: {
         outer: starLayer({
-          count: 32,
+          emissionRate: 44.8,
+          count: 26,
           speed: [1.8, 3.4],
           gravity: [-0.6, -0.1],
           life: [1.6, 3.0],
@@ -701,7 +715,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
             particlesPerStar: 90,
           }),
         }),
-        core: { enabled: false },
+        core: { emissionRate: 140, count: 82, enabled: false },
       },
     },
   }),
@@ -738,14 +752,15 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 100 },
       stars: {
         outer: starLayer({
-          count: 50,
+          emissionRate: 70,
+          count: 31,
           speed: [0.6, 1.4],
           gravity: [-1.5, -1.0],
           life: [4.0, 6.5],
           head: head({ size: 400, glowStrength: 1.8 }),
           burstTrail: trail({ preset: 'willowHang', colourMode: 'gold', particlesPerStar: 96 }),
         }),
-        core: { enabled: false },
+        core: { emissionRate: 140, count: 62, enabled: false },
       },
     },
   }),
@@ -780,14 +795,15 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 65 },
       stars: {
         outer: starLayer({
-          count: 6,
+          emissionRate: 40,
+          count: 1,
           speed: [0.4, 0.8],
           gravity: [-0.2, 0.1],
           life: [3.0, 5.0],
           head: head({ size: 800, glowStrength: 2.6 }),
           burstTrail: trail({ preset: 'cometTail', colourMode: 'starFade', particlesPerStar: 120 }),
         }),
-        core: { enabled: false },
+        core: { emissionRate: 140, count: 1, enabled: false },
       },
     },
   }),
@@ -823,14 +839,15 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 80 },
       stars: {
         outer: starLayer({
-          count: 70,
+          emissionRate: 98,
+          count: 63,
           speed: [1.8, 3.2],
           gravity: [-1.2, -0.6],
           life: [1.0, 1.8],
           head: head({ size: 160, glowStrength: 1.4 }),
           burstTrail: trail({ preset: 'cometTail', colourMode: 'starFade', particlesPerStar: 60 }),
         }),
-        core: { enabled: false },
+        core: { emissionRate: 140, count: 90, enabled: false },
       },
     },
   }),
@@ -863,14 +880,15 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 95 },
       stars: {
         outer: starLayer({
-          count: 60,
+          emissionRate: 84,
+          count: 11,
           speed: [1.0, 2.0],
           gravity: [-0.4, 0.0],
           life: [1.6, 3.6],
           head: head({ size: 430, glowStrength: 1.6 }),
           burstTrail: trail({ preset: 'sparkDust', colourMode: 'star', particlesPerStar: 24 }),
         }),
-        core: { enabled: false },
+        core: { emissionRate: 140, count: 18, enabled: false },
       },
     },
   }),
@@ -904,6 +922,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 105 },
       stars: {
         outer: starLayer({
+          emissionRate: 84,
           count: 60,
           speed: [1.4, 2.6],
           gravity: [-0.4, 0.0],
@@ -912,6 +931,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
           burstTrail: trail({ preset: 'sparkDust', colourMode: 'starFade', particlesPerStar: 56 }),
         }),
         core: starLayer({
+          emissionRate: 42,
           count: 30,
           speed: [0.4, 1.0],
           gravity: [-0.4, 0.0],
@@ -955,6 +975,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 100 },
       stars: {
         outer: starLayer({
+          emissionRate: 114.8,
           count: 82,
           speed: [1.1, 2.3],
           gravity: [-1.0, -0.4],
@@ -963,6 +984,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
           burstTrail: trail({ preset: 'solidStreaks', colourMode: 'gold', particlesPerStar: 120 }),
         }),
         core: starLayer({
+          emissionRate: 33.6,
           count: 24,
           speed: [0.5, 1.0],
           gravity: [-0.9, -0.2],
@@ -1000,6 +1022,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 120 },
       stars: {
         outer: starLayer({
+          emissionRate: 98,
           count: 70,
           speed: [1.0, 1.8],
           gravity: [-0.4, 0.0],
@@ -1007,7 +1030,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
           head: head({ size: 200, glowStrength: 1.4 }),
           burstTrail: trail({ preset: 'sparkDust', colourMode: 'star', particlesPerStar: 32 }),
         }),
-        core: { enabled: false },
+        core: { emissionRate: 140, count: 100, enabled: false },
       },
     },
   }),
@@ -1043,14 +1066,15 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 130 },
       stars: {
         outer: starLayer({
-          count: 80,
+          emissionRate: 112,
+          count: 72,
           speed: [1.2, 2.2],
           gravity: [-0.5, -0.1],
           life: [1.2, 2.2],
           head: head({ size: 140, glowStrength: 1.4 }),
           burstTrail: trail({ preset: 'sparkDust', colourMode: 'starFade', particlesPerStar: 48 }),
         }),
-        core: { enabled: false },
+        core: { emissionRate: 140, count: 90, enabled: false },
       },
     },
   }),
@@ -1081,14 +1105,15 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 100 },
       stars: {
         outer: starLayer({
-          count: 50,
+          emissionRate: 70,
+          count: 36,
           speed: [1.2, 2.5],
           gravity: [-0.2, 0.1],
           life: [1.8, 3.0],
           head: head({ size: 170, glowStrength: 1.2 }),
           burstTrail: trail({ preset: 'sparkDust', colourMode: 'silver', particlesPerStar: 36 }),
         }),
-        core: { enabled: false },
+        core: { emissionRate: 140, count: 72, enabled: false },
       },
     },
   }),
@@ -1123,14 +1148,15 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 100 },
       stars: {
         outer: starLayer({
-          count: 80,
+          emissionRate: 112,
+          count: 62,
           speed: [0.6, 1.2],
           gravity: [-1.5, -1.0],
           life: [3.5, 6.0],
           head: head({ size: 120, glowStrength: 0.9 }),
           burstTrail: trail({ preset: 'willowHang', colourMode: 'gold', particlesPerStar: 96 }),
         }),
-        core: { enabled: false },
+        core: { emissionRate: 140, count: 78, enabled: false },
       },
     },
   }),
@@ -1164,14 +1190,15 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 100 },
       stars: {
         outer: starLayer({
-          count: 60,
+          emissionRate: 84,
+          count: 32,
           speed: [1.0, 2.0],
           gravity: [-0.8, -0.3],
           life: [2.0, 3.5],
           head: head({ size: 220, glowStrength: 1.4 }),
           burstTrail: trail({ preset: 'cometTail', colourMode: 'starFade', particlesPerStar: 80 }),
         }),
-        core: { enabled: false },
+        core: { emissionRate: 140, count: 28, enabled: false },
       },
     },
   }),
@@ -1187,6 +1214,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
     trailProfile: 'thick_tail',
     previewPalette: ['#ff2d55', '#14fc56', '#1e7fff', '#ffd166'],
     renderDefaults: {
+      geometryTuning: { romanCandle: { durationSeconds: 5.6 } },
       pattern: 'fibonacci',
       geometry: 'roman_candle',
       trailProfile: 'thick_tail',
@@ -1206,14 +1234,15 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: true, smokeParticles: 50 },
       stars: {
         outer: starLayer({
-          count: 30,
+          emissionRate: 42,
+          count: 4,
           speed: [0.6, 1.2],
           gravity: [-0.4, 0.0],
           life: [1.0, 1.8],
           head: head({ size: 240, glowStrength: 1.6 }),
           burstTrail: trail({ preset: 'cometTail', colourMode: 'starFade', particlesPerStar: 90 }),
         }),
-        core: { enabled: false },
+        core: { emissionRate: 140, count: 8, enabled: false },
       },
     },
   }),
@@ -1229,6 +1258,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
     trailProfile: 'glitter',
     previewPalette: ['#f8f8ff', '#ffd166', '#fff3c4'],
     renderDefaults: {
+      geometryTuning: { fountain: { durationSeconds: 7.8 } },
       pattern: 'fibonacci',
       geometry: 'fountain',
       trailProfile: 'glitter',
@@ -1250,6 +1280,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       mortar: { sound: false, smokeParticles: 30 },
       stars: {
         outer: starLayer({
+          emissionRate: 126,
           count: 90,
           speed: [0.8, 1.6],
           gravity: [-1.4, -0.8],
@@ -1257,7 +1288,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
           head: head({ size: 90, glowStrength: 1.2 }),
           burstTrail: trail({ preset: 'sparkDust', colourMode: 'gold', particlesPerStar: 28 }),
         }),
-        core: { enabled: false },
+        core: { emissionRate: 140, count: 100, enabled: false },
       },
     },
   }),

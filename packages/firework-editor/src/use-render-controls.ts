@@ -8,6 +8,7 @@ import type {
 } from '@showcrafter/fireworks/design';
 import {
   makeBurstTrailPreset,
+  MAX_FOUNTAIN_RATE,
   STAR_AIR_RESISTANCE_PERCENT_MAX,
   STAR_TERMINAL_VELOCITY_MAX,
 } from '@showcrafter/fireworks/design';
@@ -216,6 +217,13 @@ export function useRenderControls({
     const count = normaliseStarCount(value);
     mutate((draft) => {
       ensureDraftStarLayer(draft, layerKey).count = count;
+    });
+  }
+  function setStarEmissionRate(layerKey: StarLayerKey, value: number) {
+    mutate((draft) => {
+      ensureDraftStarLayer(draft, layerKey).emissionRate = round2(
+        clampNumber(value, 1, MAX_FOUNTAIN_RATE),
+      );
     });
   }
   function setLayerNestedValue(
@@ -573,6 +581,7 @@ export function useRenderControls({
     setBurstRangeMid,
     setStarLayerEnabled,
     setStarCount,
+    setStarEmissionRate,
     setLayerNestedValue,
     setStarLayerColour,
     setStarColourPatternValue,

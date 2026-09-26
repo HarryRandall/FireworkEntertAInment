@@ -521,15 +521,11 @@ function scaleGroundEmitterDuration(
   scale: number,
 ): void {
   if (design.geometry !== 'roman_candle' && design.geometry !== 'fountain') return;
-  defaults.shellLife = roundTimelineSeconds(clamp(design.shellLife * scale, 2, 60));
   const geometryTuning = ensureRecord(defaults, 'geometryTuning');
   const tuningKey = design.geometry === 'roman_candle' ? 'romanCandle' : 'fountain';
   const target = ensureRecord(geometryTuning, tuningKey);
   const current = design.geometryTuning[tuningKey];
-  const minimum = clamp(current.durationMinSeconds * scale, 0.5, 30);
-  const maximum = clamp(current.durationMaxSeconds * scale, Math.max(1, minimum), 30);
-  target.durationMinSeconds = roundTimelineSeconds(minimum);
-  target.durationMaxSeconds = roundTimelineSeconds(maximum);
+  target.durationSeconds = roundTimelineSeconds(clamp(current.durationSeconds * scale, 0.1, 30));
 }
 function scaleTotalDuration(
   defaults: FireworkTimelineDefaults,

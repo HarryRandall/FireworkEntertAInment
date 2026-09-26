@@ -10,6 +10,8 @@ import {
   FIREWORK_TRAIL_PROFILES,
   HEAD_APPEARANCE_DEFAULTS,
   MAX_STAR_COUNT,
+  DEFAULT_STAR_COUNT,
+  DEFAULT_FOUNTAIN_RATE,
   STAR_HEAD_CLOSING_DEFAULTS,
   STAR_HEAD_OPENING_DEFAULTS,
   STAR_TERMINAL_VELOCITY_MAX,
@@ -27,7 +29,7 @@ export const FireworkDesignSchema = z
       .number()
       .min(1)
       .transform((value) => Math.min(MAX_STAR_COUNT, value))
-      .default(MAX_STAR_COUNT),
+      .default(DEFAULT_STAR_COUNT),
     colour: z
       .object({
         enabled: z.boolean().default(true),
@@ -174,6 +176,7 @@ export const FireworkDesignSchema = z
         core: StarLayerSchema.default({
           enabled: true,
           count: 38,
+          emissionRate: DEFAULT_FOUNTAIN_RATE,
           burst: {
             speed: [0.8, 1.8],
             gravity: [-0.22, -0.02],
@@ -234,7 +237,7 @@ export const FireworkDesignSchema = z
       .default({
         outer: StarLayerSchema.parse({
           enabled: true,
-          count: MAX_STAR_COUNT,
+          count: DEFAULT_STAR_COUNT,
           burst: {
             speed: [2, 4],
             gravity: [-0.24, -0.02],

@@ -19,6 +19,9 @@ import { RendererField as SliderField } from '../RendererField';
 export function renderGeometryControls(context: RendererControlsContext) {
   const { design, setRenderValue, disabled, setGeometryTuningValue, controlScope } = context;
   const group = GEOMETRY_TUNING_GROUPS[design.geometry];
+  const durationField = group
+    ? GEOMETRY_TUNING_SLIDERS[group].find((field) => field.key === 'durationSeconds')
+    : undefined;
   const content = (
     <div className="space-y-5">
       <div className={CONTROL_GRID_CLASS}>
@@ -49,25 +52,45 @@ export function renderGeometryControls(context: RendererControlsContext) {
           />
         </Field>
       </div>
+      {group && durationField ? (
+        <SliderField
+          inputKind="number"
+          label={durationField.label}
+          min={durationField.min}
+          max={durationField.max}
+          step={durationField.step}
+          value={(design.geometryTuning[group] as Record<string, number>).durationSeconds}
+          formatValue={(value) => `${value} s`}
+          hint={durationField.hint}
+          disabled={disabled}
+          onChange={(value) => setGeometryTuningValue(group, 'durationSeconds', round2(value))}
+        />
+      ) : null}
       {group ? (
         <SubSection title="Shape tuning">
           <div className={CONTROL_GRID_CLASS}>
-            {GEOMETRY_TUNING_SLIDERS[group].map((slider) => {
-              const values = design.geometryTuning[group] as Record<string, number>;
-              return (
-                <SliderField
-                  key={slider.key}
-                  label={slider.label}
-                  min={slider.min}
-                  max={slider.max}
-                  step={slider.step}
-                  value={round2(values[slider.key] ?? slider.min)}
-                  disabled={disabled}
-                  hint={slider.hint}
-                  onChange={(value) => setGeometryTuningValue(group, slider.key, round2(value))}
-                />
-              );
-            })}
+            {GEOMETRY_TUNING_SLIDERS[group]
+              .filter((field) => field.key !== 'durationSeconds')
+              .map((slider) => {
+                const values = design.geometryTuning[group] as Record<string, number>;
+                return (
+                  <SliderField
+                    key={slider.key}
+                    label={slider.label}
+                    inputKind={slider.inputKind}
+                    min={slider.min}
+                    max={slider.max}
+                    step={slider.step}
+                    formatValue={
+                      slider.key === 'durationSeconds' ? (value) => `${value} s` : undefined
+                    }
+                    value={round2(values[slider.key] ?? slider.min)}
+                    disabled={disabled}
+                    hint={slider.hint}
+                    onChange={(value) => setGeometryTuningValue(group, slider.key, round2(value))}
+                  />
+                );
+              })}
           </div>
         </SubSection>
       ) : (

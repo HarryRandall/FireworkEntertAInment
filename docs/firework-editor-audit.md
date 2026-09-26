@@ -362,3 +362,52 @@ readers, preview/apply the snapshot backfill, verify all records, then enable ne
 writes through the existing manual release gate. The renderer fingerprint
 migration invalidates older sealed import evidence, which must be revalidated.
 Do not silently reuse that evidence or retain an old renderer to accept it.
+
+### Direct emission controls
+
+Fountain amount now means **sparks per second**, as requested, with independent
+outer/inner rates. Emission duration is a separate seconds field, visible above
+collapsed shape tuning. It no longer derives from shell flight lifetime. Roman
+candles likewise have a direct duration and exact shot count. Other bursts use
+an exact per-layer star count; removed shape percentage and minimum-count
+settings no longer secretly multiply it. Comets still emit one star per enabled
+layer. The supported star maximum is 200, covering the former 100 stars at 200%.
+
+The emitter accumulates a target count from elapsed time, stops at the specified
+duration and emits whole sparks only. Budgets use that same count. Tests exercise
+all 19 geometries, independent layers, counts of 1/10/199/200, fractional rates,
+short durations and frame steps from 1/120 second to 0.7 seconds. Preset copy,
+reset and section revert retain rates; rate and duration edits do not overwrite
+each other. Ground timeline scaling changes duration without changing shell life.
+
+The catalogue's authored counts/rates/durations were converted to their prior
+resolved emission values. Of 48 seeded captures, only the two waterfall captures
+changed; peak counts and timing stayed unchanged in every capture. Waterfall
+width still multiplies the star count, so converting its count also changes its
+width. This coupling remains an explicit next audit item, along with the `size`
+alias used for launch/flash. These fixtures are current-renderer regression
+checks, not a promise of unchanged appearance or a GPU performance clearance.
+
+`node scripts/renderer/preview-emission-conversion.mjs --local` is read-only.
+Its initial local run found 26 effects, 90 resolved firework snapshots and 18 of
+71 part presets requiring conversion, with no validation errors. The single
+stored history record required no conversion. The converter rejects historical
+fireworks with unresolved overrides instead of guessing their original effect.
+It is not an apply command. Remaining rollout work includes copied preset
+provenance, bootstrap data, original-data preservation, guarded transactional
+writes, idempotence against the database and restored history verification.
+Star-only presets retain their authored count because they have no owning shape;
+geometry presets lose their implicit count multipliers. Review those semantics
+before converting production content. Existing records have not been rewritten.
+
+Authenticated browser verification used a separate unsaved draft: changed the
+geometry to Fountain, entered 2.5 seconds and 12.5 sparks per second, confirmed
+duration stayed 2.5, and undid each change separately back to Saved. Closed that
+test tab without saving. The user's tab and draft were not changed. The duration
+field's position was checked in the shared inspector; this pass did not repeat
+all dark/mobile checks.
+
+Local delivery checks: `pnpm check` (608 app tests, 49 package tests and 11 database
+tooling tests, production build), `pnpm audit:ui` and 68 worker tests passed.
+Eight existing lint warnings remain. The new renderer fingerprint is aligned in
+the app, worker and migration `20260926000500`; that migration has not been applied.
