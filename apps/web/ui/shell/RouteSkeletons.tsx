@@ -5,15 +5,7 @@
  * does not cause large layout shifts.
  */
 import Link from 'next/link';
-import {
-  ChevronLeft,
-  ChevronRight,
-  ListFilter,
-  Plus,
-  Save,
-  Search,
-  SlidersHorizontal,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, ListFilter, Plus, Save, Search } from 'lucide-react';
 import { ReplayPanelLoadingStage } from '@/ui/replay/ReplayPanelLoadingStage';
 import { Button } from '@/ui/patterns/Button';
 import { Skeleton } from '@/ui/patterns/Feedback';

@@ -6,11 +6,7 @@
  * planner from independently forgetting the shell's lift phase.
  */
 import type { FireworkSpecification } from '@/lib/show-domain';
-import {
-  compileFireworkDesign,
-  scaleDesignForCaliber,
-  scaleDesignForEmphasis,
-} from '@showcrafter/fireworks/design';
+import { scaleDesignForCaliber, scaleDesignForEmphasis } from '@showcrafter/fireworks/design';
 import { estimateFireworkLiftTimeSeconds } from '@showcrafter/fireworks/timing';
 import { scheduleImpactWithLift, type ImpactTiming } from './impact-clock';
 import type { CueEmphasis } from './schemas';

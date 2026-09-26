@@ -520,10 +520,6 @@ export function parseImportReconstructionOrThrow(input: unknown): ImportReconstr
   return parsed.data;
 }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
-
 function shellTypeForGeometry(geometry: FireworkGeometry): ShellType {
   switch (geometry) {
     case 'crown':
@@ -556,43 +552,6 @@ function slugify(value: string): string {
       .replace(/^-+|-+$/g, '')
       .slice(0, 64) || 'video-reconstruction'
   );
-}
-
-function rgbToHex(value: unknown): string | null {
-  if (!isRecord(value)) return null;
-  const channels = [value.r, value.g, value.b];
-  if (!channels.every((channel) => typeof channel === 'number' && Number.isFinite(channel))) {
-    return null;
-  }
-  return `#${channels
-    .map((channel) =>
-      Math.round(clamp(channel as number, 0, 1) * 255)
-        .toString(16)
-        .padStart(2, '0'),
-    )
-    .join('')}`;
-}
-
-function collectDesignColours(design: FireworkDesign): string[] {
-  const colours: string[] = [];
-  const seen = new Set<string>();
-  const add = (value: unknown) => {
-    const hex = rgbToHex(value);
-    if (!hex || seen.has(hex)) return;
-    seen.add(hex);
-    colours.push(hex);
-  };
-  const visit = (value: unknown) => {
-    add(value);
-    if (Array.isArray(value)) return value.forEach(visit);
-    if (isRecord(value)) Object.values(value).forEach(visit);
-  };
-
-  add(design.color);
-  add(design.secondaryColor);
-  visit(design.stars);
-  visit(design.launch);
-  return colours;
 }
 
 function removeColourFieldsFromBaseEffect(design: FireworkDesign): Record<string, unknown> {
