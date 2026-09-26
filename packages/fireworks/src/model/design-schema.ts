@@ -9,9 +9,10 @@ import {
   FIREWORK_PATTERNS,
   FIREWORK_TRAIL_PROFILES,
   HEAD_APPEARANCE_DEFAULTS,
-  MAX_STAR_COUNT,
   DEFAULT_STAR_COUNT,
   DEFAULT_LIFT_VELOCITY,
+  DEFAULT_BURST_FLASH_INTENSITY,
+  MAX_BURST_FLASH_INTENSITY,
   DEFAULT_FOUNTAIN_RATE,
   STAR_HEAD_CLOSING_DEFAULTS,
   STAR_HEAD_OPENING_DEFAULTS,
@@ -26,11 +27,11 @@ import { BurstTrailSchema } from './trail-schema.ts';
 
 export const FireworkDesignSchema = z
   .object({
-    size: z.coerce
+    burstFlashIntensity: z.coerce
       .number()
-      .min(1)
-      .transform((value) => Math.min(MAX_STAR_COUNT, value))
-      .default(DEFAULT_STAR_COUNT),
+      .min(0)
+      .max(MAX_BURST_FLASH_INTENSITY)
+      .default(DEFAULT_BURST_FLASH_INTENSITY),
     colour: z
       .object({
         enabled: z.boolean().default(true),
@@ -90,9 +91,9 @@ export const FireworkDesignSchema = z
     sound: z
       .object({
         launch: z.boolean().default(true),
-        boom: z.enum(['none', 'auto', 'light', 'heavy']).default('auto'),
+        boom: z.enum(['none', 'light', 'heavy']).default('light'),
       })
-      .default({ launch: true, boom: 'auto' }),
+      .default({ launch: true, boom: 'light' }),
     strobe: z
       .object({
         enabled: z.boolean().default(false),

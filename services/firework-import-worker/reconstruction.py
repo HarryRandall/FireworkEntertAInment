@@ -139,6 +139,7 @@ RENDERER_TUNING_PROPERTIES = {
     "starLifeMaxSeconds": _nullable({"type": "number", "minimum": 0.05, "maximum": 30}),
     "airResistancePercent": _nullable({"type": "number", "minimum": 0, "maximum": 300}),
     "terminalVelocity": _nullable({"type": "number", "minimum": 0, "maximum": 18}),
+    "burstFlashIntensity": _nullable({"type": "number", "minimum": 0, "maximum": 4}),
     "starCount": _nullable({"type": "integer", "minimum": 1, "maximum": 200}),
     "emissionRate": _nullable(
         {
@@ -2357,6 +2358,7 @@ def renderer_design_from_spec(
         "colour": {"enabled": True},
         "color": _rgb(primary),
         "secondaryColorRatio": 0.24 if secondary else 0,
+        "burstFlashIntensity": round(_tuned_number(tuning, "burstFlashIntensity", 0, 4, 0.5), 4),
         "liftVelocity": round(lift_velocity, 4),
         "shellLife": round(shell_life, 4),
         "pattern": "strobe" if is_strobe else "fibonacci",

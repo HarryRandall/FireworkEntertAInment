@@ -343,12 +343,6 @@ function parseStrictFireworkDesign(
     hasOwn(inputCoreTrail, 'stops'),
   );
 
-  if (hasOwn(input, 'size') && parsed.data.size !== parsed.data.stars.outer.count) {
-    issues.push({
-      path: [...path, 'size'],
-      message: 'Top-level size must match stars.outer.count.',
-    });
-  }
   if (
     hasOwn(input, 'burst') &&
     JSON.stringify(parsed.data.burst) !== JSON.stringify(parsed.data.stars.outer.burst)
@@ -380,7 +374,6 @@ function parseStrictFireworkDesign(
   };
   const design: FireworkDesign = {
     ...parsed.data,
-    size: outer.count,
     burst: outer.burst,
     burstTrail: outer.burstTrail,
     stars: { outer, core },

@@ -70,6 +70,7 @@ function cloneJson<T>(value: T): T {
 export const INITIAL_STYLE_DEFAULT_JSON: Record<FireworkStyleDefaultKind, JsonRecord> = {
   geometry: {
     geometry: DEFAULT_DESIGN.geometry,
+    burstFlashIntensity: DEFAULT_DESIGN.burstFlashIntensity,
     pattern: DEFAULT_DESIGN.pattern,
     geometryTuning: cloneJson(DEFAULT_DESIGN.geometryTuning),
   },
@@ -321,6 +322,7 @@ export function extractStyleDefaultsFromDesign(
     case 'geometry':
       return {
         geometry: design.geometry,
+        burstFlashIntensity: design.burstFlashIntensity,
         pattern: design.pattern,
         geometryTuning: cloneJson(design.geometryTuning),
       };
@@ -444,6 +446,7 @@ export function removeStyleDefaultOverridesFromRecord(
   switch (kind) {
     case 'geometry':
       delete defaults.geometry;
+      delete defaults.burstFlashIntensity;
       delete defaults.pattern;
       delete defaults.geometryTuning;
       return;

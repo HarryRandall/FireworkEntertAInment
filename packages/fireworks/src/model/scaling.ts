@@ -1,6 +1,6 @@
 import { estimateFireworkDesignTiming } from '../timing.ts';
 import type { FireworkDesign, FireworkStarLayer } from './schema.ts';
-import { MAX_STAR_COUNT, MAX_FOUNTAIN_RATE } from './schema.ts';
+import { MAX_STAR_COUNT, MAX_FOUNTAIN_RATE, MAX_BURST_FLASH_INTENSITY } from './schema.ts';
 
 export const CALIBER_BASELINE_MM = 30;
 
@@ -33,10 +33,10 @@ export function scaleDesignForCaliber(
   const core = scaleLayer(design.stars.core);
   return {
     ...design,
-    size: outer.count,
     burst: outer.burst,
     burstTrail: outer.burstTrail,
     stars: { outer, core },
+    burstFlashIntensity: Math.min(MAX_BURST_FLASH_INTENSITY, design.burstFlashIntensity * scale),
   };
 }
 
@@ -44,8 +44,8 @@ export function scaleDesignForCaliber(
  * Per-cue render emphasis (schema 1.4.0). Climaxes, drops and finale beats get
  * visibly bigger and brighter shells without changing the underlying product:
  * more stars (capped at {@link MAX_STAR_COUNT}), faster/wider bursts, and a
- * higher launch. `size` drives the burst flash in `Lights`, so scaling it also
- * brightens the flash for free.
+ * higher launch. Scene flash intensity scales explicitly, independently of
+ * the capped star count.
  */
 export const EMPHASIS_SCALE: Record<'normal' | 'accent' | 'peak', number> = {
   normal: 1.0,
@@ -73,10 +73,10 @@ export function scaleDesignForEmphasis(
   const liftVelocity = design.liftVelocity;
   return {
     ...design,
-    size: outer.count,
     burst: outer.burst,
     burstTrail: outer.burstTrail,
     stars: { outer, core },
+    burstFlashIntensity: Math.min(MAX_BURST_FLASH_INTENSITY, design.burstFlashIntensity * scale),
     liftVelocity: liftVelocity * scale,
   };
 }

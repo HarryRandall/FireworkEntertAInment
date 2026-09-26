@@ -6,7 +6,7 @@ import { deepMergeDesign, isRecord } from './records.ts';
 import { FireworkDesignSchema, type FireworkDesign } from './schema.ts';
 
 export const FIREWORK_RENDER_DEFAULT_KEYS = new Set([
-  'size',
+  'burstFlashIntensity',
   'colour',
   'color',
   'secondaryColor',

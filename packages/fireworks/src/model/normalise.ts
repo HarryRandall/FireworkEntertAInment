@@ -68,7 +68,6 @@ export function normaliseFireworkDesign(design: FireworkDesign): FireworkDesign 
   const outer = normaliseStarLayer(design.stars.outer);
   return {
     ...design,
-    size: outer.count,
     burst: outer.burst,
     burstTrail: outer.burstTrail,
     stars: { outer, core: normaliseStarLayer(design.stars.core) },

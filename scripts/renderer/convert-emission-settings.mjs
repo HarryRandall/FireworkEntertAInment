@@ -87,13 +87,23 @@ function convertLaunchSettings(result, source, count, complete) {
   }
 }
 
+function convertBurstSettings(result, source, count, complete) {
+  if (complete || source.geometry || source.geometryTuning || source.burstFlashIntensity != null) {
+    result.burstFlashIntensity =
+      source.burstFlashIntensity ?? Number(Math.max(0, count / 100 - 0.5).toPrecision(12));
+  }
+  delete result.size;
+  if (result.sound?.boom === 'auto') result.sound.boom = 'light';
+}
+
 export function convertEmissionDesign(input, { includeProvenance = true } = {}) {
   if (!object(input)) throw new Error('Expected an object containing renderer settings.');
   const source = extractBaseDefaults(input);
   const result = structuredClone(source);
+  if (result.sound?.boom === 'auto') result.sound.boom = 'light';
   // The explicit rates distinguish already converted complete snapshots. The
   // conversion never changes a document edited with the new controls.
-  const parsed = compileFireworkDesign({ variantOverrides: source });
+  const parsed = compileFireworkDesign({ variantOverrides: result });
   result.stars ??= {};
   for (const key of ['outer', 'core']) {
     const original = source.stars?.[key];
@@ -123,10 +133,14 @@ export function convertEmissionDesign(input, { includeProvenance = true } = {}) 
   cleanTuning(result.geometryTuning);
   convertWaterfallWidth(result, source, parsed.stars.outer.count);
   convertLaunchSettings(result, source, parsed.stars.outer.count, true);
+  convertBurstSettings(result, source, parsed.stars.outer.count, true);
   if (includeProvenance) convertProvenance(result, source);
   // Reject converted values outside the new supported ranges, never clamp them.
   compileFireworkDesign({ variantOverrides: result });
-  return object(input.renderDefaults) ? { ...input, renderDefaults: result } : result;
+  if (!object(input.renderDefaults)) return result;
+  const model = { ...input, renderDefaults: result };
+  delete model.size;
+  return model;
 }
 
 export function convertEmissionPart(input) {
@@ -150,6 +164,7 @@ export function convertEmissionPart(input) {
       convertWaterfallWidth(result, input, input.stars?.outer?.count ?? 100);
   }
   convertLaunchSettings(result, input, input.stars?.outer?.count ?? 100, false);
+  convertBurstSettings(result, input, input.stars?.outer?.count ?? 100, false);
   convertProvenance(result, input);
   compileFireworkDesign({ variantOverrides: result });
   return result;

@@ -69,7 +69,7 @@ function makeCue() {
       id: 'firework-1',
       caliber: '30mm',
       durationSeconds: 4.2,
-      renderDesign: { size: 60, burst: { speed: [2, 4] } },
+      renderDesign: { stars: { outer: { count: 60 } }, burst: { speed: [2, 4] } },
       rawSpec: null,
     },
   };
@@ -92,7 +92,7 @@ test('replay simulation signatures change for every cue input used by the engine
     (cue) => (cue.shotPositionOverride.z = 31),
     (cue) => (cue.firework.caliber = '50mm'),
     (cue) => (cue.firework.durationSeconds = 5),
-    (cue) => (cue.firework.renderDesign.size = 61),
+    (cue) => (cue.firework.renderDesign.stars.outer.count = 61),
   ];
 
   for (const mutate of mutations) {

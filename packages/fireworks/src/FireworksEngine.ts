@@ -981,7 +981,7 @@ export class FireworksEngine {
       this.pool.withHeadStyleSlot(headStyleSlot, () => p.update(dt, this.time));
     }
     this.pool.compactAliveMax();
-    this.lights.update();
+    this.lights.update(dt);
   }
 
   private syncGeometry(): void {

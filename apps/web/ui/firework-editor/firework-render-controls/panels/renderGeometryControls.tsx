@@ -14,6 +14,8 @@ import {
   GEOMETRY_TUNING_SLIDERS,
 } from '@showcrafter/firework-editor/geometry-fields';
 import type { RendererControlsContext } from '@showcrafter/firework-editor/use-render-controls';
+import { isGroundGeometry } from '@showcrafter/fireworks/behaviours';
+import { MAX_BURST_FLASH_INTENSITY } from '@showcrafter/fireworks/design';
 import { RendererField as SliderField } from '../RendererField';
 
 export function renderGeometryControls(context: RendererControlsContext) {
@@ -52,6 +54,18 @@ export function renderGeometryControls(context: RendererControlsContext) {
           />
         </Field>
       </div>
+      {!isGroundGeometry(design.geometry) ? (
+        <SliderField
+          label="Scene flash"
+          min={0}
+          max={MAX_BURST_FLASH_INTENSITY}
+          step={0.05}
+          value={design.burstFlashIntensity}
+          hint="How strongly the burst lights up the scenery. Zero turns the flash off; star brightness is controlled separately."
+          disabled={disabled}
+          onChange={(value) => setRenderValue('burstFlashIntensity', round2(value))}
+        />
+      ) : null}
       {group && durationField ? (
         <SliderField
           inputKind="number"

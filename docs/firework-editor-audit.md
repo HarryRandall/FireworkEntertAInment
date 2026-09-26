@@ -1,8 +1,50 @@
 # Firework editor audit
 
-Status: in progress on `refactor/firework-renderer-editor`. This is a work list,
-not a release approval. The target is one renderer and one understandable editor,
-with no retained renderer generations or silent replacement fireworks.
+Status: scope frozen for merge review on `refactor/firework-renderer-editor`
+(26 September 2026). Local automated checks pass; the outstanding items below
+are not covered by that result. The target is one renderer and one understandable
+editor, with no retained renderer generations or silent replacement fireworks.
+
+## Merge review checkpoint
+
+The audit is no longer expanding. The implemented changes are ready for code
+review, but this document does not approve production rollout or claim the full
+redesign's acceptance criteria are complete.
+
+- `pnpm check`: formatting, 11 database-tooling tests, 60 package tests, 608 app
+  tests, TypeScript and the production build passed. Seven existing unused-code
+  lint warnings remain; there are no lint errors.
+- `pnpm test:worker`: 68 passed. `pnpm test:analyser`: 35 tests, one skipped.
+  `pnpm test:import-contract` passed for all 19 supported geometries. The UI audit
+  passed. Conversion rollback/concurrency checks and all eight local SQL suites
+  passed.
+- A clean installation through migration `20260926000900` passed in the disposable
+  verification database: exact contents of 18 reusable tables, all 157 media
+  hashes, installation receipt, renderer fingerprint, eight SQL suites and
+  generated public types. The disposable stack was stopped and removed afterwards.
+- Authenticated browser checks covered scene flash exact entry and one-step undo,
+  explicit sound choices, burst/fade seeking, restart, fountain playback and its
+  separate 126 sparks/second and 7.8-second duration. No browser errors were logged.
+  No records were saved during these checks. Earlier layout and gesture checks are
+  recorded below; the final smoke test does not replace full device testing.
+- Remote references were refreshed: `origin/main` is an ancestor of this branch
+  at `4917a8a`. No merge, push or deployment has been performed.
+
+Resolve or explicitly defer these before treating the original plan as complete:
+
+1. Dense-show GPU frame-time measurements and the recorded peak-particle increases
+   above 10%. Their causes have been investigated, but performance is not cleared.
+2. Atomic editor save/history writes and complete save-failure/restored-history
+   coverage. These are currently separate writes.
+3. Final invalid-record/caller coverage and full replay, multishot, touch and
+   Saved/Draft comparison verification.
+4. Footage-based calibration and reviewed visual captures. Seeded simulation
+   fixtures prove repeatability, not realistic appearance.
+5. Remaining launch emission/maximum-flight-time semantics and control metadata
+   consolidation. These are follow-up work, not claims made by this branch.
+
+Hosted rollout must coordinate app, worker, migrations, backed-up data conversion
+and import-evidence revalidation through the existing manual release gate.
 
 ## Product direction
 
@@ -549,3 +591,18 @@ The count-dependent scene flash and
 the duplicate top-level `size` field remain to remove. Maximum flight time also
 needs a defined outcome when it expires before apex, rather than a disappearing
 carrier.
+
+Scene flash now has its own 0–4 control, independent of star count. Zero leaves
+other active flashes alone. Hemisphere lighting cannot dip below its ambient
+level, and both hemisphere and point flashes fade by elapsed time. The duplicate
+top-level `size` field and the misleading Auto burst report option are removed;
+sound choices are None, Light and Heavy. Cue emphasis scales flash explicitly.
+
+The one-off conversion updated 131 local records, preserving originals in
+`.tmp/renderer-backups/scene-flash-before-20260926.json`, converting copied preset
+provenance and verifying an empty second pass. Bootstrap data and hashes are
+updated. Migration `20260926000900` aligns the app, worker and database fingerprint.
+The new tests cover count-independent flash, zero intensity, weak flashes,
+elapsed-time fading at different step sizes, copied geometry presets and
+idempotent conversion. The final verification results are recorded at the top
+of this document.

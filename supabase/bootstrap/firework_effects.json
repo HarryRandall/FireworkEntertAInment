@@ -12,7 +12,6 @@
       "renderDefaults": {
         "geometry": "sphere",
         "trailProfile": "spark",
-        "size": 75,
         "burst": {
           "life": [
             2,
@@ -32,7 +31,7 @@
           "enabled": true
         },
         "sound": {
-          "boom": "auto",
+          "boom": "light",
           "launch": true
         },
         "split": {
@@ -250,7 +249,8 @@
           "waterfall": {
             "width": 165
           }
-        }
+        },
+        "burstFlashIntensity": 0.25
       }
     },
     "sort_order": 20,
@@ -271,7 +271,6 @@
       "renderDefaults": {
         "geometry": "falling_tail",
         "trailProfile": "waterfall",
-        "size": 50,
         "burst": {
           "life": [
             4,
@@ -414,7 +413,8 @@
           "shell": {
             "size": 110
           }
-        }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 80,
@@ -435,7 +435,6 @@
       "renderDefaults": {
         "geometry": "weeping",
         "trailProfile": "long_hang",
-        "size": 80,
         "burst": {
           "life": [
             5,
@@ -578,7 +577,8 @@
           "shell": {
             "size": 110
           }
-        }
+        },
+        "burstFlashIntensity": 0.3
       }
     },
     "sort_order": 40,
@@ -599,7 +599,6 @@
       "renderDefaults": {
         "geometry": "whirl",
         "trailProfile": "whirl",
-        "size": 60,
         "burst": {
           "life": [
             2,
@@ -736,7 +735,8 @@
           "shell": {
             "size": 110
           }
-        }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 135,
@@ -757,7 +757,6 @@
       "renderDefaults": {
         "geometry": "single_tail",
         "trailProfile": "thick_tail",
-        "size": 6,
         "burst": {
           "life": [
             3,
@@ -900,7 +899,8 @@
           "shell": {
             "size": 110
           }
-        }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 90,
@@ -921,7 +921,6 @@
       "renderDefaults": {
         "geometry": "upward_fan",
         "trailProfile": "glitter",
-        "size": 70,
         "burst": {
           "life": [
             1,
@@ -1058,7 +1057,8 @@
           "shell": {
             "size": 110
           }
-        }
+        },
+        "burstFlashIntensity": 0.13
       }
     },
     "sort_order": 100,
@@ -1079,7 +1079,6 @@
       "renderDefaults": {
         "geometry": "waterfall",
         "trailProfile": "waterfall",
-        "size": 80,
         "burst": {
           "life": [
             3.5,
@@ -1222,7 +1221,8 @@
           "shell": {
             "size": 110
           }
-        }
+        },
+        "burstFlashIntensity": 0.12
       }
     },
     "sort_order": 130,
@@ -1243,7 +1243,6 @@
       "renderDefaults": {
         "geometry": "sphere",
         "trailProfile": "spark",
-        "size": 60,
         "burst": {
           "life": [
             1.4,
@@ -1263,7 +1262,7 @@
           "enabled": true
         },
         "sound": {
-          "boom": "auto",
+          "boom": "light",
           "launch": true
         },
         "split": {
@@ -1425,7 +1424,8 @@
           "shell": {
             "size": 110
           }
-        }
+        },
+        "burstFlashIntensity": 0.1
       }
     },
     "sort_order": 108,
@@ -1446,7 +1446,6 @@
       "renderDefaults": {
         "geometry": "pearls",
         "trailProfile": "pearls",
-        "size": 60,
         "burst": {
           "life": [
             1.6,
@@ -1583,7 +1582,8 @@
           "shell": {
             "size": 110
           }
-        }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 105,
@@ -1604,7 +1604,6 @@
       "renderDefaults": {
         "geometry": "fragment_cloud",
         "trailProfile": "crackle",
-        "size": 80,
         "burst": {
           "life": [
             1.2,
@@ -1741,7 +1740,8 @@
           "shell": {
             "size": 110
           }
-        }
+        },
+        "burstFlashIntensity": 0.22
       }
     },
     "sort_order": 120,
@@ -1762,7 +1762,6 @@
       "renderDefaults": {
         "geometry": "fountain",
         "trailProfile": "glitter",
-        "size": 90,
         "burst": {
           "life": [
             1.2,
@@ -1905,7 +1904,8 @@
           "shell": {
             "size": 110
           }
-        }
+        },
+        "burstFlashIntensity": 0.4
       }
     },
     "sort_order": 145,
@@ -1926,7 +1926,6 @@
       "renderDefaults": {
         "geometry": "crown",
         "trailProfile": "glitter",
-        "size": 90,
         "burst": {
           "life": [
             3.42,
@@ -2297,7 +2296,8 @@
           "shell": {
             "size": 110
           }
-        }
+        },
+        "burstFlashIntensity": 0.3
       }
     },
     "sort_order": 35,
@@ -2318,7 +2318,6 @@
       "renderDefaults": {
         "geometry": "ring",
         "trailProfile": "none",
-        "size": 65,
         "burst": {
           "life": [
             1.6,
@@ -2338,7 +2337,7 @@
           "enabled": false
         },
         "sound": {
-          "boom": "auto",
+          "boom": "light",
           "launch": true
         },
         "split": {
@@ -2481,7 +2480,8 @@
           "shell": {
             "size": 110
           }
-        }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 65,
@@ -2502,7 +2502,6 @@
       "renderDefaults": {
         "geometry": "bowtie",
         "trailProfile": "spark",
-        "size": 32,
         "burst": {
           "life": [
             1.6,
@@ -2639,7 +2638,8 @@
           "shell": {
             "size": 110
           }
-        }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 78,
@@ -2660,7 +2660,6 @@
       "renderDefaults": {
         "geometry": "split_cross",
         "trailProfile": "spark",
-        "size": 70,
         "burst": {
           "life": [
             1.4,
@@ -2797,7 +2796,8 @@
           "shell": {
             "size": 110
           }
-        }
+        },
+        "burstFlashIntensity": 0.2
       }
     },
     "sort_order": 75,
@@ -2818,7 +2818,6 @@
       "renderDefaults": {
         "geometry": "radial_arms",
         "trailProfile": "thick_tail",
-        "size": 12,
         "burst": {
           "life": [
             3,
@@ -2961,7 +2960,8 @@
           "shell": {
             "size": 110
           }
-        }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 50,
@@ -2982,7 +2982,6 @@
       "renderDefaults": {
         "geometry": "split_cross",
         "trailProfile": "thick_tail",
-        "size": 40,
         "burst": {
           "life": [
             1.6,
@@ -3119,7 +3118,8 @@
           "shell": {
             "size": 110
           }
-        }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 70,
@@ -3140,7 +3140,6 @@
       "renderDefaults": {
         "geometry": "sphere",
         "trailProfile": "glitter",
-        "size": 82,
         "burst": {
           "life": [
             4,
@@ -3328,7 +3327,8 @@
           "shell": {
             "size": 110
           }
-        }
+        },
+        "burstFlashIntensity": 0.32
       }
     },
     "sort_order": 110,
@@ -3349,7 +3349,6 @@
       "renderDefaults": {
         "geometry": "crown",
         "trailProfile": "glitter",
-        "size": 270,
         "burst": {
           "life": [
             1.15,
@@ -3625,7 +3624,8 @@
           "shell": {
             "size": 110
           }
-        }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 30,
@@ -3646,7 +3646,6 @@
       "renderDefaults": {
         "geometry": "five_point_star",
         "trailProfile": "spark",
-        "size": 100,
         "burst": {
           "life": [
             2.5,
@@ -4215,7 +4214,8 @@
           "waterfall": {
             "width": 215.6
           }
-        }
+        },
+        "burstFlashIntensity": 0.48
       }
     },
     "sort_order": 155,
@@ -4236,7 +4236,6 @@
       "renderDefaults": {
         "geometry": "ring",
         "trailProfile": "none",
-        "size": 60,
         "burst": {
           "life": [
             1.8,
@@ -4354,7 +4353,8 @@
           "shell": {
             "size": 110
           }
-        }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 60,
@@ -4375,7 +4375,6 @@
       "renderDefaults": {
         "geometry": "heart",
         "trailProfile": "spark",
-        "size": 100,
         "burst": {
           "life": [
             2.6,
@@ -4942,7 +4941,8 @@
           "waterfall": {
             "width": 211.2
           }
-        }
+        },
+        "burstFlashIntensity": 0.46
       }
     },
     "sort_order": 150,
@@ -4963,7 +4963,6 @@
       "renderDefaults": {
         "geometry": "roman_candle",
         "trailProfile": "thick_tail",
-        "size": 30,
         "burst": {
           "life": [
             1,
@@ -5106,7 +5105,8 @@
           "shell": {
             "size": 110
           }
-        }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 140,
@@ -5127,7 +5127,6 @@
       "renderDefaults": {
         "geometry": "sphere",
         "trailProfile": "blink",
-        "size": 70,
         "burst": {
           "life": [
             2.5,
@@ -5264,7 +5263,8 @@
           "shell": {
             "size": 110
           }
-        }
+        },
+        "burstFlashIntensity": 0.2
       }
     },
     "sort_order": 115,
@@ -5285,7 +5285,6 @@
       "renderDefaults": {
         "geometry": "sphere",
         "trailProfile": "none",
-        "size": 115,
         "burst": {
           "life": [
             0.88,
@@ -5305,7 +5304,7 @@
           "enabled": false
         },
         "sound": {
-          "boom": "auto",
+          "boom": "light",
           "launch": true
         },
         "split": {
@@ -5606,7 +5605,8 @@
           "waterfall": {
             "width": 176
           }
-        }
+        },
+        "burstFlashIntensity": 0.3
       }
     },
     "sort_order": 10,
@@ -5627,7 +5627,6 @@
       "renderDefaults": {
         "geometry": "fish",
         "trailProfile": "fish",
-        "size": 50,
         "burst": {
           "life": [
             1.8,
@@ -5764,7 +5763,8 @@
           "shell": {
             "size": 110
           }
-        }
+        },
+        "burstFlashIntensity": 0
       }
     },
     "sort_order": 125,

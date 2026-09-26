@@ -33,7 +33,6 @@ function starLayer(life = [1, 1]) {
 function design(overrides = {}) {
   return {
     geometry: 'sphere',
-    size: 80,
     shellLife: 20,
     liftVelocity: 15,
     stars: {

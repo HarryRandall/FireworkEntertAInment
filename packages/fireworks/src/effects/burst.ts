@@ -26,7 +26,7 @@ export function effectDetonate(
   const boom = design.sound.boom;
   if (audible) {
     if (boom !== 'none') {
-      if (boom === 'heavy' || (boom === 'auto' && design.size > 200)) {
+      if (boom === 'heavy') {
         ctx.sh.playRandomHeavyBoom(1.0, rng);
       } else {
         ctx.sh.playRandomLightBoom(1.0, rng);
@@ -34,7 +34,8 @@ export function effectDetonate(
     }
   }
 
-  ctx.lights.setHemi(design.size / 100, color.r, color.g, color.b);
+  if (design.burstFlashIntensity > 0)
+    ctx.lights.setHemi(design.burstFlashIntensity, color.r, color.g, color.b);
   if (design.geometry === 'single_tail') {
     effectCometFinish(ctx, particle, design, color, rng, audible, budget);
     return;

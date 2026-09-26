@@ -52,7 +52,6 @@ export type StarColourPatternEntry = FireworkStarLayer['colourPattern']['colours
 
 export const BOOM_OPTIONS = [
   { value: 'none', label: 'None' },
-  { value: 'auto', label: 'Auto' },
   { value: 'light', label: 'Light' },
   { value: 'heavy', label: 'Heavy' },
 ];

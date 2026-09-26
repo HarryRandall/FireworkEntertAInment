@@ -18,7 +18,6 @@
     "created_at": "2026-07-27T05:17:31.797338+00:00",
     "updated_at": "2026-07-27T05:17:31.797338+00:00",
     "render_snapshot_json": {
-      "size": 75,
       "colour": {
         "enabled": true
       },
@@ -174,7 +173,7 @@
       },
       "sound": {
         "launch": true,
-        "boom": "auto"
+        "boom": "light"
       },
       "strobe": {
         "enabled": false,
@@ -835,7 +834,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.25
     }
   },
   {
@@ -879,7 +879,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 31,
       "colour": {
         "enabled": true
       },
@@ -1727,7 +1726,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -1771,7 +1771,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 63,
       "colour": {
         "enabled": true
       },
@@ -2619,7 +2618,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.13
     }
   },
   {
@@ -2663,7 +2663,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 80,
       "colour": {
         "enabled": true
       },
@@ -3511,7 +3510,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.3
     }
   },
   {
@@ -3555,7 +3555,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 43,
       "colour": {
         "enabled": true
       },
@@ -4381,7 +4380,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -4403,7 +4403,6 @@
     "created_at": "2026-07-27T05:17:04.325593+00:00",
     "updated_at": "2026-07-27T05:17:04.325593+00:00",
     "render_snapshot_json": {
-      "size": 80,
       "colour": {
         "enabled": true
       },
@@ -4559,7 +4558,7 @@
       },
       "sound": {
         "launch": true,
-        "boom": "auto"
+        "boom": "light"
       },
       "strobe": {
         "enabled": false,
@@ -5220,7 +5219,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.3
     }
   },
   {
@@ -5264,7 +5264,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 33,
       "colour": {
         "enabled": true
       },
@@ -6090,7 +6089,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -6134,7 +6134,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 82,
       "colour": {
         "enabled": true
       },
@@ -6982,7 +6981,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.32
     }
   },
   {
@@ -7026,7 +7026,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 60,
       "colour": {
         "enabled": true
       },
@@ -7202,7 +7201,7 @@
       },
       "sound": {
         "launch": true,
-        "boom": "auto"
+        "boom": "light"
       },
       "strobe": {
         "enabled": false,
@@ -7874,7 +7873,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.1
     }
   },
   {
@@ -7918,7 +7918,6 @@
     "created_at": "2026-05-28T12:05:44.734835+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 1,
       "colour": {
         "enabled": true
       },
@@ -8766,7 +8765,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -8812,7 +8812,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 4,
       "colour": {
         "enabled": true
       },
@@ -9660,7 +9659,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -9704,7 +9704,6 @@
     "created_at": "2026-05-28T12:05:44.734835+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 31,
       "colour": {
         "enabled": true
       },
@@ -10552,7 +10551,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -10596,7 +10596,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 90,
       "colour": {
         "enabled": true
       },
@@ -11444,7 +11443,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.4
     }
   },
   {
@@ -11488,7 +11488,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 43,
       "colour": {
         "enabled": true
       },
@@ -12314,7 +12313,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -12358,7 +12358,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 11,
       "colour": {
         "enabled": true
       },
@@ -13206,7 +13205,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -13255,7 +13255,6 @@
     "created_at": "2026-07-27T04:08:17.210039+00:00",
     "updated_at": "2026-07-27T04:11:47.611823+00:00",
     "render_snapshot_json": {
-      "size": 80,
       "colour": {
         "enabled": true
       },
@@ -13415,7 +13414,7 @@
       },
       "sound": {
         "launch": true,
-        "boom": "auto"
+        "boom": "light"
       },
       "strobe": {
         "enabled": false,
@@ -14090,7 +14089,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.3
     }
   },
   {
@@ -14134,7 +14134,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 1,
       "colour": {
         "enabled": true
       },
@@ -14982,7 +14981,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -15026,7 +15026,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 72,
       "colour": {
         "enabled": true
       },
@@ -15874,7 +15873,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.22
     }
   },
   {
@@ -15952,7 +15952,6 @@
     "created_at": "2026-08-03T04:18:59.983284+00:00",
     "updated_at": "2026-08-03T05:25:55.941912+00:00",
     "render_snapshot_json": {
-      "size": 75,
       "colour": {
         "enabled": true
       },
@@ -16118,7 +16117,7 @@
       },
       "sound": {
         "launch": true,
-        "boom": "auto"
+        "boom": "light"
       },
       "strobe": {
         "enabled": false,
@@ -16801,7 +16800,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.25
     }
   },
   {
@@ -16845,7 +16845,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 36,
       "colour": {
         "enabled": true
       },
@@ -17693,7 +17692,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -17737,7 +17737,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 80,
       "colour": {
         "enabled": true
       },
@@ -17902,7 +17901,7 @@
       },
       "sound": {
         "launch": true,
-        "boom": "auto"
+        "boom": "light"
       },
       "strobe": {
         "enabled": false,
@@ -18563,7 +18562,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.3
     }
   },
   {
@@ -18607,7 +18607,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 70,
       "colour": {
         "enabled": true
       },
@@ -19455,7 +19454,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.2
     }
   },
   {
@@ -19499,7 +19499,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 80,
       "colour": {
         "enabled": true
       },
@@ -20325,7 +20324,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.3
     }
   },
   {
@@ -20369,7 +20369,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 36,
       "colour": {
         "enabled": true
       },
@@ -21217,7 +21216,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -21261,7 +21261,6 @@
     "created_at": "2026-05-28T12:05:44.734835+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 40,
       "colour": {
         "enabled": true
       },
@@ -22109,7 +22108,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -22153,7 +22153,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 80,
       "colour": {
         "enabled": true
       },
@@ -22318,7 +22317,7 @@
       },
       "sound": {
         "launch": true,
-        "boom": "auto"
+        "boom": "light"
       },
       "strobe": {
         "enabled": false,
@@ -22979,7 +22978,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.3
     }
   },
   {
@@ -23023,7 +23023,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 6,
       "colour": {
         "enabled": true
       },
@@ -23871,7 +23870,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -23915,7 +23915,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 32,
       "colour": {
         "enabled": true
       },
@@ -24763,7 +24762,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -24807,7 +24807,6 @@
     "created_at": "2026-05-28T12:43:37.398358+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 11,
       "colour": {
         "enabled": true
       },
@@ -25655,7 +25654,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -25704,7 +25704,6 @@
     "created_at": "2026-07-27T04:14:38.80719+00:00",
     "updated_at": "2026-07-27T04:18:20.148035+00:00",
     "render_snapshot_json": {
-      "size": 80,
       "colour": {
         "enabled": true
       },
@@ -25864,7 +25863,7 @@
       },
       "sound": {
         "launch": true,
-        "boom": "auto"
+        "boom": "light"
       },
       "strobe": {
         "enabled": false,
@@ -26539,7 +26538,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.3
     }
   },
   {
@@ -26585,7 +26585,6 @@
     "created_at": "2026-08-03T04:18:59.983284+00:00",
     "updated_at": "2026-08-03T05:04:57.9975+00:00",
     "render_snapshot_json": {
-      "size": 80,
       "colour": {
         "enabled": true
       },
@@ -27433,7 +27432,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.3
     }
   },
   {
@@ -27477,7 +27477,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 26,
       "colour": {
         "enabled": true
       },
@@ -28325,7 +28324,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -28369,7 +28369,6 @@
     "created_at": "2026-08-03T04:18:59.983284+00:00",
     "updated_at": "2026-08-03T05:04:57.9975+00:00",
     "render_snapshot_json": {
-      "size": 72,
       "colour": {
         "enabled": true
       },
@@ -29217,7 +29216,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.22
     }
   },
   {
@@ -29261,7 +29261,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 6,
       "colour": {
         "enabled": true
       },
@@ -30109,7 +30108,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -30155,7 +30155,6 @@
     "created_at": "2026-08-03T04:18:59.983284+00:00",
     "updated_at": "2026-08-03T05:04:57.9975+00:00",
     "render_snapshot_json": {
-      "size": 6,
       "colour": {
         "enabled": true
       },
@@ -31003,7 +31002,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -31047,7 +31047,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 70,
       "colour": {
         "enabled": true
       },
@@ -31895,7 +31894,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.2
     }
   },
   {
@@ -31939,7 +31939,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 62,
       "colour": {
         "enabled": true
       },
@@ -32787,7 +32786,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.12
     }
   },
   {
@@ -32833,7 +32833,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 47,
       "colour": {
         "enabled": true
       },
@@ -32998,7 +32997,7 @@
       },
       "sound": {
         "launch": true,
-        "boom": "auto"
+        "boom": "light"
       },
       "strobe": {
         "enabled": false,
@@ -33659,7 +33658,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -33703,7 +33703,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 11,
       "colour": {
         "enabled": true
       },
@@ -34551,7 +34550,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -34595,7 +34595,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 80,
       "colour": {
         "enabled": true
       },
@@ -35421,7 +35420,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.3
     }
   },
   {
@@ -35465,7 +35465,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 75,
       "colour": {
         "enabled": true
       },
@@ -35630,7 +35629,7 @@
       },
       "sound": {
         "launch": true,
-        "boom": "auto"
+        "boom": "light"
       },
       "strobe": {
         "enabled": false,
@@ -36291,7 +36290,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.25
     }
   },
   {
@@ -36335,7 +36335,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 47,
       "colour": {
         "enabled": true
       },
@@ -36500,7 +36499,7 @@
       },
       "sound": {
         "launch": true,
-        "boom": "auto"
+        "boom": "light"
       },
       "strobe": {
         "enabled": false,
@@ -37161,7 +37160,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -37209,7 +37209,6 @@
     "created_at": "2026-05-28T12:05:44.734835+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 33,
       "colour": {
         "enabled": true
       },
@@ -38035,7 +38034,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -38057,7 +38057,6 @@
     "created_at": "2026-07-27T04:19:23.664381+00:00",
     "updated_at": "2026-07-27T04:19:23.664381+00:00",
     "render_snapshot_json": {
-      "size": 75,
       "colour": {
         "enabled": true
       },
@@ -38213,7 +38212,7 @@
       },
       "sound": {
         "launch": true,
-        "boom": "auto"
+        "boom": "light"
       },
       "strobe": {
         "enabled": false,
@@ -38874,7 +38873,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.25
     }
   },
   {
@@ -38920,7 +38920,6 @@
     "created_at": "2026-08-03T01:53:42.355895+00:00",
     "updated_at": "2026-08-03T05:04:57.9975+00:00",
     "render_snapshot_json": {
-      "size": 80,
       "colour": {
         "enabled": true
       },
@@ -39768,7 +39767,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.3
     }
   },
   {
@@ -39814,7 +39814,6 @@
     "created_at": "2026-08-03T04:18:59.983284+00:00",
     "updated_at": "2026-08-03T05:04:57.9975+00:00",
     "render_snapshot_json": {
-      "size": 75,
       "colour": {
         "enabled": true
       },
@@ -39979,7 +39978,7 @@
       },
       "sound": {
         "launch": true,
-        "boom": "auto"
+        "boom": "light"
       },
       "strobe": {
         "enabled": false,
@@ -40640,7 +40639,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.25
     }
   },
   {
@@ -40684,7 +40684,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 72,
       "colour": {
         "enabled": true
       },
@@ -41532,7 +41531,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.22
     }
   },
   {
@@ -41576,7 +41576,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 40,
       "colour": {
         "enabled": true
       },
@@ -42424,7 +42423,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -42468,7 +42468,6 @@
     "created_at": "2026-05-28T12:05:44.734835+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 63,
       "colour": {
         "enabled": true
       },
@@ -43316,7 +43315,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.13
     }
   },
   {
@@ -43511,7 +43511,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-07-01T08:14:13.124105+00:00",
     "render_snapshot_json": {
-      "size": 75,
       "colour": {
         "enabled": true
       },
@@ -43677,7 +43676,7 @@
       },
       "sound": {
         "launch": true,
-        "boom": "auto"
+        "boom": "light"
       },
       "strobe": {
         "enabled": false,
@@ -44360,7 +44359,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.25
     }
   },
   {
@@ -44404,7 +44404,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 4,
       "colour": {
         "enabled": true
       },
@@ -45252,7 +45251,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -45296,7 +45296,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 36,
       "colour": {
         "enabled": true
       },
@@ -46144,7 +46143,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -46188,7 +46188,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 47,
       "colour": {
         "enabled": true
       },
@@ -46353,7 +46352,7 @@
       },
       "sound": {
         "launch": true,
-        "boom": "auto"
+        "boom": "light"
       },
       "strobe": {
         "enabled": false,
@@ -47014,7 +47013,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -47058,7 +47058,6 @@
     "created_at": "2026-08-03T04:18:59.983284+00:00",
     "updated_at": "2026-08-03T05:04:57.9975+00:00",
     "render_snapshot_json": {
-      "size": 75,
       "colour": {
         "enabled": true
       },
@@ -47223,7 +47222,7 @@
       },
       "sound": {
         "launch": true,
-        "boom": "auto"
+        "boom": "light"
       },
       "strobe": {
         "enabled": false,
@@ -47884,7 +47883,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.25
     }
   },
   {
@@ -47928,7 +47928,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 33,
       "colour": {
         "enabled": true
       },
@@ -48754,7 +48753,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -48800,7 +48800,6 @@
     "created_at": "2026-08-03T04:18:59.983284+00:00",
     "updated_at": "2026-08-03T05:04:57.9975+00:00",
     "render_snapshot_json": {
-      "size": 33,
       "colour": {
         "enabled": true
       },
@@ -49626,7 +49625,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -49672,7 +49672,6 @@
     "created_at": "2026-08-03T04:18:59.983284+00:00",
     "updated_at": "2026-08-03T05:04:57.9975+00:00",
     "render_snapshot_json": {
-      "size": 33,
       "colour": {
         "enabled": true
       },
@@ -50498,7 +50497,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -50520,7 +50520,6 @@
     "created_at": "2026-07-27T05:18:35.611758+00:00",
     "updated_at": "2026-07-27T05:18:35.611758+00:00",
     "render_snapshot_json": {
-      "size": 33,
       "colour": {
         "enabled": true
       },
@@ -51346,7 +51345,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -51390,7 +51390,6 @@
     "created_at": "2026-05-28T12:05:44.734835+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 72,
       "colour": {
         "enabled": true
       },
@@ -52238,7 +52237,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.22
     }
   },
   {
@@ -52282,7 +52282,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 1,
       "colour": {
         "enabled": true
       },
@@ -53130,7 +53129,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -53217,7 +53217,6 @@
     "created_at": "2026-05-28T12:05:44.734835+00:00",
     "updated_at": "2026-07-14T06:23:53.459736+00:00",
     "render_snapshot_json": {
-      "size": 12,
       "colour": {
         "enabled": true
       },
@@ -54088,7 +54087,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -54132,7 +54132,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 82,
       "colour": {
         "enabled": true
       },
@@ -54980,7 +54979,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.32
     }
   },
   {
@@ -55024,7 +55024,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 4,
       "colour": {
         "enabled": true
       },
@@ -55872,7 +55871,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -55916,7 +55916,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 75,
       "colour": {
         "enabled": true
       },
@@ -56081,7 +56080,7 @@
       },
       "sound": {
         "launch": true,
-        "boom": "auto"
+        "boom": "light"
       },
       "strobe": {
         "enabled": false,
@@ -56742,7 +56741,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.25
     }
   },
   {
@@ -56786,7 +56786,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 40,
       "colour": {
         "enabled": true
       },
@@ -57634,7 +57633,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -57678,7 +57678,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 26,
       "colour": {
         "enabled": true
       },
@@ -58526,7 +58525,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -58572,7 +58572,6 @@
     "created_at": "2026-05-28T12:05:44.734835+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 80,
       "colour": {
         "enabled": true
       },
@@ -59420,7 +59419,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.3
     }
   },
   {
@@ -59464,7 +59464,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 70,
       "colour": {
         "enabled": true
       },
@@ -60312,7 +60311,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.2
     }
   },
   {
@@ -60356,7 +60356,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 90,
       "colour": {
         "enabled": true
       },
@@ -61204,7 +61203,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.4
     }
   },
   {
@@ -61248,7 +61248,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 63,
       "colour": {
         "enabled": true
       },
@@ -62096,7 +62095,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.13
     }
   },
   {
@@ -62142,7 +62142,6 @@
     "created_at": "2026-08-03T04:18:59.983284+00:00",
     "updated_at": "2026-08-03T05:04:57.9975+00:00",
     "render_snapshot_json": {
-      "size": 33,
       "colour": {
         "enabled": true
       },
@@ -62968,7 +62967,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -63012,7 +63012,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 31,
       "colour": {
         "enabled": true
       },
@@ -63860,7 +63859,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -64078,7 +64078,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-07-01T11:57:13.06297+00:00",
     "render_snapshot_json": {
-      "size": 33,
       "colour": {
         "enabled": true
       },
@@ -64949,7 +64948,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -64995,7 +64995,6 @@
     "created_at": "2026-05-28T12:43:37.398358+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 60,
       "colour": {
         "enabled": true
       },
@@ -65171,7 +65170,7 @@
       },
       "sound": {
         "launch": true,
-        "boom": "auto"
+        "boom": "light"
       },
       "strobe": {
         "enabled": false,
@@ -65843,7 +65842,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.1
     }
   },
   {
@@ -65887,7 +65887,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 90,
       "colour": {
         "enabled": true
       },
@@ -66735,7 +66734,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.4
     }
   },
   {
@@ -66781,7 +66781,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 70,
       "colour": {
         "enabled": true
       },
@@ -67629,7 +67628,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.2
     }
   },
   {
@@ -67673,7 +67673,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 32,
       "colour": {
         "enabled": true
       },
@@ -68521,7 +68520,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -68565,7 +68565,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 80,
       "colour": {
         "enabled": true
       },
@@ -69413,7 +69412,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.3
     }
   },
   {
@@ -69629,7 +69629,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-07-01T08:36:30.222424+00:00",
     "render_snapshot_json": {
-      "size": 70,
       "colour": {
         "enabled": true
       },
@@ -70500,7 +70499,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.2
     }
   },
   {
@@ -70544,7 +70544,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 60,
       "colour": {
         "enabled": true
       },
@@ -70720,7 +70719,7 @@
       },
       "sound": {
         "launch": true,
-        "boom": "auto"
+        "boom": "light"
       },
       "strobe": {
         "enabled": false,
@@ -71392,7 +71391,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.1
     }
   },
   {
@@ -71438,7 +71438,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 80,
       "colour": {
         "enabled": true
       },
@@ -72264,7 +72263,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.3
     }
   },
   {
@@ -72308,7 +72308,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 62,
       "colour": {
         "enabled": true
       },
@@ -73156,7 +73155,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.12
     }
   },
   {
@@ -73202,7 +73202,6 @@
     "created_at": "2026-08-03T04:18:59.983284+00:00",
     "updated_at": "2026-08-03T05:04:57.9975+00:00",
     "render_snapshot_json": {
-      "size": 33,
       "colour": {
         "enabled": true
       },
@@ -74028,7 +74027,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -74072,7 +74072,6 @@
     "created_at": "2026-08-03T04:18:59.983284+00:00",
     "updated_at": "2026-08-03T05:04:57.9975+00:00",
     "render_snapshot_json": {
-      "size": 33,
       "colour": {
         "enabled": true
       },
@@ -74898,7 +74897,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -74942,7 +74942,6 @@
     "created_at": "2026-05-28T12:43:37.398358+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 62,
       "colour": {
         "enabled": true
       },
@@ -75790,7 +75789,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.12
     }
   },
   {
@@ -75834,7 +75834,6 @@
     "created_at": "2026-05-28T12:05:44.734835+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 43,
       "colour": {
         "enabled": true
       },
@@ -76660,7 +76659,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   },
   {
@@ -76704,7 +76704,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 80,
       "colour": {
         "enabled": true
       },
@@ -76869,7 +76868,7 @@
       },
       "sound": {
         "launch": true,
-        "boom": "auto"
+        "boom": "light"
       },
       "strobe": {
         "enabled": false,
@@ -77530,7 +77529,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.3
     }
   },
   {
@@ -77574,7 +77574,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 70,
       "colour": {
         "enabled": true
       },
@@ -78422,7 +78421,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.2
     }
   },
   {
@@ -78468,7 +78468,6 @@
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 82,
       "colour": {
         "enabled": true
       },
@@ -79316,7 +79315,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0.32
     }
   },
   {
@@ -79360,7 +79360,6 @@
     "created_at": "2026-05-28T12:43:37.398358+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
     "render_snapshot_json": {
-      "size": 32,
       "colour": {
         "enabled": true
       },
@@ -80208,7 +80207,8 @@
             ]
           }
         }
-      }
+      },
+      "burstFlashIntensity": 0
     }
   }
 ]

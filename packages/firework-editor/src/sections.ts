@@ -6,7 +6,7 @@ const SECTION_FIELDS: Record<string, string[]> = {
   'launch-dot': ['launch.shell'],
   'launch-trail': ['launch.liftParticles'],
   smoke: ['launch.smoke'],
-  geometry: ['geometry', 'geometryTuning', 'pattern'],
+  geometry: ['geometry', 'geometryTuning', 'pattern', 'burstFlashIntensity'],
   star: ['stars.outer.enabled', 'stars.outer.head'],
   colour: [
     'stars.outer.colourPattern',

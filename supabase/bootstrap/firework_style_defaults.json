@@ -247,7 +247,8 @@
           "trailLifePercent": 92,
           "durationSeconds": 10.4
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 320,
     "is_archived": false,
@@ -702,7 +703,8 @@
           "fallSpeedVariation": 1.1,
           "width": 320
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 290,
     "is_archived": false,
@@ -733,7 +735,8 @@
           "riseSpeedVariation": 0.65,
           "spreadAngleDegrees": 190
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 310,
     "is_archived": false,
@@ -1078,7 +1081,8 @@
           "trailLifePercent": 68,
           "lifeVariationSeconds": 2.2
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 280,
     "is_archived": false,
@@ -1105,7 +1109,8 @@
           "trailLifePercent": 82,
           "lifeVariationSeconds": 2.4
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 300,
     "is_archived": false,
@@ -2101,7 +2106,7 @@
     "kind": "sound",
     "defaults_json": {
       "sound": {
-        "boom": "auto",
+        "boom": "light",
         "launch": true
       },
       "mortar": {
@@ -2629,7 +2634,8 @@
           "liftVariation": 0.45,
           "spreadVariation": 0.26
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 220,
     "is_archived": false,
@@ -2652,7 +2658,8 @@
           "fanAngleDegrees": 126,
           "lengthVariation": 0.14
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 270,
     "is_archived": false,
@@ -2778,7 +2785,8 @@
           "tiltVariation": 0.75,
           "verticalSquash": 0.98
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 210,
     "is_archived": false,
@@ -2933,7 +2941,8 @@
           "tiltVariation": 0.18,
           "rotationDegrees": 0
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 250,
     "is_archived": false,
@@ -3306,7 +3315,8 @@
           "gravityPercent": 40,
           "spreadVariation": 0.24
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 230,
     "is_archived": false,
@@ -3461,7 +3471,8 @@
           "dragPercent": 70,
           "liftVariation": 0.25
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 240,
     "is_archived": false,
@@ -3487,7 +3498,8 @@
           "tiltVariation": 0.18,
           "rotationDegrees": -90
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 260,
     "is_archived": false,
@@ -3552,7 +3564,8 @@
           "trailLifePercent": 58,
           "durationSeconds": 8.4
         }
-      }
+      },
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 330,
     "is_archived": false,
@@ -4326,7 +4339,8 @@
     "description": "A balanced spherical burst with the current renderer's natural variation.",
     "kind": "geometry",
     "defaults_json": {
-      "geometry": "sphere"
+      "geometry": "sphere",
+      "burstFlashIntensity": 0.5
     },
     "sort_order": 200,
     "is_archived": false,

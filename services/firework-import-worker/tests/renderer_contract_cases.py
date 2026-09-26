@@ -23,7 +23,7 @@ def candidate(
     spec["effectSpec"]["shell"].update({**identity, "pistil": effect_slug == "pistil"})
     shot = spec["effectSpec"]["shots"][0]
     shot.update(identity)
-    shot["rendererTuning"] = renderer_tuning(emissionRate=rate, starCount=count)
+    shot["rendererTuning"] = renderer_tuning(emissionRate=rate, starCount=count, burstFlashIntensity=0.75)
     observations = video_observations()
     if geometry in {"fountain", "roman_candle"}:
         shot.update(timeOffsetSeconds=0.5, burstTimeSeconds=1, liftTimeSeconds=0)

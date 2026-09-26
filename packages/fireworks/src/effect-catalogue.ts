@@ -211,7 +211,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'fibonacci',
       geometry: 'sphere',
       trailProfile: 'none',
-      size: 115,
+      burstFlashIntensity: 0.3,
       liftVelocity: 17,
       shellLife: 4.2,
       burst: {
@@ -222,7 +222,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       },
       flair: { enabled: false },
       ...NO_SECONDARY,
-      sound: { launch: true, boom: 'auto' },
+      sound: { launch: true, boom: 'light' },
       mortar: { sound: true, smokeParticles: 100 },
       stars: {
         outer: starLayer({
@@ -274,7 +274,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'fibonacci',
       geometry: 'sphere',
       trailProfile: 'spark',
-      size: 75,
+      burstFlashIntensity: 0.25,
       liftVelocity: 22,
       shellLife: 5,
       burst: {
@@ -285,7 +285,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       },
       flair: { enabled: true },
       ...NO_SECONDARY,
-      sound: { launch: true, boom: 'auto' },
+      sound: { launch: true, boom: 'light' },
       mortar: { sound: true, smokeParticles: 110 },
       stars: {
         outer: starLayer({
@@ -320,7 +320,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'wave',
       geometry: 'crown',
       trailProfile: 'glitter',
-      size: 270,
+      burstFlashIntensity: 0,
       color: { r: 1, g: 0.82, b: 0.36 },
       secondaryColor: { r: 1, g: 0.98, b: 0.88 },
       liftVelocity: 12.6,
@@ -366,7 +366,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'fibonacci',
       geometry: 'crown',
       trailProfile: 'glitter',
-      size: 90,
+      burstFlashIntensity: 0.06,
       liftVelocity: 24,
       shellLife: 6,
       burst: {
@@ -410,7 +410,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'fibonacci',
       geometry: 'weeping',
       trailProfile: 'long_hang',
-      size: 80,
+      burstFlashIntensity: 0.3,
       liftVelocity: 22,
       shellLife: 6,
       burst: {
@@ -462,7 +462,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'fibonacci',
       geometry: 'radial_arms',
       trailProfile: 'thick_tail',
-      size: 12,
+      burstFlashIntensity: 0,
       liftVelocity: 22,
       shellLife: 6,
       burst: {
@@ -504,7 +504,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'fibonacci',
       geometry: 'ring',
       trailProfile: 'none',
-      size: 60,
+      burstFlashIntensity: 0,
       liftVelocity: 22,
       shellLife: 3.2,
       burst: {
@@ -545,7 +545,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'fibonacci',
       geometry: 'ring',
       trailProfile: 'none',
-      size: 65,
+      burstFlashIntensity: 0,
       liftVelocity: 21,
       shellLife: 5,
       burst: {
@@ -556,7 +556,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       },
       flair: { enabled: false },
       ...NO_SECONDARY,
-      sound: { launch: true, boom: 'auto' },
+      sound: { launch: true, boom: 'light' },
       mortar: { sound: true, smokeParticles: 100 },
       stars: {
         outer: starLayer({
@@ -595,7 +595,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'fibonacci',
       geometry: 'split_cross',
       trailProfile: 'thick_tail',
-      size: 40,
+      burstFlashIntensity: 0,
       liftVelocity: 20,
       shellLife: 3,
       burst: {
@@ -639,7 +639,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'fibonacci',
       geometry: 'split_cross',
       trailProfile: 'spark',
-      size: 70,
+      burstFlashIntensity: 0.2,
       liftVelocity: 26,
       shellLife: 7,
       burst: {
@@ -686,7 +686,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'fibonacci',
       geometry: 'bowtie',
       trailProfile: 'spark',
-      size: 32,
+      burstFlashIntensity: 0,
       liftVelocity: 20,
       shellLife: 5,
       burst: {
@@ -734,7 +734,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'fibonacci',
       geometry: 'falling_tail',
       trailProfile: 'waterfall',
-      size: 50,
+      burstFlashIntensity: 0,
       liftVelocity: 18,
       shellLife: 6,
       burst: {
@@ -779,7 +779,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'fibonacci',
       geometry: 'single_tail',
       trailProfile: 'thick_tail',
-      size: 6,
+      burstFlashIntensity: 0,
       liftVelocity: 30,
       shellLife: 8,
       burst: {
@@ -822,7 +822,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'fibonacci',
       geometry: 'upward_fan',
       trailProfile: 'glitter',
-      size: 70,
+      burstFlashIntensity: 0.13,
       liftVelocity: 16,
       shellLife: 8,
       burst: {
@@ -865,7 +865,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'fibonacci',
       geometry: 'pearls',
       trailProfile: 'pearls',
-      size: 60,
+      burstFlashIntensity: 0,
       liftVelocity: 22,
       shellLife: 4,
       burst: {
@@ -907,7 +907,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'fibonacci',
       geometry: 'sphere',
       trailProfile: 'spark',
-      size: 60,
+      burstFlashIntensity: 0.1,
       liftVelocity: 20,
       shellLife: 5,
       burst: {
@@ -918,7 +918,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       },
       flair: { enabled: true },
       ...NO_SECONDARY,
-      sound: { launch: true, boom: 'auto' },
+      sound: { launch: true, boom: 'light' },
       mortar: { sound: true, smokeParticles: 105 },
       stars: {
         outer: starLayer({
@@ -957,7 +957,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'fibonacci',
       geometry: 'sphere',
       trailProfile: 'glitter',
-      size: 82,
+      burstFlashIntensity: 0.32,
       liftVelocity: 23,
       shellLife: 6,
       burst: {
@@ -1010,7 +1010,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'strobe',
       geometry: 'sphere',
       trailProfile: 'blink',
-      size: 70,
+      burstFlashIntensity: 0.2,
       liftVelocity: 20,
       shellLife: 3,
       burst: { speed: [1.0, 1.8], gravity: [-0.4, 0.0], life: [2.5, 4.0], flairColorMode: 'mixed' },
@@ -1049,7 +1049,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'fibonacci',
       geometry: 'fragment_cloud',
       trailProfile: 'crackle',
-      size: 80,
+      burstFlashIntensity: 0.22,
       liftVelocity: 18,
       shellLife: 2.8,
       burst: {
@@ -1093,7 +1093,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'fibonacci',
       geometry: 'fish',
       trailProfile: 'fish',
-      size: 50,
+      burstFlashIntensity: 0,
       liftVelocity: 18,
       shellLife: 3,
       burst: { speed: [1.2, 2.5], gravity: [-0.2, 0.1], life: [1.8, 3.0], flairColorMode: 'mixed' },
@@ -1133,7 +1133,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       geometry: 'waterfall',
       geometryTuning: { waterfall: { width: 136.4 } },
       trailProfile: 'waterfall',
-      size: 80,
+      burstFlashIntensity: 0.12,
       liftVelocity: 18,
       shellLife: 3,
       burst: {
@@ -1176,7 +1176,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'wave',
       geometry: 'whirl',
       trailProfile: 'whirl',
-      size: 60,
+      burstFlashIntensity: 0,
       liftVelocity: 16,
       shellLife: 4,
       burst: {
@@ -1219,7 +1219,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'fibonacci',
       geometry: 'roman_candle',
       trailProfile: 'thick_tail',
-      size: 30,
+      burstFlashIntensity: 0,
       liftVelocity: 14,
       shellLife: 14,
       burst: {
@@ -1263,7 +1263,7 @@ export const FIREWORK_EFFECT_CATALOGUE: CatalogueEffect[] = [
       pattern: 'fibonacci',
       geometry: 'fountain',
       trailProfile: 'glitter',
-      size: 90,
+      burstFlashIntensity: 0.4,
       liftVelocity: 8,
       shellLife: 30,
       burst: {

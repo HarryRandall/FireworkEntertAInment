@@ -7,6 +7,10 @@
  */
 import * as THREE from 'three';
 
+const BASE_HEMISPHERE_INTENSITY = 0.5;
+const HEMISPHERE_FADE_PER_SECOND = 6;
+const POINT_FADE_PER_SECOND = 60;
+
 class FlashLight {
   light: THREE.PointLight;
   alive = false;
@@ -27,12 +31,9 @@ class FlashLight {
     this.alive = true;
   }
 
-  update(): void {
-    if (this.light.intensity > 0) {
-      this.light.intensity -= 1;
-    } else {
-      this.alive = false;
-    }
+  update(dt: number): void {
+    this.light.intensity = Math.max(0, this.light.intensity - POINT_FADE_PER_SECOND * dt);
+    this.alive = this.light.intensity > 0;
   }
 }
 
@@ -46,7 +47,7 @@ export class Lights {
     this.scene = scene;
     this.ambient = new THREE.AmbientLight(0x202530, 0.6);
     scene.add(this.ambient);
-    this.hemi = new THREE.HemisphereLight(0xaa6677, 0xaacc22, 0.5);
+    this.hemi = new THREE.HemisphereLight(0xaa6677, 0xaacc22, BASE_HEMISPHERE_INTENSITY);
     scene.add(this.hemi);
     for (let i = 0; i < poolSize; i++) {
       this.pool.push(new FlashLight(scene));
@@ -54,7 +55,8 @@ export class Lights {
   }
 
   setHemi(intensity: number, r: number, g: number, b: number): void {
-    this.hemi.intensity = intensity;
+    if (intensity <= 0) return;
+    this.hemi.intensity = BASE_HEMISPHERE_INTENSITY + intensity;
     this.hemi.color.setRGB(r, g, b);
   }
 
@@ -63,19 +65,21 @@ export class Lights {
     slot.set(pos, color, intensity);
   }
 
-  update(): void {
+  update(dt: number): void {
     for (const l of this.pool) {
-      if (l.alive) l.update();
+      if (l.alive) l.update(dt);
     }
-    if (this.hemi.intensity > 0.5) {
-      this.hemi.intensity -= 0.1;
-    } else {
+    this.hemi.intensity = Math.max(
+      BASE_HEMISPHERE_INTENSITY,
+      this.hemi.intensity - HEMISPHERE_FADE_PER_SECOND * dt,
+    );
+    if (this.hemi.intensity === BASE_HEMISPHERE_INTENSITY) {
       this.hemi.color.setRGB(0.66666, 0.4, 0.46666);
     }
   }
 
   reset(): void {
-    this.hemi.intensity = 0.5;
+    this.hemi.intensity = BASE_HEMISPHERE_INTENSITY;
     this.hemi.color.setRGB(0.66666, 0.4, 0.46666);
     for (const l of this.pool) {
       l.light.intensity = 0;

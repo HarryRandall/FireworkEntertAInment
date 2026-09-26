@@ -22,6 +22,7 @@ const inputs = JSON.parse(result.stdout);
 const designs = inputs.map((input) => {
   const parsed = parseImportReconstruction(input);
   assert.equal(parsed.success, true, JSON.stringify(parsed.issues));
+  assert.equal(parsed.data.designs[0].design.burstFlashIntensity, 0.75);
   return parsed.data.designs[0].design;
 });
 assert.deepEqual(new Set(designs.map((design) => design.geometry)), new Set(RENDERER_GEOMETRIES));

@@ -157,10 +157,11 @@ test('geometry presets include distribution without replacing star settings', ()
   applyCopiedPreset(draft, 'geometry', {
     id: 'shape',
     name: 'Wave ring',
-    defaultsJson: { geometry: 'ring', pattern: 'wave' },
+    defaultsJson: { geometry: 'ring', pattern: 'wave', burstFlashIntensity: 0.8 },
   });
   assert.equal(draft.geometry, 'ring');
   assert.equal(draft.pattern, 'wave');
+  assert.equal(draft.burstFlashIntensity, 0.8);
   assert.deepEqual(draft.stars, stars);
 });
 

@@ -8,6 +8,20 @@ import {
 import { compileFireworkDesign } from '../src/design.ts';
 import { groundEmissionDuration, starEmissionCount } from '../src/emission.ts';
 
+test('flash conversion removes the count alias and resolves automatic sound explicitly', () => {
+  const converted = convertEmissionDesign({
+    size: 999,
+    stars: { outer: { count: 150, emissionRate: 140 } },
+    sound: { boom: 'auto' },
+  });
+  assert.equal(converted.burstFlashIntensity, 1);
+  assert.equal(converted.sound.boom, 'light');
+  assert.equal(Object.hasOwn(converted, 'size'), false);
+  assert.deepEqual(convertEmissionDesign(converted), converted);
+  assert.equal(convertEmissionDesign({ stars: { outer: { count: 10 } } }).burstFlashIntensity, 0);
+  assert.deepEqual(convertEmissionPart({ sound: { boom: 'auto' } }), { sound: { boom: 'light' } });
+});
+
 test('launch conversion resolves count-derived defaults without retaining the size multiplier', () => {
   const input = {
     stars: { outer: { count: 160, emissionRate: 140 } },
@@ -34,7 +48,10 @@ test('waterfall width conversion removes count coupling and is idempotent', () =
   assert.deepEqual(convertEmissionDesign(converted), converted);
   assert.equal(input.geometryTuning.waterfall.curtainWidth, 2.2);
   const part = convertEmissionPart({ geometryTuning: { waterfall: { curtainWidth: 3 } } });
-  assert.deepEqual(part, { geometryTuning: { waterfall: { width: 300 } } });
+  assert.deepEqual(part, {
+    geometryTuning: { waterfall: { width: 300 } },
+    burstFlashIntensity: 0.5,
+  });
   assert.deepEqual(convertEmissionPart(part), part);
 });
 
