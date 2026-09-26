@@ -72,7 +72,7 @@ for (const source of sources) {
           ),
         );
       }
-      // Match FireworksEngine.tickPhysics: children wait until the next tick.
+      // Match FireworksEngine.tickPhysics: freeze the live-list length for this tick.
       const count = pool.aliveCount;
       for (let slot = 0; slot < count; slot++) {
         const particle = pool.particles[pool.aliveIndices[slot]];

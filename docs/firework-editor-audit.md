@@ -11,7 +11,7 @@ The audit is no longer expanding. The implemented changes are ready for code
 review, but this document does not approve production rollout or claim the full
 redesign's acceptance criteria are complete.
 
-- `pnpm check`: formatting, 11 database-tooling tests, 60 package tests, 610 app
+- `pnpm check`: formatting, 11 database-tooling tests, 65 package tests, 610 app
   tests, TypeScript and the production build passed. Unused imports and helpers
   left by the extraction have been removed; lint has no warnings or errors.
 - `pnpm test:worker`: 68 passed. `pnpm test:analyser`: 35 tests, one skipped.
@@ -29,16 +29,16 @@ redesign's acceptance criteria are complete.
   restore through the real editor. It was removed afterwards. Earlier layout and
   gesture checks are recorded below; this does not replace full device testing.
 - Remote references were refreshed: `origin/main` is an ancestor of this branch
-  at `4917a8a`. The review stack is #403, then #404, then #405.
+  at `4917a8a`. The review stack is #403, then #404, then #405, then #407.
   Merging and deployment remain with the maintainer.
 
 Resolve or explicitly defer these before treating the original plan as complete:
 
 1. Dense-show GPU frame-time measurements and the recorded peak-particle increases
    above 10%. Their causes have been investigated, but performance is not cleared.
-   The dense CPU benchmark below also exposes live-particle overwrites before the
-   pool reaches capacity. Resolve that allocator issue before accepting a dense
-   show's apparent performance improvement.
+   The dense CPU benchmark below exposed live-particle overwrites before the pool
+   reached capacity. The allocator fix now preserves those particles; the resulting
+   workload increase still needs GPU measurements.
 2. Remaining device-level save-failure coverage. Atomic save/history writes and
    restored versions are now implemented and covered by transaction and browser
    checks below.
@@ -651,9 +651,9 @@ inline save RPCs. Nothing has been merged or deployed by this task.
 ### Dense simulation verification
 
 The reproducible CPU benchmark is `scripts/renderer/benchmark-dense.mjs`. It uses
-the live engine's fixed-step update order, including deferring newly spawned
-particles until the next tick. The older single-effect capture script iterates a
-growing live list, so those captures alone do not establish live-engine performance.
+the live engine's fixed-step update order, freezing the live-list length at the
+start of each tick. The older single-effect capture script iterates a growing live
+list, so those captures alone do not establish live-engine performance.
 
 The benchmark fires Brocade, willow, chrysanthemum, strobe, whirl and crossette in
 rotation. The two fixtures fire 24 cues at 0.2-second intervals and 72 cues at
@@ -700,3 +700,34 @@ node scripts/renderer/benchmark-dense.mjs .tmp/dense-benchmark-baseline/packages
 
 Omit the argument to measure only the current checkout. Do not compare these CPU
 timings with browser frame timings or treat them as the 10% GPU acceptance gate.
+
+### Corrected particle allocation
+
+Commit `3078f84` fixes the allocator defect. It finds a dead slot instead of
+overwriting a live particle. At genuine saturation, new particles are declined
+until capacity is released; a saturated pool is scanned at most once per tick.
+Invalid lifetimes no longer reset a live slot. Cursor-based selection remains
+deterministic after snapshot restoration. Tests cover wraparound, deaths before
+compaction, saturation/recovery, invalid lifetimes, reset and restored occupancy.
+
+The [corrected measurements](verification/dense-show-pool-fix-20260926.json) were
+captured after other local checks finished, using the same two fixtures and five
+seeds. Both passes reproduce all particle counts. Every corrected run has zero
+overwrites, zero declined valid emissions and zero particles remaining at the end.
+
+| Fixture           | Median active CPU tick | Median peak particles | Median live overwrites |
+| ----------------- | ---------------------- | --------------------- | ---------------------- |
+| Corrected 24 cues | 0.661 ms               | 17,879                | 0                      |
+| Corrected 72 cues | 2.417 ms               | 61,419                | 0                      |
+
+The finale's total particle-frames rise from 12,046,820 at extraction to 19,114,609
+after correction. Surviving emitters and stars now complete their behaviour, so
+the previous 0.263 ms median with lost particles is not an equivalent workload.
+The corrected 95th percentile CPU tick is 7.616 ms. These measurements do not
+include geometry uploads or GPU work, and do not clear dense-show performance.
+
+`pnpm check` passes with 65 package tests, 610 app tests and 11 database-tooling
+tests, plus lint, TypeScript and production build. The 68 worker tests, 19-geometry
+import contract, nine local SQL suites and generated types pass. Migration
+`20260926001300` aligns the corrected renderer fingerprint across app, worker and
+database. Sealed import evidence must be revalidated at coordinated rollout.
