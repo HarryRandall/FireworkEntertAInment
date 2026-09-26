@@ -210,8 +210,8 @@ jobs:
     name: Migrate then deploy production
     if: >-
       github.ref == 'refs/heads/main' &&
-      github.event_name == 'workflow_dispatch' &&
-      inputs.deploy_production == true
+      (github.event_name == 'push' ||
+      (github.event_name == 'workflow_dispatch' && inputs.deploy_production == true))
     needs: [web, analyser, analyser-contract, worker, database]
     runs-on: ubuntu-latest
     environment: production

@@ -50,7 +50,7 @@ Resolve or explicitly defer these before treating the original plan as complete:
    consolidation. These are follow-up work, not claims made by this branch.
 
 Hosted rollout must coordinate app, worker, migrations, backed-up data conversion
-and import-evidence revalidation through the existing manual release gate.
+and import-evidence revalidation through the existing checked release pipeline.
 
 ## Product direction
 
@@ -408,7 +408,7 @@ fingerprint. No database migration or deployment was performed in this pass.
 
 The development branch is not ready for production. Deploy compatible schema and
 readers, preview/apply the snapshot backfill, verify all records, then enable new
-writes through the existing manual release gate. The renderer fingerprint
+writes through the existing checked release pipeline. The renderer fingerprint
 migration invalidates older sealed import evidence, which must be revalidated.
 Do not silently reuse that evidence or retain an old renderer to accept it.
 
@@ -507,7 +507,7 @@ poster. Card poster identity now incorporates renderer source fingerprint and
 capture dimensions, replacing the fixed `v2` cache label. Existing storage
 objects are retained but obsolete captures are not displayed. The local working
 database has migrations through `20260926000600`; production still uses the
-manual release gate.
+checked release pipeline.
 
 Remaining persistence work includes atomic editor save/history writes and complete
 restored-history/save-failure UI coverage. Waterfall width and the launch/flash
