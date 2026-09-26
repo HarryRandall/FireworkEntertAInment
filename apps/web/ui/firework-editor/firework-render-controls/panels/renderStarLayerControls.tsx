@@ -195,7 +195,7 @@ export function renderStarLayerControls(
             showNumberInput
             inputAriaLabel={`${title} air resistance value`}
             disabled={controlDisabled}
-            hint="Damping applied after this geometry's own drag tuning. 100% preserves its calibrated motion; 0% removes damping."
+            hint="Scales this shape's air resistance. Zero removes both forms of air drag; higher values slow stars more quickly."
             onChange={(value) => setStarBurstScalar(layerKey, 'airResistancePercent', value)}
           />
           <SliderField
@@ -207,7 +207,8 @@ export function renderStarLayerControls(
             showNumberInput
             inputAriaLabel={`${title} terminal fall speed value`}
             disabled={controlDisabled}
-            hint="Maximum downward speed for this layer. 18 preserves the existing renderer cap; 0 almost arrests descent."
+            hint="Maximum downward speed in simulation units per second. Zero prevents downward movement."
+            formatValue={(value) => `${value} units/s`}
             onChange={(value) => setStarBurstScalar(layerKey, 'terminalVelocity', value)}
           />
           <SliderField

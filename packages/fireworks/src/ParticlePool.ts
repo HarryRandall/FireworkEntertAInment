@@ -26,6 +26,8 @@ export type ParticleProps = {
   decay?: number;
   gravity?: number;
   drag?: number;
+  airResistance?: number;
+  terminalVelocity?: number;
   h?: number;
   s?: number;
   l?: number;
@@ -129,6 +131,8 @@ export class ParticlePool {
     p.decay = prop.decay ?? 10;
     p.gravity = prop.gravity ?? -9.82;
     p.drag = prop.drag ?? 0;
+    p.airResistance = prop.airResistance ?? 1;
+    p.terminalVelocity = prop.terminalVelocity ?? Number.POSITIVE_INFINITY;
     p.color.setRGB(1, 1, 1);
     if (prop.h !== undefined && prop.s !== undefined && prop.l !== undefined) {
       p.color.setHSL(prop.h, prop.s, prop.l);

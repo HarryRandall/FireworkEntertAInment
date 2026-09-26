@@ -51,6 +51,8 @@ export class Particle {
   maxLife = 0;
   gravity = -9.82;
   drag = 0;
+  airResistance = 1;
+  terminalVelocity = Number.POSITIVE_INFINITY;
 
   condition: Callback = NOOP;
   action: Callback = NOOP;
@@ -65,7 +67,7 @@ export class Particle {
     this.size -= dt * this.decay;
 
     // Quadratic drag, sign-preserving. Avoids NaN from 0/|0|.
-    const k = 0.5 * 0.47 * 1.22 * (Math.PI / 10000);
+    const k = 0.5 * 0.47 * 1.22 * (Math.PI / 10000) * this.airResistance;
     const ax = (-k * this.vx * Math.abs(this.vx)) / this.mass;
     const ay = (-k * this.vy * Math.abs(this.vy)) / this.mass;
     const az = (-k * this.vz * Math.abs(this.vz)) / this.mass;
@@ -83,22 +85,9 @@ export class Particle {
       this.vz *= damping;
     }
 
-    // Terminal-velocity clamp. Without this, sparks free-fall through
-    // the entire scene because gravity*dt accumulates over multi-second
-    // lifetimes. Asymmetric so rising shells aren't capped as hard.
-    const VMAX_DOWN = 4;
-    const VMAX_LATERAL = 6;
-    // Brocade heads carry a higher shape value and need to keep their full
-    // burst vector, otherwise large crowns flatten instead of scaling as a
-    // sphere. Hidden heads (negative sentinel shape) are still heads.
-    const isBrocadeHead = this.shape > 1.5 || this.shape <= HIDDEN_PARTICLE_SHAPE;
-    const lateralLimit = isBrocadeHead ? 18 : VMAX_LATERAL;
-    const downwardLimit = isBrocadeHead ? 18 : VMAX_DOWN;
-    if (this.vy < -downwardLimit) this.vy = -downwardLimit;
-    if (this.vx > lateralLimit) this.vx = lateralLimit;
-    else if (this.vx < -lateralLimit) this.vx = -lateralLimit;
-    if (this.vz > lateralLimit) this.vz = lateralLimit;
-    else if (this.vz < -lateralLimit) this.vz = -lateralLimit;
+    // Apply the authored limit before integrating position. Shape affects
+    // drawing only; it must not change a particle's speed or trajectory.
+    this.vy = Math.max(this.vy, -this.terminalVelocity);
 
     this.x += this.vx * dt * 100;
     this.y += this.vy * dt * 100;
@@ -145,6 +134,8 @@ export class Particle {
     this.decay = 0;
     this.gravity = -9.82;
     this.drag = 0;
+    this.airResistance = 1;
+    this.terminalVelocity = Number.POSITIVE_INFINITY;
     this.vx = 0;
     this.vy = 0;
     this.vz = 0;

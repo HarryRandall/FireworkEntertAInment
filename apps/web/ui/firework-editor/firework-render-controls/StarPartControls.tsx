@@ -129,7 +129,7 @@ export function StarPartControls({
           />
           <RendererField
             label="Gravity"
-            hint="Negative values make stars fall; zero keeps them floating."
+            hint="Negative values accelerate stars downwards. Zero removes gravity while retaining their existing motion."
             value={rangeUpper(layer.burst.gravity)}
             min={-2}
             max={1}
@@ -139,6 +139,7 @@ export function StarPartControls({
           />
           <RendererField
             label="Air resistance"
+            hint="Resistance to movement. Zero removes both forms of air drag; higher values slow stars more quickly."
             value={layer.burst.airResistancePercent}
             min={0}
             max={STAR_AIR_RESISTANCE_PERCENT_MAX}
@@ -151,6 +152,8 @@ export function StarPartControls({
           />
           <RendererField
             label="Terminal fall speed"
+            hint="Maximum downward speed in simulation units per second. Zero prevents downward movement."
+            formatValue={(value) => `${value} units/s`}
             value={layer.burst.terminalVelocity}
             min={0}
             max={STAR_TERMINAL_VELOCITY_MAX}

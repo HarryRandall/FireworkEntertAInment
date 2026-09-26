@@ -80,14 +80,23 @@ old 2,359 peak, identifying the changed random sequence as the cause. No dummy
 random draw is retained in the renderer. Multi-seed dense-show frame benchmarks
 remain required; a single-seed count is not performance clearance.
 
+The motion pass removed shape-dependent lateral/downward speed caps. A particle's
+shape now affects drawing only. Star air resistance scales both quadratic drag
+and damping, so zero truly removes air resistance. The authored terminal fall
+speed is applied before displacement, so zero prevents downward movement rather
+than allowing a small fall every frame. Motion settings are preserved in preview
+snapshots and reset on particle reuse. Tests cover speed 20, zero resistance,
+zero and non-zero fall limits, identical motion across shapes and snapshot restore.
+All 24 catalogue compositions retain their peak counts and timing in this pass.
+
 ## Remaining audit and implementation
 
 1. **Control metadata and limits.** Inventory each exposed field against schema,
    setter, simulation, shader and timing usage. Extend the typed extra-effect
    definitions to the remaining controls. Verify both ends and numerical entry for
    every range. Remove schema coercions that reinterpret old percentages.
-2. **Physics and geometry.** Review `Particle.update`'s hidden lateral/downward
-   speed caps, mass-based drag, implicit life/size decay and shader sprite limits.
+2. **Physics and geometry.** Review remaining emitter-specific motion multipliers,
+   implicit life/size decay and shader sprite limits.
    Make artistic choices explicit or explain real safety limits. Check geometry
    multipliers, minimum counts and controls ignored by ground/comet behaviours.
 3. **Sections.** Apply the clearer trail structure to Launch, Burst, Extra effects,

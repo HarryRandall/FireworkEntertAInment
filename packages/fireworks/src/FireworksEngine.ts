@@ -50,7 +50,7 @@ import { type FireworkSceneMode, World } from './World.ts';
 
 export type PoolSnapshot = {
   indices: Uint32Array;
-  /** packed [x,y,z,vx,vy,vz,life,size,alpha,r,g,b,mass,decay,gravity,drag,maxLife,shape,rotation,spin,fadeIn,headStyleSlot] per particle */
+  /** Packed particle state, including motion limits, for preview seeking. */
   data: Float32Array;
   current: number;
   aliveMax: number;
@@ -93,7 +93,7 @@ const SCRUB_DT = 1 / 24;
 // the step count keeps fast drags across busy shows responsive.
 const SCRUB_DRAG_DT = 1 / 12;
 const LARGE_JUMP_SECONDS = 0.35;
-const SNAPSHOT_STRIDE = 22;
+const SNAPSHOT_STRIDE = 24;
 // Sized for SNAPSHOT_INTERVAL below: 1200 half-second snapshots covers a
 // 10-minute show before eviction starts dropping the earliest entries.
 const MAX_SNAPSHOTS = 1200;
@@ -1240,6 +1240,8 @@ export class FireworksEngine {
       state.data[o + 19] = p.spin;
       state.data[o + 20] = p.fadeIn ? 1 : 0;
       state.data[o + 21] = p.headStyleSlot;
+      state.data[o + 22] = p.airResistance;
+      state.data[o + 23] = p.terminalVelocity;
       w++;
     }
     return state;
@@ -1274,6 +1276,8 @@ export class FireworksEngine {
       p.spin = state.data[o + 19] || 0;
       p.fadeIn = state.data[o + 20] !== 0;
       p.headStyleSlot = state.data[o + 21] || 0;
+      p.airResistance = state.data[o + 22];
+      p.terminalVelocity = state.data[o + 23];
       // Behaviour callbacks are lost on snapshot restore; remaining motion
       // keeps the captured physics until life expires. Acceptable for scrubbing.
       this.pool.restore(i, p);

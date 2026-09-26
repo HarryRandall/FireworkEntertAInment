@@ -278,6 +278,8 @@ export function effectSpawnEffectStar(
     shape: particleShape,
     gravity: o.gravity,
     drag: layerAirResistance(o.drag, layer),
+    airResistance: layer.burst.airResistancePercent / 100,
+    terminalVelocity: layer.burst.terminalVelocity,
     vx: o.vx,
     vy: layerVerticalVelocity(o.vy, layer),
     vz: o.vz,
@@ -337,7 +339,6 @@ export function effectStarBehaviour(
   sizeBudget: number,
   openingLifeReference: number,
 ): boolean {
-  particle.vy = layerVerticalVelocity(particle.vy, layer);
   const ageRatio = particle.maxLife > 0 ? 1 - clamp(particle.life / particle.maxLife, 0, 1) : 0;
   const elapsedSeconds = particle.maxLife > 0 ? Math.max(0, particle.maxLife - particle.life) : 0;
   const closingLifeReference = Math.max(0.1, particle.maxLife);
