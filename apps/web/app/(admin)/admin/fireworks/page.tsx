@@ -1,18 +1,18 @@
 /** Admin fireworks page: every atomic firework (effect + colours + overrides). */
 
-import { redirect } from 'next/navigation';
-import { Suspense } from 'react';
-import { Clock3, Sparkles } from 'lucide-react';
-import { FireworkBrowseCard, FireworkBrowseGridSkeleton } from '@/ui/catalogue/FireworkBrowseCard';
-import { FireworkBrowsePreviewProvider } from '@/ui/catalogue/FireworkBrowsePreviewContext';
-import { FilterSkeleton } from '@/ui/shell/RouteSkeletons';
-import { EmptyNotice } from '@/ui/patterns/Feedback';
-import { FilterBar } from '@/ui/patterns/FilterBar';
-import { TABLE_PAGE_SIZE, TablePagination } from '@/ui/patterns/TablePagination';
+import { NewFireworkButton } from '@/app/(admin)/admin/fireworks/_components/NewFireworkButton';
 import { listAdminFireworks, listEffectOptions } from '@/lib/admin/fireworks.server';
 import { fireworkPreviewImageUrl, withFireworkPreviewRevision } from '@/lib/firework-preview-image';
 import { formatDuration } from '@/lib/show-domain';
-import { NewFireworkButton } from '@/app/(admin)/admin/fireworks/_components/NewFireworkButton';
+import { FireworkBrowseCard, FireworkBrowseGridSkeleton } from '@/ui/catalogue/FireworkBrowseCard';
+import { FireworkBrowsePreviewProvider } from '@/ui/catalogue/FireworkBrowsePreviewContext';
+import { EmptyNotice } from '@/ui/patterns/Feedback';
+import { FilterBar } from '@/ui/patterns/FilterBar';
+import { TABLE_PAGE_SIZE, TablePagination } from '@/ui/patterns/TablePagination';
+import { FilterSkeleton } from '@/ui/shell/RouteSkeletons';
+import { Clock3, Sparkles } from 'lucide-react';
+import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
 
 type PageProps = {
   searchParams: Promise<{ q?: string; effect?: string; page?: string }>;

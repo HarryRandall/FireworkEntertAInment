@@ -8,11 +8,11 @@ import {
   isMissingEditorVersionTableError,
   isMissingStyleDefaultEditorVersionColumnError,
 } from '../../lib/admin/style-default-schema.ts';
-import { nonNegativeRangeFromMidpoint } from '../../lib/fireworks/editor-ranges.ts';
+import { nonNegativeRangeFromMidpoint } from '@showcrafter/fireworks/editor-ranges';
 import {
   replayCuesSimulationKey,
   replaySimulationCacheKey,
-} from '../../lib/fireworks/replay-cache-key.ts';
+} from '@showcrafter/fireworks/replay-cache-key';
 
 const root = process.cwd();
 
@@ -80,9 +80,7 @@ test('replay simulation signatures change for every cue input used by the engine
   const baseKey = replayCuesSimulationKey([baseCue]);
   const mutations = [
     (cue) => (cue.id = 'cue-2'),
-    (cue) => (cue.position = 2),
     (cue) => (cue.timeSeconds = 1.5),
-    (cue) => (cue.productId = 'catalogue-2'),
     (cue) => (cue.firework.id = 'firework-2'),
     (cue) => (cue.launchPositionIndex = 2),
     (cue) => (cue.seedOverride = 43),

@@ -2,17 +2,17 @@
 
 /** Query-aware loading skeleton for the admin effects gallery. */
 
-import { Plus } from 'lucide-react';
-import { useSearchParams } from 'next/navigation';
-import { FireworkBrowseGridSkeleton } from '@/ui/catalogue/FireworkBrowseCard';
-import { FilterSkeleton } from '@/ui/shell/RouteSkeletons';
-import { Button } from '@/ui/patterns/Button';
 import {
   ADMIN_EFFECTS_BASE_VIEW,
   adminEffectsViewDescription,
   adminEffectsViewLabel,
   parseAdminEffectsView,
 } from '@/lib/admin-effects-navigation';
+import { FireworkBrowseGridSkeleton } from '@/ui/catalogue/FireworkBrowseCard';
+import { Button } from '@/ui/patterns/Button';
+import { FilterSkeleton } from '@/ui/shell/RouteSkeletons';
+import { Plus } from 'lucide-react';
+import { useSearchParams } from 'next/navigation';
 
 export default function AdminEffectsLoading() {
   const searchParams = useSearchParams();

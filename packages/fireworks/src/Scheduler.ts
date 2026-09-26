@@ -1,0 +1,64 @@
+/**
+ * Tiny cue scheduler that fires {@link ReplayCue}s as playback time passes.
+ *
+ * Cues are sorted by `timeSeconds` once on `setCues`; `tick(now)` then walks
+ * forward and dispatches any cue whose time is `<= now` and not yet fired.
+ * Designed to be cheap enough to call once per animation frame.
+ */
+import type { RendererCue as ReplayCue } from './types.ts';
+
+export type ScheduledCue = {
+  cue: ReplayCue;
+  fired: boolean;
+};
+
+export class Scheduler {
+  private cues: ScheduledCue[] = [];
+
+  setCues(cues: ReplayCue[]): void {
+    this.cues = cues
+      .slice()
+      .sort((a, b) => a.timeSeconds - b.timeSeconds)
+      .map((cue) => ({ cue, fired: false }));
+  }
+
+  /**
+   * Reset all cues to unfired (used on a backwards seek).
+   */
+  resetFiredAfter(time: number): void {
+    for (const sc of this.cues) {
+      if (sc.cue.timeSeconds >= time) sc.fired = false;
+    }
+  }
+
+  resetAll(): void {
+    for (const sc of this.cues) sc.fired = false;
+  }
+
+  /** Latest cue time, or 0 when there are no cues. */
+  lastCueTime(): number {
+    let max = 0;
+    for (const sc of this.cues) {
+      if (sc.cue.timeSeconds > max) max = sc.cue.timeSeconds;
+    }
+    return max;
+  }
+
+  /** Return unfired cues in [prev, now], marking them fired. */
+  pop(prev: number, now: number): ReplayCue[] {
+    const due: ReplayCue[] = [];
+    for (const sc of this.cues) {
+      if (sc.fired) continue;
+      const startsAtCurrentBoundary = Math.abs(sc.cue.timeSeconds - prev) <= 0.000001;
+      if ((startsAtCurrentBoundary || sc.cue.timeSeconds > prev) && sc.cue.timeSeconds <= now) {
+        due.push(sc.cue);
+        sc.fired = true;
+      }
+    }
+    return due;
+  }
+
+  size(): number {
+    return this.cues.length;
+  }
+}

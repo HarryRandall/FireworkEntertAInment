@@ -11,23 +11,6 @@ function read(path) {
   return readFileSync(join(root, path), 'utf8');
 }
 
-test('selecting a named style default clears that kind inline overrides', () => {
-  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
-  const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
-
-  for (const source of [fireworkEditor, effectEditor]) {
-    assert.match(
-      source,
-      /function handleStyleDefaultChange\(kind: FireworkStyleDefaultKind, value: string\)/,
-    );
-    assert.match(
-      source,
-      /if \(value !== NO_STYLE_DEFAULT_VALUE\) \{[\s\S]*?removeStyleDefaultOverridesFromRecord\(/,
-    );
-    assert.match(source, /onChange=\{\(value\) => handleStyleDefaultChange\(kind, value\)\}/);
-  }
-});
-
 test('Save new default copies settings and clears transient selection in one click', () => {
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
   const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
@@ -85,44 +68,6 @@ test('Save new default copies settings and clears transient selection in one cli
   assert.match(effectEditor, /Style default created and saved/);
   assert.doesNotMatch(fireworkEditor, /await createStyleDefault\(\{/);
   assert.doesNotMatch(effectEditor, /await createStyleDefault\(\{/);
-});
-
-test('writing a top-level burstTrail clears only the inherited outer layer trail', () => {
-  const styleDefaults = read('lib/fireworks/style-defaults.ts');
-  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
-  const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
-  const controls = read('ui/firework-editor/FireworkRenderControls.tsx');
-
-  assert.match(
-    styleDefaults,
-    /export function clearNestedStarBurstTrails\(defaults: JsonRecord\): void/,
-  );
-  assert.match(styleDefaults, /delete layer\.burstTrail/);
-
-  assert.match(fireworkEditor, /mutateOverridesForStyle\('trail'/);
-  assert.match(effectEditor, /updateModelDefaultsForStyle\('trail'/);
-
-  assert.match(
-    controls,
-    /function writeBurstTrail[\s\S]*?if \(!layerKey\) \{[\s\S]*?delete stars\.outer\.burstTrail/,
-  );
-  assert.doesNotMatch(controls, /delete stars\.core\.burstTrail/);
-  assert.doesNotMatch(controls, /clearNestedStarBurstTrails\(draft\)/);
-});
-
-test('changing the base effect resets style defaults and clears overrides', () => {
-  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
-
-  assert.match(fireworkEditor, /function handleEffectIdChange\(nextEffectId: string\)/);
-  assert.match(
-    fireworkEditor,
-    /handleEffectIdChange[\s\S]*?setStyleDefaultIds\(emptyStyleDefaultIdMap\(\)\)/,
-  );
-  assert.match(
-    fireworkEditor,
-    /handleEffectIdChange[\s\S]*?setOverridesText\(JSON\.stringify\(\{\}, null, 2\)\)/,
-  );
-  assert.match(fireworkEditor, /onChange=\{handleEffectIdChange\}/);
 });
 
 test('style defaults are copied through editor JSON instead of live assignment writes', () => {

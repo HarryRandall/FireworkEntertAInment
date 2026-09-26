@@ -683,6 +683,7 @@ export type Database = {
           name: string
           primary_color: string | null
           render_overrides_json: Json
+          render_snapshot_json: Json | null
           secondary_color: string | null
           slug: string
           source: string
@@ -702,6 +703,7 @@ export type Database = {
           name: string
           primary_color?: string | null
           render_overrides_json?: Json
+          render_snapshot_json?: Json | null
           secondary_color?: string | null
           slug: string
           source?: string
@@ -721,6 +723,7 @@ export type Database = {
           name?: string
           primary_color?: string | null
           render_overrides_json?: Json
+          render_snapshot_json?: Json | null
           secondary_color?: string | null
           slug?: string
           source?: string

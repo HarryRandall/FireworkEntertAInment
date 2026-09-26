@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { Maximize2, RotateCcw, X } from 'lucide-react';
-import { Button } from '@/ui/patterns/Button';
-import { EmptyState, InlineAlert } from '@/ui/patterns/Feedback';
 import type { AdminEditorVersion } from '@/lib/admin.types';
 import type { Json } from '@/lib/database.types';
 import { cn } from '@/lib/utils';
+import { Button } from '@/ui/patterns/Button';
+import { EmptyState, InlineAlert } from '@/ui/patterns/Feedback';
+import { Maximize2, RotateCcw, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 
 const CHANGE_LABELS: Record<string, string> = {
   name: 'Name',

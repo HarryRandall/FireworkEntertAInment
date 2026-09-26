@@ -33,7 +33,7 @@ const {
   parseImportEngineReviewArtifact,
 } = await import('../../lib/firework-import/review.ts');
 const { DEFAULT_DESIGN, estimateDesignDurationSeconds } =
-  await import('../../lib/fireworks/design.ts');
+  await import('@showcrafter/fireworks/design');
 const { FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION } =
   await import('../../lib/firework-import/renderer-contract.ts');
 

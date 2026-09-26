@@ -131,6 +131,12 @@ importers:
       '@paper-design/shaders-react':
         specifier: ^0.0.76
         version: 0.0.76(@types/react@19.2.14)(react@19.2.4)
+      '@showcrafter/firework-editor':
+        specifier: workspace:*
+        version: link:../../packages/firework-editor
+      '@showcrafter/fireworks':
+        specifier: workspace:*
+        version: link:../../packages/fireworks
       '@supabase/ssr':
         specifier: ^0.8.0
         version: 0.8.0(@supabase/supabase-js@2.100.1)
@@ -231,6 +237,32 @@ importers:
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
+
+  packages/firework-editor:
+    dependencies:
+      '@showcrafter/fireworks':
+        specifier: workspace:*
+        version: link:../fireworks
+      react:
+        specifier: ^19.2.4
+        version: 19.2.4
+    devDependencies:
+      '@types/react':
+        specifier: ^19.2.14
+        version: 19.2.14
+
+  packages/fireworks:
+    dependencies:
+      three:
+        specifier: ^0.184.0
+        version: 0.184.0
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@types/three':
+        specifier: ^0.184.1
+        version: 0.184.1
 
 packages:
 

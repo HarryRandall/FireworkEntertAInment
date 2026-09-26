@@ -2,32 +2,35 @@
 
 /** Admin base-effect actions. Base effects are colourless shared firework patterns. */
 
-import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
-import { supabaseFetchLong } from '@/lib/supabase/fetch';
+import { requirePermission } from '@/lib/access/current-profile.server';
+import type { CurrentProfile } from '@/lib/access/types';
+import type { AdminEditorVersion, AdminStyleDefaultOption } from '@/lib/admin.types';
 import {
   invalidateAdminEffectsCache,
   invalidateAdminFireworksCache,
   invalidateAdminMultishotsCache,
   invalidateAdminStyleDefaultsCache,
 } from '@/lib/admin/cache-keys';
-import { requirePermission } from '@/lib/access/current-profile.server';
-import type { AdminEditorVersion, AdminStyleDefaultOption } from '@/lib/admin.types';
-import type { CurrentProfile } from '@/lib/access/types';
 import { makeEffectEditorSnapshot, parseEffectEditorSnapshot } from '@/lib/admin/editor-snapshots';
 import { isMissingEditorVersionSchemaError } from '@/lib/admin/style-default-schema';
 import type { Database, Json } from '@/lib/database.types';
-import { canonicaliseEffectModelJson, fireworkDesignFragmentError } from '@/lib/fireworks/design';
+import { invalidateFireworkCatalogueCaches } from '@/lib/shows/cache-keys';
+import { isSupabaseTransientNetworkError } from '@/lib/supabase/errors';
+import { supabaseFetchLong } from '@/lib/supabase/fetch';
+import { createClient } from '@/lib/supabase/server';
+import {
+  canonicaliseEffectModelJson,
+  fireworkDesignFragmentError,
+} from '@showcrafter/fireworks/design';
 import {
   emptyStyleDefaultIdMap,
   FIREWORK_STYLE_DEFAULT_KINDS,
   type FireworkStyleDefaultKind,
-} from '@/lib/fireworks/style-defaults';
-import { invalidateFireworkCatalogueCaches } from '@/lib/shows/cache-keys';
-import { isSupabaseTransientNetworkError } from '@/lib/supabase/errors';
+} from '@showcrafter/fireworks/style-defaults';
+import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { z } from 'zod';
 
 type EffectRow = Database['public']['Tables']['firework_effects']['Row'];
 type StyleDefaultRow = Database['public']['Tables']['firework_style_defaults']['Row'];

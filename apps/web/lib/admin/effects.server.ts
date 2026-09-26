@@ -7,7 +7,7 @@ import {
   resolveFireworkPreviewImage,
   type FireworkPreviewImageRelation,
 } from '@/lib/firework-preview-image';
-import { emptyStyleDefaultIdMap } from '@/lib/fireworks/style-defaults';
+import { emptyStyleDefaultIdMap } from '@showcrafter/fireworks/style-defaults';
 import {
   ADMIN_CACHE_TTL_SECONDS,
   getAdminEffectCacheKey,
@@ -72,6 +72,8 @@ function mapBaseEffectDetail(row: BaseEffectRow): CachedAdminEffectDetail {
     styleDefaults: {
       geometry: [],
       star: [],
+      innerStar: [],
+      innerTrail: [],
       trail: [],
       launch: [],
       smoke: [],

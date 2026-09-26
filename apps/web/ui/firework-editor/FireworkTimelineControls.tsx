@@ -1,25 +1,24 @@
 'use client';
 
+import { cn } from '@/lib/utils';
 import { SliderField } from '@/ui/patterns/SliderField';
-import { Slider as SliderPrimitive } from 'radix-ui';
-import type { FireworkDesign } from '@/lib/fireworks/design';
+import type { FireworkDesign } from '@showcrafter/fireworks/design';
+import type { FireworkStyleDefaultKind } from '@showcrafter/fireworks/style-defaults';
 import {
-  applyFireworkTimelineEdit,
   applyFireworkTimelineBoundaryEdit,
+  applyFireworkTimelineEdit,
   deriveFireworkEditorTimeline,
   isGroundFireworkEffect,
-  MAX_TIMELINE_PHASE_SECONDS,
   MAX_TIMELINE_HEAD_SECONDS,
+  MAX_TIMELINE_PHASE_SECONDS,
   MAX_TIMELINE_TOTAL_SECONDS,
   MIN_TIMELINE_TOTAL_SECONDS,
-  usesLegacyLaunchLiftAppearance,
-  type FireworkTimelineDefaults,
   type FireworkTimelineBoundaryKey,
+  type FireworkTimelineDefaults,
   type FireworkTimelineEditKey,
   type FireworkTimelinePhaseKey,
-} from '@/lib/fireworks/timing';
-import type { FireworkStyleDefaultKind } from '@/lib/fireworks/style-defaults';
-import { cn } from '@/lib/utils';
+} from '@showcrafter/fireworks/timing';
+import { Slider as SliderPrimitive } from 'radix-ui';
 
 type TimelineMutation = (
   kinds: readonly FireworkStyleDefaultKind[],
@@ -81,7 +80,6 @@ function affectedStyleKinds(
 
   const tailKinds: FireworkStyleDefaultKind[] = [];
   const groundEffect = isGroundFireworkEffect(design);
-  const legacyLaunchLift = usesLegacyLaunchLiftAppearance(design);
   const hasBurstTail = (['outer', 'core'] as const).some((layerKey) => {
     const layer = design.stars[layerKey];
     return layer.enabled && layer.burstTrail.enabled && layer.burstTrail.particlesPerStar > 0;
@@ -90,9 +88,9 @@ function affectedStyleKinds(
   if (design.split.enabled) tailKinds.push('split');
   if (!groundEffect && !hasBurstTail && !design.split.enabled) {
     if (design.launch.liftParticles.enabled && design.launch.liftParticles.amount > 0) {
-      tailKinds.push(legacyLaunchLift ? 'trail' : 'launch');
+      tailKinds.push('launch');
     }
-    if (!legacyLaunchLift && design.launch.smoke.enabled && design.launch.smoke.particles > 0) {
+    if (design.launch.smoke.enabled && design.launch.smoke.particles > 0) {
       tailKinds.push('smoke');
     }
   }
@@ -111,9 +109,7 @@ function affectedStyleKinds(
       ? []
       : (['launch'] as const)),
     ...(!groundEffect && design.launch.liftParticles.enabled ? (['launch'] as const) : []),
-    ...(!groundEffect && !legacyLaunchLift && design.launch.smoke.enabled
-      ? (['smoke'] as const)
-      : []),
+    ...(!groundEffect && design.launch.smoke.enabled ? (['smoke'] as const) : []),
     ...tailKinds,
   ]);
 }

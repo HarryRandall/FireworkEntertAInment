@@ -1,6 +1,60 @@
 'use client';
+import {
+  DEFAULT_DESIGN,
+  RendererValidationError,
+  type RenderResult,
+} from '@showcrafter/fireworks/design';
 
-import dynamic from 'next/dynamic';
+import { useDraftHistory } from '@showcrafter/firework-editor/use-draft-history';
+
+import {
+  archiveStyleDefault,
+  restoreStyleDefaultEditorVersion,
+  updateStyleDefault,
+} from '@/app/(admin)/admin/effects/style-default-actions';
+import type { AdminEditorVersion, AdminStyleDefaultDetail } from '@/lib/admin.types';
+import { canApplySavedEditorSnapshot } from '@/lib/admin/editor-save-state';
+import { parseStyleDefaultEditorSnapshot } from '@/lib/admin/editor-snapshots';
+import type { Json } from '@/lib/database.types';
+import type { ReplayCue } from '@/lib/show-domain';
+import { EditorHistoryPanel, JsonReadOnlyPanel } from '@/ui/firework-editor/EditorInspectorPanels';
+import {
+  EditorPreviewTransport,
+  FireworkEditorShell,
+  type FireworkEditorShellTab,
+} from '@/ui/firework-editor/FireworkEditorShell';
+import { FireworkRenderControls } from '@/ui/firework-editor/FireworkRenderControls';
+import {
+  PREVIEW_LAUNCH_POSITIONS,
+  estimateLaunchPreviewDurationSeconds,
+  estimateLaunchPreviewTicks,
+  estimatePreviewTicks,
+} from '@/ui/firework-editor/editor-preview-timing';
+import { PanelSection } from '@/ui/firework-editor/firework-render-controls/ControlSections';
+import { usePreviewFullscreen } from '@/ui/firework-editor/previewFullscreen';
+import {
+  makeOptimisticEditorVersion,
+  useEditorHistory,
+} from '@/ui/firework-editor/useEditorHistory';
+import { Button } from '@/ui/patterns/Button';
+import { Field, FieldLabel } from '@/ui/patterns/Field';
+import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
+import { Input, Textarea } from '@/ui/patterns/Input';
+import { SelectField } from '@/ui/patterns/SelectField';
+import { toast } from '@/ui/patterns/toast';
+import { ReplayStageBackdrop } from '@/ui/replay/ReplayStageBackdrop';
+import { useAdminBreadcrumbOverride } from '@/ui/shell/AdminShell';
+import { estimateDesignDurationSeconds } from '@showcrafter/fireworks/design';
+import { DEFAULT_FIREWORK_SPEC } from '@showcrafter/fireworks/spec';
+import {
+  FIREWORK_STYLE_DEFAULT_KINDS,
+  compileStyleDefaultPreviewDesign,
+  extractStyleDefaultsFromDesign,
+  makeTrailPreviewStarDefaults,
+  normaliseStyleDefaultJson,
+  styleDefaultKindLabel,
+  type FireworkStyleDefaultKind,
+} from '@showcrafter/fireworks/style-defaults';
 import {
   Archive,
   Braces,
@@ -15,55 +69,8 @@ import {
   Zap,
   type LucideIcon,
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
-import {
-  archiveStyleDefault,
-  restoreStyleDefaultEditorVersion,
-  updateStyleDefault,
-} from '@/app/(admin)/admin/effects/style-default-actions';
-import { EditorHistoryPanel, JsonReadOnlyPanel } from '@/ui/firework-editor/EditorInspectorPanels';
-import {
-  PREVIEW_LAUNCH_POSITIONS,
-  estimateLaunchPreviewDurationSeconds,
-  estimateLaunchPreviewTicks,
-  estimatePreviewTicks,
-} from '@/ui/firework-editor/editor-preview-timing';
-import {
-  EditorPreviewTransport,
-  FireworkEditorShell,
-  type FireworkEditorShellTab,
-} from '@/ui/firework-editor/FireworkEditorShell';
-import {
-  makeOptimisticEditorVersion,
-  useEditorHistory,
-} from '@/ui/firework-editor/useEditorHistory';
-import { usePreviewFullscreen } from '@/ui/firework-editor/previewFullscreen';
-import { useAdminBreadcrumbOverride } from '@/ui/shell/AdminShell';
-import { ReplayStageBackdrop } from '@/ui/replay/ReplayStageBackdrop';
-import { FireworkRenderControls } from '@/ui/firework-editor/FireworkRenderControls';
-import { PanelSection } from '@/ui/firework-editor/firework-render-controls/ControlSections';
-import { Button } from '@/ui/patterns/Button';
-import { Field, FieldLabel } from '@/ui/patterns/Field';
-import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
-import { Input, Textarea } from '@/ui/patterns/Input';
-import { SelectField } from '@/ui/patterns/SelectField';
-import { toast } from '@/ui/patterns/toast';
-import { canApplySavedEditorSnapshot } from '@/lib/admin/editor-save-state';
-import { parseStyleDefaultEditorSnapshot } from '@/lib/admin/editor-snapshots';
-import type { AdminEditorVersion, AdminStyleDefaultDetail } from '@/lib/admin.types';
-import type { Json } from '@/lib/database.types';
-import { estimateDesignDurationSeconds } from '@/lib/fireworks/design';
-import {
-  FIREWORK_STYLE_DEFAULT_KINDS,
-  compileStyleDefaultPreviewDesign,
-  extractStyleDefaultsFromDesign,
-  makeTrailPreviewStarDefaults,
-  normaliseStyleDefaultJson,
-  styleDefaultKindLabel,
-  type FireworkStyleDefaultKind,
-} from '@/lib/fireworks/style-defaults';
-import { DEFAULT_FIREWORK_SPEC } from '@/lib/fireworks/spec';
-import type { ReplayCue } from '@/lib/show-domain';
 
 type ParsedJson = { ok: true; value: Record<string, unknown> } | { ok: false; error: string };
 type TrailPreviewStarMode = 'none' | 'default' | 'custom';
@@ -96,6 +103,8 @@ const TRAIL_PREVIEW_STAR_OPTIONS = [
 
 const KIND_ICON: Record<FireworkStyleDefaultKind, LucideIcon> = {
   geometry: Shapes,
+  innerStar: Sparkles,
+  innerTrail: Sparkles,
   star: Sparkles,
   trail: Wind,
   launch: Rocket,
@@ -254,6 +263,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
     () => calibrationDefaultsFromSnapshot(incomingSavedSnapshot),
   );
   const savedSnapshotRef = useRef<StyleDefaultEditorSavedSnapshot>(incomingSavedSnapshot);
+  const [savedPreviewSnapshot, setSavedPreviewSnapshot] = useState(incomingSavedSnapshot);
   const savedSignatureRef = useRef(savedSignature);
   const editorTargetIdRef = useRef(styleDefault.id);
   const [activeTab, setActiveTab] = useState<string>(styleDefault.kind);
@@ -281,15 +291,31 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       : trailPreviewStarMode === 'default'
         ? defaultTrailPreviewStarDefaults
         : undefined;
-  const previewDesign = useMemo(
-    () =>
-      compileStyleDefaultPreviewDesign(
-        kind,
-        parsedDefaults.ok ? parsedDefaults.value : styleDefault.defaultsJson,
-        trailPreviewStarDefaults,
-      ),
-    [kind, parsedDefaults, styleDefault.defaultsJson, trailPreviewStarDefaults],
-  );
+  const renderResult = useMemo<RenderResult>(() => {
+    if (!parsedDefaults.ok)
+      return { ok: false, diagnostics: [{ path: [], message: parsedDefaults.error }] };
+    try {
+      return {
+        ok: true,
+        design: compileStyleDefaultPreviewDesign(
+          kind,
+          parsedDefaults.value,
+          trailPreviewStarDefaults,
+        ),
+      };
+    } catch (error) {
+      if (error instanceof RendererValidationError)
+        return { ok: false, diagnostics: error.diagnostics };
+      throw error;
+    }
+  }, [kind, parsedDefaults, trailPreviewStarDefaults]);
+  const previewDesign = renderResult.ok ? renderResult.design : DEFAULT_DESIGN;
+  const renderError = renderResult.ok
+    ? null
+    : renderResult.diagnostics
+        .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+        .join('; ');
+  const [showSaved, setShowSaved] = useState(false);
   const sortOrderNumber = Number.isFinite(Number(sortOrder)) ? Number(sortOrder) : 0;
   const currentSignature = useMemo(
     () =>
@@ -328,6 +354,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
     if (sameStyleDefault && currentSignatureRef.current !== savedSignatureRef.current) return;
 
     savedSnapshotRef.current = incomingSnapshot;
+    setSavedPreviewSnapshot(incomingSnapshot);
     savedSignatureRef.current = incomingSnapshot.signature;
     setSavedCalibrationDefaults(calibrationDefaultsFromSnapshot(incomingSnapshot));
     setName(incomingSnapshot.name);
@@ -406,7 +433,26 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       styleDefault.slug,
     ],
   );
-  const previewCues = useMemo(() => [previewCue], [previewCue]);
+  const previewCues = useMemo(() => {
+    if (!showSaved) return renderResult.ok ? [previewCue] : [];
+    try {
+      const savedDesign = compileStyleDefaultPreviewDesign(
+        kind,
+        JSON.parse(savedPreviewSnapshot.defaultsText),
+        trailPreviewStarDefaults,
+      );
+      return [{ ...previewCue, firework: { ...previewCue.firework, renderDesign: savedDesign } }];
+    } catch {
+      return [];
+    }
+  }, [
+    previewCue,
+    showSaved,
+    savedPreviewSnapshot,
+    renderResult.ok,
+    kind,
+    trailPreviewStarDefaults,
+  ]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -574,6 +620,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
     editorHistory.discard(mutation.historyVersionId);
     if (savedSignatureRef.current === mutation.optimisticSnapshot.signature) {
       savedSnapshotRef.current = mutation.previousSavedSnapshot;
+      setSavedPreviewSnapshot(mutation.previousSavedSnapshot);
       savedSignatureRef.current = mutation.previousSavedSnapshot.signature;
       setSavedSignature(mutation.previousSavedSnapshot.signature);
     }
@@ -633,6 +680,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       const savedSnapshot = styleDefaultSavedSnapshotFromFields(result.saved);
       setLastSavedUpdatedAt(savedSnapshot.updatedAt);
       savedSnapshotRef.current = savedSnapshot;
+      setSavedPreviewSnapshot(savedSnapshot);
       savedSignatureRef.current = savedSnapshot.signature;
       setSavedCalibrationDefaults(calibrationDefaultsFromSnapshot(savedSnapshot));
       setSavedSignature(savedSnapshot.signature);
@@ -714,6 +762,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
           currentSignatureRef.current,
         );
       savedSnapshotRef.current = savedSnapshot;
+      setSavedPreviewSnapshot(savedSnapshot);
       savedSignatureRef.current = savedSnapshot.signature;
       setLastSavedUpdatedAt(savedSnapshot.updatedAt);
       setSavedSignature(savedSnapshot.signature);
@@ -794,6 +843,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
         currentSignatureRef.current,
       );
       savedSnapshotRef.current = restoredSnapshot;
+      setSavedPreviewSnapshot(restoredSnapshot);
       savedSignatureRef.current = restoredSnapshot.signature;
       setSavedCalibrationDefaults(calibrationDefaultsFromSnapshot(restoredSnapshot));
       setLastSavedUpdatedAt(restoredSnapshot.updatedAt);
@@ -981,7 +1031,9 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
         disabled={!parsedDefaults.ok}
         showStarCount={kind === 'star'}
         showLaunch={kind === 'launch'}
-        controlScope={kind}
+        controlScope={kind === 'innerStar' ? 'starInner' : kind === 'innerTrail' ? 'trail' : kind}
+        part={kind === 'innerTrail' ? 'trails' : undefined}
+        layer={kind === 'innerStar' || kind === 'innerTrail' ? 'core' : 'outer'}
       />
     </div>
   );
@@ -1036,14 +1088,23 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
     },
   ];
 
+  const draftHistory = useDraftHistory({
+    recordKey: styleDefault.id,
+    value: currentLocalSnapshot(),
+    signature: currentSignature,
+    restore: applySnapshot,
+  });
+
   return (
     <FireworkEditorShell
+      history={draftHistory}
+      comparison={{ saved: showSaved, onChange: setShowSaved }}
       title={name || styleDefault.name}
       chips={[{ label: 'Status', value: isArchived ? 'Archived' : null, icon: Archive }]}
       dirty={isDirty}
       saving={isPending}
       saveLabel="Save"
-      saveDisabled={!parsedDefaults.ok || isPending}
+      saveDisabled={Boolean(renderError) || isPending}
       revertDisabled={!isDirty || isPending}
       onSave={save}
       onRevert={revertLocalChanges}
@@ -1053,7 +1114,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       preview={preview}
       transport={transport}
       transportPlaying={isPlaying}
-      error={error}
+      error={renderError ?? error}
       fullscreen={isFullscreen}
       onExitFullscreen={exitFullscreen}
     />

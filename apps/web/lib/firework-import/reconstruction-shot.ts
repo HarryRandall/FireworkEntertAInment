@@ -1,4 +1,4 @@
-import type { LaunchPosition } from '@/lib/fireworks/design';
+import type { LaunchPosition } from '@showcrafter/fireworks/design';
 
 export type ReconstructionShotMetadata = {
   panDegrees: number | null;

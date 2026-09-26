@@ -572,15 +572,15 @@ function shouldUseMultiShot(params: {
 }
 
 function toProductInfo(product: FireworkSpecification): ProductInfo {
-  const shotCount = Math.max(1, product.shotCount ?? product.spec.shots?.length ?? 1);
+  const shotCount = Math.max(1, product.shotCount ?? product.spec?.shots?.length ?? 1);
   const durationSeconds = Math.max(
     fireworkOccupancyDurationSeconds(product) ?? (shotCount > 1 ? 8 : 1),
     0.5,
   );
   const isMultiShot = shotCount > 1;
   const colourValues = [
-    product.spec.color,
-    ...(product.spec.colorPalette ?? []),
+    product.spec?.color,
+    ...(product.spec?.colorPalette ?? []),
     product.variant?.primaryColor,
     product.variant?.secondaryColor,
     ...(product.variant?.colorPalette ?? []),
@@ -589,11 +589,11 @@ function toProductInfo(product: FireworkSpecification): ProductInfo {
     product.name,
     product.description,
     product.caliber,
-    product.spec.shellType,
-    product.spec.glitter,
-    product.spec.trailEffect,
-    product.spec.color,
-    ...(product.spec.colorPalette ?? []),
+    product.spec?.shellType,
+    product.spec?.glitter,
+    product.spec?.trailEffect,
+    product.spec?.color,
+    ...(product.spec?.colorPalette ?? []),
     product.variant?.primaryColor,
     product.variant?.secondaryColor,
     ...(product.variant?.colorPalette ?? []),
@@ -608,11 +608,11 @@ function toProductInfo(product: FireworkSpecification): ProductInfo {
   const heightScore = Math.min(1, Math.max(0, (product.heightMeters ?? 45) / 220));
   const calibreScore = calibreEnergy(product.caliber);
   const effectScore =
-    (product.spec.crackle ? 0.12 : 0) +
-    (product.spec.strobe ? 0.1 : 0) +
-    (product.spec.ring ? 0.07 : 0) +
-    (product.spec.crossette ? 0.08 : 0) +
-    (product.spec.horsetail ? 0.06 : 0);
+    (product.spec?.crackle ? 0.12 : 0) +
+    (product.spec?.strobe ? 0.1 : 0) +
+    (product.spec?.ring ? 0.07 : 0) +
+    (product.spec?.crossette ? 0.08 : 0) +
+    (product.spec?.horsetail ? 0.06 : 0);
   return {
     product,
     text,

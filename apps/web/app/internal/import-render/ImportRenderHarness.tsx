@@ -18,7 +18,10 @@ import {
   parseImportReconstruction,
   reconstructionToReplayCues,
 } from '@/lib/firework-import/reconstruction';
-import { estimateDesignDurationSeconds, scaleDesignForCaliber } from '@/lib/fireworks/design';
+import {
+  estimateDesignDurationSeconds,
+  scaleDesignForCaliber,
+} from '@showcrafter/fireworks/design';
 import {
   FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION,
   quantiseFireworksEngineTimeSeconds,

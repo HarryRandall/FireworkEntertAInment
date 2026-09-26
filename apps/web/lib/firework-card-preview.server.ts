@@ -19,13 +19,13 @@ import {
   canonicaliseEffectModelJson,
   compileFireworkDesign,
   estimateDesignDurationSeconds,
-} from '@/lib/fireworks/design';
+} from '@showcrafter/fireworks/design';
 import {
   compileStyleDefaultPreviewDesign,
   makeTrailPreviewStarDefaults,
   orderedStyleDefaultValues,
-} from '@/lib/fireworks/style-defaults';
-import { DEFAULT_FIREWORK_SPEC } from '@/lib/fireworks/spec';
+} from '@showcrafter/fireworks/style-defaults';
+import { DEFAULT_FIREWORK_SPEC } from '@showcrafter/fireworks/spec';
 import { SHOW_CARD_PREVIEW_WINDOW_SECONDS } from '@/lib/show-preview';
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
 import {

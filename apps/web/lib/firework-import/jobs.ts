@@ -12,15 +12,12 @@
  * Imported by both admin import actions and server modules
  * (`lib/admin/imports.server.ts`).
  */
-import { z } from 'zod';
-import type { ReplayCue } from '@/lib/show-domain';
-import { compileFireworkDesign } from '@/lib/fireworks/design';
 import {
-  adaptLegacyImportedFireworkSpec,
   parseImportReconstruction,
   reconstructionToReplayCues,
   type ImportReconstructionPlan,
 } from '@/lib/firework-import/reconstruction';
+import type { ReplayCue } from '@/lib/show-domain';
 import {
   FIREWORK_COLORS,
   FireworkSpecSchema,
@@ -29,7 +26,8 @@ import {
   type FireworkSpec,
   type GlitterKind,
   type ShellType,
-} from '@/lib/fireworks/spec';
+} from '@showcrafter/fireworks/spec';
+import { z } from 'zod';
 
 export const IMPORT_VIDEO_BUCKET = 'import-videos';
 export const MAX_IMPORT_VIDEO_SECONDS = 60;
@@ -70,9 +68,9 @@ export const ImportedFireworkSpecSchema = z.preprocess(
   ImportedFireworkSpecBaseSchema,
 );
 
-type LegacyImportedFireworkSpec = z.infer<typeof ImportedFireworkSpecSchema>;
+type ImportedFireworkSummary = z.infer<typeof ImportedFireworkSpecSchema>;
 
-export type ImportedFireworkSpec = LegacyImportedFireworkSpec & {
+export type ImportedFireworkSpec = ImportedFireworkSummary & {
   /** Strict renderer-native reconstruction, preferred by previews when present. */
   reconstruction?: ImportReconstructionPlan;
 };
@@ -471,21 +469,14 @@ function reconstructionCandidate(value: unknown): unknown | null {
     : null;
 }
 
-function parseLegacyImportedFireworkSpec(value: unknown): LegacyImportedFireworkSpec | null {
-  const direct = ImportedFireworkSpecSchema.safeParse(value);
-  if (direct.success) return direct.data;
-  if (!isRecord(value) || !('spec' in value)) return null;
-  const nested = ImportedFireworkSpecSchema.safeParse(value.spec);
-  return nested.success ? nested.data : null;
-}
-
-function legacyProjectionFromReconstruction(
+function summaryFromReconstruction(
   reconstruction: ImportReconstructionPlan,
-): LegacyImportedFireworkSpec {
+): ImportedFireworkSummary {
   const previewCues = reconstructionToReplayCues(reconstruction, {
     idPrefix: 'imported-spec',
   });
   const firstCue = previewCues[0];
+  if (!firstCue?.firework.spec) throw new Error('A reconstruction requires a valid first shot.');
   const designsByKey = new Map(reconstruction.designs.map((entry) => [entry.key, entry]));
   const shots: NonNullable<FireworkSpec['shots']> = reconstruction.shots.map((shot, index) => {
     const design = designsByKey.get(shot.designKey);
@@ -521,19 +512,12 @@ function legacyProjectionFromReconstruction(
 export function parseImportedFireworkSpec(value: unknown): ImportedFireworkSpec | null {
   const candidate = reconstructionCandidate(value);
   const reconstruction = candidate == null ? null : parseImportReconstruction(candidate);
-  const legacy = parseLegacyImportedFireworkSpec(value);
 
   if (reconstruction?.success) {
     return {
-      ...legacyProjectionFromReconstruction(reconstruction.data),
+      ...summaryFromReconstruction(reconstruction.data),
       reconstruction: reconstruction.data,
     };
-  }
-
-  if (legacy) {
-    const adapted = adaptLegacyImportedFireworkSpec(legacy);
-    if (adapted.success) return { ...legacy, reconstruction: adapted.data };
-    return legacy;
   }
 
   const issues = reconstruction && !reconstruction.success ? reconstruction.issues : [];
@@ -552,40 +536,7 @@ export function importedSpecToReplayCues(imported: ImportedFireworkSpec): Replay
     return reconstructionToReplayCues(imported.reconstruction, { idPrefix: 'imported-spec' });
   }
 
-  const adapted = adaptLegacyImportedFireworkSpec(imported);
-  if (adapted.success) {
-    return reconstructionToReplayCues(adapted.data, { idPrefix: 'imported-spec' });
-  }
-
-  const id = 'imported-spec';
-  const spec: FireworkSpec = imported.spec;
-  return [
-    {
-      id,
-      position: 1,
-      timeSeconds: 0,
-      description: imported.description ?? imported.name,
-      productId: id,
-      seedOverride: null,
-      launchPositionIndex: 0,
-      firework: {
-        id,
-        slug: spec.shellType,
-        name: imported.name,
-        description: imported.description ?? null,
-        sortOrder: 1,
-        durationSeconds: imported.durationSeconds,
-        heightMeters: imported.heightMeters ?? null,
-        caliber: imported.caliber ?? null,
-        shotCount: 1,
-        spec,
-        rawSpec: spec,
-        renderDesign: compileFireworkDesign({ legacySpec: spec }),
-        baseEffect: null,
-        variant: null,
-      },
-    },
-  ];
+  return [];
 }
 
 export function latestImportedSpecFromOutputs(

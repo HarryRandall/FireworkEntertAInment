@@ -13,7 +13,7 @@ import {
   resolveFireworkPreviewImage,
   type FireworkPreviewImageRelation,
 } from '@/lib/firework-preview-image';
-import { emptyStyleDefaultIdMap } from '@/lib/fireworks/style-defaults';
+import { emptyStyleDefaultIdMap } from '@showcrafter/fireworks/style-defaults';
 import {
   ADMIN_CACHE_TTL_SECONDS,
   getAdminFireworkCacheKey,
@@ -49,6 +49,7 @@ type FireworkRow = {
   caliber: string | null;
   duration_seconds: number | null;
   height_meters: number | null;
+  render_snapshot_json: Json | null;
   render_overrides_json: Json;
   updated_at: string;
   firework_effects: FireworkEffectRow | FireworkEffectRow[] | null;
@@ -56,9 +57,9 @@ type FireworkRow = {
 };
 
 const FIREWORK_SELECT =
-  'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, render_overrides_json, updated_at, firework_effects (id, slug, name, pattern_key, model_json), firework_preview_images(source_revision, renderer_version, storage_path)';
+  'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, render_snapshot_json, render_overrides_json, updated_at, firework_effects (id, slug, name, pattern_key, model_json), firework_preview_images(source_revision, renderer_version, storage_path)';
 const LEGACY_FIREWORK_SELECT =
-  'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, render_overrides_json, updated_at, firework_effects (id, slug, name, pattern_key, model_json), firework_preview_images(source_revision, renderer_version, storage_path)';
+  'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, render_snapshot_json, render_overrides_json, updated_at, firework_effects (id, slug, name, pattern_key, model_json), firework_preview_images(source_revision, renderer_version, storage_path)';
 const EFFECT_OPTIONS_SELECT = 'id, slug, name, pattern_key, model_json';
 const LEGACY_EFFECT_OPTIONS_SELECT = 'id, slug, name, pattern_key, model_json';
 
@@ -105,7 +106,7 @@ function mapSummary(row: FireworkRow): AdminFireworkSummary {
     preview: buildEffectPreview(
       {
         ...jsonObject(effect?.model_json),
-        ...jsonObject(row.render_overrides_json),
+        ...jsonObject(row.render_snapshot_json),
         color: row.primary_color ?? undefined,
         colorPalette: palette.length ? palette : undefined,
       } as Json,
@@ -275,7 +276,7 @@ export async function getAdminFireworkById(
   ]);
   const detail: CachedAdminFireworkDetail = {
     ...mapSummary(row),
-    renderOverridesJson: row.render_overrides_json ?? {},
+    renderOverridesJson: row.render_snapshot_json ?? {},
     effectModelJson: (effect?.model_json ?? effectData.models[effect?.id ?? ''] ?? {}) as Json,
     effectStarStyleDefault: effectStyleDefaultLinks.star ?? null,
     effectTrailStyleDefault: effectStyleDefaultLinks.trail ?? null,

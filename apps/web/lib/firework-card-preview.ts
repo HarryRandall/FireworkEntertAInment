@@ -1,4 +1,4 @@
-import type { LaunchPosition } from '@/lib/fireworks/design';
+import type { LaunchPosition } from '@showcrafter/fireworks/design';
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
 
 export type FireworkCardPreviewKind = 'effect' | 'firework' | 'multishot' | 'catalogue';

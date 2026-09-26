@@ -109,7 +109,7 @@ import {
   MULTISHOT_PAN_LIMIT_DEGREES,
   MULTISHOT_TILT_LIMIT_DEGREES,
 } from '@/lib/admin/multishot-constraints';
-import type { LaunchPosition } from '@/lib/fireworks/design';
+import type { LaunchPosition } from '@showcrafter/fireworks/design';
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
 import { formatDuration } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';

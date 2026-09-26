@@ -71,7 +71,7 @@ import { Textarea } from '@/ui/primitives/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/primitives/tooltip';
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
 import { formatDuration, formatTotal } from '@/lib/show-domain';
-import type { LaunchPosition } from '@/lib/fireworks/design';
+import type { LaunchPosition } from '@showcrafter/fireworks/design';
 import {
   clearPersistedGenerationCover,
   clearPersistedGenerationStart,

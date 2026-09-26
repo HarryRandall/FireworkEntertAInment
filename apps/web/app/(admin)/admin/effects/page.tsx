@@ -1,9 +1,9 @@
 /** Admin effects page listing colourless base firework effects and style defaults. */
 
+import { EffectsBrowser } from '@/app/(admin)/admin/effects/_components/EffectsBrowser';
+import { parseAdminEffectsView } from '@/lib/admin-effects-navigation';
 import { listAdminEffects } from '@/lib/admin/effects.server';
 import { listAdminStyleDefaults } from '@/lib/admin/style-defaults.server';
-import { parseAdminEffectsView } from '@/lib/admin-effects-navigation';
-import { EffectsBrowser } from '@/app/(admin)/admin/effects/_components/EffectsBrowser';
 
 // Effect creation writes full model_json payloads through RLS checks, so it needs the
 // same longer budget as catalogue reads/uploads instead of the platform default (see

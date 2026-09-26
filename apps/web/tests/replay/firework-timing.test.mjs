@@ -9,8 +9,7 @@ import {
   estimateFireworkLaunchSmokeEndSeconds,
   estimateFireworkLaunchTrailEndSeconds,
   estimateFireworkLiftTimeSeconds,
-  usesLegacyLaunchLiftAppearance,
-} from '../../lib/fireworks/timing.ts';
+} from '@showcrafter/fireworks/timing';
 
 function starLayer(life = [1, 1]) {
   return {
@@ -169,44 +168,6 @@ test('lift timing uses the same pan-adjusted vertical velocity as the engine', (
   );
 });
 
-test('legacy launch timing retains mortar smoke without extending it through ascent', () => {
-  const outer = starLayer([1, 1]);
-  outer.burstTrail = {
-    enabled: true,
-    particlesPerStar: 24,
-    lifetime: { percent: 1, variationPercent: 0 },
-  };
-  const inherited = design({
-    stars: { outer, core: { ...starLayer(), enabled: false } },
-    trail: { length: 1, streakLife: 1 },
-    launch: {
-      liftParticles: {
-        appearanceMode: 'inherit',
-        enabled: true,
-        amount: 100,
-        height: 100,
-        lifetime: { baseSeconds: 4, afterglowSeconds: 1, variationPercent: 0 },
-      },
-      smoke: {
-        enabled: true,
-        particles: 100,
-        lifeSeconds: 8,
-        lifeVariationPercent: 40,
-        height: 360,
-      },
-    },
-  });
-  const custom = structuredClone(inherited);
-  custom.launch.liftParticles.appearanceMode = 'custom';
-  const liftTime = estimateFireworkLiftTimeSeconds(inherited);
-
-  assert.equal(usesLegacyLaunchLiftAppearance(inherited), true);
-  assert.ok(Math.abs(estimateFireworkLaunchTrailEndSeconds(inherited) - (liftTime + 0.38)) < 0.001);
-  assert.ok(Math.abs(estimateFireworkLaunchSmokeEndSeconds(inherited) - 11.2) < 0.001);
-  assert.ok(estimateFireworkLaunchTrailEndSeconds(custom) > liftTime + 4.9);
-  assert.ok(Math.abs(estimateFireworkLaunchSmokeEndSeconds(custom) - (liftTime + 11.2)) < 0.001);
-});
-
 test('ground effects exclude lift particles but retain mortar smoke in timeline tails', () => {
   const ground = design({
     geometry: 'fountain',
@@ -261,16 +222,13 @@ test('preview ticks consume the shared design-aware timing helper', () => {
   assert.doesNotMatch(source, /lifeScaleForGeometry|2\.25/);
 });
 
-test('effect canonicalisation routes geometry tuning into render defaults', () => {
-  const source = readFileSync(new URL('../../lib/fireworks/design.ts', import.meta.url), 'utf8');
-  const keyBlock = source.match(/const FIREWORK_RENDER_DEFAULT_KEYS = new Set\(\[([\s\S]*?)\]\);/);
-  assert.ok(keyBlock, 'render-default key list should remain discoverable');
-  const keys = new Set([...keyBlock[1].matchAll(/'([^']+)'/g)].map((match) => match[1]));
-  const input = { geometryTuning: { ring: { lifePercent: 175 } } };
-  const renderDefaults = Object.fromEntries(Object.entries(input).filter(([key]) => keys.has(key)));
-
-  assert.deepEqual(renderDefaults.geometryTuning, input.geometryTuning);
-  assert.match(source, /deepMergeDesign\(topLevelDefaults, existingDefaults\)/);
+test('effect canonicalisation routes geometry tuning into render defaults', async () => {
+  const { canonicaliseEffectModelJson } = await import('@showcrafter/fireworks/design');
+  const geometryTuning = { ring: { lifePercent: 175 } };
+  assert.deepEqual(
+    canonicaliseEffectModelJson({ geometryTuning }).renderDefaults.geometryTuning,
+    geometryTuning,
+  );
 });
 
 test('editor timeline derives ordered phases that sum to the visible duration', () => {
@@ -300,35 +258,6 @@ test('total timeline edits proportionally extend ascent, burn and fade', () => {
   assert.ok(after.phases.burn > before.phases.burn);
   assert.ok(after.phases.fade > before.phases.fade);
   assert.ok(Math.abs(after.totalDurationSeconds - before.totalDurationSeconds * 1.25) < 0.2);
-});
-
-test('total edits preserve inherited streak appearance while scaling its life', () => {
-  const outer = starLayer([2, 4]);
-  outer.burstTrail = {
-    enabled: true,
-    particlesPerStar: 24,
-    lifetime: { percent: 1, variationPercent: 0 },
-  };
-  const current = design({
-    stars: { outer, core: { ...starLayer([2, 4]), enabled: false } },
-    trail: { length: 1, streakLife: 1 },
-    launch: {
-      liftParticles: {
-        appearanceMode: 'inherit',
-        enabled: true,
-        amount: 100,
-        height: 100,
-        lifetime: { baseSeconds: 0.8, afterglowSeconds: 0.1, variationPercent: 0 },
-      },
-      smoke: { enabled: true, particles: 100, lifeSeconds: 3.2 },
-    },
-  });
-  const before = deriveFireworkEditorTimeline(current);
-  const patch = {};
-  applyFireworkTimelineEdit(patch, current, 'total', before.totalDurationSeconds * 1.2);
-
-  assert.equal(patch.launch?.liftParticles?.appearanceMode, undefined);
-  assert.ok(patch.trail.streakLife > current.trail.streakLife);
 });
 
 test('fade edits align the renderer hold and enabled closing transitions', () => {

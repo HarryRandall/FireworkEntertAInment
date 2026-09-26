@@ -10,8 +10,8 @@ import {
   compileFireworkDesign,
   scaleDesignForCaliber,
   scaleDesignForEmphasis,
-} from '@/lib/fireworks/design';
-import { estimateFireworkLiftTimeSeconds } from '@/lib/fireworks/timing';
+} from '@showcrafter/fireworks/design';
+import { estimateFireworkLiftTimeSeconds } from '@showcrafter/fireworks/timing';
 import { scheduleImpactWithLift, type ImpactTiming } from './impact-clock';
 import type { CueEmphasis } from './schemas';
 
@@ -22,8 +22,8 @@ export function productLiftTimeSeconds(
   product: FireworkSpecification,
   emphasis: CueEmphasis,
 ): number {
-  const compiled =
-    product.renderDesign ?? compileFireworkDesign({ legacySpec: product.rawSpec ?? product.spec });
+  const compiled = product.renderDesign;
+  if (!compiled) return Number.NaN;
   const scaled = scaleDesignForEmphasis(scaleDesignForCaliber(compiled, product.caliber), emphasis);
   return estimateFireworkLiftTimeSeconds(scaled);
 }

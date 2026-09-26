@@ -1,35 +1,36 @@
 'use server';
+import { resolveRenderSnapshot } from '@/lib/admin/render-snapshot.server';
 
 /** Admin firework actions: create and edit atomic fireworks (effect + colours
  *  + renderer overrides). Multishot composition lives in `admin-multishots`. */
 
-import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
-import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
+import { requirePermission } from '@/lib/access/current-profile.server';
+import type { CurrentProfile } from '@/lib/access/types';
+import type { AdminEditorVersion, AdminStyleDefaultOption } from '@/lib/admin.types';
 import {
   invalidateAdminCatalogueCache,
   invalidateAdminFireworksCache,
   invalidateAdminMultishotsCache,
   invalidateAdminStyleDefaultsCache,
 } from '@/lib/admin/cache-keys';
-import { requirePermission } from '@/lib/access/current-profile.server';
-import type { AdminEditorVersion, AdminStyleDefaultOption } from '@/lib/admin.types';
-import type { CurrentProfile } from '@/lib/access/types';
 import {
   makeFireworkEditorSnapshot,
   parseFireworkEditorSnapshot,
 } from '@/lib/admin/editor-snapshots';
 import { isMissingEditorVersionSchemaError } from '@/lib/admin/style-default-schema';
 import type { Database, Json } from '@/lib/database.types';
-import { fireworkDesignFragmentError } from '@/lib/fireworks/design';
+import { invalidateFireworkCatalogueCaches } from '@/lib/shows/cache-keys';
+import { isSupabaseTransientNetworkError } from '@/lib/supabase/errors';
+import { createClient } from '@/lib/supabase/server';
+import { fireworkDesignFragmentError } from '@showcrafter/fireworks/design';
 import {
   emptyStyleDefaultIdMap,
   FIREWORK_STYLE_DEFAULT_KINDS,
   type FireworkStyleDefaultKind,
-} from '@/lib/fireworks/style-defaults';
-import { invalidateFireworkCatalogueCaches } from '@/lib/shows/cache-keys';
-import { isSupabaseTransientNetworkError } from '@/lib/supabase/errors';
+} from '@showcrafter/fireworks/style-defaults';
+import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
+import { z } from 'zod';
 
 type FireworkRow = Database['public']['Tables']['fireworks']['Row'];
 type StyleDefaultRow = Database['public']['Tables']['firework_style_defaults']['Row'];
@@ -404,6 +405,8 @@ export async function createFirework(
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
 
   const supabase = createClient(await cookies());
+  const resolved = await resolveRenderSnapshot(supabase, parsed.data.effectId, {});
+  if (!resolved.ok) return resolved;
   const baseSlug = slugify(parsed.data.name) || 'firework';
   const slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
 
@@ -413,7 +416,7 @@ export async function createFirework(
       firework_effect_id: parsed.data.effectId,
       slug,
       name: parsed.data.name,
-      render_overrides_json: {},
+      render_overrides_json: resolved.value,
       color_palette: [],
       source: 'manual',
     })
@@ -439,6 +442,14 @@ export async function updateFirework(input: z.infer<typeof UpdateFireworkSchema>
   if (!overrides.ok) return { ok: false, error: overrides.error };
 
   const supabase = createClient(await cookies());
+  const resolved = await resolveRenderSnapshot(
+    supabase,
+    parsed.data.fireworkEffectId,
+    overrides.value,
+    parsed.data.primaryColor,
+    parsed.data.colorPalette,
+  );
+  if (!resolved.ok) return resolved;
   const previousSnapshot = await loadFireworkEditorSnapshot(supabase, parsed.data.id);
   if (!previousSnapshot.ok) return previousSnapshot;
 
@@ -452,7 +463,7 @@ export async function updateFirework(input: z.infer<typeof UpdateFireworkSchema>
     primary_color: parsed.data.primaryColor || null,
     secondary_color: parsed.data.secondaryColor || null,
     color_palette: parsed.data.colorPalette ?? [],
-    render_overrides_json: overrides.value,
+    render_overrides_json: resolved.value,
     updated_at: new Date().toISOString(),
   };
   const result = await supabase
@@ -537,6 +548,14 @@ export async function createStyleDefaultAndUpdateFirework(
   if (!defaults.ok) return { ok: false, error: defaults.error };
 
   const supabase = createClient(await cookies());
+  const resolved = await resolveRenderSnapshot(
+    supabase,
+    parsed.data.firework.fireworkEffectId,
+    overrides.value,
+    parsed.data.firework.primaryColor,
+    parsed.data.firework.colorPalette,
+  );
+  if (!resolved.ok) return resolved;
   const previousSnapshot = await loadFireworkEditorSnapshot(supabase, parsed.data.firework.id);
   if (!previousSnapshot.ok) return previousSnapshot;
 
@@ -556,7 +575,7 @@ export async function createStyleDefaultAndUpdateFirework(
     p_primary_color: (parsed.data.firework.primaryColor || null) as string,
     p_secondary_color: (parsed.data.firework.secondaryColor || null) as string,
     p_color_palette: parsed.data.firework.colorPalette ?? [],
-    p_render_overrides_json: overrides.value,
+    p_render_overrides_json: resolved.value,
     p_style_slug: styleDefaultSlug(parsed.data.styleDefault.name, parsed.data.styleDefault.kind),
     p_style_name: parsed.data.styleDefault.name,
     p_style_description: (parsed.data.styleDefault.description || null) as string,
@@ -674,6 +693,14 @@ export async function restoreFireworkEditorVersion(
   const previousSnapshot = await loadFireworkEditorSnapshot(supabase, parsed.data.fireworkId);
   if (!previousSnapshot.ok) return previousSnapshot;
 
+  const resolved = await resolveRenderSnapshot(
+    supabase,
+    snapshot.fireworkEffectId,
+    snapshot.renderOverridesJson,
+    snapshot.primaryColor,
+    snapshot.colorPalette,
+  );
+  if (!resolved.ok) return resolved;
   const updatedAt = new Date().toISOString();
   const patch = {
     name: snapshot.name,
@@ -685,7 +712,7 @@ export async function restoreFireworkEditorVersion(
     primary_color: snapshot.primaryColor,
     secondary_color: snapshot.secondaryColor,
     color_palette: snapshot.colorPalette,
-    render_overrides_json: snapshot.renderOverridesJson,
+    render_overrides_json: resolved.value,
     updated_at: updatedAt,
   };
   const result = await supabase

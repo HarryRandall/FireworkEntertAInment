@@ -1,18 +1,11 @@
 'use client';
 
-import { useId, type ReactNode } from 'react';
-import {
-  CALIBRATED_APPEARANCE_MAX,
-  CALIBRATED_APPEARANCE_MIN,
-  CALIBRATED_APPEARANCE_STEP,
-  calibratedToRaw,
-  rawToCalibrated,
-  type CalibratedRange,
-} from '@/ui/firework-editor/firework-render-controls/calibrated-slider';
 import { Field, FieldLabel } from '@/ui/patterns/Field';
 import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
-import { SliderField } from '@/ui/patterns/SliderField';
 import { Switch } from '@/ui/primitives/switch';
+import type { CalibratedRange } from '@showcrafter/firework-editor/calibrated-slider';
+import { useId, type ReactNode } from 'react';
+import { RendererField as SliderField } from './RendererField';
 
 function formatPercent(value: number): string {
   return `${value.toFixed(value % 1 === 0 ? 0 : 1)}%`;
@@ -38,15 +31,17 @@ export function CalibratedSliderField({
   return (
     <SliderField
       label={label}
-      min={CALIBRATED_APPEARANCE_MIN}
-      max={CALIBRATED_APPEARANCE_MAX}
-      step={CALIBRATED_APPEARANCE_STEP}
-      value={rawToCalibrated(value, range)}
-      formatValue={formatPercent}
+      min={range.min}
+      max={range.max}
+      step={range.max <= 10 ? 0.01 : 1}
+      value={value}
+      formatValue={(number) =>
+        label.toLowerCase().includes('strength') ? `${number.toFixed(2)}×` : `${number}%`
+      }
       disabled={disabled}
       fullWidth={fullWidth}
       hint={hint}
-      onChange={(next) => onChange(calibratedToRaw(next, range))}
+      onChange={onChange}
     />
   );
 }

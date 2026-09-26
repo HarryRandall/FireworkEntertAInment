@@ -165,8 +165,8 @@ export function validatePromptConstraints(params: {
 
 export function productColourFamilies(product: FireworkSpecification): Set<ColourFamily> {
   const values = [
-    product.spec.color,
-    ...(product.spec.colorPalette ?? []),
+    product.spec?.color,
+    ...(product.spec?.colorPalette ?? []),
     product.variant?.primaryColor,
     product.variant?.secondaryColor,
     ...(product.variant?.colorPalette ?? []),
@@ -182,14 +182,14 @@ export function productColourFamilies(product: FireworkSpecification): Set<Colou
 
 export function productEffectFamilies(product: FireworkSpecification): Set<EffectFamily> {
   const effects = new Set<EffectFamily>();
-  if (product.spec.crackle) effects.add('crackle');
-  if (product.spec.strobe) effects.add('strobe');
-  if (product.spec.ring) effects.add('ring');
-  if (product.spec.crossette) effects.add('crossette');
-  if (product.spec.horsetail) effects.add('horsetail');
-  if (product.spec.floral) effects.add('floral');
-  if (product.spec.fallingLeaves) effects.add('falling leaves');
-  if (product.spec.glitter && product.spec.glitter !== 'none') effects.add('glitter');
+  if (product.spec?.crackle) effects.add('crackle');
+  if (product.spec?.strobe) effects.add('strobe');
+  if (product.spec?.ring) effects.add('ring');
+  if (product.spec?.crossette) effects.add('crossette');
+  if (product.spec?.horsetail) effects.add('horsetail');
+  if (product.spec?.floral) effects.add('floral');
+  if (product.spec?.fallingLeaves) effects.add('falling leaves');
+  if (product.spec?.glitter && product.spec?.glitter !== 'none') effects.add('glitter');
 
   const text = normalise(productSearchText(product));
   for (const [family, aliases] of Object.entries(EFFECT_ALIASES) as Array<
@@ -246,8 +246,8 @@ function productSearchText(product: FireworkSpecification): string {
   return [
     product.name,
     product.description,
-    product.spec.color,
-    ...(product.spec.colorPalette ?? []),
+    product.spec?.color,
+    ...(product.spec?.colorPalette ?? []),
     product.variant?.primaryColor,
     product.variant?.secondaryColor,
     ...(product.variant?.colorPalette ?? []),

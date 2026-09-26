@@ -1,5 +1,5 @@
 import type { Json } from '@/lib/database.types';
-import type { FireworkStyleDefaultKind } from '@/lib/fireworks/style-defaults';
+import type { FireworkStyleDefaultKind } from '@showcrafter/fireworks/style-defaults';
 import type { ShowTemplate } from '@/lib/show-templates/types';
 import type { PermissionKey, ProfileStatus, RoleKey } from '@/lib/access/types';
 

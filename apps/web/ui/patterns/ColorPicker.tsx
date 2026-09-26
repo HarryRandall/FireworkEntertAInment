@@ -15,7 +15,7 @@ import {
 } from 'react';
 import { Check } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/primitives/popover';
-import { FIREWORK_COLOR_VALUES } from '@/lib/fireworks/spec';
+import { FIREWORK_COLOR_VALUES } from '@showcrafter/fireworks/spec';
 import { cn } from '@/lib/utils';
 
 const HEX = /^#[0-9a-fA-F]{6}$/;

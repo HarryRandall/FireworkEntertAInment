@@ -1,4 +1,5 @@
 'use client';
+import { FIREWORK_SOUND_ASSETS } from '@/lib/fireworks/assets';
 
 /**
  * FireworkReplayCanvas — Three.js canvas that simulates firework cues
@@ -27,20 +28,20 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import type { ReplayCue } from '@/lib/show-domain';
-import { FireworksEngine, type SnapshotCacheData } from '@/lib/fireworks/FireworksEngine';
-import type { FireworkSceneMode } from '@/lib/fireworks/World';
+import { FireworksEngine, type SnapshotCacheData } from '@showcrafter/fireworks/FireworksEngine';
+import type { FireworkSceneMode } from '@showcrafter/fireworks/World';
 import {
   DEFAULT_LAUNCH_POSITIONS,
   type FireworkDesign,
   type LaunchPosition,
-} from '@/lib/fireworks/design';
+} from '@showcrafter/fireworks/design';
 import {
   DEFAULT_FIREWORK_HEAD_STYLE,
   DEFAULT_FIREWORK_RENDER_TUNING,
   type FireworkHeadStyle,
   type FireworkRenderTuning,
-} from '@/lib/fireworks/render-tuning';
-import { replaySimulationCacheKey } from '@/lib/fireworks/replay-cache-key';
+} from '@showcrafter/fireworks/render-tuning';
+import { replaySimulationCacheKey } from '@showcrafter/fireworks/replay-cache-key';
 import {
   FIREWORKS_ENGINE_FIXED_STEP_SECONDS,
   quantiseFireworksEngineTimeSeconds,
@@ -1185,6 +1186,7 @@ export function FireworkReplayCanvas({
 
     const engine = new FireworksEngine(scene, launchPositions, renderer, sceneMode, {
       showStarfield,
+      soundAssets: FIREWORK_SOUND_ASSETS,
     });
     engine.attachListenerToCamera(camera);
     engine.setMuted(muted);

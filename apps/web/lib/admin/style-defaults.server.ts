@@ -17,7 +17,7 @@ import {
   FIREWORK_STYLE_DEFAULT_KINDS,
   isFireworkStyleDefaultKind,
   type FireworkStyleDefaultKind,
-} from '@/lib/fireworks/style-defaults';
+} from '@showcrafter/fireworks/style-defaults';
 
 type StyleDefaultRow = Database['public']['Tables']['firework_style_defaults']['Row'];
 

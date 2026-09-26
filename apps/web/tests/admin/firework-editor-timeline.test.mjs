@@ -70,7 +70,7 @@ test('firework timeline changes synchronise scheduling duration to the achieved 
 });
 
 test('timeline timing logic edits existing renderer fields without a parallel schema', () => {
-  const timing = read('lib/fireworks/timing.ts');
+  const timing = read('../../packages/fireworks/src/timing.ts');
 
   assert.match(timing, /export function deriveFireworkEditorTimeline/);
   assert.match(timing, /export function applyFireworkTimelineEdit/);

@@ -9,7 +9,7 @@ import {
 import {
   DEFAULT_LAUNCH_POSITIONS,
   parseLaunchPositions,
-} from '../../lib/fireworks/launch-positions.ts';
+} from '@showcrafter/fireworks/launch-positions';
 
 const root = process.cwd();
 

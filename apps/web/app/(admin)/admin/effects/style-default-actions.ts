@@ -2,34 +2,33 @@
 
 /** Admin actions for reusable live firework renderer style defaults. */
 
-import { revalidatePath } from 'next/cache';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import { z } from 'zod';
-import { createClient } from '@/lib/supabase/server';
+import { requirePermission } from '@/lib/access/current-profile.server';
+import type { CurrentProfile } from '@/lib/access/types';
+import type { AdminEditorVersion, AdminStyleDefaultOption } from '@/lib/admin.types';
 import {
   invalidateAdminEffectsCache,
   invalidateAdminFireworksCache,
   invalidateAdminStyleDefaultsCache,
 } from '@/lib/admin/cache-keys';
-import { requirePermission } from '@/lib/access/current-profile.server';
-import type { AdminEditorVersion } from '@/lib/admin.types';
-import type { CurrentProfile } from '@/lib/access/types';
 import {
   makeStyleDefaultEditorSnapshot,
   parseStyleDefaultEditorSnapshot,
 } from '@/lib/admin/editor-snapshots';
 import { isMissingEditorVersionSchemaError } from '@/lib/admin/style-default-schema';
 import type { Database, Json } from '@/lib/database.types';
-import { fireworkDesignFragmentError } from '@/lib/fireworks/design';
+import { invalidateFireworkCatalogueCaches } from '@/lib/shows/cache-keys';
+import { isSupabaseTransientNetworkError } from '@/lib/supabase/errors';
+import { createClient } from '@/lib/supabase/server';
+import { fireworkDesignFragmentError } from '@showcrafter/fireworks/design';
 import {
   FIREWORK_STYLE_DEFAULT_KINDS,
   INITIAL_STYLE_DEFAULT_JSON,
   styleDefaultKindLabel,
-} from '@/lib/fireworks/style-defaults';
-import { invalidateFireworkCatalogueCaches } from '@/lib/shows/cache-keys';
-import type { AdminStyleDefaultOption } from '@/lib/admin.types';
-import { isSupabaseTransientNetworkError } from '@/lib/supabase/errors';
+} from '@showcrafter/fireworks/style-defaults';
+import { revalidatePath } from 'next/cache';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+import { z } from 'zod';
 
 type CreateResult =
   | { ok: true; id: string; styleDefault: AdminStyleDefaultOption }

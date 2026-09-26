@@ -65,7 +65,7 @@ test('style defaults use real non-persisted renderer previews and visual cards',
   const browser = read('app/(admin)/admin/effects/_components/EffectsBrowser.tsx');
   const previewServer = read('lib/firework-card-preview.server.ts');
   const previewRoute = read('app/api/admin/firework-previews/[kind]/[id]/route.ts');
-  const styleDefaults = read('lib/fireworks/style-defaults.ts');
+  const styleDefaults = read('../../packages/fireworks/src/style-defaults.ts');
   const styleDefaultsServer = read('lib/admin/style-defaults.server.ts');
 
   assert.match(browser, /<FireworkBrowseCard/);

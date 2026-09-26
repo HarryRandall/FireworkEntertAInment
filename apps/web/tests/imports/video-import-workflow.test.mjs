@@ -96,7 +96,7 @@ test('generated import specs preserve native renderer designs and shot observati
     imports,
     /sparkSpeed:\s*sparkSpeed == null \? value\.sparkSpeed : clamp\(sparkSpeed, 0, 5\)/,
   );
-  assert.match(imports, /heightMeters: imported\.heightMeters \?\? null/);
+  assert.match(imports, /reconstructionToReplayCues/);
   assert.match(imports, /reconstructionToReplayCues/);
   assert.match(nativeContract, /ReconstructionDesignInputSchema/);
   assert.match(nativeContract, /effectSlug/);

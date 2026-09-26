@@ -1,21 +1,19 @@
-import { z } from 'zod';
 import {
   FireworkDesignSchema,
   canonicaliseEffectModelJson,
-  compileFireworkDesign,
   estimateDesignDurationSeconds,
   normaliseBurstTrailStops,
   scaleDesignForCaliber,
   type FireworkDesign,
   type FireworkGeometry,
-} from '../fireworks/design';
+} from '@showcrafter/fireworks/design';
+import { FIREWORK_EFFECT_CATALOGUE } from '@showcrafter/fireworks/effect-catalogue';
 import {
   DEFAULT_FIREWORK_SPEC,
-  FireworkSpecSchema,
   type FireworkSpec,
   type ShellType,
-} from '../fireworks/spec';
-import { FIREWORK_EFFECT_CATALOGUE } from '../fireworks/effect-catalogue';
+} from '@showcrafter/fireworks/spec';
+import { z } from 'zod';
 import type { ReplayCue } from '../show-domain';
 import { quantiseFireworksEngineTimeSeconds } from './renderer-contract';
 
@@ -139,19 +137,6 @@ const ImportReconstructionInputSchema = z
     observations: ReconstructionObservationsSchema,
   })
   .strict();
-
-const LegacyImportedFireworkSpecSchema = z
-  .object({
-    name: z.string().trim().min(1).max(180),
-    description: z.string().trim().max(1_200).nullable().optional(),
-    durationSeconds: z.number().finite().min(0.1).max(MAX_RECONSTRUCTION_SECONDS),
-    heightMeters: z.number().finite().min(0).max(220).nullable().optional(),
-    caliber: z.string().trim().min(1).max(40).nullable().optional(),
-    confidence: z.number().finite().min(0).max(1).default(0.5),
-    spec: FireworkSpecSchema,
-    fieldConfidence: z.record(z.string(), z.number().finite().min(0).max(1)).optional(),
-  })
-  .passthrough();
 
 type ReconstructionInput = z.infer<typeof ImportReconstructionInputSchema>;
 type ReconstructionShotInput = z.infer<typeof ReconstructionShotInputSchema>;
@@ -395,7 +380,6 @@ function parseStrictFireworkDesign(
   };
   const design: FireworkDesign = {
     ...parsed.data,
-    geometry: parsed.data.geometry === 'pistil' ? 'sphere' : parsed.data.geometry,
     size: outer.count,
     burst: outer.burst,
     burstTrail: outer.burstTrail,
@@ -547,193 +531,6 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function atomicSpecForLegacyShot(
-  spec: FireworkSpec,
-  shot: NonNullable<FireworkSpec['shots']>[number],
-): FireworkSpec {
-  const color = shot.color ?? shot.colorPalette?.[0];
-  return {
-    ...spec,
-    shots: undefined,
-    ...(color ? { color, outerColor: color } : {}),
-    ...(shot.colorPalette?.length ? { colorPalette: shot.colorPalette } : {}),
-    ...(shot.pistilColor ? { pistil: true, pistilColor: shot.pistilColor } : {}),
-    ...(shot.tailColor ? { tailColor: shot.tailColor } : {}),
-  };
-}
-
-function legacyPrimaryColor(spec: FireworkSpec, shotColor?: string): string | null {
-  if (shotColor) return shotColor;
-  if (spec.outerColor) return spec.outerColor;
-  return typeof spec.color === 'string' && /^#[0-9a-f]{6}$/i.test(spec.color) ? spec.color : null;
-}
-
-/**
- * Existing V3 outputs first pass through `ImportedFireworkSpecSchema`. This
- * adapter preserves their shots while making the unavoidable legacy loss
- * explicit in observations, rather than pretending they are native V1 plans.
- */
-export function adaptLegacyImportedFireworkSpec(input: unknown): ImportReconstructionParseResult {
-  const legacy = LegacyImportedFireworkSpecSchema.safeParse(input);
-  if (!legacy.success) return { success: false, issues: zodIssues(legacy.error.issues) };
-
-  const sourceShots = legacy.data.spec.shots?.length ? legacy.data.spec.shots : [null];
-  const designs: Array<{
-    key: string;
-    effectSlug: string;
-    label: string;
-    durationSeconds: number;
-    heightMeters: number | null;
-    caliber: string | null;
-    confidence: number;
-    colorPalette: string[];
-    design: FireworkDesign;
-  }> = [];
-  const designKeyByJson = new Map<string, string>();
-  const shots: Array<Record<string, unknown>> = [];
-  let adaptedDurationSeconds = legacy.data.durationSeconds;
-
-  sourceShots.forEach((shot, index) => {
-    const atomicSpec = shot ? atomicSpecForLegacyShot(legacy.data.spec, shot) : legacy.data.spec;
-    const palette = shot?.colorPalette ?? atomicSpec.colorPalette;
-    const primaryColor = legacyPrimaryColor(atomicSpec, shot?.color ?? palette?.[0]);
-    const compiled = compileFireworkDesign({
-      legacySpec: atomicSpec,
-      primaryColor,
-      colorPalette: palette,
-    });
-    const colorPalette = [
-      ...(palette ?? []),
-      ...(primaryColor ? [primaryColor] : []),
-      ...collectDesignColours(compiled),
-    ]
-      .map((colour) => colour.toLowerCase())
-      .filter((colour, colourIndex, colours) => colours.indexOf(colour) === colourIndex)
-      .slice(0, 12);
-    const effectSlug = effectSlugForLegacySpec(atomicSpec, compiled.geometry);
-    const heightMeters = shot?.heightMeters ?? legacy.data.heightMeters ?? null;
-    const timeOffsetSeconds = clamp(shot?.timeOffsetSeconds ?? 0, 0, legacy.data.durationSeconds);
-    const shotScale = clamp(shot?.scale ?? 1, 0.2, 2);
-    const designDurationSeconds = estimateDesignDurationSeconds(compiled);
-    const scaledDurationSeconds = estimateDesignDurationSeconds(
-      scaleDesignForCaliber(compiled, caliberForScale(shotScale, legacy.data.caliber ?? null)),
-    );
-    adaptedDurationSeconds = Math.max(
-      adaptedDurationSeconds,
-      timeOffsetSeconds + Math.max(designDurationSeconds, scaledDurationSeconds),
-    );
-    const encoded = JSON.stringify({
-      compiled,
-      effectSlug,
-      heightMeters,
-      caliber: legacy.data.caliber ?? null,
-      colorPalette,
-    });
-    let designKey = designKeyByJson.get(encoded);
-    if (!designKey) {
-      designKey = `legacy-${designs.length + 1}`;
-      designKeyByJson.set(encoded, designKey);
-      designs.push({
-        key: designKey,
-        effectSlug,
-        label: legacy.data.name,
-        durationSeconds: designDurationSeconds,
-        heightMeters,
-        caliber: legacy.data.caliber ?? null,
-        confidence: legacy.data.confidence,
-        colorPalette,
-        design: compiled,
-      });
-    }
-
-    shots.push({
-      designKey,
-      timeOffsetSeconds,
-      sourceTimeOffsetSeconds: timeOffsetSeconds,
-      position: {
-        x: clamp(shot?.position?.x ?? 0, -MAX_RECONSTRUCTION_POSITION, MAX_RECONSTRUCTION_POSITION),
-        y: clamp(shot?.position?.y ?? 0, -MAX_RECONSTRUCTION_POSITION, MAX_RECONSTRUCTION_POSITION),
-        z: clamp(shot?.position?.z ?? 0, -MAX_RECONSTRUCTION_POSITION, MAX_RECONSTRUCTION_POSITION),
-      },
-      launchPositionIndex: 0,
-      panDegrees: Math.round(clamp(shot?.panDegrees ?? 0, -30, 30)),
-      tiltDegrees: Math.round(clamp(shot?.tiltDegrees ?? 0, -50, 50)),
-      seed: Math.abs(Math.trunc(shot?.seedOffset ?? index * 101)) % MAX_RECONSTRUCTION_SEED,
-      scale: shotScale,
-    });
-  });
-
-  return parseImportReconstruction({
-    version: 1,
-    source: 'video_inferred',
-    name: legacy.data.name,
-    description: legacy.data.description ?? null,
-    durationSeconds: adaptedDurationSeconds,
-    heightMeters: legacy.data.heightMeters ?? null,
-    caliber: legacy.data.caliber ?? null,
-    confidence: legacy.data.confidence,
-    designs,
-    shots,
-    observations: {
-      observedEvents: [],
-      fieldConfidence: legacy.data.fieldConfidence ?? {},
-      unknowns: [
-        'This reconstruction used the legacy FireworkEffectSpecV3 adapter and may have lost renderer detail.',
-      ],
-    },
-  });
-}
-
-function effectSlugForLegacySpec(spec: FireworkSpec, geometry: FireworkGeometry): string {
-  const directAliases: Partial<Record<ShellType, string>> = {
-    crysanthemum: 'chrysanthemum',
-    chrysanthemum: 'chrysanthemum',
-    fallingLeaves: 'willow',
-    ghost: 'strobe',
-    floral: 'peony',
-    tail: 'comet',
-  };
-  const direct = directAliases[spec.shellType] ?? spec.shellType;
-  if (IMPORT_RECONSTRUCTION_EFFECT_SLUG_SET.has(direct)) return direct;
-  if (spec.crackle) return 'crackle';
-  if (spec.strobe) return 'strobe';
-  if (spec.crossette) return 'crossette';
-  if (spec.horsetail) return 'horsetail';
-  if (spec.ring) return 'ring';
-
-  switch (geometry) {
-    case 'crown':
-      return 'brocade';
-    case 'weeping':
-    case 'falling_tail':
-      return 'willow';
-    case 'ring':
-      return 'ring';
-    case 'split_cross':
-      return 'crossette';
-    case 'single_tail':
-      return 'comet';
-    case 'upward_fan':
-      return 'mine';
-    case 'pearls':
-      return 'pearls';
-    case 'fish':
-      return 'silverFish';
-    case 'waterfall':
-      return 'waterfall';
-    case 'whirl':
-      return 'whirl';
-    case 'bowtie':
-      return 'bowtie';
-    case 'roman_candle':
-      return 'roman_candle';
-    case 'fountain':
-      return 'fountain';
-    default:
-      return 'peony';
-  }
-}
-
 function shellTypeForGeometry(geometry: FireworkGeometry): ShellType {
   switch (geometry) {
     case 'crown':
@@ -801,7 +598,6 @@ function collectDesignColours(design: FireworkDesign): string[] {
   add(design.color);
   add(design.secondaryColor);
   visit(design.stars);
-  visit(design.brocade);
   visit(design.launch);
   return colours;
 }

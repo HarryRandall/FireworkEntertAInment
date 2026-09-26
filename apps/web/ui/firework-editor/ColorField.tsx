@@ -1,10 +1,10 @@
 'use client';
 
 /** Labelled colour field built on the modern ColorPicker, with optional "inherit" clear. */
-import { Field, FieldLabel } from '@/ui/patterns/Field';
-import { ColorPicker } from '@/ui/patterns/ColorPicker';
-import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
 import { cn } from '@/lib/utils';
+import { ColorPicker } from '@/ui/patterns/ColorPicker';
+import { Field, FieldLabel } from '@/ui/patterns/Field';
+import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 

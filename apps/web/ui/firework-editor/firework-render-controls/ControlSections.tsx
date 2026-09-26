@@ -1,9 +1,9 @@
 'use client';
 
-import { useId, useState, type ReactNode } from 'react';
-import { ChevronDown } from 'lucide-react';
-import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
 import { cn } from '@/lib/utils';
+import { InfoTooltip } from '@/ui/patterns/InfoTooltip';
+import { ChevronDown } from 'lucide-react';
+import { useId, useState, type ReactNode } from 'react';
 
 export const CONTROL_GRID_CLASS =
   'grid grid-cols-[repeat(auto-fit,minmax(min(100%,13rem),1fr))] gap-x-6 gap-y-4';
