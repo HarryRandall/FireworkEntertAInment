@@ -62,6 +62,9 @@ jobs:
       - name: Run tests
         run: pnpm test
 
+      - name: Run renderer and editor package tests
+        run: pnpm test:packages
+
       - name: Build application
         run: pnpm build
 
