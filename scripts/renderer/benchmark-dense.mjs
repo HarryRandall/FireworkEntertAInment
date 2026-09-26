@@ -45,10 +45,16 @@ for (const source of sources) {
     const pool = new ParticlePool(capacity);
     const effects = new Effects(pool, {}, { newLight() {}, setHemi() {} });
     let overwrittenLiveParticles = 0;
+    let declinedValidParticles = 0;
     const spawn = pool.new.bind(pool);
     pool.new = (properties) => {
-      if (pool.particles[(pool.current + 1) % capacity].alive) overwrittenLiveParticles++;
-      return spawn(properties);
+      const candidate = pool.particles[(pool.current + 1) % capacity];
+      const wasAlive = candidate.alive;
+      const particle = spawn(properties);
+      if (wasAlive && particle === candidate) overwrittenLiveParticles++;
+      const life = properties.life ?? 1;
+      if (!particle.alive && Number.isFinite(life) && life > 0) declinedValidParticles++;
+      return particle;
     };
     let peakParticles = 0;
     let particleFrames = 0;
@@ -90,6 +96,7 @@ for (const source of sources) {
       peakParticles,
       particleFrames,
       overwrittenLiveParticles,
+      declinedValidParticles,
       remainingParticles: pool.aliveCount,
     };
   };

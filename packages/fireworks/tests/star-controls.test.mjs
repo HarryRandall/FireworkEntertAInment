@@ -114,7 +114,9 @@ test('particle shape does not change motion and pool reuse clears motion setting
     });
     p.update(0.1, 0.1);
     positions.push([p.x, p.y, p.z]);
+    p.reset();
     pool.new({ x: 0, y: 100, z: 0, airResistance: 0, terminalVelocity: 0 });
+    pool.particles[0].reset();
     const reused = pool.new({ x: 0, y: 100, z: 0 });
     assert.equal(reused.airResistance, 1);
     assert.equal(reused.terminalVelocity, Infinity);
