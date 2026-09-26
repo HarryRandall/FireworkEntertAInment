@@ -1,0 +1,31 @@
+{
+  "colour": { "enabled": false },
+  "color": "random",
+  "secondaryColor": { "r": 0.123456, "g": 0.765432, "b": 0.345678 },
+  "secondaryColorRatio": 0.37,
+  "stars": {
+    "outer": {
+      "color": "random",
+      "colourPattern": {
+        "mode": "random",
+        "colours": [
+          { "color": "random", "weight": 12.345 },
+          { "color": { "r": 0.123456, "g": 0.765432, "b": 0.345678 }, "weight": 87.655 }
+        ]
+      }
+    },
+    "core": {
+      "enabled": true,
+      "color": { "r": 0.654321, "g": 0.234567, "b": 0.876543 },
+      "colourPattern": {
+        "mode": "stripes",
+        "axis": "horizontal",
+        "count": 3,
+        "colours": [
+          { "color": { "r": 0.654321, "g": 0.234567, "b": 0.876543 }, "weight": 34.567 },
+          { "color": "random", "weight": 65.433 }
+        ]
+      }
+    }
+  }
+}

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { compileFireworkDesign, validateFireworkDesign } from '../src/design.ts';
 import { Scheduler } from '../src/Scheduler.ts';
@@ -7,6 +8,50 @@ import { ParticlePool } from '../src/ParticlePool.ts';
 import { createSeededRng } from '../src/random.ts';
 import { RENDERER_BEHAVIOURS } from '../src/behaviours.ts';
 import { FIREWORK_EFFECT_CATALOGUE, catalogueEffectModelJson } from '../src/effect-catalogue.ts';
+
+test('disabled colours survive compilation, simulation and re-enabling without changing authored settings', () => {
+  const settings = JSON.parse(
+    readFileSync(new URL('./fixtures/disabled-colours.json', import.meta.url)),
+  );
+  const before = structuredClone(settings);
+  const design = compileFireworkDesign({ variantOverrides: settings });
+  assert.equal(design.color, settings.color);
+  assert.deepEqual(design.secondaryColor, settings.secondaryColor);
+  assert.equal(design.secondaryColorRatio, settings.secondaryColorRatio);
+  for (const layer of ['outer', 'core']) {
+    assert.deepEqual(design.stars[layer].color, settings.stars[layer].color);
+    assert.deepEqual(
+      design.stars[layer].colourPattern.colours,
+      settings.stars[layer].colourPattern.colours,
+    );
+  }
+  const snapshot = structuredClone(design);
+  const pool = new ParticlePool(100_000);
+  new Effects(pool, {}, { newLight() {}, setHemi() {} }).fire(
+    design,
+    { x: 0, y: 0, z: 0 },
+    { rng: createSeededRng(20260926), audible: false },
+  );
+  for (let frame = 0; frame < 720; frame++) {
+    for (let slot = 0; slot < pool.aliveCount; slot++)
+      pool.particles[pool.aliveIndices[slot]].update(1 / 60, frame / 60);
+    pool.compactAliveMax();
+  }
+  assert.deepEqual(design, snapshot);
+  assert.deepEqual(settings, before);
+  const reopened = JSON.parse(JSON.stringify(design));
+  reopened.colour.enabled = true;
+  assert.deepEqual(
+    compileFireworkDesign({ variantOverrides: reopened }),
+    compileFireworkDesign({ variantOverrides: { ...settings, colour: { enabled: true } } }),
+  );
+  const explicit = compileFireworkDesign({
+    variantOverrides: settings,
+    colorPalette: ['#ff0000', '#0000ff'],
+  });
+  assert.deepEqual(explicit.color, { r: 1, g: 0, b: 0 });
+  assert.deepEqual(explicit.secondaryColor, { r: 0, g: 0, b: 1 });
+});
 
 test('invalid saved values produce field diagnostics, never a default firework', () => {
   for (const value of [

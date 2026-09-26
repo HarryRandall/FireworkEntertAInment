@@ -10,3 +10,17 @@ test('catalogue simulations match the seeded regression fixture', () => {
   const stripMeasurement = ({ simulationMs, ...record }) => record;
   assert.deepEqual(captureSeededBaseline().map(stripMeasurement), baseline.map(stripMeasurement));
 });
+
+test('disabled colours preserve seeded appearance for every catalogue composition', () => {
+  const baseline = JSON.parse(
+    readFileSync(new URL('./fixtures/disabled-colour-baseline.json', import.meta.url)),
+  );
+  const overrides = JSON.parse(
+    readFileSync(new URL('./fixtures/disabled-colours.json', import.meta.url)),
+  );
+  const stripMeasurement = ({ simulationMs, ...record }) => record;
+  assert.deepEqual(
+    captureSeededBaseline({ overrides }).map(stripMeasurement),
+    baseline.map(stripMeasurement),
+  );
+});

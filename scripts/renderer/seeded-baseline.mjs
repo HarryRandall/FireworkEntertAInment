@@ -11,12 +11,13 @@ import {
 import { createSeededRng } from '../../packages/fireworks/src/random.ts';
 import { estimateFireworkDesignTiming } from '../../packages/fireworks/src/timing.ts';
 
-export function captureSeededBaseline() {
+export function captureSeededBaseline({ overrides } = {}) {
   const records = [];
   for (const effect of FIREWORK_EFFECT_CATALOGUE) {
     const design = compileFireworkDesign({
       baseModel: catalogueEffectModelJson(effect),
       primaryColor: effect.previewPalette[0],
+      variantOverrides: overrides,
     });
     const pool = new ParticlePool(100_000);
     const effects = new Effects(pool, {}, { newLight() {}, setHemi() {} });

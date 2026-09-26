@@ -219,6 +219,26 @@ footer stays 49px tall at 390px viewport width, the parts drawer selects section
 and there is no horizontal page overflow. The user's active catalogue draft was
 not used for these interaction checks.
 
+## Disabled palette preservation
+
+Compilation now retains authored colours even when the colour switch is off.
+Previously it replaced both star palettes with white, which meant copying an
+effect, resetting a part preset or reverting a saved section could discard the
+disabled palette. The colour switch now resolves at simulation entry without
+mutating the document. Copied snapshots retain exact RGB values and weights.
+
+Seeded captures taken before this boundary change cover all 24 catalogue
+compositions with disabled colours, random palette entries and an enabled inner
+layer. Particle hashes, peak counts and timing match after the change. The
+ordinary catalogue fixture also remains unchanged. Tests cover copying both
+layers, preset status, reset, section revert, simulation immutability and
+re-enabling colours after reopening.
+
+The app, worker and migration `20260926000300` carry the updated source fingerprint.
+This is an import-evidence contract update, not another renderer generation.
+The migration has not been applied to a running database; rollout still requires
+revalidation of sealed import evidence.
+
 ## Remaining audit and implementation
 
 1. **Control metadata and limits.** Inventory each exposed field against schema,

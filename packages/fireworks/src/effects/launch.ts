@@ -5,7 +5,7 @@ import { HIDDEN_PARTICLE_SHAPE } from '../Particle.ts';
 import type { RandomSource } from '../random.ts';
 import { createSeededRng, mixSeed } from '../random.ts';
 import { effectDetonate } from './burst.ts';
-import { mixColor, resolveColor, resolveLaunchColor } from './colours.ts';
+import { mixColor, resolveColor, resolveEffectColours, resolveLaunchColor } from './colours.ts';
 import { LIFT_SPARK_COLOR, PATTERN_SEED, SHELL_TRAIL_DENSITY } from './constants.ts';
 import { effectFireFountain, effectFireMine, effectFireRomanCandle } from './ground.ts';
 import {
@@ -30,10 +30,11 @@ import {
 import type { EffectContext, FireOptions, Pos } from './types.ts';
 export function effectFire(
   ctx: EffectContext,
-  design: FireworkDesign,
+  authoredDesign: FireworkDesign,
   position: Pos,
   options: FireOptions,
 ): void {
+  const design = resolveEffectColours(authoredDesign);
   const rng = options.rng;
   const budget = createShellEffectBudget();
   const smokeRng = options.smokeRng ?? createSeededRng(mixSeed('launch-smoke-fallback'));

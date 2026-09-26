@@ -309,6 +309,26 @@ test('new firework snapshots require a valid source effect; existing snapshots c
   );
   assert.equal(fresh.ok, true);
   assert.equal(fresh.value.stars.outer.head.size, 147);
+  const disabled = JSON.parse(
+    readFileSync(
+      new URL(
+        '../../../../packages/fireworks/tests/fixtures/disabled-colours.json',
+        import.meta.url,
+      ),
+    ),
+  );
+  const copied = await createRenderSnapshot(
+    client({ renderDefaults: disabled }),
+    'disabled-source',
+  );
+  assert.equal(copied.ok, true);
+  for (const layer of ['outer', 'core']) {
+    assert.deepEqual(
+      copied.value.stars[layer].colourPattern.colours,
+      disabled.stars[layer].colourPattern.colours,
+    );
+  }
+  assert.equal(copied.value.colour.enabled, false);
   const sourceReads = reads;
   assert.equal(validateRenderSnapshot(fresh.value, 'saved').ok, true);
   assert.equal(validateRenderSnapshot({}, 'missing').ok, false);

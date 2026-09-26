@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { applyCopiedPreset, resetCopiedPreset, presetSourceStatus } from '../src/presets.ts';
 import { revertSection, sectionChanged } from '../src/sections.ts';
@@ -9,6 +10,39 @@ import {
   INITIAL_STYLE_DEFAULT_JSON,
   makeTrailPreviewStarDefaults,
 } from '../../fireworks/src/style-defaults.ts';
+
+test('disabled colours retain both layer palettes through copied presets, status, reset and section revert', () => {
+  const settings = JSON.parse(
+    readFileSync(new URL('../../fireworks/tests/fixtures/disabled-colours.json', import.meta.url)),
+  );
+  for (const [kind, layer, section] of [
+    ['star', 'outer', 'colour'],
+    ['innerStar', 'core', 'inner-colour'],
+  ]) {
+    const draft = compileFireworkDesign({ variantOverrides: { colour: { enabled: false } } });
+    applyCopiedPreset(draft, kind, { id: kind, name: 'Copied colours', defaultsJson: settings });
+    assert.deepEqual(
+      draft.stars[layer].colourPattern.colours,
+      settings.stars[layer].colourPattern.colours,
+    );
+    assert.equal(presetSourceStatus(draft, kind).modified, false);
+    const saved = compileFireworkDesign({ variantOverrides: draft });
+    draft.stars[layer].colourPattern.colours[0].weight = 99;
+    assert.equal(presetSourceStatus(draft, kind).modified, true);
+    resetCopiedPreset(draft, kind);
+    assert.equal(presetSourceStatus(draft, kind).modified, false);
+    draft.stars[layer].colourPattern.colours[0].weight = 88;
+    revertSection(section, draft, saved);
+    assert.deepEqual(draft.stars[layer].colourPattern, saved.stars[layer].colourPattern);
+    draft.colour.enabled = true;
+    const enabled = compileFireworkDesign({ variantOverrides: draft });
+    assert.deepEqual(
+      enabled.stars[layer].colourPattern.colours,
+      settings.stars[layer].colourPattern.colours,
+    );
+    assert.equal(presetSourceStatus(draft, kind).modified, false);
+  }
+});
 
 test('presets copy only their declared layer, preserve identity and keep their original snapshot', () => {
   const draft = { ...compileFireworkDesign({}), productName: 'Example', price: 25 };

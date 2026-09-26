@@ -6,6 +6,32 @@ import { starPatternPosition } from './geometry.ts';
 import { clamp } from './math.ts';
 import type { EffectContext } from './types.ts';
 
+/** Apply the colour switch only to simulation, preserving copied and saved palettes. */
+export function resolveEffectColours(design: FireworkDesign): FireworkDesign {
+  if (design.colour.enabled) return design;
+  const whiteLayer = (layer: FireworkStarLayer): FireworkStarLayer => ({
+    ...layer,
+    color: { r: 1, g: 1, b: 1 },
+    colourPattern: {
+      mode: 'solid',
+      axis: 'vertical',
+      count: 1,
+      colours: [{ color: { r: 1, g: 1, b: 1 }, weight: 100 }],
+    },
+  });
+  return {
+    ...design,
+    color: { r: 1, g: 1, b: 1 },
+    secondaryColor: undefined,
+    secondaryColorRatio: undefined,
+    stars: {
+      ...design.stars,
+      outer: whiteLayer(design.stars.outer),
+      core: whiteLayer(design.stars.core),
+    },
+  };
+}
+
 export function randomColor(rng: RandomSource): { r: number; g: number; b: number } {
   // HSV with high saturation gives vivid hues; the prior per-channel jitter
   // averaged toward washed-out pastels that didn't read as a colour.

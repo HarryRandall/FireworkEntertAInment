@@ -117,39 +117,17 @@ export function compileFireworkDesign(params: CompileFireworkDesignInput): Firew
       deepMergeDesign(merged, hydrateBurstTrailDefaults(fragment)) as RecordLike,
     structuredClone(DEFAULT_DESIGN),
   );
-  const colourSettings = isRecord(compiled.colour) ? compiled.colour : {};
-  const colourEnabled = colourSettings.enabled !== false;
   const explicitColor = params.primaryColor
     ? hexToRendererColor(params.primaryColor)
     : params.colorPalette?.[0]
       ? hexToRendererColor(params.colorPalette[0])
       : null;
-  if (colourEnabled && explicitColor) {
+  if (explicitColor) {
     compiled.color = explicitColor;
   }
-  if (colourEnabled && params.colorPalette?.[1]) {
+  if (params.colorPalette?.[1]) {
     const secondaryColor = hexToRendererColor(params.colorPalette[1]);
     if (secondaryColor) compiled.secondaryColor = secondaryColor;
-  }
-  if (!colourEnabled) {
-    compiled.color = { r: 1, g: 1, b: 1 };
-    delete compiled.secondaryColor;
-    delete compiled.secondaryColorRatio;
-    if (isRecord(compiled.stars)) {
-      const stars = { ...compiled.stars };
-      for (const layerKey of ['outer', 'core']) {
-        const layer = isRecord(stars[layerKey]) ? { ...stars[layerKey] } : {};
-        layer.color = { r: 1, g: 1, b: 1 };
-        layer.colourPattern = {
-          mode: 'solid',
-          axis: 'vertical',
-          count: 1,
-          colours: [{ color: { r: 1, g: 1, b: 1 }, weight: 100 }],
-        };
-        stars[layerKey] = layer;
-      }
-      compiled.stars = stars;
-    }
   }
 
   return safeParseFireworkDesign(compiled);

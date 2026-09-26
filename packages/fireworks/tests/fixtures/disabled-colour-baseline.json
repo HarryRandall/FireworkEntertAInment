@@ -1,0 +1,314 @@
+[
+  {
+    "slug": "peony",
+    "hash": "f1b5f7032eceb784d4757ce1b25ef82c1a70e36b4adca70ae47fe588bdf0b314",
+    "peakParticles": 3141,
+    "timing": {
+      "liftTimeSeconds": 1.6666666666666656,
+      "effectStartSeconds": 1.6666666666666656,
+      "fadeStartSeconds": 3.1866666666666656,
+      "fadeFinishSeconds": 8.166666666666666,
+      "endSeconds": 8.166666666666666
+    },
+    "simulationMs": 90
+  },
+  {
+    "slug": "chrysanthemum",
+    "hash": "ccdc6bce4bd86c8e3dce83cf82918804f71b0d998515a4ef672802c6a6d30a68",
+    "peakParticles": 2872,
+    "timing": {
+      "liftTimeSeconds": 2.1499999999999972,
+      "effectStartSeconds": 2.1499999999999972,
+      "fadeStartSeconds": 5.019999999999998,
+      "fadeFinishSeconds": 8.649999999999997,
+      "endSeconds": 8.649999999999997
+    },
+    "simulationMs": 95
+  },
+  {
+    "slug": "brocade",
+    "hash": "12244943a8c92c6a3166a4cb22f02b120bbe705d2ad7b244945a822d7037ca4a",
+    "peakParticles": 2900,
+    "timing": {
+      "liftTimeSeconds": 1.2333333333333338,
+      "effectStartSeconds": 1.2333333333333338,
+      "fadeStartSeconds": 5.292333333333334,
+      "fadeFinishSeconds": 7.733333333333334,
+      "endSeconds": 7.733333333333334
+    },
+    "simulationMs": 61
+  },
+  {
+    "slug": "kamuro",
+    "hash": "f72138f9d009f7f1829931875490351f5ad1001feeab0992fd8391c4f7d8109c",
+    "peakParticles": 2626,
+    "timing": {
+      "liftTimeSeconds": 2.3499999999999965,
+      "effectStartSeconds": 2.3499999999999965,
+      "fadeStartSeconds": 7.679999999999996,
+      "fadeFinishSeconds": 8.849999999999996,
+      "endSeconds": 10.149999999999997
+    },
+    "simulationMs": 81
+  },
+  {
+    "slug": "willow",
+    "hash": "35c65a8968365904e36aa4d210f5bf474602fae577ab1355c5b54d174d615eef",
+    "peakParticles": 2208,
+    "timing": {
+      "liftTimeSeconds": 2.1499999999999972,
+      "effectStartSeconds": 2.1499999999999972,
+      "fadeStartSeconds": 10.677999999999997,
+      "fadeFinishSeconds": 13.349999999999998,
+      "endSeconds": 13.349999999999998
+    },
+    "simulationMs": 125
+  },
+  {
+    "slug": "palm",
+    "hash": "31aace5ccbc504e24b5bfe8a7dbf62e5cd158df159893402c8c053d076716390",
+    "peakParticles": 1843,
+    "timing": {
+      "liftTimeSeconds": 2.1499999999999972,
+      "effectStartSeconds": 2.1499999999999972,
+      "fadeStartSeconds": 6.249999999999998,
+      "fadeFinishSeconds": 8.649999999999997,
+      "endSeconds": 8.649999999999997
+    },
+    "simulationMs": 37
+  },
+  {
+    "slug": "ring",
+    "hash": "f5a1e1b2f359fc5579c5a20bee6dfb563c5128c503e8f9a750ccc8c37d5d71c9",
+    "peakParticles": 2380,
+    "timing": {
+      "liftTimeSeconds": 2.1499999999999972,
+      "effectStartSeconds": 2.1499999999999972,
+      "fadeStartSeconds": 3.8982399999999977,
+      "fadeFinishSeconds": 7.479999999999997,
+      "endSeconds": 7.479999999999997
+    },
+    "simulationMs": 40
+  },
+  {
+    "slug": "saturn",
+    "hash": "003b0354146749d2d0af26cad2366a588b8adec1945fb17f7b5ddbad4c537206",
+    "peakParticles": 1470,
+    "timing": {
+      "liftTimeSeconds": 2.0499999999999976,
+      "effectStartSeconds": 2.0499999999999976,
+      "fadeStartSeconds": 4.067199999999998,
+      "fadeFinishSeconds": 4.509999999999998,
+      "endSeconds": 6.529999999999998
+    },
+    "simulationMs": 27
+  },
+  {
+    "slug": "crossette",
+    "hash": "bfa7a8e6ea6dcaabc532431d7f0537c8454e276b8ff02fb17cbeda3d48ef4e43",
+    "peakParticles": 2062,
+    "timing": {
+      "liftTimeSeconds": 1.9666666666666646,
+      "effectStartSeconds": 1.9666666666666646,
+      "fadeStartSeconds": 3.9346666666666645,
+      "fadeFinishSeconds": 8.466666666666665,
+      "endSeconds": 8.466666666666665
+    },
+    "simulationMs": 78
+  },
+  {
+    "slug": "double_break",
+    "hash": "c770e33ab0397dc0f1567552c0ffd30e6b5c5a642f1c185181dc18eb04340d88",
+    "peakParticles": 2024,
+    "timing": {
+      "liftTimeSeconds": 2.533333333333329,
+      "effectStartSeconds": 2.533333333333329,
+      "fadeStartSeconds": 4.665333333333329,
+      "fadeFinishSeconds": 9.03333333333333,
+      "endSeconds": 9.03333333333333
+    },
+    "simulationMs": 62
+  },
+  {
+    "slug": "bowtie",
+    "hash": "5474b9e0c8db9b51e2ce6d61e8b8f15da53f61c2137a2ad8cd22e0499727a0a1",
+    "peakParticles": 2216,
+    "timing": {
+      "liftTimeSeconds": 1.9666666666666646,
+      "effectStartSeconds": 1.9666666666666646,
+      "fadeStartSeconds": 4.426666666666664,
+      "fadeFinishSeconds": 8.466666666666665,
+      "endSeconds": 8.466666666666665
+    },
+    "simulationMs": 49
+  },
+  {
+    "slug": "horsetail",
+    "hash": "88b3e447baf985bb8200571298fccf68246d82c04fe6e78009cf33277dd0b6da",
+    "peakParticles": 2254,
+    "timing": {
+      "liftTimeSeconds": 1.7666666666666653,
+      "effectStartSeconds": 1.7666666666666653,
+      "fadeStartSeconds": 10.294666666666666,
+      "fadeFinishSeconds": 12.166666666666666,
+      "endSeconds": 13.466666666666667
+    },
+    "simulationMs": 88
+  },
+  {
+    "slug": "comet",
+    "hash": "6143a5776b3b5f4693c4b4a89f8f2bb0267037304aadbf9576b13f6811820d7e",
+    "peakParticles": 1355,
+    "timing": {
+      "liftTimeSeconds": 2.933333333333328,
+      "effectStartSeconds": 2.933333333333328,
+      "fadeStartSeconds": 6.623333333333328,
+      "fadeFinishSeconds": 8.783333333333328,
+      "endSeconds": 8.783333333333328
+    },
+    "simulationMs": 22
+  },
+  {
+    "slug": "mine",
+    "hash": "c877bf821b3a66cdcda499214d4b1aec7aa6d2fe566ffa985ce3348a1c74f351",
+    "peakParticles": 4063,
+    "timing": {
+      "liftTimeSeconds": 0,
+      "effectStartSeconds": 0,
+      "fadeStartSeconds": 1.06272,
+      "fadeFinishSeconds": 4.68,
+      "endSeconds": 5.9799999999999995
+    },
+    "simulationMs": 38
+  },
+  {
+    "slug": "pearls",
+    "hash": "071af84532b80ee28f32b89e74f4899dfc2a0d155b416b9e4fc21a30d3415d93",
+    "peakParticles": 1546,
+    "timing": {
+      "liftTimeSeconds": 2.1499999999999972,
+      "effectStartSeconds": 2.1499999999999972,
+      "fadeStartSeconds": 3.9802399999999976,
+      "fadeFinishSeconds": 6.179999999999998,
+      "endSeconds": 6.629999999999997
+    },
+    "simulationMs": 21
+  },
+  {
+    "slug": "pistil",
+    "hash": "dc37906c74351482e9155c344a275fb4988d97c73afd65bf0a16902374df88b7",
+    "peakParticles": 1515,
+    "timing": {
+      "liftTimeSeconds": 1.9666666666666646,
+      "effectStartSeconds": 1.9666666666666646,
+      "fadeStartSeconds": 3.770666666666665,
+      "fadeFinishSeconds": 4.566666666666665,
+      "endSeconds": 6.446666666666664
+    },
+    "simulationMs": 40
+  },
+  {
+    "slug": "nishiki",
+    "hash": "af088a567a163c5c48ebed2923e61ee6335a1099a09dcb1e972c74926b7777fb",
+    "peakParticles": 1827,
+    "timing": {
+      "liftTimeSeconds": 2.249999999999997,
+      "effectStartSeconds": 2.249999999999997,
+      "fadeStartSeconds": 4.381999999999997,
+      "fadeFinishSeconds": 8.249999999999996,
+      "endSeconds": 9.549999999999997
+    },
+    "simulationMs": 59
+  },
+  {
+    "slug": "strobe",
+    "hash": "c175d2475d9c695b09388cf48a77d55eb56df2cd91ecf5321bbb6196db77138b",
+    "peakParticles": 2076,
+    "timing": {
+      "liftTimeSeconds": 1.9666666666666646,
+      "effectStartSeconds": 1.9666666666666646,
+      "fadeStartSeconds": 5.246666666666664,
+      "fadeFinishSeconds": 8.466666666666665,
+      "endSeconds": 8.466666666666665
+    },
+    "simulationMs": 42
+  },
+  {
+    "slug": "crackle",
+    "hash": "65ff93e5257635d24370a55018c4f30fbb691dc79543406d80ffc5efafd35f80",
+    "peakParticles": 3657,
+    "timing": {
+      "liftTimeSeconds": 1.7666666666666653,
+      "effectStartSeconds": 1.7666666666666653,
+      "fadeStartSeconds": 3.5706666666666655,
+      "fadeFinishSeconds": 8.266666666666666,
+      "endSeconds": 9.566666666666666
+    },
+    "simulationMs": 53
+  },
+  {
+    "slug": "silverFish",
+    "hash": "bc49d17c991ff498ba4b250d222bf34c81d0e32c8c955e7b0ff9eafeaa909dbd",
+    "peakParticles": 2388,
+    "timing": {
+      "liftTimeSeconds": 1.7666666666666653,
+      "effectStartSeconds": 1.7666666666666653,
+      "fadeStartSeconds": 3.8986666666666654,
+      "fadeFinishSeconds": 4.366666666666665,
+      "endSeconds": 6.246666666666664
+    },
+    "simulationMs": 45
+  },
+  {
+    "slug": "waterfall",
+    "hash": "b06035ff7a6aaa3a3d51bf8d6f5d480fac60d1bf77ce7b786240d0050f501d8c",
+    "peakParticles": 2572,
+    "timing": {
+      "liftTimeSeconds": 1.7666666666666653,
+      "effectStartSeconds": 1.7666666666666653,
+      "fadeStartSeconds": 8.408666666666667,
+      "fadeFinishSeconds": 10.541666666666666,
+      "endSeconds": 10.541666666666666
+    },
+    "simulationMs": 100
+  },
+  {
+    "slug": "whirl",
+    "hash": "7a5cdeefc00bb06b3b388e029236a7b8db24e26af4aff45b6bb14bdf048c7a91",
+    "peakParticles": 1468,
+    "timing": {
+      "liftTimeSeconds": 1.566666666666666,
+      "effectStartSeconds": 1.566666666666666,
+      "fadeStartSeconds": 4.0266666666666655,
+      "fadeFinishSeconds": 4.566666666666666,
+      "endSeconds": 6.046666666666665
+    },
+    "simulationMs": 23
+  },
+  {
+    "slug": "roman_candle",
+    "hash": "740bb56d78ee647dcf76437aad6c772f51fb63c0b674f764dd19de806d13adad",
+    "peakParticles": 82,
+    "timing": {
+      "liftTimeSeconds": 0,
+      "effectStartSeconds": 0,
+      "fadeStartSeconds": 1.3579200000000002,
+      "fadeFinishSeconds": 11.58,
+      "endSeconds": 11.58
+    },
+    "simulationMs": 7
+  },
+  {
+    "slug": "fountain",
+    "hash": "65f22dba3b52a9badaa012643c7d2a87dd2b548889a7be32ceaba918dc4e57e0",
+    "peakParticles": 6721,
+    "timing": {
+      "liftTimeSeconds": 0,
+      "effectStartSeconds": 0,
+      "fadeStartSeconds": 1.1808,
+      "fadeFinishSeconds": 11.7,
+      "endSeconds": 13
+    },
+    "simulationMs": 101
+  }
+]
