@@ -12,7 +12,6 @@ import {
   STAR_GRAVITY_MAX,
   rangeHalfWidth,
   rangeMid,
-  rangeUpper,
 } from '@showcrafter/firework-editor/control-values';
 import type { RendererControlsContext } from '@showcrafter/firework-editor/use-render-controls';
 import {
@@ -86,13 +85,20 @@ export function StarMovementControls({
         {availability.gravity ? (
           <RendererField
             label="Gravity"
-            hint="Upper end of the layer's gravity range, before shape adjustments. Use Variation to control the spread below it. Negative values pull downwards."
-            value={rangeUpper(layer.burst.gravity)}
+            hint="Average vertical acceleration before the Shape gravity multiplier. Negative pulls down, positive pushes up. Set gravity and variation to zero for no acceleration."
+            value={rangeMid(layer.burst.gravity)}
             min={STAR_GRAVITY_MIN}
             max={STAR_GRAVITY_MAX}
             step={0.01}
             disabled={disabled}
-            onChange={(value) => context.setStarGravityUpper(layerKey, value)}
+            onChange={(value) =>
+              context.setStarBurstRangeMid(
+                layerKey,
+                'gravity',
+                value,
+                rangeHalfWidth(layer.burst.gravity),
+              )
+            }
           />
         ) : null}
         <RendererField
@@ -140,11 +146,14 @@ export function StarMovementControls({
               <RendererField
                 label="Gravity variation"
                 min={0}
-                max={Math.max(0, rangeUpper(layer.burst.gravity) - STAR_GRAVITY_MIN)}
+                max={Math.min(
+                  rangeMid(layer.burst.gravity) - STAR_GRAVITY_MIN,
+                  STAR_GRAVITY_MAX - rangeMid(layer.burst.gravity),
+                )}
                 step={0.01}
-                value={Math.abs(layer.burst.gravity[1] - layer.burst.gravity[0])}
+                value={rangeHalfWidth(layer.burst.gravity)}
                 disabled={disabled}
-                hint="Random spread below the chosen gravity value, before shape adjustments. Zero gives every star the same layer gravity."
+                hint="Random spread either side of the chosen gravity, before the Shape multiplier. Zero gives every star the same gravity."
                 onChange={(value) => context.setStarGravitySpread(layerKey, value)}
               />
             ) : null}

@@ -101,7 +101,7 @@ export function effectSpawnStarLayer(
       vz: velocity.z,
       color: starColor,
       life,
-      gravity: effectStarGravity(ctx, design, grav, rng),
+      gravity: effectStarGravity(design, grav),
       drag: effectStarDrag(ctx, design) * 0.6,
       openingLifeReference,
 

@@ -1,7 +1,7 @@
 [
   {
     "slug": "peony",
-    "hash": "08c393e38359c464e7ff6e5f16a239ba170be5a9c58f0e76fb1e346de00cdb46",
+    "hash": "c4ade07686c9e2fee954c1a255ed82aa48fad2fc52783a8e578eef29dcf36004",
     "peakParticles": 1475,
     "timing": {
       "liftTimeSeconds": 1.6666666666666656,
@@ -10,11 +10,11 @@
       "fadeFinishSeconds": 5.466666666666665,
       "endSeconds": 6.146666666666665
     },
-    "simulationMs": 48
+    "simulationMs": 42
   },
   {
     "slug": "chrysanthemum",
-    "hash": "d8d76df17b187677b47725677495e41db0dd194f5625215afb93d8a11ca57a38",
+    "hash": "2121c4ddbfdbee7b0e2a2dcc5a819b7fea0231dc7a3acbb73fb167e5dcd8144c",
     "peakParticles": 1461,
     "timing": {
       "liftTimeSeconds": 2.1499999999999972,
@@ -23,11 +23,11 @@
       "fadeFinishSeconds": 5.649999999999997,
       "endSeconds": 6.629999999999997
     },
-    "simulationMs": 60
+    "simulationMs": 73
   },
   {
     "slug": "brocade",
-    "hash": "ea879c49c6e58ba6a3dc6a74b18fc8ae0c0299e85c399e8fb1ba7ac5efa095ff",
+    "hash": "6d025ac54b49c52aa3da28bcb4911726ecdaa472de80b41c759ceddd90363915",
     "peakParticles": 1199,
     "timing": {
       "liftTimeSeconds": 1.2333333333333338,
@@ -36,11 +36,11 @@
       "fadeFinishSeconds": 6.183333333333334,
       "endSeconds": 6.183333333333334
     },
-    "simulationMs": 34
+    "simulationMs": 29
   },
   {
     "slug": "kamuro",
-    "hash": "1111af61fbf599a58746f0971f1ec3604f5abe2e144a395c584bcbc5db2ce32d",
+    "hash": "9f1650293a23888f3050f4e2d9a411b8bb00c264c185a90a8610b74915db4e0b",
     "peakParticles": 1428,
     "timing": {
       "liftTimeSeconds": 2.3499999999999965,
@@ -49,7 +49,7 @@
       "fadeFinishSeconds": 8.849999999999996,
       "endSeconds": 10.149999999999997
     },
-    "simulationMs": 52
+    "simulationMs": 50
   },
   {
     "slug": "willow",
@@ -62,11 +62,11 @@
       "fadeFinishSeconds": 13.349999999999998,
       "endSeconds": 13.349999999999998
     },
-    "simulationMs": 119
+    "simulationMs": 99
   },
   {
     "slug": "palm",
-    "hash": "4bd3fc18bca8e8b8d3d6ef324e74b099ab37e9e34cf373e66d083acbee441029",
+    "hash": "5ec4a30d23e6fad5bde07cb0b06eb67f98778babac2f6f0b50a9d8176a9c02bd",
     "peakParticles": 1434,
     "timing": {
       "liftTimeSeconds": 2.1499999999999972,
@@ -75,11 +75,11 @@
       "fadeFinishSeconds": 7.149999999999997,
       "endSeconds": 7.149999999999997
     },
-    "simulationMs": 26
+    "simulationMs": 32
   },
   {
     "slug": "ring",
-    "hash": "193dca39e5cd6a442c59fef29fab1f80c56957223face10c75c67a40944c2fce",
+    "hash": "6c52cea6e33b4d7c883c9f1b25e0613d05d40bff8cc070164e6a37a36a80a253",
     "peakParticles": 1434,
     "timing": {
       "liftTimeSeconds": 2.1499999999999972,
@@ -88,11 +88,11 @@
       "fadeFinishSeconds": 4.281999999999997,
       "endSeconds": 6.629999999999997
     },
-    "simulationMs": 19
+    "simulationMs": 27
   },
   {
     "slug": "saturn",
-    "hash": "a3c5049f8c892cd9c18a26d847cc3268b81d6180bc3c9681fbe3a42936c34560",
+    "hash": "ac6a15cc6560c39407a7fc1ff95bd5d69f210df251437714950144ac10adb172",
     "peakParticles": 1470,
     "timing": {
       "liftTimeSeconds": 2.0499999999999976,
@@ -101,12 +101,12 @@
       "fadeFinishSeconds": 4.509999999999998,
       "endSeconds": 6.529999999999998
     },
-    "simulationMs": 20
+    "simulationMs": 21
   },
   {
     "slug": "crossette",
-    "hash": "93a5e92a0d9c58e53c47569db852cbf71d316ba5e4faee75b9119af1e5cbae78",
-    "peakParticles": 1562,
+    "hash": "1a22bd770e2f876421f660f426d1737ec57ae169e7628dd70378136f55046087",
+    "peakParticles": 1623,
     "timing": {
       "liftTimeSeconds": 1.9666666666666646,
       "effectStartSeconds": 1.9666666666666646,
@@ -114,12 +114,12 @@
       "fadeFinishSeconds": 4.3666666666666645,
       "endSeconds": 6.446666666666664
     },
-    "simulationMs": 45
+    "simulationMs": 70
   },
   {
     "slug": "double_break",
-    "hash": "8fb39f3e81a00f28ae11366be061b8f0c708985ca99fa580112acbb5d9f38515",
-    "peakParticles": 2181,
+    "hash": "7462e65d059237f2af4b1cfb724c94fb2366ea1429794110e0ed2c24914c0a2d",
+    "peakParticles": 2182,
     "timing": {
       "liftTimeSeconds": 2.533333333333329,
       "effectStartSeconds": 2.533333333333329,
@@ -127,11 +127,11 @@
       "fadeFinishSeconds": 5.133333333333329,
       "endSeconds": 7.013333333333328
     },
-    "simulationMs": 64
+    "simulationMs": 58
   },
   {
     "slug": "bowtie",
-    "hash": "a2482fa1d31231f298bb26024d89850fbec8dea41d23dec21b6bb54e42faadf9",
+    "hash": "9f658b6ab1df901751532fce26a257c1c18b35a6f8117c804216a32c054c6b24",
     "peakParticles": 1451,
     "timing": {
       "liftTimeSeconds": 1.9666666666666646,
@@ -140,7 +140,7 @@
       "fadeFinishSeconds": 4.966666666666665,
       "endSeconds": 6.446666666666664
     },
-    "simulationMs": 46
+    "simulationMs": 34
   },
   {
     "slug": "horsetail",
@@ -153,7 +153,7 @@
       "fadeFinishSeconds": 12.166666666666666,
       "endSeconds": 13.466666666666667
     },
-    "simulationMs": 87
+    "simulationMs": 59
   },
   {
     "slug": "comet",
@@ -166,7 +166,7 @@
       "fadeFinishSeconds": 7.433333333333328,
       "endSeconds": 7.433333333333328
     },
-    "simulationMs": 21
+    "simulationMs": 25
   },
   {
     "slug": "mine",
@@ -183,7 +183,7 @@
   },
   {
     "slug": "pearls",
-    "hash": "4addd05e372f91d9d849b336c7b310561e806e048e2366477045a84b2e80a6ea",
+    "hash": "e9d980ef4a9cbaab3b1c2138a732d7be8872659780bc3bad08d9a423bcc04126",
     "peakParticles": 1434,
     "timing": {
       "liftTimeSeconds": 2.1499999999999972,
@@ -192,11 +192,11 @@
       "fadeFinishSeconds": 4.381999999999998,
       "endSeconds": 6.629999999999997
     },
-    "simulationMs": 21
+    "simulationMs": 19
   },
   {
     "slug": "pistil",
-    "hash": "d63086b362ec0c37000e1909156c26e4492fa77bc286b915a2c918cddc8cbed4",
+    "hash": "417992674dc72759b0ba4d2b5d54b7ef4973f1e3dc0379f3ae4b743e8a9deb49",
     "peakParticles": 1515,
     "timing": {
       "liftTimeSeconds": 1.9666666666666646,
@@ -205,12 +205,12 @@
       "fadeFinishSeconds": 4.566666666666665,
       "endSeconds": 6.446666666666664
     },
-    "simulationMs": 20
+    "simulationMs": 48
   },
   {
     "slug": "nishiki",
-    "hash": "d2d9a039116b6faf44f6e78fe92a56b77a0daefe6546c73b1db54995e59ae366",
-    "peakParticles": 1827,
+    "hash": "ed96f775c7bf4da8c31ba08c01bf6c050a1b88dcb6e9a94b0ad1a6ced4a4ca3b",
+    "peakParticles": 1733,
     "timing": {
       "liftTimeSeconds": 2.249999999999997,
       "effectStartSeconds": 2.249999999999997,
@@ -218,11 +218,11 @@
       "fadeFinishSeconds": 8.249999999999996,
       "endSeconds": 9.549999999999997
     },
-    "simulationMs": 58
+    "simulationMs": 78
   },
   {
     "slug": "strobe",
-    "hash": "62508ed01cc7bc605d4ee1e65cb508227ee755c89462c483ef76ea20566d9b65",
+    "hash": "050c67ab7d5b1140a80fdb41546ba4c14611bc3a8154e01d14d46c0a4c322271",
     "peakParticles": 811,
     "timing": {
       "liftTimeSeconds": 1.9666666666666646,
@@ -231,12 +231,12 @@
       "fadeFinishSeconds": 5.966666666666665,
       "endSeconds": 6.446666666666664
     },
-    "simulationMs": 16
+    "simulationMs": 20
   },
   {
     "slug": "crackle",
-    "hash": "8244736bea45a933911dd652b567819897c256e156a174c7fd10d72751957a3a",
-    "peakParticles": 2721,
+    "hash": "d006e5cac753e42163cedd4c46f845caaba0e2878ebcbb1cf8558a45ccb84317",
+    "peakParticles": 2579,
     "timing": {
       "liftTimeSeconds": 1.7666666666666653,
       "effectStartSeconds": 1.7666666666666653,
@@ -244,7 +244,7 @@
       "fadeFinishSeconds": 3.9666666666666655,
       "endSeconds": 6.246666666666664
     },
-    "simulationMs": 48
+    "simulationMs": 36
   },
   {
     "slug": "silverFish",
@@ -257,7 +257,7 @@
       "fadeFinishSeconds": 4.366666666666665,
       "endSeconds": 6.246666666666664
     },
-    "simulationMs": 24
+    "simulationMs": 23
   },
   {
     "slug": "waterfall",
@@ -270,7 +270,7 @@
       "fadeFinishSeconds": 9.866666666666667,
       "endSeconds": 9.866666666666667
     },
-    "simulationMs": 58
+    "simulationMs": 59
   },
   {
     "slug": "whirl",
@@ -283,7 +283,7 @@
       "fadeFinishSeconds": 4.566666666666666,
       "endSeconds": 6.046666666666665
     },
-    "simulationMs": 18
+    "simulationMs": 20
   },
   {
     "slug": "roman_candle",
@@ -309,6 +309,6 @@
       "fadeFinishSeconds": 9.24,
       "endSeconds": 10.540000000000001
     },
-    "simulationMs": 70
+    "simulationMs": 84
   }
 ]

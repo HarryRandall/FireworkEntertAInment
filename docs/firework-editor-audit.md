@@ -260,15 +260,44 @@ overflow. No catalogue data was saved during these checks.
 
 Follow-up findings from this pass:
 
-- The gravity control edits an upper bound, with variation below it. Some shapes
-  also impose negative gravity floors and the standard burst adds random jitter,
-  so zero does not reliably remove gravity. The tooltip now describes the bound;
-  the underlying gravity model still needs simplification and behavioural tests.
+- Gravity used an upper bound with variation below it, while some shapes added
+  extra jitter or forced downward acceleration. This is corrected below.
 - Most shape counts multiply the layer count, while ground emitters impose
   minimum counts/rates. Their effective count/rate needs a direct, truthful
   control rather than several interacting percentages and minimums.
 - On narrow screens the preview transport's timestamp and event ticks crowd
   the scrubber. It needs a responsive transport arrangement.
+
+## Explicit star gravity
+
+Gravity now displays the midpoint of the authored range; Variation is the spread
+either side, matching the speed controls. Opening a saved record does not change
+its range. Editing either value preserves the other layer and clamps the range
+symmetrically at the model bounds. The obsolete upper-bound setters are removed.
+
+The simulation no longer adds an unrequested random gravity offset or forces
+weeping, falling-tail and pearl stars downwards. Named shape gravity multipliers
+remain explicit, but no longer saturate at a hidden final-acceleration limit.
+Split fragments inherit the parent's actual gravity rather than redrawing a
+different value and multiplying it by 0.82.
+
+Behavioural tests cover zero acceleration across all 19 shape algorithms, fixed
+positive/negative gravity, explicit 300% multipliers, independent layer ranges
+and fragment inheritance. An authenticated local editor check confirmed exact
+zero entry and two Undo operations restoring the original gravity and variation;
+no record was saved.
+
+The 24-family seeded fixtures were intentionally refreshed for this motion and
+random-sampling change. Estimated timing stayed unchanged across both fixtures.
+One peak exceeded the 10% investigation threshold: disabled-colour Kamuro grew
+from 2,626 to 2,895 particles (10.24%). A temporary in-memory experiment retained
+the previous random draw order while removing the gravity jitter: its peak was
+2,748, separating the trajectory effect from the downstream sampling effect.
+That experiment is not retained in the renderer. Trail budgets are unchanged;
+these counts do not establish dense-show GPU performance clearance.
+
+The app, worker and new migration `20260926000400` share the updated renderer
+fingerprint. No database migration or deployment was performed in this pass.
 
 ## Remaining audit and implementation
 

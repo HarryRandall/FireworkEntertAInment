@@ -1,11 +1,7 @@
 import * as THREE from 'three';
 import type { FireworkDesign, FireworkStarLayer } from '../design.ts';
 import type { RandomSource } from '../random.ts';
-import {
-  MIN_STAR_GRAVITY,
-  STAR_DRAG,
-  STAR_LIFE_RANDOMNESS_REFERENCE_SECONDS,
-} from './constants.ts';
+import { STAR_DRAG, STAR_LIFE_RANDOMNESS_REFERENCE_SECONDS } from './constants.ts';
 import { clamp } from './math.ts';
 import type { EffectContext } from './types.ts';
 
@@ -305,23 +301,18 @@ export function effectStarOpeningLifeReference(
   }
 }
 
-export function effectStarGravity(
-  ctx: EffectContext,
-  design: FireworkDesign,
-  gravity: number,
-  rng: RandomSource,
-): number {
+/** Shape multipliers are explicit settings; variation comes only from the layer range. */
+export function effectStarGravity(design: FireworkDesign, gravity: number): number {
   const tuning = design.geometryTuning;
   switch (design.geometry) {
     case 'weeping':
-      return clamp(gravity * (tuning.weeping.gravityPercent / 100), MIN_STAR_GRAVITY, -0.08);
+      return gravity * (tuning.weeping.gravityPercent / 100);
     case 'falling_tail':
-    case 'waterfall':
-      return clamp(gravity * (tuning.fallingTail.gravityPercent / 100), MIN_STAR_GRAVITY, -0.05);
+      return gravity * (tuning.fallingTail.gravityPercent / 100);
     case 'pearls':
-      return clamp(gravity * (tuning.pearls.gravityPercent / 100), MIN_STAR_GRAVITY, -0.18);
+      return gravity * (tuning.pearls.gravityPercent / 100);
     default:
-      return gravity + (rng.next() - 0.5) * 0.035;
+      return gravity;
   }
 }
 

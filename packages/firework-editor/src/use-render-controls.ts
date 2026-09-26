@@ -44,7 +44,6 @@ import {
   LIFT_VELOCITY_OPTIONS,
   rangeHalfWidth,
   rangeMid,
-  rangeUpper,
   readRecord,
   round2,
   STAR_COLOUR_PATTERN_MAX_COLOURS,
@@ -309,24 +308,13 @@ export function useRenderControls({
   function setStarBurstLifeMid(layerKey: StarLayerKey, mid: number) {
     setLayerBurstLifeMid(layerKey, mid);
   }
-  function setStarGravityUpper(layerKey: StarLayerKey, maxGravity: number) {
-    setLayerGravityUpper(layerKey, maxGravity);
-  }
   function setStarSpeedSpread(layerKey: StarLayerKey, halfWidth: number) {
     const burst = design.stars[layerKey].burst;
     setStarBurstRangeMid(layerKey, 'speed', rangeMid(burst.speed), halfWidth);
   }
-  function setStarGravitySpread(layerKey: StarLayerKey, spread: number) {
+  function setStarGravitySpread(layerKey: StarLayerKey, halfWidth: number) {
     const burst = design.stars[layerKey].burst;
-    const upper = rangeUpper(burst.gravity);
-    const next: [number, number] = [
-      round2(Math.max(STAR_GRAVITY_MIN, upper - spread)),
-      round2(upper),
-    ];
-    mutate((draft) => {
-      const target = ensureDraftStarNested(draft, layerKey, 'burst');
-      target.gravity = next;
-    });
+    setStarBurstRangeMid(layerKey, 'gravity', rangeMid(burst.gravity), halfWidth);
   }
   function setStarBurstScalar(
     layerKey: StarLayerKey,
@@ -421,17 +409,6 @@ export function useRenderControls({
           : key === 'life'
             ? lifeRangeFromMidAndHalfWidth(mid, halfWidth)
             : boundedRangeFromMidpoint(mid, halfWidth, STAR_SPEED_MIN, STAR_SPEED_MAX);
-    });
-  }
-  function setLayerGravityUpper(layerKey: StarLayerKey, maxGravity: number) {
-    const current = design.stars[layerKey].burst.gravity;
-    const spread = Math.abs(current[1] - current[0]);
-    mutate((draft) => {
-      const stars = ensureRecord(draft, 'stars');
-      const layer = ensureRecord(stars, layerKey);
-      const burst = ensureRecord(layer, 'burst');
-      const upper = clampNumber(maxGravity, STAR_GRAVITY_MIN, STAR_GRAVITY_MAX);
-      burst.gravity = [round2(Math.max(STAR_GRAVITY_MIN, upper - spread)), round2(upper)];
     });
   }
   function currentBurstTrail(layerKey?: StarLayerKey): BurstTrail {
@@ -605,7 +582,6 @@ export function useRenderControls({
     removeStarColourPatternEntry,
     setStarBurstRangeMid,
     setStarBurstLifeMid,
-    setStarGravityUpper,
     setStarSpeedSpread,
     setStarGravitySpread,
     setStarBurstScalar,
@@ -617,7 +593,6 @@ export function useRenderControls({
     setLayerBurstLifeMid,
     setLayerBurstLifeHalfWidth,
     setLayerBurstRangeMid,
-    setLayerGravityUpper,
     currentBurstTrail,
     writeBurstTrail,
     setBurstTrailPreset,

@@ -384,10 +384,6 @@ export function rangeMid(range: [number, number]): number {
   return (range[0] + range[1]) / 2;
 }
 
-export function rangeUpper(range: [number, number]): number {
-  return Math.max(range[0], range[1]);
-}
-
 export function rangeHalfWidth(range: [number, number]): number {
   return Math.abs(range[1] - range[0]) / 2;
 }
