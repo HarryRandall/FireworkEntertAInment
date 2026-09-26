@@ -1026,9 +1026,14 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   const backgroundGlowSoftness = heads.backgroundGlowSoftness;
 
   const previewDuration = useMemo(() => {
-    const estimated = PREVIEW_CUE_TIME_SECONDS + estimateDesignDurationSeconds(previewDesign);
+    const estimated =
+      PREVIEW_CUE_TIME_SECONDS +
+      Math.max(
+        estimateDesignDurationSeconds(previewDesign),
+        savedRenderResult.ok ? estimateDesignDurationSeconds(savedRenderResult.design) : 0,
+      );
     return Math.max(4, Math.ceil(estimated * 2) / 2);
-  }, [previewDesign]);
+  }, [previewDesign, savedRenderResult]);
   useEffect(() => {
     if (!timelineDurationSyncPendingRef.current) return;
     timelineDurationSyncPendingRef.current = false;
@@ -1037,11 +1042,11 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   const previewTicks = useMemo(
     () =>
       estimatePreviewTicks({
-        design: previewDesign,
+        design: displayedDesign,
         cueTimeSeconds: PREVIEW_CUE_TIME_SECONDS,
         previewDuration,
       }),
-    [previewDesign, previewDuration],
+    [displayedDesign, previewDuration],
   );
 
   const selectedEffect = firework.effectOptions.find((option) => option.id === effectId) ?? null;
@@ -1101,12 +1106,16 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
         ? [
             {
               ...previewCue,
-              firework: { ...previewCue.firework, renderDesign: savedRenderResult.design },
+              firework: {
+                ...previewCue.firework,
+                caliber: savedPreviewSnapshot.caliber || null,
+                renderDesign: savedRenderResult.design,
+              },
             },
           ]
         : [];
     return renderError ? [] : [previewCue];
-  }, [previewCue, renderError, showSaved, savedRenderResult]);
+  }, [previewCue, renderError, showSaved, savedRenderResult, savedPreviewSnapshot.caliber]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -1197,9 +1206,28 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     updater: (defaults: JsonRecord) => void,
   ) {
     if (!parsedOverrides.ok) return;
-    const draft = cloneRecord(parsedOverrides.value);
+    const draft = cloneRecord(mergedOverrides);
+    const colourSettings = (record: JsonRecord) => {
+      const outer = readRecord(readRecord(record, 'stars'), 'outer');
+      return JSON.stringify([record.color, outer.color, outer.colourPattern]);
+    };
+    const previousColours = colourSettings(draft);
     const shouldMarkCustom = materialiseStyleDefault(kind, draft);
     updater(draft);
+    if (kind === 'star' && colourSettings(draft) !== previousColours) {
+      setColourStops(
+        buildInitialColourStops(
+          {
+            primaryColor: rgbObjectToHex(previewDesign.color),
+            secondaryColor: null,
+            colorPalette: [],
+          },
+          draft,
+        ),
+      );
+      setColourMode(initialColourMode(draft));
+      setColourAxis(initialColourAxis(draft));
+    }
     setOverridesText(JSON.stringify(draft, null, 2));
     if (shouldMarkCustom) markStyleDefaultCustom(kind);
   }
@@ -1296,7 +1324,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   }
 
   function resetLocalStyleDefaults(kind: FireworkStyleDefaultKind) {
-    mutateOverrides((defaults) => {
+    mutateOverridesForStyle(kind, (defaults) => {
       resetCopiedPreset(defaults, kind);
     });
   }
@@ -1305,22 +1333,46 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     const option = [...firework.styleDefaults[kind], ...(createdStyleDefaults[kind] ?? [])].find(
       (item) => item.id === value,
     );
-    if (option) mutateOverrides((defaults) => applyCopiedPreset(defaults, kind, option));
+    if (option) {
+      const checked = validateFireworkDesign({ variantOverrides: option.defaultsJson });
+      if (!checked.ok) {
+        setError(checked.diagnostics.map((issue) => issue.message).join('; '));
+        return;
+      }
+      mutateOverridesForStyle(kind, (defaults) => applyCopiedPreset(defaults, kind, option));
+    }
+    setError(null);
     setStyleDefaultIds((current) => ({ ...current, [kind]: value }));
   }
 
   function handleEffectIdChange(nextEffectId: string) {
     if (nextEffectId === effectId) return;
-    setEffectId(nextEffectId);
-    // Swap to the new effect's template: drop firework-level preset selections so the
-    // new effect's inherited defaults drive the preview, and clear overrides tuned for
-    // the previous effect so they do not shadow the new base model.
-    setStyleDefaultIds(emptyStyleDefaultIdMap());
-    const copied = validateFireworkDesign({ baseModel: firework.effectModels[nextEffectId] });
+    const model = firework.effectModels[nextEffectId];
+    if (!model) {
+      setError('This effect has no render settings and cannot be applied.');
+      return;
+    }
+    const copied = validateFireworkDesign({ baseModel: model });
     if (!copied.ok) {
       setError(copied.diagnostics.map((issue) => issue.message).join('; '));
       return;
     }
+    setError(null);
+    setEffectId(nextEffectId);
+    setStyleDefaultIds(emptyStyleDefaultIdMap());
+    const colourSource = { ...copied.design };
+    setColourStops(
+      buildInitialColourStops(
+        {
+          primaryColor: rgbObjectToHex(copied.design.color),
+          secondaryColor: null,
+          colorPalette: [],
+        },
+        colourSource,
+      ),
+    );
+    setColourMode(initialColourMode(colourSource));
+    setColourAxis(initialColourAxis(colourSource));
     setOverridesText(JSON.stringify(copied.design, null, 2));
   }
 
@@ -1407,12 +1459,8 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     action: 'update' | 'restore',
   ) {
     const historyVersionId = crypto.randomUUID();
-    const previousSavedSnapshot = savedSnapshotRef.current;
     const localSnapshot = currentLocalSnapshot();
-    savedSnapshotRef.current = optimisticSnapshot;
-    savedSignatureRef.current = optimisticSnapshot.signature;
     currentSignatureRef.current = optimisticSnapshot.signature;
-    setSavedSignature(optimisticSnapshot.signature);
     applySnapshot(optimisticSnapshot);
     editorHistory.begin(
       makeOptimisticEditorVersion({
@@ -1427,19 +1475,12 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       historyVersionId,
       localSnapshot,
       optimisticSnapshot,
-      previousSavedSnapshot,
     };
   }
 
   function rollbackOptimisticMutation(mutation: ReturnType<typeof beginOptimisticMutation>) {
     if (editorTargetIdRef.current !== mutation.targetId) return;
     editorHistory.discard(mutation.historyVersionId);
-    if (savedSignatureRef.current === mutation.optimisticSnapshot.signature) {
-      savedSnapshotRef.current = mutation.previousSavedSnapshot;
-      setSavedPreviewSnapshot(mutation.previousSavedSnapshot);
-      savedSignatureRef.current = mutation.previousSavedSnapshot.signature;
-      setSavedSignature(mutation.previousSavedSnapshot.signature);
-    }
     if (currentSignatureRef.current === mutation.optimisticSnapshot.signature) {
       currentSignatureRef.current = mutation.localSnapshot.signature;
       applySnapshot(mutation.localSnapshot);
@@ -2082,8 +2123,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       saved: savedRenderResult.ok ? savedRenderResult.design : undefined,
       controls: {
         design: previewDesign,
-        defaults: overridesRecord,
-
+        defaults: mergedOverrides,
         disabled: !parsedOverrides.ok,
       },
       mutate: mutateOverridesForStyle,

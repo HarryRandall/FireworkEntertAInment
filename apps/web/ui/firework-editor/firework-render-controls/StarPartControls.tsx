@@ -21,6 +21,7 @@ import {
   STAR_TERMINAL_VELOCITY_MAX,
 } from '@showcrafter/fireworks/design';
 import { SwitchField } from './ControlFields';
+import { CONTROL_GRID_CLASS } from './ControlSections';
 import { renderBurstTrailControls } from './panels/renderBurstTrailControls';
 import { renderStarAppearance } from './panels/renderStarAppearance';
 import { renderStarColourPatternControls } from './panels/renderStarColourPatternControls';
@@ -88,7 +89,7 @@ export function StarPartControls({
       {part === 'colours' ? renderStarColourPatternControls(context, layerKey, disabled) : null}
       {part === 'trails' ? renderBurstTrailControls(context, layerKey) : null}
       {part === 'movement' ? (
-        <div className="grid gap-5 sm:grid-cols-2">
+        <div className={CONTROL_GRID_CLASS}>
           <RendererField
             inputKind="number"
             label="Star count"

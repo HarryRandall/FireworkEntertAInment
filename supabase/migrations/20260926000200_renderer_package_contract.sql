@@ -7,7 +7,7 @@ immutable
 parallel safe
 set search_path = ''
 as $$
-  select 'showcrafter.fireworks-engine.import-renderer.v1+sha256.696058d7e332ae9e8523aa9ba15590d697d36cddb2fab56dc5524543dc5ee277'::text;
+  select 'showcrafter.fireworks-engine.import-renderer.v1+sha256.4029c44ca247f32860c90fc286575cda8a96a848edfae68c4cbea225fad7d2a4'::text;
 $$;
 
 comment on function public.current_firework_import_renderer_contract_version() is

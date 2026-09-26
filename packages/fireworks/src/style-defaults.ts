@@ -70,9 +70,10 @@ function cloneJson<T>(value: T): T {
 export const INITIAL_STYLE_DEFAULT_JSON: Record<FireworkStyleDefaultKind, JsonRecord> = {
   geometry: {
     geometry: DEFAULT_DESIGN.geometry,
+    pattern: DEFAULT_DESIGN.pattern,
     geometryTuning: cloneJson(DEFAULT_DESIGN.geometryTuning),
   },
-  innerStar: { stars: { core: { head: BLUE_SPHERE_HEAD } } },
+  innerStar: { stars: { core: { enabled: true, head: BLUE_SPHERE_HEAD } } },
   innerTrail: { stars: { core: { burstTrail: makeBurstTrailPreset('custom') } } },
   star: {
     stars: {
@@ -194,17 +195,6 @@ function makeTrailPreviewStarLayers(): JsonRecord {
   };
 }
 
-function makeHiddenTrailCarrierStarLayers(): JsonRecord {
-  const stars = makeTrailPreviewStarLayers();
-  const outer = stars.outer as JsonRecord;
-  const outerHead = outer.head as JsonRecord;
-  outer.head = {
-    ...outerHead,
-    visible: false,
-  };
-  return stars;
-}
-
 function makeLaunchPreviewStarLayers(): JsonRecord {
   const disabledBurstTrail = makeBurstTrailPreset('none');
 
@@ -224,9 +214,13 @@ function makeLaunchPreviewStarLayers(): JsonRecord {
   };
 }
 
-export function makeTrailPreviewStarDefaults(): JsonRecord {
+export function makeTrailPreviewStarDefaults(layer: 'outer' | 'core' = 'outer'): JsonRecord {
+  const stars = makeTrailPreviewStarLayers();
+  if (layer === 'core') {
+    [stars.outer, stars.core] = [stars.core, stars.outer];
+  }
   return {
-    stars: makeTrailPreviewStarLayers(),
+    stars,
   };
 }
 
@@ -236,10 +230,19 @@ export function makeStyleDefaultPreviewBaseModel(
   const disabledBurstTrail = makeBurstTrailPreset('none');
   const starLayers =
     kind === 'trail' || kind === 'innerTrail'
-      ? makeHiddenTrailCarrierStarLayers()
+      ? makeTrailPreviewStarLayers()
       : kind === 'launch' || kind === 'smoke'
         ? makeLaunchPreviewStarLayers()
         : makeNeutralStarPreviewLayers();
+  if (kind === 'innerStar' || kind === 'innerTrail') {
+    [starLayers.outer, starLayers.core] = [starLayers.core, starLayers.outer];
+  }
+  if (kind === 'trail' || kind === 'innerTrail') {
+    const carrier = starLayers[kind === 'innerTrail' ? 'core' : 'outer'];
+    if (isRecord(carrier)) {
+      carrier.head = { ...(isRecord(carrier.head) ? carrier.head : {}), visible: false };
+    }
+  }
   const launchDefaults = makeNeutralLaunchDefaults();
   if (kind === 'launch') {
     launchDefaults.shell = cloneJson(DEFAULT_DESIGN.launch.shell);
@@ -291,16 +294,21 @@ export function compileStyleDefaultPreviewDesign(
         ? [trailPreviewStarDefaults]
         : undefined,
     variantOverrides: normaliseStyleDefaultJson(kind, defaultsJson),
-    primaryColor: kind === 'trail' || kind === 'smoke' || kind === 'launch' ? '#22d3ee' : null,
+    primaryColor:
+      kind === 'trail' || kind === 'innerTrail' || kind === 'smoke' || kind === 'launch'
+        ? '#22d3ee'
+        : null,
   });
 }
 
-function stripColourFields(layer: FireworkStarLayer): JsonRecord {
+function starPresetSettings(layer: FireworkStarLayer): JsonRecord {
   return {
     enabled: layer.enabled,
     count: layer.count,
     burst: cloneJson(layer.burst),
     head: cloneJson(layer.head),
+    ...(layer.color ? { color: cloneJson(layer.color) } : {}),
+    colourPattern: cloneJson(layer.colourPattern),
   };
 }
 
@@ -312,6 +320,7 @@ export function extractStyleDefaultsFromDesign(
     case 'geometry':
       return {
         geometry: design.geometry,
+        pattern: design.pattern,
         geometryTuning: cloneJson(design.geometryTuning),
       };
     case 'trail':
@@ -319,10 +328,11 @@ export function extractStyleDefaultsFromDesign(
     case 'innerTrail':
       return { stars: { core: { burstTrail: cloneJson(design.stars.core.burstTrail) } } };
     case 'innerStar':
-      return { stars: { core: stripColourFields(design.stars.core) } };
+      return { stars: { core: starPresetSettings(design.stars.core) } };
     case 'launch':
       return {
         liftVelocity: design.liftVelocity,
+        shellLife: design.shellLife,
         launch: {
           shell: cloneJson(design.launch.shell),
           liftParticles: cloneJson(design.launch.liftParticles),
@@ -360,7 +370,7 @@ export function extractStyleDefaultsFromDesign(
     default: {
       const starDefaults: JsonRecord = {
         stars: {
-          outer: stripColourFields(design.stars.outer),
+          outer: starPresetSettings(design.stars.outer),
         },
       };
       return starDefaults;
@@ -433,12 +443,13 @@ export function removeStyleDefaultOverridesFromRecord(
   switch (kind) {
     case 'geometry':
       delete defaults.geometry;
+      delete defaults.pattern;
       delete defaults.geometryTuning;
       return;
     case 'star':
     case 'innerStar': {
       const layer = kind === 'star' ? 'outer' : 'core';
-      for (const field of ['head', 'enabled', 'count', 'burst'])
+      for (const field of ['head', 'enabled', 'count', 'burst', 'color', 'colourPattern'])
         deleteNested(defaults, ['stars', layer, field]);
       return;
     }
@@ -448,6 +459,7 @@ export function removeStyleDefaultOverridesFromRecord(
       return;
     case 'launch':
       delete defaults.liftVelocity;
+      delete defaults.shellLife;
       deleteNested(defaults, ['launch', 'shell']);
       deleteNested(defaults, ['launch', 'liftParticles']);
       return;

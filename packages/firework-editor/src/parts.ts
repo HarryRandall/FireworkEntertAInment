@@ -91,7 +91,8 @@ export const EDITOR_PARTS: Record<string, EditorPartDefinition> = {
   sound: {
     path: ['Sound'],
     label: 'Launch and burst',
-    description: 'Choose the reports heard during launch, burst and crackle.',
+    description:
+      'Choose the reports heard during launch and burst. Crackle audio is in Extra effects → Crackle.',
   },
   details: {
     path: ['Utilities'],

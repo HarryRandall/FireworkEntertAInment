@@ -89,6 +89,32 @@ snapshots and reset on particle reuse. Tests cover speed 20, zero resistance,
 zero and non-zero fall limits, identical motion across shapes and snapshot restore.
 All 24 catalogue compositions retain their peak counts and timing in this pass.
 
+The preset and comparison pass found:
+
+- Inner-star and inner-trail presets previewed with an outer carrier and a disabled
+  inner layer. Each now uses its own layer; optional preview carriers remain outside
+  the saved part. Tests verify that no outer layer leaks into an inner-trail preset.
+- Star preset extraction discarded colours, launch extraction discarded maximum
+  flight time, and geometry extraction discarded distribution. Copy/reset now
+  includes those settings while preserving neighbouring parts. Firework palette
+  state follows an applied preset rather than overwriting its copied colours.
+- Invalid whole-effect selection changed the selected effect before validation.
+  Selection now validates first, rejects missing models and leaves the draft intact
+  on failure. Part-preset validation is also reported in the editor.
+- Saved comparison mixed draft appearance, calibre or timeline settings with the
+  saved design. Appearance, calibre and ticks now use the selected snapshot, and
+  both views share a duration long enough for either design. Browser checks verified
+  a three-second playhead stayed fixed when switching the preset comparison.
+- Save handlers marked the draft as the saved baseline before persistence returned.
+  Baselines now change only on success. A browser validation-failure check retained
+  the invalid draft and Undo restored its original name afterwards.
+- Preset editors now use the same parts tree and Appearance/Colours/Movement pages
+  as the other editors, with section reverts. Undo retains the current section.
+  Loading skeletons match the preview/inspector/tree arrangement. Movement controls
+  use the inspector's available width rather than the browser width to choose columns.
+- Reverting launch/burst audio also reverted crackle audio, even though it is edited
+  separately. Its section revert now changes only the advertised settings.
+
 ## Remaining audit and implementation
 
 1. **Control metadata and limits.** Inventory each exposed field against schema,

@@ -37,85 +37,95 @@ const DEFINITIONS: Definition[] = [
   { id: 'sound', scope: 'sound', kind: 'sound' },
 ];
 
+export function firstRendererTab(kind: FireworkStyleDefaultKind): string {
+  const definition = DEFINITIONS.find((item) => item.kind === kind);
+  if (!definition) throw new Error(`No editor section for ${kind}`);
+  return definition.id;
+}
+
 export function rendererTabs({
   controls,
   mutate,
   preset,
   colours,
   saved,
+  kinds,
 }: {
   controls: Omit<RenderControlsProps, 'mutate'>;
   mutate: (kind: FireworkStyleDefaultKind, updater: (record: JsonRecord) => void) => void;
   preset: (kind: FireworkStyleDefaultKind) => ReactNode;
   colours?: ReactNode;
   saved?: RenderControlsProps['design'];
+  kinds?: readonly FireworkStyleDefaultKind[];
 }): FireworkEditorShellTab[] {
-  return DEFINITIONS.map((definition) => {
-    const meta = EDITOR_PARTS[definition.id];
-    const layer = definition.layer ?? 'outer';
-    const enabled =
-      definition.part && definition.part !== 'flight'
-        ? controls.design.stars[layer].enabled &&
-          (definition.part !== 'trails' || controls.design.stars[layer].burstTrail.enabled)
-        : definition.id === 'smoke'
-          ? controls.design.launch.smoke.enabled
-          : definition.id === 'fx-strobe'
-            ? controls.design.strobe.enabled
-            : definition.id === 'fx-crackle'
-              ? controls.design.crackle.enabled
-              : definition.id === 'fx-split'
-                ? controls.design.split.enabled
-                : definition.id === 'launch-dot'
-                  ? controls.design.launch.shell.visible
-                  : undefined;
-    const unavailable = unavailableControlReason(controls.design, definition.scope, layer);
-    const dirty = saved ? sectionChanged(definition.id, controls.design, saved) : false;
-    const source = presetSourceStatus(controls.defaults, definition.kind);
-    return {
-      dirty,
-      id: definition.id,
-      label: meta.label,
-      title: meta.label,
-      description: meta.description,
-      eyebrow: meta.path.join(' / '),
-      icon: Sparkles,
-      enabled: unavailable ? false : enabled,
-      content: (
-        <div className="space-y-5">
-          {source ? (
-            <p className="text-muted-foreground text-xs">
-              Source: {source.name}
-              {source.modified ? ' · Modified' : ' · Copied preset'}
-            </p>
-          ) : null}
-          {definition.id === 'colour' && colours ? (
-            colours
-          ) : (
-            <FireworkRenderControls
-              {...controls}
-              showLaunch
-              showStarCount
-              controlScope={definition.scope}
-              part={definition.part}
-              layer={layer}
-              mutate={(updater) => mutate(definition.kind, updater)}
-            />
-          )}
-          {preset(definition.kind)}
-          {saved ? (
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={!dirty}
-              onClick={() =>
-                mutate(definition.kind, (draft) => revertSection(definition.id, draft, saved))
-              }
-            >
-              Revert section to saved
-            </Button>
-          ) : null}
-        </div>
-      ),
-    };
-  });
+  return DEFINITIONS.filter((definition) => !kinds || kinds.includes(definition.kind)).map(
+    (definition) => {
+      const meta = EDITOR_PARTS[definition.id];
+      const layer = definition.layer ?? 'outer';
+      const enabled =
+        definition.part && definition.part !== 'flight'
+          ? controls.design.stars[layer].enabled &&
+            (definition.part !== 'trails' || controls.design.stars[layer].burstTrail.enabled)
+          : definition.id === 'smoke'
+            ? controls.design.launch.smoke.enabled
+            : definition.id === 'fx-strobe'
+              ? controls.design.strobe.enabled
+              : definition.id === 'fx-crackle'
+                ? controls.design.crackle.enabled
+                : definition.id === 'fx-split'
+                  ? controls.design.split.enabled
+                  : definition.id === 'launch-dot'
+                    ? controls.design.launch.shell.visible
+                    : undefined;
+      const unavailable = unavailableControlReason(controls.design, definition.scope, layer);
+      const dirty = saved ? sectionChanged(definition.id, controls.design, saved) : false;
+      const source = presetSourceStatus(controls.defaults, definition.kind);
+      return {
+        dirty,
+        id: definition.id,
+        label: meta.label,
+        title: meta.label,
+        description: meta.description,
+        eyebrow: meta.path.join(' / '),
+        icon: Sparkles,
+        enabled: unavailable ? false : enabled,
+        content: (
+          <div className="space-y-5">
+            {source ? (
+              <p className="text-muted-foreground text-xs">
+                Source: {source.name}
+                {source.modified ? ' · Modified' : ' · Copied preset'}
+              </p>
+            ) : null}
+            {definition.id === 'colour' && colours ? (
+              colours
+            ) : (
+              <FireworkRenderControls
+                {...controls}
+                showLaunch
+                showStarCount
+                controlScope={definition.scope}
+                part={definition.part}
+                layer={layer}
+                mutate={(updater) => mutate(definition.kind, updater)}
+              />
+            )}
+            {preset(definition.kind)}
+            {saved ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={!dirty}
+                onClick={() =>
+                  mutate(definition.kind, (draft) => revertSection(definition.id, draft, saved))
+                }
+              >
+                Revert section to saved
+              </Button>
+            ) : null}
+          </div>
+        ),
+      };
+    },
+  );
 }

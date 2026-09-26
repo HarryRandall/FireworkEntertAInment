@@ -461,17 +461,22 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   const backgroundGlowSoftness = heads.backgroundGlowSoftness;
 
   const previewDuration = useMemo(() => {
-    const estimated = PREVIEW_CUE_TIME_SECONDS + estimateDesignDurationSeconds(previewDesign);
+    const estimated =
+      PREVIEW_CUE_TIME_SECONDS +
+      Math.max(
+        estimateDesignDurationSeconds(previewDesign),
+        savedRenderResult.ok ? estimateDesignDurationSeconds(savedRenderResult.design) : 0,
+      );
     return Math.max(4, Math.ceil(estimated * 2) / 2);
-  }, [previewDesign]);
+  }, [previewDesign, savedRenderResult]);
   const previewTicks = useMemo(
     () =>
       estimatePreviewTicks({
-        design: previewDesign,
+        design: displayedDesign,
         cueTimeSeconds: PREVIEW_CUE_TIME_SECONDS,
         previewDuration,
       }),
-    [previewDesign, previewDuration],
+    [displayedDesign, previewDuration],
   );
 
   const previewCue = useMemo<ReplayCue>(
@@ -653,7 +658,15 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     const option = [...effect.styleDefaults[kind], ...(createdStyleDefaults[kind] ?? [])].find(
       (item) => item.id === value,
     );
-    if (option) updateModelDefaults((defaults) => applyCopiedPreset(defaults, kind, option));
+    if (option) {
+      const checked = validateFireworkDesign({ variantOverrides: option.defaultsJson });
+      if (!checked.ok) {
+        setError(checked.diagnostics.map((issue) => issue.message).join('; '));
+        return;
+      }
+      updateModelDefaults((defaults) => applyCopiedPreset(defaults, kind, option));
+    }
+    setError(null);
     setStyleDefaultIds((current) => ({ ...current, [kind]: value }));
   }
 
@@ -721,12 +734,8 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     action: 'update' | 'restore',
   ) {
     const historyVersionId = crypto.randomUUID();
-    const previousSavedSnapshot = savedSnapshotRef.current;
     const localSnapshot = currentLocalSnapshot();
-    savedSnapshotRef.current = optimisticSnapshot;
-    savedSignatureRef.current = optimisticSnapshot.signature;
     currentSignatureRef.current = optimisticSnapshot.signature;
-    setSavedSignature(optimisticSnapshot.signature);
     applySnapshot(optimisticSnapshot);
     editorHistory.begin(
       makeOptimisticEditorVersion({
@@ -741,19 +750,12 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       historyVersionId,
       localSnapshot,
       optimisticSnapshot,
-      previousSavedSnapshot,
     };
   }
 
   function rollbackOptimisticMutation(mutation: ReturnType<typeof beginOptimisticMutation>) {
     if (editorTargetIdRef.current !== mutation.targetId) return;
     editorHistory.discard(mutation.historyVersionId);
-    if (savedSignatureRef.current === mutation.optimisticSnapshot.signature) {
-      savedSnapshotRef.current = mutation.previousSavedSnapshot;
-      setSavedPreviewSnapshot(mutation.previousSavedSnapshot);
-      savedSignatureRef.current = mutation.previousSavedSnapshot.signature;
-      setSavedSignature(mutation.previousSavedSnapshot.signature);
-    }
     if (currentSignatureRef.current === mutation.optimisticSnapshot.signature) {
       currentSignatureRef.current = mutation.localSnapshot.signature;
       applySnapshot(mutation.localSnapshot);

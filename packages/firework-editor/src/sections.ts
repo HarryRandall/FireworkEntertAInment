@@ -25,7 +25,7 @@ const SECTION_FIELDS: Record<string, string[]> = {
   'fx-strobe': ['strobe'],
   'fx-crackle': ['crackle'],
   'fx-split': ['split'],
-  sound: ['sound', 'crackle.sound', 'crackle.soundChance', 'crackle.soundVolume'],
+  sound: ['sound'],
 };
 function read(record: unknown, path: string[]): unknown {
   for (const segment of path) {
