@@ -36,6 +36,9 @@ Resolve or explicitly defer these before treating the original plan as complete:
 
 1. Dense-show GPU frame-time measurements and the recorded peak-particle increases
    above 10%. Their causes have been investigated, but performance is not cleared.
+   The dense CPU benchmark below also exposes live-particle overwrites before the
+   pool reaches capacity. Resolve that allocator issue before accepting a dense
+   show's apparent performance improvement.
 2. Remaining device-level save-failure coverage. Atomic save/history writes and
    restored versions are now implemented and covered by transaction and browser
    checks below.
@@ -644,3 +647,56 @@ helpers were removed. Simulation behaviour is unchanged, but evidence still need
 to match deployed source bytes. Coordinate schema/app/worker deployment and keep
 admin writes gated during the switch: migration `20260926001100` replaces the old
 inline save RPCs. Nothing has been merged or deployed by this task.
+
+### Dense simulation verification
+
+The reproducible CPU benchmark is `scripts/renderer/benchmark-dense.mjs`. It uses
+the live engine's fixed-step update order, including deferring newly spawned
+particles until the next tick. The older single-effect capture script iterates a
+growing live list, so those captures alone do not establish live-engine performance.
+
+The benchmark fires Brocade, willow, chrysanthemum, strobe, whirl and crossette in
+rotation. The two fixtures fire 24 cues at 0.2-second intervals and 72 cues at
+0.05-second intervals. Each runs for 20 seconds at 60 Hz across five seeds, with
+100,000 slots, identical dependencies, a warm-up and alternating source order.
+Catalogue defaults are taken from each source revision, so this compares the
+delivered compositions rather than claiming identical visual workloads.
+
+The [raw results](verification/dense-show-20260926.json) compare the extraction
+checkpoint `e751023` with `af60fc7`, using Node 24.18.0 on an Apple M4 Pro.
+Values below are medians across the five seeds. CPU timing excludes WebGL,
+geometry uploads, lights, sound, snapshot caching and browser scheduling.
+
+| Fixture             | Source                | Median active tick | Peak particles | Live slots overwritten |
+| ------------------- | --------------------- | ------------------ | -------------- | ---------------------- |
+| 24 overlapping cues | Extraction checkpoint | 0.623 ms           | 15,838         | 0                      |
+| 24 overlapping cues | Current               | 0.661 ms           | 17,879         | 0                      |
+| 72-cue finale       | Extraction checkpoint | 0.286 ms           | 50,303         | 17,939                 |
+| 72-cue finale       | Current               | 0.230 ms           | 54,649         | 19,679                 |
+
+The uncensored 24-cue case increases peak particles by 12.9% and median active
+simulation time by 6.0%. The finale loses live particles in both implementations:
+`ParticlePool.new()` advances a circular cursor and overwrites its next slot even
+when other slots are free. A three-slot reproduction confirms this: keep slot 0
+alive, reset slots 1 and 2, compact, then spawn again. The new particle replaces
+slot 0 while two free slots remain. This is pre-existing behaviour, not evidence
+that the refactor introduced the allocator defect. The increased current workload
+does overwrite more live particles. The finale's lower CPU median therefore does
+not clear its performance or visual correctness.
+
+All runs finish with zero remaining particles. A repeated local pass gave the
+same particle counts, while timings varied, as expected on a shared machine.
+GPU measurements remain outstanding. No renderer or database changes were made
+for this benchmark; the extracted comparison source stays in ignored local files.
+
+To reproduce from the repository root with Node 24 and installed dependencies:
+
+```sh
+mkdir -p .tmp/dense-benchmark-baseline
+git archive e751023 packages/fireworks/src | tar -x -C .tmp/dense-benchmark-baseline
+ln -s ../../../../packages/fireworks/node_modules .tmp/dense-benchmark-baseline/packages/fireworks/node_modules
+node scripts/renderer/benchmark-dense.mjs .tmp/dense-benchmark-baseline/packages/fireworks/src > .tmp/dense-benchmark.json
+```
+
+Omit the argument to measure only the current checkout. Do not compare these CPU
+timings with browser frame timings or treat them as the 10% GPU acceptance gate.
