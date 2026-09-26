@@ -2,6 +2,21 @@ import { isGroundGeometry } from '@showcrafter/fireworks/behaviours';
 import type { FireworkDesign, StarLayerKey } from '@showcrafter/fireworks/design';
 import type { RenderControlsProps } from './types.ts';
 
+/** Fields replaced by the selected shape's own motion or emission algorithm. */
+export function starMovementAvailability(design: FireworkDesign) {
+  return {
+    count: design.geometry !== 'single_tail',
+    speed: design.geometry !== 'waterfall',
+    gravity: design.geometry !== 'waterfall',
+    reason:
+      design.geometry === 'single_tail'
+        ? 'Comets emit one star per enabled layer.'
+        : design.geometry === 'waterfall'
+          ? 'Set waterfall spread and gravity in Shape.'
+          : null,
+  };
+}
+
 export function unavailableControlReason(
   design: FireworkDesign,
   scope: RenderControlsProps['controlScope'],

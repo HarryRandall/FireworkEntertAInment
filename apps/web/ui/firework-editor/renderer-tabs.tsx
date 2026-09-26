@@ -95,7 +95,7 @@ export function rendererTabs({
         enabled: unavailable ? false : enabled,
         content: (
           <div className="space-y-5">
-            {source ? (
+            {source && !unavailable ? (
               <p className="text-muted-foreground text-xs">
                 Source: {source.name}
                 {source.modified ? ' · Modified' : ' · Copied preset'}
@@ -110,7 +110,7 @@ export function rendererTabs({
               layer={layer}
               mutate={(updater) => mutate(definition.kind, updater)}
             />
-            {preset(definition.kind)}
+            {unavailable ? null : preset(definition.kind)}
           </div>
         ),
       };

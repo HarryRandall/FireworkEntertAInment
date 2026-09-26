@@ -239,6 +239,37 @@ This is an import-evidence contract update, not another renderer generation.
 The migration has not been applied to a running database; rollout still requires
 revalidation of sealed import evidence.
 
+## Shape-specific movement controls
+
+The movement inspector now hides controls that the selected algorithm does not
+consume: star count for a single comet, and generic speed/gravity for a waterfall.
+A short reason points to the waterfall's Shape settings. Stored values remain
+intact when changing shapes. Runtime tests verify the omitted fields have no
+effect on those star emissions and that the waterfall's own fall speed does.
+
+Both movement layouts use one shared component. Speed and gravity variation are
+available in a named disclosure in the parts editor, as well as the combined
+preset controls. Unavailable sections now show their reason without a collection
+of disabled controls or irrelevant preset actions.
+
+Authenticated local browser checks used a separate unsaved draft: switching
+through waterfall, comet and fountain shows the correct fields; Undo restores
+the original shape and count. Editing speed variation from 0.6 to 0.2 reverses
+in one Undo. The light desktop and 390px mobile layouts fit without horizontal
+overflow. No catalogue data was saved during these checks.
+
+Follow-up findings from this pass:
+
+- The gravity control edits an upper bound, with variation below it. Some shapes
+  also impose negative gravity floors and the standard burst adds random jitter,
+  so zero does not reliably remove gravity. The tooltip now describes the bound;
+  the underlying gravity model still needs simplification and behavioural tests.
+- Most shape counts multiply the layer count, while ground emitters impose
+  minimum counts/rates. Their effective count/rate needs a direct, truthful
+  control rather than several interacting percentages and minimums.
+- On narrow screens the preview transport's timestamp and event ticks crowd
+  the scrubber. It needs a responsive transport arrangement.
+
 ## Remaining audit and implementation
 
 1. **Control metadata and limits.** Inventory each exposed field against schema,

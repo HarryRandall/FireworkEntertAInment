@@ -20,19 +20,13 @@ export type { JsonRecord } from '@showcrafter/firework-editor/types';
 
 export function FireworkRenderControls(props: RenderControlsProps) {
   const reason = unavailableControlReason(props.design, props.controlScope, props.layer);
-  return (
-    <div className="space-y-4">
-      {reason ? (
-        <p
-          className="text-muted-foreground border-border rounded-md border p-3 text-xs"
-          role="status"
-        >
-          {reason}
-        </p>
-      ) : null}
-      <RenderControlPanels {...props} disabled={props.disabled || Boolean(reason)} />
-    </div>
-  );
+  if (reason)
+    return (
+      <p className="text-muted-foreground text-xs" role="status">
+        {reason}
+      </p>
+    );
+  return <RenderControlPanels {...props} />;
 }
 
 function RenderControlPanels(props: RenderControlsProps) {
