@@ -887,7 +887,7 @@ function AdminVisualEditorSkeleton({
           </Button>
         </div>
       </div>
-      <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_288px_168px] lg:overflow-hidden">
+      <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_256px_168px] lg:overflow-hidden">
         <section className="bg-stage-night relative min-h-[320px] overflow-hidden text-white lg:min-h-0">
           <ReplayPanelLoadingStage />
         </section>

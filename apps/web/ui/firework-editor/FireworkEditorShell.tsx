@@ -228,7 +228,7 @@ export function FireworkEditorShell({
         </div>
       </div>
       <div
-        className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_288px_168px] lg:overflow-hidden"
+        className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_256px_168px] lg:overflow-hidden"
         onKeyDownCapture={(event) => {
           const input =
             event.target instanceof HTMLElement &&
