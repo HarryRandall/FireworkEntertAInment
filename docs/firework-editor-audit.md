@@ -29,7 +29,7 @@ redesign's acceptance criteria are complete.
   restore through the real editor. It was removed afterwards. Earlier layout and
   gesture checks are recorded below; this does not replace full device testing.
 - Remote references were refreshed: `origin/main` is an ancestor of this branch
-  at `4917a8a`. Changes are being published as an ordered PR stack for review.
+  at `4917a8a`. The review stack is #403, then #404, then #405.
   Merging and deployment remain with the maintainer.
 
 Resolve or explicitly defer these before treating the original plan as complete:
@@ -634,6 +634,10 @@ archives and inner-layer preset creation. Client tests reject incomplete or
 mismatched save confirmations. Source guards now check transaction routing rather
 than freezing the obsolete separate-write implementation. A fresh database through
 migration `20260926001100` passed all nine SQL suites and generated-type checks.
+Migration `20260926001200` corrects the snapshot helper's volatility annotation
+to match PostgreSQL's JSON constructors. All nine local SQL suites and generated
+types still pass. Database lint reports only the pre-existing unused `p_amount`
+parameter in `reserve_ai_credits`; the new editor functions have no warnings.
 
 Migration `20260926001000` updates the source fingerprint after unused import
 helpers were removed. Simulation behaviour is unchanged, but evidence still needs
