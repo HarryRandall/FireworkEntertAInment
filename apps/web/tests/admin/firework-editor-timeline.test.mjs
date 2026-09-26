@@ -42,13 +42,13 @@ test('timeline panel exposes an accessible total and slider for every lifecycle 
   assert.match(panel, /Crackle adds up to/);
 });
 
-test('timeline mutations materialise all affected presets in one parent update', () => {
+test('timeline mutations update copied firework settings and affected effect presets once', () => {
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
   const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
 
   assert.match(
     fireworkEditor,
-    /function mutateOverridesForTimeline\([\s\S]*const draft = cloneRecord\(parsedOverrides\.value\)[\s\S]*kinds\.filter\(\(kind\) => materialiseStyleDefault\(kind, draft\)\)[\s\S]*updater\(draft\)[\s\S]*setOverridesText/,
+    /function mutateOverridesForTimeline\([\s\S]*const draft = cloneRecord\(parsedOverrides\.value\)[\s\S]*updater\(draft\)[\s\S]*setOverridesText/,
   );
   assert.match(
     effectEditor,

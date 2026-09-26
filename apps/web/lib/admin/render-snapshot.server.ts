@@ -1,16 +1,27 @@
-import { validateFireworkDesign } from '@showcrafter/fireworks/design';
-import { isRecord } from '@showcrafter/fireworks/model/records';
 import type { createClient } from '@/lib/supabase/server';
 import type { Json } from '@/lib/database.types';
+import { validateCatalogueRender } from './renderer-validation';
 
-/** Resolve once at a write boundary. Readers only consume the copied snapshot. */
-export async function resolveRenderSnapshot(
+type SnapshotResult = { ok: true; value: Json } | { ok: false; error: string };
+
+/** Existing documents own their appearance, including disabled settings and provenance. */
+export function validateRenderSnapshot(settings: unknown, recordId: string): SnapshotResult {
+  const result = validateCatalogueRender({ kind: 'firework', settings, recordId });
+  if (!result.ok)
+    return {
+      ok: false,
+      error: result.diagnostics
+        .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
+        .join('; '),
+    };
+  return { ok: true, value: settings as Json };
+}
+
+/** Only creation copies settings from the selected effect. Later saves validate the copy. */
+export async function createRenderSnapshot(
   supabase: ReturnType<typeof createClient>,
   effectId: string,
-  overrides: unknown,
-  primaryColor?: string | null,
-  colorPalette?: string[] | null,
-): Promise<{ ok: true; value: Json } | { ok: false; error: string }> {
+): Promise<SnapshotResult> {
   const { data, error } = await supabase
     .from('firework_effects')
     .select('model_json')
@@ -18,11 +29,10 @@ export async function resolveRenderSnapshot(
     .maybeSingle();
   if (error || !data)
     return { ok: false, error: error?.message ?? 'The selected effect could not be loaded.' };
-  const result = validateFireworkDesign({
-    baseModel: data.model_json,
-    variantOverrides: overrides,
-    primaryColor,
-    colorPalette,
+  const result = validateCatalogueRender({
+    kind: 'effect',
+    settings: data.model_json,
+    recordId: effectId,
   });
   if (!result.ok)
     return {
@@ -31,13 +41,5 @@ export async function resolveRenderSnapshot(
         .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
         .join('; '),
     };
-  return {
-    ok: true,
-    value: {
-      ...result.design,
-      ...(isRecord(overrides) && isRecord(overrides.presetSources)
-        ? { presetSources: overrides.presetSources as Json }
-        : {}),
-    } as Json,
-  };
+  return { ok: true, value: result.design as Json };
 }

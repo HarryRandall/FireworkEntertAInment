@@ -252,3 +252,70 @@ test('invalid trail stops are reported before preset normalisation can clamp the
   ]);
   assert.deepEqual(settings, original);
 });
+
+test('saving a copied render snapshot preserves authored colour precision, disabled settings and preset provenance', async () => {
+  const { validateRenderSnapshot } = await import('../../lib/admin/render-snapshot.server.ts');
+  const snapshot = renderer.compileFireworkDesign({});
+  snapshot.stars.outer.colourPattern = {
+    mode: 'stripes',
+    axis: 'horizontal',
+    count: 5,
+    colours: [
+      { color: { r: 0.123456789, g: 0.987654321, b: 0.234567891 }, weight: 0.375 },
+      { color: { r: 0.7, g: 0.2, b: 0.3 }, weight: 1.625 },
+    ],
+  };
+  snapshot.colour.enabled = false;
+  snapshot.presetSources = { star: { id: 'copied-preset', name: 'Copied palette' } };
+  const before = structuredClone(snapshot);
+  const saved = validateRenderSnapshot(snapshot, 'copied-firework');
+  assert.equal(saved.ok, true);
+  assert.deepEqual(saved.value, before);
+  assert.deepEqual(snapshot, before);
+  assert.equal(
+    renderer.compileFireworkDesign({ variantOverrides: saved.value }).colour.enabled,
+    false,
+  );
+  saved.value.colour.enabled = true;
+  const reopened = renderer.compileFireworkDesign({ variantOverrides: saved.value });
+  assert.deepEqual(reopened.stars.outer.colourPattern, before.stars.outer.colourPattern);
+});
+
+test('new firework snapshots require a valid source effect; existing snapshots cannot fall back to one', async () => {
+  const { createRenderSnapshot, validateRenderSnapshot } =
+    await import('../../lib/admin/render-snapshot.server.ts');
+  let reads = 0;
+  const client = (model, error = null) => ({
+    from: (table) => {
+      reads++;
+      assert.equal(table, 'firework_effects');
+      return {
+        select: () => ({
+          eq: () => ({ maybeSingle: async () => ({ data: { model_json: model }, error }) }),
+        }),
+      };
+    },
+  });
+  for (const source of [
+    null,
+    { renderDefaults: null },
+    { stars: { outer: { head: { size: -1 } } } },
+  ]) {
+    assert.equal((await createRenderSnapshot(client(source), 'source')).ok, false);
+  }
+  const fresh = await createRenderSnapshot(
+    client({ renderDefaults: { stars: { outer: { head: { size: 147 } } } } }),
+    'source',
+  );
+  assert.equal(fresh.ok, true);
+  assert.equal(fresh.value.stars.outer.head.size, 147);
+  const sourceReads = reads;
+  assert.equal(validateRenderSnapshot(fresh.value, 'saved').ok, true);
+  assert.equal(validateRenderSnapshot({}, 'missing').ok, false);
+  assert.equal(validateRenderSnapshot(null, 'missing').ok, false);
+  assert.equal(reads, sourceReads);
+  assert.match(
+    (await createRenderSnapshot(client({}, { message: 'Read failed' }), 'source')).error,
+    /Read failed/,
+  );
+});

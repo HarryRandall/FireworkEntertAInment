@@ -23,7 +23,7 @@ test('Save new default copies settings and clears transient selection in one cli
   );
   assert.match(
     fireworkEditor,
-    /saveCurrentStyleAsDefault[\s\S]*?copySelectedStyleDefaultsIntoOverrides\(mergedOverrides\)/,
+    /saveCurrentStyleAsDefault[\s\S]*?copySelectedStyleDefaultsIntoOverrides\(overridesRecord\)/,
   );
   assert.match(
     fireworkEditor,

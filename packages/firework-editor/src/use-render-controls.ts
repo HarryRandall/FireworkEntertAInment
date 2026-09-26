@@ -246,14 +246,16 @@ export function useRenderControls({
     mutate((draft) => {
       const pattern = ensureRecord(ensureDraftStarLayer(draft, layerKey), 'colourPattern');
       pattern[key] = value;
-      if (
-        key === 'mode' &&
-        value !== 'solid' &&
-        design.stars[layerKey].colourPattern.colours.length === 0
-      ) {
+      if (key === 'mode' && design.stars[layerKey].colourPattern.colours.length === 0) {
+        const layer = design.stars[layerKey];
         pattern.colours = [
-          { color: { r: 1, g: 0.84, b: 0.4 }, weight: 100 },
-          { color: { r: 1, g: 0.32, b: 0.12 }, weight: 100 },
+          {
+            color:
+              layer.color ??
+              (layerKey === 'core' ? design.secondaryColor : undefined) ??
+              design.color,
+            weight: 100,
+          },
         ];
       }
     });
@@ -277,13 +279,15 @@ export function useRenderControls({
   function addStarColourPatternEntry(layerKey: StarLayerKey) {
     const entries = design.stars[layerKey].colourPattern.colours;
     if (entries.length >= STAR_COLOUR_PATTERN_MAX_COLOURS) return;
-    const fallbackColours = ['#ffd666', '#ff6b14', '#67e8f9', '#f472b6'];
+    const layer = design.stars[layerKey];
     setStarColourPatternEntries(layerKey, [
       ...entries,
       {
-        color: hexToRgbObject(
-          fallbackColours[entries.length % fallbackColours.length] ?? '#ffd666',
-        ),
+        color:
+          entries.at(-1)?.color ??
+          layer.color ??
+          (layerKey === 'core' ? design.secondaryColor : undefined) ??
+          design.color,
         weight: 100,
       },
     ]);

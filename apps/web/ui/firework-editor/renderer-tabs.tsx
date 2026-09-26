@@ -47,14 +47,12 @@ export function rendererTabs({
   controls,
   mutate,
   preset,
-  colours,
   saved,
   kinds,
 }: {
   controls: Omit<RenderControlsProps, 'mutate'>;
   mutate: (kind: FireworkStyleDefaultKind, updater: (record: JsonRecord) => void) => void;
   preset: (kind: FireworkStyleDefaultKind) => ReactNode;
-  colours?: ReactNode;
   saved?: RenderControlsProps['design'];
   kinds?: readonly FireworkStyleDefaultKind[];
 }): FireworkEditorShellTab[] {
@@ -97,19 +95,15 @@ export function rendererTabs({
                 {source.modified ? ' · Modified' : ' · Copied preset'}
               </p>
             ) : null}
-            {definition.id === 'colour' && colours ? (
-              colours
-            ) : (
-              <FireworkRenderControls
-                {...controls}
-                showLaunch
-                showStarCount
-                controlScope={definition.scope}
-                part={definition.part}
-                layer={layer}
-                mutate={(updater) => mutate(definition.kind, updater)}
-              />
-            )}
+            <FireworkRenderControls
+              {...controls}
+              showLaunch
+              showStarCount
+              controlScope={definition.scope}
+              part={definition.part}
+              layer={layer}
+              mutate={(updater) => mutate(definition.kind, updater)}
+            />
             {preset(definition.kind)}
             {saved ? (
               <Button

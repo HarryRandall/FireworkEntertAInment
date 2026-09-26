@@ -1,5 +1,5 @@
 'use server';
-import { resolveRenderSnapshot } from '@/lib/admin/render-snapshot.server';
+import { createRenderSnapshot, validateRenderSnapshot } from '@/lib/admin/render-snapshot.server';
 
 /** Admin firework actions: create and edit atomic fireworks (effect + colours
  *  + renderer overrides). Multishot composition lives in `admin-multishots`. */
@@ -405,7 +405,7 @@ export async function createFirework(
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
 
   const supabase = createClient(await cookies());
-  const resolved = await resolveRenderSnapshot(supabase, parsed.data.effectId, {});
+  const resolved = await createRenderSnapshot(supabase, parsed.data.effectId);
   if (!resolved.ok) return resolved;
   const baseSlug = slugify(parsed.data.name) || 'firework';
   const slug = `${baseSlug}-${Math.random().toString(36).slice(2, 6)}`;
@@ -442,13 +442,7 @@ export async function updateFirework(input: z.infer<typeof UpdateFireworkSchema>
   if (!overrides.ok) return { ok: false, error: overrides.error };
 
   const supabase = createClient(await cookies());
-  const resolved = await resolveRenderSnapshot(
-    supabase,
-    parsed.data.fireworkEffectId,
-    overrides.value,
-    parsed.data.primaryColor,
-    parsed.data.colorPalette,
-  );
+  const resolved = validateRenderSnapshot(overrides.value, parsed.data.id);
   if (!resolved.ok) return resolved;
   const previousSnapshot = await loadFireworkEditorSnapshot(supabase, parsed.data.id);
   if (!previousSnapshot.ok) return previousSnapshot;
@@ -548,13 +542,7 @@ export async function createStyleDefaultAndUpdateFirework(
   if (!defaults.ok) return { ok: false, error: defaults.error };
 
   const supabase = createClient(await cookies());
-  const resolved = await resolveRenderSnapshot(
-    supabase,
-    parsed.data.firework.fireworkEffectId,
-    overrides.value,
-    parsed.data.firework.primaryColor,
-    parsed.data.firework.colorPalette,
-  );
+  const resolved = validateRenderSnapshot(overrides.value, parsed.data.firework.id);
   if (!resolved.ok) return resolved;
   const previousSnapshot = await loadFireworkEditorSnapshot(supabase, parsed.data.firework.id);
   if (!previousSnapshot.ok) return previousSnapshot;
@@ -693,13 +681,7 @@ export async function restoreFireworkEditorVersion(
   const previousSnapshot = await loadFireworkEditorSnapshot(supabase, parsed.data.fireworkId);
   if (!previousSnapshot.ok) return previousSnapshot;
 
-  const resolved = await resolveRenderSnapshot(
-    supabase,
-    snapshot.fireworkEffectId,
-    snapshot.renderOverridesJson,
-    snapshot.primaryColor,
-    snapshot.colorPalette,
-  );
+  const resolved = validateRenderSnapshot(snapshot.renderOverridesJson, snapshot.id);
   if (!resolved.ok) return resolved;
   const updatedAt = new Date().toISOString();
   const patch = {

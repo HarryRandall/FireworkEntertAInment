@@ -375,11 +375,6 @@ test('editor saves are optimistic while history persistence stays observed and l
   assert.match(historyPanel, /warning\?: string \| null/);
   assert.match(editorHistoryState, /latestTargetKeyRef\.current = targetKey/);
   assert.match(editorHistoryState, /if \(latestTargetKeyRef\.current !== targetKey\) return;/);
-  assert.match(fireworkEditor, /function nextAddedColourStopIndex\(/);
-  assert.match(
-    fireworkEditor,
-    /Math\.max\(\s*nextColourStopIdRef\.current,\s*nextAddedColourStopIndex\(snapshot\.colourStops\)/,
-  );
 
   assert.match(effectServer, /type CachedAdminEffectDetail = Omit<AdminEffectDetail, 'history'>/);
   assert.match(effectServer, /history: await listEffectEditorVersions\(supabase, effectId\)/);

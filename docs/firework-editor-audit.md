@@ -152,6 +152,44 @@ and structural comparisons still need investigation before claiming reopen fidel
 Cached poster renderer identifiers also need review: they currently describe image
 format/resolution rather than the current simulation fingerprint.
 
+## Copied colour settings and shared palette controls
+
+The firework editor previously reconstructed renderer colours from parallel hex
+and percentage state on opening. That rounded RGB channels and weights and could
+change the selected pattern before an edit. It now edits the saved document
+through the same outer/inner palette controls as effects and saved part presets.
+Catalogue swatches are derived metadata and never feed back into compilation.
+The duplicate colour UI and its state synchronisation have been removed.
+
+Existing firework saves, inline preset saves and history restores now validate
+the copied render document without re-reading the source effect or applying
+catalogue palette metadata. Validation preserves the authored document, including
+precision, disabled colours and preset provenance. Creating a new firework still
+explicitly copies and validates the chosen effect.
+
+Palette controls now show relative weights and a distribution bar. Solid edits
+the first palette entry actually used by the renderer, retaining other entries
+for mixed patterns. Adding colours or selecting a pattern starts from the layer's
+own colours, rather than inserting a hard-coded gold/orange palette. The ignored
+Band count control was removed; repetitions apply only to stripes. Both layers
+have correctly named controls. Colour enable/disable retains the authored palette.
+
+Verification: 605 app tests, 34 package tests, 11 database-tooling tests, typecheck,
+build and UI audit pass locally. Focused tests preserve fractional RGB/weights and
+provenance through the save validator, reject invalid creation sources and check
+independent layers through the real control hook. Authenticated browser checks
+confirmed no initial dirty-colour indicator, a single Undo for a weight edit,
+colour toggle retention and Solid keeping the remaining palette. Light and dark
+palette layouts fit the 256px panel. No catalogue records were saved during these
+browser checks. Mobile layout was checked for the preceding shared-width change;
+mobile palette interaction still needs a dedicated check.
+
+Further colour work remains: the compiler currently turns disabled colours white
+in its returned design, so creation, whole-effect copying, saving part presets
+and section reverts must distinguish authored settings from simulated appearance.
+Inherited colours still contain strobe/pearls-specific accent rules and a default
+22% accent share. These need explicit behaviours, not hidden runtime overrides.
+
 ## Remaining audit and implementation
 
 1. **Control metadata and limits.** Inventory each exposed field against schema,
