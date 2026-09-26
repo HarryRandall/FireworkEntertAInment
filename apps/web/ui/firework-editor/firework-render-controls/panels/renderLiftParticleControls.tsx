@@ -327,7 +327,7 @@ export function renderLiftParticleControls(context: RendererControlsContext) {
               }
             />
             <SliderField
-              inputKind="knob"
+              inputKind="slider"
               label="Brightness"
               min={0}
               max={3}

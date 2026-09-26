@@ -190,6 +190,35 @@ and section reverts must distinguish authored settings from simulated appearance
 Inherited colours still contain strobe/pearls-specific accent rules and a default
 22% accent share. These need explicit behaviours, not hidden runtime overrides.
 
+## Editor simplification after hands-on feedback
+
+The user found the header copy, debug overlay, rotary controls and repeated preset
+actions distracting. The three editors now start directly with their controls.
+The duplicate document toolbar and section introduction block are removed. Save
+and icon-labelled Undo/Redo live in a compact footer; saved/draft comparison and
+section/document reverts are in its action menu. Mobile Parts navigation remains
+available in that footer. Preset creation/reset is beside the preset picker in a
+menu instead of two persistent buttons.
+
+The editors no longer show the FPS overlay or the floating camera button rail.
+Direct camera gestures remain available, and loop controls are in the preview
+transport. The particle cap still bounds numerical entry, with its explanation
+in the field's help tooltip instead of an always-visible technical paragraph.
+
+Rotary controls have been replaced by horizontal sliders. Renderer sliders place
+the exact input above the track, providing the full panel width for dragging,
+and the shared slider has a larger pointer/touch hit area. Counts remain number
+fields. The loading skeleton matches the simplified frame.
+
+An isolated browser fixture used the actual shared shell, renderer controls,
+preset dialogs and draft history with stubbed saving. It verified rightward drag
+increases glow, one Undo restores the entire drag, ArrowLeft decreases by the
+advertised step, section revert works, and preset creation opens its dialog and
+completes. Light desktop and dark mobile layouts were inspected. The mobile
+footer stays 49px tall at 390px viewport width, the parts drawer selects sections,
+and there is no horizontal page overflow. The user's active catalogue draft was
+not used for these interaction checks.
+
 ## Remaining audit and implementation
 
 1. **Control metadata and limits.** Inventory each exposed field against schema,
@@ -234,7 +263,7 @@ Inherited colours still contain strobe/pearls-specific accent rules and a defaul
 ## Verification so far
 
 - Local authenticated browser: desktop/mobile width; tree at far right; compact
-  settings panel; reversed knob dragging in both directions; trail count above
+  settings panel; horizontal slider dragging and keyboard adjustment; trail count above
   the effective maximum clamps on commit; one Undo restores the prior count.
 - Package tests cover compilation diagnostics, catalogue round trips, disabled
   emitters, cue timing after invalid cues, copied presets, section reverts,

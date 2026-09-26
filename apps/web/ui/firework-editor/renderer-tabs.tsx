@@ -1,4 +1,3 @@
-import { Button } from '@/ui/patterns/Button';
 import { unavailableControlReason } from '@showcrafter/firework-editor/availability';
 import { EDITOR_PARTS } from '@showcrafter/firework-editor/parts';
 import { presetSourceStatus } from '@showcrafter/firework-editor/presets';
@@ -80,6 +79,13 @@ export function rendererTabs({
       const source = presetSourceStatus(controls.defaults, definition.kind);
       return {
         dirty,
+        revert: saved
+          ? {
+              disabled: !dirty,
+              onRevert: () =>
+                mutate(definition.kind, (draft) => revertSection(definition.id, draft, saved)),
+            }
+          : undefined,
         id: definition.id,
         label: meta.label,
         title: meta.label,
@@ -105,18 +111,6 @@ export function rendererTabs({
               mutate={(updater) => mutate(definition.kind, updater)}
             />
             {preset(definition.kind)}
-            {saved ? (
-              <Button
-                variant="secondary"
-                size="sm"
-                disabled={!dirty}
-                onClick={() =>
-                  mutate(definition.kind, (draft) => revertSection(definition.id, draft, saved))
-                }
-              >
-                Revert section to saved
-              </Button>
-            ) : null}
           </div>
         ),
       };

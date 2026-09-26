@@ -871,7 +871,8 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       interactive
       controlsVisible={previewReady}
       showStarfield={false}
-      showFps
+      showFps={false}
+      showCameraControls={false}
       primeSnapshots
       primeOnCueChanges={false}
       showLoadingBar={false}

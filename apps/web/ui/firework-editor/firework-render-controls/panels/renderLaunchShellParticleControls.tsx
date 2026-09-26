@@ -79,7 +79,7 @@ export function renderLaunchShellParticleControls(context: RendererControlsConte
         onChange={(value) => setLaunchValue('shell', 'sizeScale', round2(value))}
       />
       <SliderField
-        inputKind="knob"
+        inputKind="slider"
         label="Shell brightness"
         min={0}
         max={LAUNCH_SHELL_BRIGHTNESS_MAX}

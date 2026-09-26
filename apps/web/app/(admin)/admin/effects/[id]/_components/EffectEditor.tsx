@@ -58,7 +58,7 @@ import {
   type FireworkStyleDefaultKind,
 } from '@showcrafter/fireworks/style-defaults';
 import { isGroundFireworkEffect } from '@showcrafter/fireworks/timing';
-import { Braces, GanttChartSquare, History, Repeat, SlidersHorizontal } from 'lucide-react';
+import { Braces, GanttChartSquare, History, SlidersHorizontal } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
 
@@ -1016,18 +1016,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     });
   }
 
-  const previewMenuActions = useMemo(
-    () => [
-      {
-        id: 'loop',
-        label: isLooping ? 'Disable looping' : 'Enable looping',
-        active: isLooping,
-        onClick: () => setIsLooping((looping) => !looping),
-        icon: <Repeat size={16} strokeWidth={2} />,
-      },
-    ],
-    [isLooping],
-  );
   const preview = (
     <LazyFireworkReplayCanvas
       cues={previewCues}
@@ -1038,8 +1026,8 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       interactive
       controlsVisible
       showStarfield={false}
-      cameraMenuActions={previewMenuActions}
-      showFps
+      showFps={false}
+      showCameraControls={false}
       primeSnapshots
       primeOnCueChanges={false}
       showLoadingBar
@@ -1071,6 +1059,8 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       duration={previewDuration}
       isPlaying={isPlaying}
       fullscreen={isFullscreen}
+      isLooping={isLooping}
+      onLoopToggle={() => setIsLooping((looping) => !looping)}
       loading={!previewReady}
       loadingProgress={previewLoadingProgress}
       ticks={previewTicks}

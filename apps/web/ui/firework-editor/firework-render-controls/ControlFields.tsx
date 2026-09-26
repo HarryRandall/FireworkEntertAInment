@@ -22,7 +22,7 @@ export function AppearanceField({
   value: number;
   range: NumericControlRange;
   unit?: 'percent' | 'multiplier';
-  inputKind?: 'slider' | 'knob';
+  inputKind?: 'slider';
   disabled?: boolean;
   hint: ReactNode;
   fullWidth?: boolean;

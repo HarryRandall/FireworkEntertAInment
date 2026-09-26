@@ -43,7 +43,7 @@ import {
 import type { RendererControlsContext } from '@showcrafter/firework-editor/use-render-controls';
 import type { BurstTrailPreset, StarLayerKey } from '@showcrafter/fireworks/design';
 import { BURST_TRAIL_FLICKER_LIFE_MAX, makeBurstTrailPreset } from '@showcrafter/fireworks/design';
-import { TRAIL_PARTICLE_BUDGET, trailParticleLimit } from '@showcrafter/fireworks/emission';
+import { trailParticleLimit } from '@showcrafter/fireworks/emission';
 import { RendererField as SliderField } from '../RendererField';
 import { renderBurstTrailClosingControls } from './renderBurstTrailClosingControls';
 import { renderBurstTrailOpeningControls } from './renderBurstTrailOpeningControls';
@@ -84,8 +84,7 @@ export function renderBurstTrailControls(
   const particleShape = shapeOptionFromStops(editableStops);
   const trailBias = trailBiasFromFrontClump(burstTrail.frontClump);
   const limit = trailParticleLimit(design);
-  const amountHint =
-    'Maximum sparks emitted behind each star over its flight. Short paths, fading and sparse sections can emit fewer sparks.';
+  const amountHint = `Maximum ${limit.perStar.toLocaleString()} sparks per star for this design. Reduce the star count to allow denser trails. Short paths and fading can emit fewer sparks.`;
 
   function patchBurstTrailStops(updater: (stop: BurstTrailStop) => BurstTrailStop) {
     patchBurstTrail(layerKey, (trail) => {
@@ -183,13 +182,6 @@ export function renderBurstTrailControls(
         </div>
 
         <SubSection title="Trail particles" defaultExpanded>
-          <p className="text-muted-foreground mb-3 text-xs" role="status">
-            Up to {limit.perStar.toLocaleString()} particles per star. {limit.paths} trail paths
-            share a {TRAIL_PARTICLE_BUDGET.toLocaleString()} particle budget.
-            {burstTrail.particlesPerStar > limit.perStar
-              ? ` This preset requests ${burstTrail.particlesPerStar.toLocaleString()}; the current design uses ${limit.perStar.toLocaleString()}. Reduce the star count to allow denser trails.`
-              : null}
-          </p>
           <div className={CONTROL_GRID_CLASS}>
             <SliderField
               inputKind="number"
@@ -583,7 +575,7 @@ export function renderBurstTrailControls(
         <SubSection title="Brightness and flicker">
           <div className={CONTROL_GRID_CLASS}>
             <SliderField
-              inputKind="knob"
+              inputKind="slider"
               label="Brightness"
               min={0}
               max={3}

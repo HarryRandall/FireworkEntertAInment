@@ -14,7 +14,13 @@ import {
   DialogTitle,
 } from '@/ui/primitives/dialog';
 import { NO_STYLE_DEFAULT_VALUE } from '@showcrafter/fireworks/style-defaults';
-import { RotateCcw, Save } from 'lucide-react';
+import { MoreHorizontal, RotateCcw, Save } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/ui/primitives/dropdown-menu';
 import { useState } from 'react';
 
 export function EditorStyleDefaultControls({
@@ -63,38 +69,44 @@ export function EditorStyleDefaultControls({
           <FieldLabel>{label}</FieldLabel>
           <InfoTooltip text="Save these settings as a reusable effect, or pick a saved effect to copy its settings into this editor." />
         </div>
-        <SelectField
-          value={value}
-          onChange={onChange}
-          options={options}
-          ariaLabel={label}
-          disabled={disabled}
-          className="h-auto min-h-10 py-2"
-        />
+        <div className="flex items-center gap-1">
+          <div className="min-w-0 flex-1">
+            <SelectField
+              value={value}
+              onChange={onChange}
+              options={options}
+              ariaLabel={label}
+              disabled={disabled}
+            />
+          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="size-8 shrink-0 p-0"
+                aria-label={`${label} actions`}
+                disabled={disabled}
+              >
+                <MoreHorizontal size={16} />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onSelect={openSaveDialog} disabled={disabled || saveDisabled}>
+                <Save size={14} />
+                Save as new preset
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={onReset} disabled={disabled || resetDisabled}>
+                <RotateCcw size={14} />
+                Reset to preset
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
         {!isCustom && inheritedLabel ? (
           <p className="text-xs text-[color:var(--color-content-muted)]">{inheritedLabel}</p>
         ) : null}
       </Field>
-      <div className="flex flex-wrap items-center gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={openSaveDialog}
-          disabled={disabled || saveDisabled}
-        >
-          <Save size={14} />
-          Save as new preset
-        </Button>
-        <Button
-          variant="secondary"
-          size="sm"
-          onClick={onReset}
-          disabled={disabled || resetDisabled}
-        >
-          <RotateCcw size={14} />
-          Reset to preset
-        </Button>
-      </div>
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>
         <DialogContent>
           <DialogHeader>

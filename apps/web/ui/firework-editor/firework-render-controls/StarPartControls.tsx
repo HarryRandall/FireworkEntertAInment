@@ -74,7 +74,7 @@ export function StarPartControls({
             onChange={(value) => context.setStarHeadSize(layerKey, value)}
           />
           <RendererField
-            inputKind="knob"
+            inputKind="slider"
             label="Glow strength"
             value={layer.head.glowStrength}
             min={0}

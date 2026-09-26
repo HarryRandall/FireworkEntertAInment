@@ -89,7 +89,7 @@ export function renderStarAppearance(
         <div className={CONTROL_GRID_CLASS}>
           <AppearanceField
             label="Core blur"
-            inputKind="knob"
+            inputKind="slider"
             range={coreSoftnessRange}
             value={heads.coreSoftness}
             disabled={controlDisabled}
@@ -98,7 +98,7 @@ export function renderStarAppearance(
           />
           <AppearanceField
             label="Brightness"
-            inputKind="knob"
+            inputKind="slider"
             range={coreBrightnessRange}
             value={heads.coreBrightness}
             disabled={controlDisabled}
@@ -117,7 +117,7 @@ export function renderStarAppearance(
           />
           <AppearanceField
             label="White dot blur"
-            inputKind="knob"
+            inputKind="slider"
             range={whiteCoreBlurRange}
             value={heads.whiteCoreBlurPercent}
             disabled={controlDisabled}
@@ -149,7 +149,7 @@ export function renderStarAppearance(
           />
           <AppearanceField
             label="Star glow blur"
-            inputKind="knob"
+            inputKind="slider"
             range={glowSoftnessRange}
             value={heads.glowSoftness}
             disabled={controlDisabled}
@@ -174,7 +174,7 @@ export function renderStarAppearance(
           />
           <AppearanceField
             label="Background glow strength"
-            inputKind="knob"
+            inputKind="slider"
             range={backgroundGlowStrengthRange}
             value={heads.glowBlur}
             disabled={controlDisabled}
@@ -183,7 +183,7 @@ export function renderStarAppearance(
           />
           <AppearanceField
             label="Background blur"
-            inputKind="knob"
+            inputKind="slider"
             range={backgroundGlowSoftnessRange}
             value={heads.backgroundGlowSoftness}
             disabled={controlDisabled}

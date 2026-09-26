@@ -874,19 +874,6 @@ function AdminVisualEditorSkeleton({
       aria-label={label}
       aria-busy="true"
     >
-      <div className="border-border flex flex-wrap items-center justify-between gap-3 border-b p-3">
-        <Skeleton className="h-4 w-32" />
-        <div className="flex gap-2">
-          <Skeleton className="h-8 w-24" />
-          <Button size="sm" variant="secondary" disabled>
-            Revert to saved
-          </Button>
-          <Button size="sm" disabled>
-            <Save size={15} />
-            Save
-          </Button>
-        </div>
-      </div>
       <div className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_256px_168px] lg:overflow-hidden">
         <section className="bg-stage-night relative min-h-[320px] overflow-hidden text-white lg:min-h-0">
           <ReplayPanelLoadingStage />
@@ -895,11 +882,6 @@ function AdminVisualEditorSkeleton({
           className="border-border min-w-0 border-t lg:border-t-0 lg:border-l"
           aria-label="Loading settings"
         >
-          <div className="border-border space-y-2 border-b p-3">
-            <Skeleton className="h-3 w-20" />
-            <Skeleton className="h-5 w-32" />
-            <Skeleton className="h-9 w-full" />
-          </div>
           <div className="space-y-5 p-3">
             {Array.from({ length: 4 }, (_, index) => (
               <div className="space-y-2" key={index}>
@@ -920,6 +902,14 @@ function AdminVisualEditorSkeleton({
             </div>
           ))}
         </aside>
+      </div>
+      <div className="border-border flex items-center justify-end gap-2 border-t px-3 py-2">
+        <Skeleton className="mr-auto h-3 w-16" />
+        <Skeleton className="h-8 w-24" />
+        <Button size="sm" disabled>
+          <Save size={15} />
+          Save
+        </Button>
       </div>
     </div>
   );

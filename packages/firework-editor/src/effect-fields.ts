@@ -6,7 +6,7 @@ export type NumericFieldDefinition = {
   min: number;
   max: number;
   step: number;
-  input: 'number' | 'slider' | 'knob';
+  input: 'number' | 'slider';
   unit: 'count' | 'seconds' | 'hertz' | 'percent' | 'simulation';
   /** Display fractions as percentages while retaining the model's fractional value. */
   displayScale?: number;
@@ -190,7 +190,7 @@ export const EFFECT_FIELDS = {
       min: 0,
       max: 1,
       step: 0.01,
-      input: 'knob',
+      input: 'slider',
       unit: 'percent',
       displayScale: 100,
     },

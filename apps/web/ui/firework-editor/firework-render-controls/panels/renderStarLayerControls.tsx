@@ -223,7 +223,7 @@ export function renderStarLayerControls(
           />
           <AppearanceField
             unit="multiplier"
-            inputKind="knob"
+            inputKind="slider"
             label="Glow strength"
             range={headGlowStrengthRange}
             value={glowStrength}

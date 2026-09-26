@@ -10,12 +10,17 @@ import {
   ReplayTransportControls,
   type ReplayTransportTick,
 } from '@/ui/replay/ReplayTransportControls';
-import { EDITOR_PARTS } from '@showcrafter/firework-editor/parts';
 import { sectionForField } from '@showcrafter/firework-editor/sections';
 import type { DraftHistoryControls } from '@showcrafter/firework-editor/use-draft-history';
 import type { LucideIcon } from 'lucide-react';
-import { ListTree, Redo2, Save, Undo2 } from 'lucide-react';
+import { ListTree, MoreHorizontal, Redo2, Save, Undo2 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/ui/primitives/dropdown-menu';
 import { RendererPartsTree } from './RendererPartsTree';
 import { RendererDiagnostics, type EditorRenderDiagnostics } from './RendererDiagnostics';
 
@@ -36,6 +41,7 @@ export type FireworkEditorShellTab = {
   dirty?: boolean;
   enabled?: boolean;
   invalid?: boolean;
+  revert?: { disabled: boolean; onRevert: () => void };
 };
 
 export type EditorPreviewTick = ReplayTransportTick;
@@ -140,7 +146,6 @@ export function FireworkEditorShell({
 }: FireworkEditorShellProps) {
   const [partsOpen, setPartsOpen] = useState(false);
   const current = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
-  const part = current ? EDITOR_PARTS[current.id] : null;
   const invalidParts = new Set(
     renderDiagnostics?.issues.map((issue) => sectionForField(issue.path)),
   );
@@ -158,75 +163,7 @@ export function FireworkEditorShell({
       radius="lg"
       className="flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden rounded-none p-0 shadow-none"
     >
-      <div className="border-border bg-background flex shrink-0 flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
-        <div className="flex min-w-0 items-center gap-3">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="lg:hidden"
-            onClick={() => setPartsOpen(true)}
-          >
-            <ListTree size={16} />
-            Parts
-          </Button>
-          <span className="truncate text-sm font-semibold">{title}</span>
-          <span className="text-muted-foreground text-xs" aria-live="polite">
-            {saving ? 'Saving' : dirty ? 'Unsaved changes' : 'Saved'}
-          </span>
-        </div>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {comparison ? (
-            <Button
-              variant="secondary"
-              size="sm"
-              aria-pressed={comparison.saved}
-              onClick={() => comparison.onChange(!comparison.saved)}
-            >
-              {comparison.saved ? 'Viewing saved' : 'Viewing draft'}
-            </Button>
-          ) : null}
-          {history ? (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={!history.canUndo || saving}
-                onClick={history.undo}
-                title="Undo (⌘Z)"
-              >
-                <Undo2 size={15} />
-                Undo
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={!history.canRedo || saving}
-                onClick={history.redo}
-                title="Redo (⇧⌘Z)"
-              >
-                <Redo2 size={15} />
-                Redo
-              </Button>
-            </>
-          ) : null}
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={revertDisabled || saving}
-            onClick={onRevert}
-          >
-            Revert to saved
-          </Button>
-          <Button
-            size="sm"
-            disabled={saveDisabled || saving || Boolean(renderDiagnostics?.issues.length)}
-            onClick={onSave}
-          >
-            <Save size={15} />
-            {saveLabel}
-          </Button>
-        </div>
-      </div>
+      <h1 className="sr-only">{title}</h1>
       <div
         className="grid min-h-0 flex-1 overflow-y-auto lg:grid-cols-[minmax(0,1fr)_256px_168px] lg:overflow-hidden"
         onKeyDownCapture={(event) => {
@@ -282,15 +219,6 @@ export function FireworkEditorShell({
             if (event.key.startsWith('Arrow')) commit();
           }}
         >
-          <div className="border-border border-b p-3">
-            <p className="text-muted-foreground text-xs">
-              {part?.path.join(' / ') ?? current?.eyebrow}
-            </p>
-            <h2 className="mt-1 text-base font-semibold">{part?.label ?? current?.title}</h2>
-            <p className="text-muted-foreground mt-1 text-sm">
-              {part?.description ?? current?.description}
-            </p>
-          </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
             {renderDiagnostics ? (
               <RendererDiagnostics
@@ -316,6 +244,74 @@ export function FireworkEditorShell({
           <RendererPartsTree tabs={navigationTabs} selected={current?.id ?? ''} onSelect={select} />
         </aside>
       </div>
+      <footer className="border-border bg-background flex shrink-0 items-center gap-2 border-t px-3 py-2">
+        <Button variant="ghost" size="sm" className="lg:hidden" onClick={() => setPartsOpen(true)}>
+          <ListTree size={16} /> Parts
+        </Button>
+        <span className="text-muted-foreground mr-auto text-xs" aria-live="polite">
+          {saving ? 'Saving...' : dirty ? 'Unsaved changes' : 'Saved'}
+          {comparison?.saved ? ' · Previewing saved' : ''}
+        </span>
+        {history ? (
+          <>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="size-8 p-0"
+              disabled={!history.canUndo || saving}
+              onClick={history.undo}
+              aria-label="Undo"
+              title="Undo (⌘Z)"
+            >
+              <Undo2 size={16} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="size-8 p-0"
+              disabled={!history.canRedo || saving}
+              onClick={history.redo}
+              aria-label="Redo"
+              title="Redo (⇧⌘Z)"
+            >
+              <Redo2 size={16} />
+            </Button>
+          </>
+        ) : null}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="size-8 p-0" aria-label="Editor actions">
+              <MoreHorizontal size={16} />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {comparison ? (
+              <DropdownMenuItem onSelect={() => comparison.onChange(!comparison.saved)}>
+                {comparison.saved ? 'Preview draft' : 'Preview saved'}
+              </DropdownMenuItem>
+            ) : null}
+            {current?.revert ? (
+              <DropdownMenuItem
+                disabled={current.revert.disabled || saving}
+                onSelect={current.revert.onRevert}
+              >
+                Revert section to saved
+              </DropdownMenuItem>
+            ) : null}
+            <DropdownMenuItem disabled={revertDisabled || saving} onSelect={onRevert}>
+              Revert all to saved
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <Button
+          size="sm"
+          disabled={saveDisabled || saving || Boolean(renderDiagnostics?.issues.length)}
+          onClick={onSave}
+        >
+          <Save size={15} />
+          {saveLabel}
+        </Button>
+      </footer>
       <Sheet open={partsOpen} onOpenChange={setPartsOpen}>
         <SheetContent side="right" className="overflow-y-auto">
           <SheetTitle className="px-5 pt-5">Firework parts</SheetTitle>
