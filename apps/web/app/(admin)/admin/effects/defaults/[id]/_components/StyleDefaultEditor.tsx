@@ -1084,7 +1084,11 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
       preview={preview}
       transport={transport}
       transportPlaying={isPlaying}
-      error={renderError ?? error}
+      error={error}
+      renderDiagnostics={{
+        recordId: styleDefault.id,
+        issues: renderResult.ok ? [] : renderResult.diagnostics,
+      }}
       fullscreen={isFullscreen}
       onExitFullscreen={exitFullscreen}
     />

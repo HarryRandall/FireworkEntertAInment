@@ -1224,7 +1224,15 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       preview={preview}
       transport={transport}
       transportPlaying={isPlaying}
-      error={renderError ?? error}
+      error={error}
+      renderDiagnostics={{
+        recordId: effect.id,
+        issues: !parsedModel.ok
+          ? [{ path: [], message: parsedModel.error }]
+          : !renderResult.ok
+            ? renderResult.diagnostics
+            : [],
+      }}
       fullscreen={isFullscreen}
       onExitFullscreen={exitFullscreen}
     />

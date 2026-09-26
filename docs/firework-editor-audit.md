@@ -115,6 +115,20 @@ The preset and comparison pass found:
 - Reverting launch/burst audio also reverted crackle audio, even though it is edited
   separately. Its section revert now changes only the advertised settings.
 
+The diagnostics pass separates invalid renderer settings from save failures in all
+three editors. A persistent panel lists individual compiler paths and messages,
+links to their owning sections and marks those sections in the parts tree. Unknown
+paths never point at an unrelated control. Saving remains blocked. Diagnostic
+details include the record ID and current renderer fingerprint. Duplicate or
+reordered errors produce one notification per opened record; fixing the errors
+dismisses it. Initial notification delivery also handles React Strict Mode.
+
+An isolated browser fixture verified section navigation, disabled Save/recovery,
+record switching, duplicate suppression, long-path wrapping and light/dark,
+narrow/wide layouts. No invalid catalogue records were written for this check.
+These are section links, not yet inline errors attached to individual inputs.
+Catalogue badges and remaining public-consumer validation still need auditing.
+
 ## Remaining audit and implementation
 
 1. **Control metadata and limits.** Inventory each exposed field against schema,

@@ -27,6 +27,23 @@ const SECTION_FIELDS: Record<string, string[]> = {
   'fx-split': ['split'],
   sound: ['sound'],
 };
+
+/** Match complete path segments so inner trails never resolve to outer appearance. */
+export function sectionForField(path: readonly string[]): string | null {
+  const field = path.join('.');
+  let match: { id: string; length: number } | undefined;
+  for (const [id, fields] of Object.entries(SECTION_FIELDS)) {
+    for (const prefix of fields) {
+      if (
+        (field === prefix || field.startsWith(`${prefix}.`)) &&
+        prefix.length > (match?.length ?? -1)
+      ) {
+        match = { id, length: prefix.length };
+      }
+    }
+  }
+  return match?.id ?? null;
+}
 function read(record: unknown, path: string[]): unknown {
   for (const segment of path) {
     if (!isRecord(record)) return undefined;

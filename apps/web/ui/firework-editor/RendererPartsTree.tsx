@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { EDITOR_PARTS } from '@showcrafter/firework-editor/parts';
-import { ChevronRight } from 'lucide-react';
+import { AlertTriangle, ChevronRight } from 'lucide-react';
 import type { FireworkEditorShellTab } from './FireworkEditorShell';
 
 type Branch = { label: string; branches: Map<string, Branch>; tabs: FireworkEditorShellTab[] };
@@ -80,6 +80,14 @@ export function RendererPartsTree({
             )}
           >
             <span>{EDITOR_PARTS[tab.id]?.label ?? tab.label}</span>
+            {tab.invalid ? (
+              <AlertTriangle
+                size={12}
+                className="text-status-danger shrink-0"
+                role="img"
+                aria-label="Invalid settings"
+              />
+            ) : null}
             {tab.dirty ? (
               <span
                 className="bg-primary size-1.5 shrink-0 rounded-full"

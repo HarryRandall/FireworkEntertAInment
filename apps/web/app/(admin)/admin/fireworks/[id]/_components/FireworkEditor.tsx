@@ -2197,7 +2197,15 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       preview={preview}
       transport={transport}
       transportPlaying={isPlaying}
-      error={renderError ?? error}
+      error={error}
+      renderDiagnostics={{
+        recordId: firework.id,
+        issues: !parsedOverrides.ok
+          ? [{ path: [], message: parsedOverrides.error }]
+          : !renderResult.ok
+            ? renderResult.diagnostics
+            : [],
+      }}
       fullscreen={isFullscreen}
       onExitFullscreen={exitFullscreen}
     />

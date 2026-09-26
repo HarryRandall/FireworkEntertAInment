@@ -11,11 +11,13 @@ import {
   type ReplayTransportTick,
 } from '@/ui/replay/ReplayTransportControls';
 import { EDITOR_PARTS } from '@showcrafter/firework-editor/parts';
+import { sectionForField } from '@showcrafter/firework-editor/sections';
 import type { DraftHistoryControls } from '@showcrafter/firework-editor/use-draft-history';
 import type { LucideIcon } from 'lucide-react';
 import { ListTree, Redo2, Save, Undo2 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { RendererPartsTree } from './RendererPartsTree';
+import { RendererDiagnostics, type EditorRenderDiagnostics } from './RendererDiagnostics';
 
 export type FireworkEditorShellChip = {
   label: string;
@@ -33,6 +35,7 @@ export type FireworkEditorShellTab = {
   content: ReactNode;
   dirty?: boolean;
   enabled?: boolean;
+  invalid?: boolean;
 };
 
 export type EditorPreviewTick = ReplayTransportTick;
@@ -109,6 +112,7 @@ type FireworkEditorShellProps = {
   transport: ReactNode;
   transportPlaying?: boolean;
   error?: string | null;
+  renderDiagnostics?: EditorRenderDiagnostics;
   fullscreen?: boolean;
   onExitFullscreen?: () => void;
 };
@@ -128,6 +132,7 @@ export function FireworkEditorShell({
   preview,
   transport,
   error,
+  renderDiagnostics,
   fullscreen,
   onExitFullscreen,
   history,
@@ -136,6 +141,10 @@ export function FireworkEditorShell({
   const [partsOpen, setPartsOpen] = useState(false);
   const current = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
   const part = current ? EDITOR_PARTS[current.id] : null;
+  const invalidParts = new Set(
+    renderDiagnostics?.issues.map((issue) => sectionForField(issue.path)),
+  );
+  const navigationTabs = tabs.map((tab) => ({ ...tab, invalid: invalidParts.has(tab.id) }));
   const select = (id: string) => {
     onActiveTabChange(id);
     setPartsOpen(false);
@@ -208,7 +217,11 @@ export function FireworkEditorShell({
           >
             Revert to saved
           </Button>
-          <Button size="sm" disabled={saveDisabled || saving} onClick={onSave}>
+          <Button
+            size="sm"
+            disabled={saveDisabled || saving || Boolean(renderDiagnostics?.issues.length)}
+            onClick={onSave}
+          >
             <Save size={15} />
             {saveLabel}
           </Button>
@@ -279,6 +292,14 @@ export function FireworkEditorShell({
             </p>
           </div>
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
+            {renderDiagnostics ? (
+              <RendererDiagnostics
+                key={renderDiagnostics.recordId}
+                {...renderDiagnostics}
+                availableParts={tabs.map((tab) => tab.id)}
+                onSelect={select}
+              />
+            ) : null}
             {error ? (
               <InlineAlert tone="danger" title="Could not save" className="mb-5">
                 {error}
@@ -292,13 +313,13 @@ export function FireworkEditorShell({
           </div>
         </aside>
         <aside className="border-border bg-background hidden overflow-y-auto border-l lg:block">
-          <RendererPartsTree tabs={tabs} selected={current?.id ?? ''} onSelect={select} />
+          <RendererPartsTree tabs={navigationTabs} selected={current?.id ?? ''} onSelect={select} />
         </aside>
       </div>
       <Sheet open={partsOpen} onOpenChange={setPartsOpen}>
         <SheetContent side="right" className="overflow-y-auto">
           <SheetTitle className="px-5 pt-5">Firework parts</SheetTitle>
-          <RendererPartsTree tabs={tabs} selected={current?.id ?? ''} onSelect={select} />
+          <RendererPartsTree tabs={navigationTabs} selected={current?.id ?? ''} onSelect={select} />
         </SheetContent>
       </Sheet>
     </Card>
