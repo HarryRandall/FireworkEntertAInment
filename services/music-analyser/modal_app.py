@@ -26,8 +26,6 @@ from typing import Annotated
 import modal
 from fastapi import Header, HTTPException
 
-from audio_download import AudioDownloadError, download_audio
-
 WORKER_DIRECTORY = Path(__file__).resolve().parent
 
 image = (
@@ -117,6 +115,8 @@ class SongAnalyser:
         return {"analysis_id": payload["analysis_id"], "status": "delivered"}
 
     def _analyse(self, payload):
+        from audio_download import AudioDownloadError, download_audio
+
         if payload.get("warmup") is True:
             from showcrafter import SCHEMA_VERSION
 

@@ -1,4 +1,7 @@
 import os
+import builtins
+import runpy
+import types
 import sys
 import unittest
 from pathlib import Path
@@ -51,3 +54,37 @@ class QueuedAnalysisTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             deliver_callback({**self.payload, "callback_url": "https://attacker.example"}, {"ok": True}, 1)
         post.assert_not_called()
+
+
+class LightweightImageImportTests(unittest.TestCase):
+    def test_endpoint_module_imports_without_worker_only_modules(self):
+        class Image:
+            @classmethod
+            def debian_slim(cls, **kwargs):
+                return cls()
+            def __getattr__(self, name):
+                return lambda *args, **kwargs: self
+        class App:
+            def __init__(self, name):
+                pass
+            def cls(self, **kwargs):
+                return lambda target: target
+            def function(self, **kwargs):
+                return lambda target: target
+        fake_modal = types.SimpleNamespace(
+            Image=Image, App=App,
+            Secret=types.SimpleNamespace(from_name=lambda name: None, from_dict=lambda value: None),
+            enter=lambda **kwargs: lambda target: target,
+            method=lambda **kwargs: lambda target: target,
+            fastapi_endpoint=lambda **kwargs: lambda target: target,
+            asgi_app=lambda **kwargs: lambda target: target,
+            Cron=lambda value: None,
+        )
+        original_import = builtins.__import__
+        def lightweight_import(name, *args, **kwargs):
+            if name in {"audio_download", "showcrafter", "librosa", "numpy"}:
+                raise ModuleNotFoundError(name)
+            return original_import(name, *args, **kwargs)
+        with patch.dict(sys.modules, {"modal": fake_modal, "fastapi": types.SimpleNamespace(Header=lambda: None, HTTPException=Exception)}):
+            with patch("builtins.__import__", lightweight_import):
+                runpy.run_path(str(Path(__file__).resolve().parents[1] / "modal_app.py"))
