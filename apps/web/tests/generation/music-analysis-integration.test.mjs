@@ -87,7 +87,7 @@ test('Modal audio downloads are bounded and cannot redirect across hosts', () =>
   assert.match(audioDownload, /downloaded > MAX_AUDIO_BYTES/);
   assert.match(audioDownload, /downloaded != content_length/);
   assert.match(audioDownload, /error_code="audio_response_truncated"/);
-  assert.match(modalApp, /add_local_python_source\("showcrafter", "audio_download"\)/);
+  assert.match(modalApp, /add_local_python_source\([^)]*"showcrafter"[^)]*"audio_download"[^)]*\)/);
   assert.match(modalApp, /except AudioInputError as exc/);
   assert.match(modalApp, /detail=exc\.as_http_detail\(\)/);
   assert.doesNotMatch(modalApp, /urlretrieve\(/);
