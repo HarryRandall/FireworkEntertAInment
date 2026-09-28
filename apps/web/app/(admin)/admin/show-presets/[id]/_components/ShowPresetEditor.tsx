@@ -58,7 +58,7 @@ import type { AdminShowPresetDetail } from '@/lib/admin.types';
 import type { ShowTemplateCue } from '@/lib/show-templates/types';
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
 import { formatDuration } from '@/lib/show-domain';
-import { cn } from '@/lib/utils';
+import { clamp, cn } from '@/lib/utils';
 
 const LazyFireworkReplayCanvas = dynamic(
   () => import('@/ui/replay/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
@@ -103,10 +103,6 @@ let cueUidCounter = 0;
 function makeCueUid(): string {
   cueUidCounter += 1;
   return `preset-cue-${Date.now().toString(36)}-${cueUidCounter}`;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
 }
 
 function normaliseCueTime(value: number): number {

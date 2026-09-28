@@ -20,6 +20,7 @@ import {
   type EffectFamily,
   type PromptConstraints,
 } from './prompt-constraints';
+import { clamp } from '@/lib/utils';
 
 export const SECTION_ROLES = [
   'opener',
@@ -141,7 +142,7 @@ export function buildPlanSections(
     const local = points.length
       ? points.reduce((sum, point) => sum + point.energy, 0) / points.length
       : section.energy;
-    return clamp01(Number.isFinite(local) ? local : 0.5);
+    return clamp(Number.isFinite(local) ? local : 0.5);
   });
   const ranked = [...energies].sort((a, b) => a - b);
   const climaxes = (analysis?.key_moments ?? []).filter((moment) => moment.type === 'climax');
@@ -430,10 +431,6 @@ function clampDensity(value: number): DensityLevel {
 
 function unique<T>(values: T[]): T[] {
   return Array.from(new Set(values));
-}
-
-function clamp01(value: number): number {
-  return Math.max(0, Math.min(1, value));
 }
 
 function round3(value: number): number {

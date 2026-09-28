@@ -40,7 +40,7 @@ import {
 } from '@/ui/firework-editor/useEditorHistory';
 import { Field, FieldLabel } from '@/ui/patterns/Field';
 import { Input, Textarea } from '@/ui/patterns/Input';
-import { SelectField, type SelectOption } from '@/ui/patterns/SelectField';
+import { SelectField } from '@/ui/patterns/SelectField';
 import { toast } from '@/ui/patterns/toast';
 import { ReplayStageBackdrop } from '@/ui/replay/ReplayStageBackdrop';
 import { useAdminBreadcrumbOverride } from '@/ui/shell/AdminShell';
@@ -62,6 +62,13 @@ import { isGroundFireworkEffect, roundTimelineSeconds } from '@showcrafter/firew
 import { Braces, CircleDot, GanttChartSquare, History, SlidersHorizontal } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
+import {
+  cloneRecord,
+  findStyleDefault,
+  isEarlierUpdatedAt,
+  styleDefaultOptions,
+  toSaveStyleDefaultIds,
+} from '@/ui/firework-editor/editor-document';
 
 type ParsedJson = { ok: true; value: JsonRecord } | { ok: false; error: string };
 
@@ -96,42 +103,6 @@ function isRecord(value: unknown): value is JsonRecord {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function styleDefaultOptions(
-  options: AdminStyleDefaultOption[],
-  selected: AdminStyleDefaultOption | null,
-): SelectOption[] {
-  const seen = new Set<string>();
-  const source = selected ? [selected, ...options] : options;
-  return [
-    { value: NO_STYLE_DEFAULT_VALUE, label: 'Custom' },
-    ...source
-      .filter((option) => {
-        if (seen.has(option.id)) return false;
-        seen.add(option.id);
-        return true;
-      })
-      .map((option) => ({
-        value: option.id,
-        label: option.name,
-        description: option.description ?? undefined,
-      })),
-  ];
-}
-
-function findStyleDefault(
-  id: string,
-  options: AdminStyleDefaultOption[],
-  fallback: AdminStyleDefaultOption | null,
-  localOptions: AdminStyleDefaultOption[] = [],
-): AdminStyleDefaultOption | null {
-  if (id === NO_STYLE_DEFAULT_VALUE) return null;
-  return (
-    localOptions.find((option) => option.id === id) ??
-    options.find((option) => option.id === id) ??
-    (fallback?.id === id ? fallback : null)
-  );
-}
-
 function initialStyleDefaultIds(
   firework: AdminFireworkDetail,
 ): Record<FireworkStyleDefaultKind, string> {
@@ -143,21 +114,6 @@ function initialStyleDefaultIds(
   ids.star = firework.starStyleDefaultId ?? ids.star;
   ids.trail = firework.trailStyleDefaultId ?? ids.trail;
   return ids;
-}
-
-function cloneRecord(value: JsonRecord): JsonRecord {
-  return JSON.parse(JSON.stringify(value)) as JsonRecord;
-}
-
-function toSaveStyleDefaultIds(
-  ids: Record<FireworkStyleDefaultKind, string>,
-): Record<FireworkStyleDefaultKind, string | null> {
-  return Object.fromEntries(
-    FIREWORK_STYLE_DEFAULT_KINDS.map((kind) => [
-      kind,
-      ids[kind] === NO_STYLE_DEFAULT_VALUE ? null : ids[kind],
-    ]),
-  ) as Record<FireworkStyleDefaultKind, string | null>;
 }
 
 function fireworkEditorSignature(fields: {
@@ -278,16 +234,6 @@ function fireworkSavedSnapshotFromDetail(
     colorPalette: firework.colorPalette,
     renderOverridesJson: firework.renderOverridesJson,
   });
-}
-
-function isEarlierUpdatedAt(candidate: string, reference: string): boolean {
-  const candidateTime = Date.parse(candidate);
-  const referenceTime = Date.parse(reference);
-  return (
-    Number.isFinite(candidateTime) &&
-    Number.isFinite(referenceTime) &&
-    candidateTime < referenceTime
-  );
 }
 
 export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) {

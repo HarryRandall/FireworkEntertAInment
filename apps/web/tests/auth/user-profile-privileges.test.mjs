@@ -32,11 +32,11 @@ test('the admin action uses only the narrowly typed status RPC', () => {
   );
   assert.match(
     adminUsersAction,
-    /type UserStatusRpcClient = \{[\s\S]*?functionName: 'set_user_status'[\s\S]*?p_status: 'active' \| 'suspended'/,
+    /status: z\.enum\(\['active', 'suspended'\]\)[\s\S]*?supabase\.rpc\('set_user_status'/,
   );
   assert.match(
     adminUsersAction,
-    /requirePermission\('admin\.manage_users'\)[\s\S]*?statusRpc\.rpc\('set_user_status'/,
+    /requirePermission\('admin\.manage_users'\)[\s\S]*?supabase\.rpc\('set_user_status'/,
   );
   assert.doesNotMatch(adminUsersAction, /\.from\('users'\)[\s\S]{0,120}?\.update\(\{ status:/);
   assert.match(adminUsersAction, /updatedUserId !== parsed\.data\.userId/);

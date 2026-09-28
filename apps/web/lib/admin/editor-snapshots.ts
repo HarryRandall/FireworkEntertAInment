@@ -5,6 +5,7 @@ import {
   isFireworkStyleDefaultKind,
   type FireworkStyleDefaultKind,
 } from '@showcrafter/fireworks/style-defaults';
+import { isRecord } from '@/lib/utils';
 
 export type FireworkEditorSnapshot = {
   kind: 'firework';
@@ -46,10 +47,6 @@ export type StyleDefaultEditorSnapshot = {
   defaultsJson: Json;
   updatedAt: string | null;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 function stringOrNull(value: unknown): string | null {
   return typeof value === 'string' && value.length > 0 ? value : null;

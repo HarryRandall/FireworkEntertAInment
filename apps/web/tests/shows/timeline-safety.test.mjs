@@ -44,9 +44,10 @@ test('application timeline writes use the guarded RPC surface', () => {
   assert.match(templateActions, /replacedCount !== timelineItems\.length/);
   assert.doesNotMatch(templateActions, /\.from\('show_timeline_items'\)\s*\.insert\(/);
 
-  assert.match(adapter, /functionName: 'add_show_timeline_item'/);
-  assert.match(adapter, /functionName: 'delete_show_timeline_item'/);
-  assert.match(adapter, /client as unknown as TimelineMutationRpcClient/);
+  // Generated types cover both RPCs, so the calls are typed directly.
+  assert.match(adapter, /client\.rpc\('add_show_timeline_item'/);
+  assert.match(adapter, /client\.rpc\('delete_show_timeline_item'/);
+  assert.doesNotMatch(adapter, /as unknown as/);
   assert.doesNotMatch(adapter, /p_position/);
   assert.doesNotMatch(previewActions, /lastCueError/);
 });

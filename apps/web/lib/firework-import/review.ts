@@ -10,6 +10,7 @@ import {
 } from '@/lib/firework-import/reconstruction';
 import { IMPORT_RENDER_METRICS_SCHEMA_VERSION } from '@/lib/firework-import/render-metrics';
 import { FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION } from '@/lib/firework-import/renderer-contract';
+import { isRecord } from '@/lib/utils';
 
 export type ImportOutputLike = {
   id: string;
@@ -202,10 +203,6 @@ export const IMPORT_REVIEW_STEPS = [
   'Review',
   'Publish',
 ] as const;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 function text(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null;

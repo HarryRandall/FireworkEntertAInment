@@ -38,6 +38,7 @@ import {
 } from '@/lib/shows/queries.server';
 import { getCatalogueReadClient } from '@/lib/shows/supabase';
 import { getServerClient } from '@/lib/supabase/server-client';
+import { isRecord } from '@/lib/utils';
 
 export type AdminFireworkCardPreviewKind = Exclude<FireworkCardPreviewKind, 'catalogue'>;
 export type AdminFireworkCardPreviewSourceKind = AdminFireworkCardPreviewKind | 'style-default';
@@ -58,10 +59,6 @@ export class FireworkCardPreviewReadError extends Error {
     super(message, cause === undefined ? undefined : { cause });
     this.name = 'FireworkCardPreviewReadError';
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function hasConcreteRendererColour(value: unknown): boolean {

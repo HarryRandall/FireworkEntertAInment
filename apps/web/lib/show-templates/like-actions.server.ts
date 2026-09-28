@@ -7,6 +7,7 @@ import { cookies } from 'next/headers';
 import { z } from 'zod';
 import { invalidateShowTemplatesCache } from '@/lib/show-templates/cache.server';
 import { createClient } from '@/lib/supabase/server';
+import { isRecord } from '@/lib/utils';
 
 type ToggleLikeResult =
   | { ok: true; liked: boolean; likeCount: number }
@@ -16,10 +17,6 @@ const ToggleLikeSchema = z.object({
   presetId: z.string().uuid(),
   slug: z.string().trim().min(1).max(120),
 });
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 export async function toggleShowPresetLikeAction(
   input: z.infer<typeof ToggleLikeSchema>,

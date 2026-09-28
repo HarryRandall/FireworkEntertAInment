@@ -25,6 +25,7 @@ import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { slugify } from '@/lib/admin/slugs';
 
 type CreateResult =
   | { ok: true; id: string; styleDefault: AdminStyleDefaultOption }
@@ -110,14 +111,6 @@ function parseJsonObject(text: string): { ok: true; value: Json } | { ok: false;
     return { ok: false, error: `Default renderer settings are invalid: ${rendererError}` };
   }
   return { ok: true, value: parsed as Json };
-}
-
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60);
 }
 
 function mapSavedStyleDefault(row: StyleDefaultMutationRow): SavedStyleDefault {

@@ -1,3 +1,4 @@
+import { clamp } from '@/lib/utils';
 /**
  * Legacy shader cover: a small, serialisable visual identity retained for
  * existing shows. New shows use CSS covers, while browse cards use stored
@@ -105,10 +106,6 @@ type Hsl = {
   saturation: number;
   lightness: number;
 };
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
 
 function hexToHsl(hex: string): Hsl | null {
   if (!HEX_RE.test(hex)) return null;

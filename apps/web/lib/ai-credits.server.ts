@@ -7,6 +7,7 @@ import { getCurrentUserId } from '@/lib/auth/current-user.server';
 import { deleteCachedKeys, getCachedJson, setCachedJson } from '@/lib/server-cache';
 import type { AiUsageSummary } from '@/lib/show-summary';
 import { getServerClient } from '@/lib/supabase/server-client';
+import { isRecord } from '@/lib/utils';
 
 type AppSupabase = SupabaseClient<Database>;
 
@@ -116,10 +117,6 @@ const ACTION_LABELS: Record<string, string> = {
   show_generation_sonnet: 'Claude Sonnet show generation',
   show_refinement: 'Show refinement',
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 function numberValue(value: unknown): number | undefined {
   return typeof value === 'number' && Number.isFinite(value) ? value : undefined;

@@ -29,6 +29,7 @@ import {
   isGroundFireworkEffect,
 } from '@showcrafter/fireworks/timing';
 import type { ReplayCue } from '@/lib/show-domain';
+import { clamp } from '@/lib/utils';
 
 const HOVER_INTENT_MS = 500;
 const MAX_STATIC_PREVIEW_SECONDS = 1.8;
@@ -129,10 +130,6 @@ function cachedPreview(previewUrl: string): CachedPreview | null {
 
 function previewDuration(value: number): number {
   return Number.isFinite(value) ? Math.max(1, value) : 1;
-}
-
-function clamp(value: number, minimum: number, maximum: number): number {
-  return Math.min(maximum, Math.max(minimum, value));
 }
 
 type CueVisualWindow = {

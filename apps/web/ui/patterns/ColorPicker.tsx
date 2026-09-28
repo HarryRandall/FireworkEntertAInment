@@ -16,15 +16,11 @@ import {
 import { Check } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/primitives/popover';
 import { FIREWORK_COLOR_VALUES } from '@showcrafter/fireworks/spec';
-import { cn } from '@/lib/utils';
+import { clamp, cn } from '@/lib/utils';
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
 type Hsv = { h: number; s: number; v: number };
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
 
 function normaliseHex(value: string): string {
   const trimmed = value.trim();

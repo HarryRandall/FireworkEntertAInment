@@ -26,6 +26,7 @@ import {
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
 import { z } from 'zod';
+import { slugify, styleDefaultSlug } from '@/lib/admin/slugs';
 
 type FireworkRow = Database['public']['Tables']['fireworks']['Row'];
 type StyleDefaultRow = Database['public']['Tables']['firework_style_defaults']['Row'];
@@ -168,19 +169,6 @@ function parseStyleDefaultJson(
     return { ok: false, error: `Default renderer settings are invalid: ${rendererError}` };
   }
   return { ok: true, value: parsed as Json };
-}
-
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60);
-}
-
-function styleDefaultSlug(name: string, kind: FireworkStyleDefaultKind): string {
-  const base = slugify(name) || `${kind}-style`;
-  return `${base}-${crypto.randomUUID().slice(0, 8)}`;
 }
 
 function mapSavedFirework(row: FireworkMutationRow): SavedFirework {

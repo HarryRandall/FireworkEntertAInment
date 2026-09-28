@@ -28,6 +28,7 @@ import {
   type ShellType,
 } from '@showcrafter/fireworks/spec';
 import { z } from 'zod';
+import { clamp, isRecord } from '@/lib/utils';
 
 export const IMPORT_VIDEO_BUCKET = 'import-videos';
 export const MAX_IMPORT_VIDEO_SECONDS = 60;
@@ -75,10 +76,6 @@ export type ImportedFireworkSpec = ImportedFireworkSummary & {
   reconstruction?: ImportReconstructionPlan;
 };
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
 function finiteNumber(value: unknown): number | null {
   const numberValue = Number(value);
   return Number.isFinite(numberValue) ? numberValue : null;
@@ -88,10 +85,6 @@ function textValue(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const trimmed = value.trim();
   return trimmed.length ? trimmed : null;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
 }
 
 function hexColor(value: unknown): string | null {

@@ -9,6 +9,7 @@ import {
   isMissingStyleDefaultEditorVersionColumnError,
 } from './style-default-schema';
 import { getServerClient } from './supabase';
+import { isRecord } from '@/lib/utils';
 
 type ServerClient = Awaited<ReturnType<typeof getServerClient>>;
 type EditorVersionRow = Database['public']['Tables']['firework_editor_versions']['Row'];
@@ -39,10 +40,6 @@ function mapEditorVersion(row: EditorVersionRow): AdminEditorVersion {
     createdByLabel: row.created_by_label,
     createdAt: row.created_at,
   };
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 function isSyntheticCurrentVersion(row: EditorVersionRow): boolean {

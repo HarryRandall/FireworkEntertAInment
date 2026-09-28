@@ -2,7 +2,7 @@
 
 import type { AdminEditorVersion } from '@/lib/admin.types';
 import type { Json } from '@/lib/database.types';
-import { cn } from '@/lib/utils';
+import { cn, isRecord } from '@/lib/utils';
 import { Button } from '@/ui/patterns/Button';
 import { EmptyState, InlineAlert } from '@/ui/patterns/Feedback';
 import { Maximize2, RotateCcw, X } from 'lucide-react';
@@ -24,10 +24,6 @@ const CHANGE_LABELS: Record<string, string> = {
   modelJson: 'Model JSON',
   renderOverridesJson: 'Renderer overrides',
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 function formatClock(date: Date): string {
   return new Intl.DateTimeFormat(undefined, {

@@ -5,6 +5,7 @@ import {
   cadenceCompatibility,
   localBeatIntervalSeconds,
 } from '@/lib/cue-generation/music-product-matching';
+import { clamp } from '@/lib/utils';
 
 export type AssortmentMusicItem = { catalogueItemId: string; quantity: number };
 
@@ -20,9 +21,6 @@ const DURATION_ONLY_REASON =
 
 const finitePositive = (value: number | null | undefined): value is number =>
   value != null && Number.isFinite(value) && value > 0;
-const clamp = (value: number, minimum = 0, maximum = 1) =>
-  Math.max(minimum, Math.min(maximum, value));
-
 function completeNormalProfile(profiles: ProductTimingProfiles, productId: string) {
   const profile = profiles.get(productId)?.normal;
   return profile?.completeness === 'complete' ? profile : undefined;

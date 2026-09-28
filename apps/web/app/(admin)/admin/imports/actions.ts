@@ -174,6 +174,8 @@ type UntypedRpcClient = {
   rpc: <T>(name: string, args: Record<string, unknown>) => Promise<UntypedRpcResult<T>>;
 };
 
+// Some calls pass explicit nulls where the generated types expect omitted
+// optional arguments; check each against its SQL defaults before typing these.
 function callUntypedRpc<T>(
   supabase: unknown,
   name: string,
@@ -287,28 +289,6 @@ function scheduleFireworkImportDispatch(runId: string, mode: 'direct' | 'local-w
     const result = await dispatchFireworkImportRun(runId);
     await recordFireworkImportDispatch(runId, result);
   });
-}
-
-async function selectUntypedMaybeSingle<T>(
-  supabase: ReturnType<typeof createClient>,
-  table: string,
-  columns: string,
-  matchColumn: string,
-  matchValue: string,
-): Promise<UntypedRpcResult<T>> {
-  const client = supabase as unknown as {
-    from: (tableName: string) => {
-      select: (selection: string) => {
-        eq: (
-          column: string,
-          value: string,
-        ) => {
-          maybeSingle: () => Promise<UntypedRpcResult<T>>;
-        };
-      };
-    };
-  };
-  return client.from(table).select(columns).eq(matchColumn, matchValue).maybeSingle();
 }
 
 /**
@@ -682,9 +662,11 @@ export async function approveImportJobAction(
   if (!parsed.success) return { ok: false, error: firstError(parsed.error) };
 
   const supabase = createClient(await cookies());
-  const { data: job, error: jobError } = await selectUntypedMaybeSingle<{
-    selected_candidate_id: string | null;
-  }>(supabase, 'import_jobs', 'selected_candidate_id', 'id', parsed.data.id);
+  const { data: job, error: jobError } = await supabase
+    .from('import_jobs')
+    .select('selected_candidate_id')
+    .eq('id', parsed.data.id)
+    .maybeSingle();
   if (jobError || !job?.selected_candidate_id) {
     console.error('[approveImportJobAction] selected candidate lookup failed:', jobError);
     return {
@@ -693,19 +675,11 @@ export async function approveImportJobAction(
     };
   }
 
-  const { data: candidate, error: candidateError } = await selectUntypedMaybeSingle<{
-    reconstruction: unknown;
-    validation: unknown;
-    metrics: unknown;
-    rendered_video_path: string | null;
-    content_hash: string;
-  }>(
-    supabase,
-    'import_candidates',
-    'reconstruction, validation, metrics, rendered_video_path, content_hash',
-    'id',
-    job.selected_candidate_id,
-  );
+  const { data: candidate, error: candidateError } = await supabase
+    .from('import_candidates')
+    .select('reconstruction, validation, metrics, rendered_video_path, content_hash')
+    .eq('id', job.selected_candidate_id)
+    .maybeSingle();
   if (candidateError || !candidate) {
     console.error('[approveImportJobAction] candidate lookup failed:', candidateError);
     return {

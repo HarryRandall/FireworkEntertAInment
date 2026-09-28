@@ -2,6 +2,7 @@ import type { SlotVibe } from '@/lib/beat-grid.server';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
 import type { ProductTimingProfile } from '@/lib/fireworks/timing-profile';
 import type { CueEmphasis } from './schemas';
+import { clamp } from '@/lib/utils';
 
 export type ProductTimingProfiles = ReadonlyMap<
   string,
@@ -10,10 +11,6 @@ export type ProductTimingProfiles = ReadonlyMap<
 
 function finitePositive(value: number | null | undefined): value is number {
   return value != null && Number.isFinite(value) && value > 0;
-}
-
-function clamp(value: number, minimum = 0, maximum = 1): number {
-  return Math.max(minimum, Math.min(maximum, value));
 }
 
 export function cadenceCompatibility(
