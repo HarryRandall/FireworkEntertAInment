@@ -27,6 +27,7 @@ import { setShowCoverImagePath } from '@/lib/shows/cover-actions.server';
 import { createClient } from '@/lib/supabase/client';
 import { Cover } from '@/ui/covers/Cover';
 import styles from './GeneratingShowAnimation.module.css';
+import { generationDelayLabel } from './generation-delay';
 
 type GeneratingStatus = 'running' | 'completed' | 'failed';
 
@@ -273,7 +274,18 @@ export function GeneratingShowAnimation({
       }
 
       const percent = Math.round(progress * 100);
-      const etaLabel = status === 'completed' || etaSeconds === null ? null : formatEta(etaSeconds);
+      const etaLabel =
+        status === 'completed' || etaSeconds === null
+          ? null
+          : (generationDelayLabel(
+              phase,
+              phaseElapsed,
+              phase === 'analysing'
+                ? analysisEstimate
+                : phase === 'generating'
+                  ? generationEstimate
+                  : 5,
+            ) ?? formatEta(etaSeconds));
 
       progressFillRef.current?.style.setProperty('--progress-scale', String(progress));
 
@@ -433,7 +445,7 @@ export function GeneratingShowAnimation({
 
           <div className={styles.meta}>
             <span className={styles.percent}>{progressUi.percent}%</span>
-            <span className={styles.eta}>
+            <span className={styles.eta} role="status" aria-live="polite">
               {status === 'completed' ? 'Show ready' : (progressUi.etaLabel ?? '')}
             </span>
           </div>

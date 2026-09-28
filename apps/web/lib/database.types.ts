@@ -2807,6 +2807,15 @@ export type Database = {
         }
         Returns: Json
       }
+      replace_generated_show_timeline_items: {
+        Args: {
+          p_items: Json
+          p_lease_token: string
+          p_show_id: string
+          p_user_id: string
+        }
+        Returns: number
+      }
       replace_show_timeline_items: {
         Args: { p_items: Json; p_show_id: string; p_user_id: string }
         Returns: number

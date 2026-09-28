@@ -373,8 +373,13 @@ test('hosted analyser bounds response bytes before parsing JSON', () => {
 test('hosted analyser request expires before its database lease', () => {
   const runner = readFileSync(join(root, 'lib/show-analysis-runner.server.ts'), 'utf8');
 
-  assert.match(runner, /ANALYSER_REQUEST_TIMEOUT_MS = 11 \* 60 \* 1000/);
-  assert.match(runner, /signal: AbortSignal\.timeout\(ANALYSER_REQUEST_TIMEOUT_MS\)/);
+  const timeoutSeconds = Number(runner.match(/ANALYSER_REQUEST_TIMEOUT_MS = (\d+) \* 1000/)?.[1]);
+  assert.ok(
+    timeoutSeconds > 0 && timeoutSeconds < 300,
+    'leave time for persistence within the 300-second route budget',
+  );
+  assert.match(runner, /signal: AbortSignal\.timeout/);
+  assert.match(runner, /dispatchUrl \? ANALYSER_DISPATCH_TIMEOUT_MS : ANALYSER_REQUEST_TIMEOUT_MS/);
 });
 
 test('cue generation revalidates stored analyser JSON before use', () => {
