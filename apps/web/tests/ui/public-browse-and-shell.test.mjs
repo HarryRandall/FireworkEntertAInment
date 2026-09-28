@@ -95,12 +95,25 @@ test('public browse routes retain page-level chrome while their data loads', () 
 });
 
 test('route error boundaries do not render backend error messages', () => {
-  for (const path of ['app/(app)/error.tsx', 'app/(admin)/error.tsx', 'app/(browse)/error.tsx']) {
-    const source = read(path);
+  for (const group of [
+    '(app)',
+    '(admin)',
+    '(browse)',
+    '(my-store)',
+    '(kiosk)',
+    '(marketing)',
+    '(auth)',
+  ]) {
+    const source = read(`app/${group}/error.tsx`);
     assert.doesNotMatch(source, /error\.message/);
     assert.match(source, /Try again|try again/);
-    assert.match(source, /onClick=\{reset\}/);
+    // retry() re-fetches server data; reset() only re-renders the failed tree.
+    assert.match(source, /onRetry=\{retry\}/);
   }
+  const global = read('app/global-error.tsx');
+  assert.doesNotMatch(global, /error\.message/);
+  assert.match(global, /<html[\s\S]*<body/);
+  assert.match(global, /onRetry=\{retry\}/);
 });
 
 test('catalogue failures reach the shared browse retry boundary', () => {

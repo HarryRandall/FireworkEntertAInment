@@ -175,3 +175,18 @@ test('Jamendo responses persist in a durable, service-role-only Postgres cache',
   // Cache reads must fail open to the live API, never break search or browse.
   assert.match(server, /durable cache read failed/);
 });
+
+test('song previews are single-element, resumable and release their stream', () => {
+  const previewAudio = read('ui/music/usePreviewAudio.ts');
+  // Switching or pausing rejects the pending play() with AbortError; that must not
+  // stop the new preview or surface an error.
+  assert.match(previewAudio, /audioRef\.current !== audio \|\| isAbort\(err\)/);
+  // Released elements drop their source so the browser stops buffering the stream.
+  assert.match(previewAudio, /removeAttribute\('src'\)[\s\S]*\.load\(\)/);
+  assert.match(previewAudio, /audio\.onerror = /);
+  // Resume keeps position: the same track toggles the existing element.
+  assert.match(previewAudio, /preview\?\.trackId === track\.trackId[\s\S]*current\.paused/);
+  assert.match(search, /usePreviewAudio\(\)/);
+  assert.doesNotMatch(search, /new Audio\(/);
+  assert.doesNotMatch(search, /value: unknown = await res\.json\(\)/);
+});

@@ -1,17 +1,21 @@
 'use client';
 
-/** Error boundary for the `(app)` route group; renders a retry UI when a page throws. */
+/** Error boundary for sign-in and sign-up pages. */
 
 import { RouteError } from '@/ui/patterns/RouteError';
 
-export default function AppError({
+export default function AuthError({
   retry,
 }: {
   error: Error & { digest?: string };
   retry: () => void;
 }) {
   return (
-    <RouteError title="View failed to load" onRetry={retry}>
+    <RouteError
+      title="Sign-in is unavailable"
+      onRetry={retry}
+      className="min-h-screen items-center"
+    >
       Something went wrong while loading this page. Try again in a moment.
     </RouteError>
   );

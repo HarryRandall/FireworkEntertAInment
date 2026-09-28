@@ -2,27 +2,17 @@
 
 /** Safe retry boundary for guest and authenticated public browse routes. */
 
-import { RotateCcw } from 'lucide-react';
-import { Button } from '@/ui/patterns/Button';
-import { InlineAlert } from '@/ui/patterns/Feedback';
+import { RouteError } from '@/ui/patterns/RouteError';
 
 export default function BrowseError({
-  reset,
+  retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  retry: () => void;
 }) {
   return (
-    <div className="flex min-h-[50vh] w-full items-start justify-center px-4 py-8">
-      <div className="flex w-full max-w-xl flex-col items-start gap-3">
-        <InlineAlert tone="danger" title="Explore failed to load" className="w-full">
-          We could not load the latest shows or catalogue data. Try again in a moment.
-        </InlineAlert>
-        <Button type="button" onClick={reset} variant="secondary" size="md">
-          <RotateCcw size={16} />
-          Retry
-        </Button>
-      </div>
-    </div>
+    <RouteError title="Explore failed to load" onRetry={retry} className="min-h-[50vh] flex-none">
+      We could not load the latest shows or catalogue data. Try again in a moment.
+    </RouteError>
   );
 }
