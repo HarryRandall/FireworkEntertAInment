@@ -30,7 +30,7 @@ test('cue rows expose a labelled keyboard-operable seek action', () => {
   assert.match(cueTable, /cursor-pointer/);
   // The actions cell stops propagation so opening the menu never plays the row.
   assert.match(cueTable, /onClick=\{\(event\) => event\.stopPropagation\(\)\}/);
-  assert.match(cueTable, /isActive &&\s*'bg-\[color:var\(--color-bg-muted\)\]/);
+  assert.match(cueTable, /isActive &&\s*'bg-muted/);
 });
 
 test('cue deletion requires cue-specific confirmation and locks repeat submissions', () => {

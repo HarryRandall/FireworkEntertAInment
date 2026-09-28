@@ -276,7 +276,7 @@ export function DuplicateShowPresetButton({ presetId }: { presetId: string }) {
       onClick={duplicate}
       disabled={isPending}
       aria-busy={isPending}
-      className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-muted)] hover:text-[color:var(--color-content-emphasis)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)] disabled:cursor-wait disabled:opacity-60"
+      className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-foreground inline-flex h-9 w-9 items-center justify-center rounded-md transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-wait disabled:opacity-60"
       aria-label="Duplicate preset"
       title="Duplicate preset"
     >

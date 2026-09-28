@@ -213,29 +213,23 @@ test('new show page avoids redundant chrome', () => {
 });
 
 test('new show choice cards stay visible before hover', () => {
-  assert.match(choiceCards, /border-2 bg-\[color:var\(--color-bg-elevated\)\]/);
+  assert.match(choiceCards, /['"](?=[^'"]*\bborder-2\b)[^'"]*\bbg-popover\b/);
   assert.match(choiceCards, /selected \|\| multiple/);
-  assert.match(choiceCards, /\? 'border-\[color:var\(--color-content-emphasis\)\]'/);
+  assert.match(choiceCards, /\? 'border-foreground'/);
   assert.doesNotMatch(choiceCards, /ring-ring\/30/);
-  assert.doesNotMatch(choiceCards, /bg-\[color:var\(--color-bg-subtle\)\]\/55/);
-  assert.doesNotMatch(
-    choiceCards,
-    /border-\[color:var\(--color-border-subtle\)\] hover:border-\[color:var\(--color-border-default\)\] hover:bg-\[color:var\(--color-bg-subtle\)\]\/50/,
-  );
+  assert.doesNotMatch(choiceCards, /bg-secondary\/55/);
+  assert.doesNotMatch(choiceCards, /border-border hover:border-input hover:bg-secondary\/50/);
 
-  assert.match(page, /border-2 bg-\[color:var\(--color-bg-elevated\)\]/);
-  assert.match(
-    page,
-    /soundtrackMode === 'none'\s+\? 'border-\[color:var\(--color-content-emphasis\)\]'/,
-  );
+  assert.match(page, /['"](?=[^'"]*\bborder-2\b)[^'"]*\bbg-popover\b/);
+  assert.match(page, /soundtrackMode === 'none'\s+\? 'border-foreground'/);
 });
 
 test('new show audio drop zone uses the bright card surface', () => {
   assert.match(audioUpload, /border-2 border-dashed/);
-  assert.match(audioUpload, /bg-\[color:var\(--color-bg-elevated\)\]/);
-  assert.match(audioUpload, /hover:border-\[color:var\(--color-content-emphasis\)\]\/40/);
-  assert.doesNotMatch(audioUpload, /bg-\[color:var\(--color-bg-subtle\)\]\/40/);
-  assert.doesNotMatch(audioUpload, /hover:bg-\[color:var\(--color-bg-subtle\)\]/);
+  assert.match(audioUpload, /bg-popover/);
+  assert.match(audioUpload, /hover:border-foreground\/40/);
+  assert.doesNotMatch(audioUpload, /bg-secondary\/40/);
+  assert.doesNotMatch(audioUpload, /hover:bg-secondary/);
   assert.match(audioUpload, /role=\{uploadState === 'error' \? 'alert' : 'status'\}/);
   assert.match(audioUpload, /<AlertTriangle/);
 });

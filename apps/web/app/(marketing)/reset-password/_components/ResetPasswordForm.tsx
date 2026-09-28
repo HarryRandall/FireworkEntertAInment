@@ -63,10 +63,7 @@ export function ResetPasswordForm() {
   return (
     <form onSubmit={handleSubmit} noValidate className="space-y-4">
       <div className="space-y-2">
-        <label
-          htmlFor="password"
-          className="block text-sm font-medium text-[color:var(--color-content-emphasis)]"
-        >
+        <label htmlFor="password" className="text-foreground block text-sm font-medium">
           New password
         </label>
         <Input
@@ -88,10 +85,7 @@ export function ResetPasswordForm() {
         />
       </div>
       <div className="space-y-2">
-        <label
-          htmlFor="confirmPassword"
-          className="block text-sm font-medium text-[color:var(--color-content-emphasis)]"
-        >
+        <label htmlFor="confirmPassword" className="text-foreground block text-sm font-medium">
           Confirm new password
         </label>
         <Input

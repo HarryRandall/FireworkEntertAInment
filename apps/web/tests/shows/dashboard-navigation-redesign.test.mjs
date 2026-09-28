@@ -40,7 +40,7 @@ test('dashboard uses the redesigned summary layout instead of paginated show car
   assert.doesNotMatch(summaryCards, /JumpBackInHero/);
   assert.match(summaryCards, /min-h-\[10rem\]/);
   assert.match(summaryCards, /top-2 right-2/);
-  assert.match(summaryCards, /fill-current text-\[color:var\(--destructive\)\]/);
+  assert.match(summaryCards, /className="(?=[^"]*\bfill-current\b)[^"]*\btext-destructive\b/);
   assert.doesNotMatch(summaryCards, /values={template\.energySeries}/);
   assert.doesNotMatch(summaryCards, /formatDuration\(template\.lengthSeconds\)/);
   assert.doesNotMatch(summaryCards, /mt-auto space-y-2 pt-5/);
@@ -236,7 +236,7 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.match(templatePreview, /relative h-44 overflow-hidden/);
   assert.doesNotMatch(templatePreview, /relative h-64 overflow-hidden/);
   assert.match(templatePreview, /top-3 right-3/);
-  assert.match(templatePreview, /fill-current text-\[color:var\(--destructive\)\]/);
+  assert.match(templatePreview, /className="(?=[^"]*\bfill-current\b)[^"]*\btext-destructive\b/);
   assert.match(templatePreview, /formatBudget\(template\.totalCents\)/);
   assert.match(templatePreview, /cardPreviewWindowStart/);
   assert.match(templatePreview, /firstCueTimeFor\(template\.previewCues\) - 0\.3/);
@@ -284,7 +284,8 @@ test('shader-heavy app routes use neutral loading skeletons', () => {
   assert.match(libraryPage, /LibraryCardsSkeleton/);
   assert.doesNotMatch(libraryPage, /ShaderCover|shaderCoverGradient|shaderCoverFromSeed/);
 
-  const routeSkeletons = read('ui/shell/RouteSkeletons.tsx');
+  const routeSkeletons =
+    read('ui/shell/RouteSkeletons.tsx') + read('app/(admin)/_components/AdminSkeletons.tsx');
   const start = routeSkeletons.indexOf('function ExploreCardSkeleton(');
   const end = routeSkeletons.indexOf('/** Skeleton for the `/admin`', start);
   const librarySkeleton = routeSkeletons.slice(start, end);

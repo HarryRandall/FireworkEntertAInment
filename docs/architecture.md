@@ -17,7 +17,7 @@ them; one app does not need a placeholder package hierarchy.
 | `ui/<domain>/`        | Features shared by multiple routes, such as assortments, firework editing and replay     |
 | `ui/shell/`           | App, admin and My Store navigation, account controls and workspace chrome                |
 | `lib/`                | Domain transformations, validation, types and server integrations                        |
-| `ui/theme.css`        | Canonical light/dark colour values and legacy aliases                                    |
+| `ui/theme.css`        | Canonical light/dark colour values and theme tokens                                      |
 | `hooks/`              | Hooks shared across domains; feature-only hooks stay beside their feature                |
 | `lib/supabase/`       | Existing Supabase client factories and request/session adapters                          |
 | `services/`           | Independently deployed Python services with their own requirements                       |
@@ -104,8 +104,9 @@ are content, and may have their own colours.
 
 Maintain colour values and their light/dark counterparts together in
 `ui/theme.css`. Prefer semantic tokens over literal hex values and palette
-classes in application UI. Legacy colour aliases are compatibility mappings, not
-a second palette. Check light, dark, mobile, focus, disabled/loading and
+classes in application UI. Use the token classes above rather than
+`[color:var(--…)]` or Material-style names such as `text-on-surface`;
+`architecture/legacy-colours` enforces this. Check light, dark, mobile, focus, disabled/loading and
 reduced-motion states when changing a shared primitive.
 
 Use `SectionHeader as="h1"` for a page heading and its default `h2` for sections.

@@ -14,7 +14,7 @@ export default function ShowNotFound() {
         <p className="text-muted-foreground mt-6 text-xs font-semibold tracking-widest uppercase">
           Show not found
         </p>
-        <h1 className="text-foreground mt-2 text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
+        <h1 className="text-foreground mt-2 text-2xl font-bold tracking-tight text-balance">
           We could not open this show.
         </h1>
         <p className="text-muted-foreground mt-3 max-w-xl text-sm leading-relaxed sm:text-base">

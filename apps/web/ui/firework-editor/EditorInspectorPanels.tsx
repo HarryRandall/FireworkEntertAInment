@@ -2,7 +2,7 @@
 
 import type { AdminEditorVersion } from '@/lib/admin.types';
 import type { Json } from '@/lib/database.types';
-import { cn } from '@/lib/utils';
+import { cn, isRecord } from '@/lib/utils';
 import { Button } from '@/ui/patterns/Button';
 import { EmptyState, InlineAlert } from '@/ui/patterns/Feedback';
 import { Maximize2, RotateCcw, X } from 'lucide-react';
@@ -24,10 +24,6 @@ const CHANGE_LABELS: Record<string, string> = {
   modelJson: 'Model JSON',
   renderOverridesJson: 'Renderer overrides',
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 function formatClock(date: Date): string {
   return new Intl.DateTimeFormat(undefined, {
@@ -169,17 +165,17 @@ export function EditorHistoryPanel({
               {showTimelineMarker ? (
                 <div className="relative flex justify-center">
                   {index < versions.length - 1 ? (
-                    <span className="absolute top-6 bottom-[-1.75rem] w-px bg-[color:var(--color-border-subtle)]" />
+                    <span className="bg-border absolute top-6 bottom-[-1.75rem] w-px" />
                   ) : null}
                   <span
-                    className="mt-2 h-3 w-3 rounded-full border-2 border-[color:var(--color-border-strong)] bg-[color:var(--color-bg-default)]"
+                    className="border-border-emphasis bg-card mt-2 h-3 w-3 rounded-full border-2"
                     aria-hidden="true"
                   />
                 </div>
               ) : null}
 
               <div
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-subtle)] text-xs font-semibold text-[color:var(--color-content-emphasis)]"
+                className="border-border bg-secondary text-foreground flex h-9 w-9 shrink-0 items-center justify-center rounded-full border text-xs font-semibold"
                 aria-hidden="true"
               >
                 {initials}
@@ -187,18 +183,18 @@ export function EditorHistoryPanel({
 
               <div className="min-w-0 rounded-lg pt-1">
                 <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-                  <p className="min-w-0 flex-1 truncate text-sm font-semibold text-[color:var(--color-content-emphasis)]">
+                  <p className="text-foreground min-w-0 flex-1 truncate text-sm font-semibold">
                     {version.createdByLabel}
                   </p>
                   <time
                     dateTime={version.createdAt}
-                    className="shrink-0 text-xs text-[color:var(--color-content-muted)]"
+                    className="text-muted-foreground shrink-0 text-xs"
                   >
                     {formatDate(version.createdAt, now)}
                   </time>
                 </div>
 
-                <p className="mt-1 text-sm leading-6 text-[color:var(--color-content-subtle)]">
+                <p className="text-muted-foreground mt-1 text-sm leading-6">
                   {isPending ? 'Recording version history...' : versionDetail(version)}
                 </p>
 
@@ -206,7 +202,7 @@ export function EditorHistoryPanel({
                   <Button
                     variant="primary"
                     size="sm"
-                    className="text-hl-contrast h-7 rounded-md bg-[color:var(--hl)] px-2.5 text-xs font-semibold shadow-none hover:bg-[color:var(--hl)]/85"
+                    className="text-hl-contrast bg-hl hover:bg-hl/85 h-7 rounded-md px-2.5 text-xs font-semibold shadow-none"
                     loading={restoringVersionId === version.id}
                     disabled={isPending || mutationPending}
                     onClick={() => onRestore(version)}
@@ -234,7 +230,7 @@ function JsonCodeBlock({
   return (
     <pre
       className={cn(
-        'min-h-0 flex-1 overflow-auto rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-4 font-mono text-[11px] leading-6 text-[color:var(--color-content-emphasis)] tabular-nums',
+        'border-border bg-card text-foreground min-h-0 flex-1 overflow-auto rounded-lg border p-4 font-mono text-[11px] leading-6 tabular-nums',
         className,
       )}
     >
@@ -258,9 +254,7 @@ export function JsonReadOnlyPanel({ value, label }: { value: Json; label?: strin
 
   return (
     <div className="flex min-h-[420px] flex-1 flex-col gap-3">
-      {label ? (
-        <p className="text-sm leading-relaxed text-[color:var(--color-content-subtle)]">{label}</p>
-      ) : null}
+      {label ? <p className="text-muted-foreground text-sm leading-relaxed">{label}</p> : null}
       <div className="relative flex min-h-0 flex-1">
         <JsonCodeBlock formattedJson={formattedJson} className="pr-14" />
         <Button
@@ -276,22 +270,16 @@ export function JsonReadOnlyPanel({ value, label }: { value: Json; label?: strin
       </div>
       {fullScreen ? (
         <div
-          className="fixed inset-0 z-[80] bg-[color:var(--color-bg-muted)]/95 p-3 backdrop-blur-sm sm:p-5"
+          className="bg-muted/95 fixed inset-0 z-[80] p-3 backdrop-blur-sm sm:p-5"
           role="dialog"
           aria-modal="true"
           aria-label="Expanded JSON"
         >
-          <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-xl border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] shadow-2xl">
-            <div className="flex items-center justify-between gap-3 border-b border-[color:var(--color-border-subtle)] px-4 py-3">
+          <div className="border-input bg-card flex h-full min-h-0 flex-col overflow-hidden rounded-xl border shadow-2xl">
+            <div className="border-border flex items-center justify-between gap-3 border-b px-4 py-3">
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-[color:var(--color-content-emphasis)]">
-                  JSON
-                </p>
-                {label ? (
-                  <p className="truncate text-xs text-[color:var(--color-content-subtle)]">
-                    {label}
-                  </p>
-                ) : null}
+                <p className="text-foreground text-sm font-semibold">JSON</p>
+                {label ? <p className="text-muted-foreground truncate text-xs">{label}</p> : null}
               </div>
               <Button
                 variant="ghost"
@@ -305,7 +293,7 @@ export function JsonReadOnlyPanel({ value, label }: { value: Json; label?: strin
             </div>
             <JsonCodeBlock
               formattedJson={formattedJson}
-              className="rounded-none border-0 bg-[color:var(--color-bg-default)] p-5"
+              className="bg-card rounded-none border-0 p-5"
             />
           </div>
         </div>

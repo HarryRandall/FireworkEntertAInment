@@ -59,13 +59,13 @@ export function Hero({
       <Container className="relative z-[2] mx-auto max-w-[880px] text-center">
         <Reveal className="mb-6 inline-flex items-center gap-2">
           <Sparkle size={16} float={false} />
-          <span className="text-on-surface-variant text-xs font-semibold tracking-[0.18em] uppercase">
+          <span className="text-muted-foreground text-xs font-semibold tracking-[0.18em] uppercase">
             Music-aware fireworks planning
           </span>
         </Reveal>
 
         <Reveal delay={0.08}>
-          <h1 className="text-on-surface relative m-0 text-[clamp(2.25rem,12vw,5.625rem)] leading-[1.02] font-extrabold tracking-[-0.035em] text-balance sm:text-[clamp(46px,7vw,90px)] sm:leading-[0.97]">
+          <h1 className="text-foreground relative m-0 text-[clamp(2.25rem,12vw,5.625rem)] leading-[1.02] font-extrabold tracking-[-0.035em] text-balance sm:text-[clamp(46px,7vw,90px)] sm:leading-[0.97]">
             {title}
             <br />
             <Mark>{highlight}</Mark>
@@ -74,7 +74,7 @@ export function Hero({
         </Reveal>
 
         <Reveal delay={0.16}>
-          <p className="text-on-surface-variant mx-auto mt-6 max-w-[520px] text-lg leading-relaxed">
+          <p className="text-muted-foreground mx-auto mt-6 max-w-[520px] text-lg leading-relaxed">
             {subtitle}
           </p>
         </Reveal>
@@ -99,7 +99,7 @@ export function Hero({
           {CAPABILITIES.map((capability) => (
             <span
               key={capability}
-              className="border-outline-variant/40 bg-surface-container-low text-on-surface-variant inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm"
+              className="border-border/40 bg-card text-muted-foreground inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm"
             >
               <span aria-hidden className="bg-primary h-1.5 w-1.5 rounded-full" />
               {capability}

@@ -88,5 +88,35 @@ const semanticColours = {
   },
 };
 
-const architecture = { rules: { boundaries, 'semantic-colours': semanticColours } };
+const LEGACY_ALIAS =
+  /(?<![\w-])(?:bg|text|border|ring|fill|stroke|from|to|via|divide|outline|decoration)-(?:\[color:var\(--|(?:on-)?surface(?:-[a-z-]+)?(?![\w-])|on-(?:background|primary|secondary|tertiary|error)|(?:primary|secondary)-(?:container|fixed)|tertiary|outline(?:-variant)?(?![\w-])|inverse-|error(?:-container)?(?![\w-]))/;
+
+/** Theme colours are Tailwind tokens (`bg-card`, `text-muted-foreground`), not var() or Material aliases. */
+const legacyColours = {
+  meta: {
+    type: 'suggestion',
+    schema: [],
+    messages: {
+      legacy:
+        'Use the canonical token class (for example bg-card, text-muted-foreground, border-input) instead of a var() or Material-style alias.',
+    },
+  },
+  create(context) {
+    function inspect(node, value) {
+      if (LEGACY_ALIAS.test(value)) context.report({ node, messageId: 'legacy' });
+    }
+    return {
+      Literal(node) {
+        if (typeof node.value === 'string') inspect(node, node.value);
+      },
+      TemplateElement(node) {
+        inspect(node, node.value.raw);
+      },
+    };
+  },
+};
+
+const architecture = {
+  rules: { boundaries, 'semantic-colours': semanticColours, 'legacy-colours': legacyColours },
+};
 export default architecture;

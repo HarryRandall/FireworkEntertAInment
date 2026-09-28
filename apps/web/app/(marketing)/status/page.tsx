@@ -62,10 +62,10 @@ export default function StatusPage() {
               </div>
               <div>
                 <Eyebrow>Beta notice</Eyebrow>
-                <h2 className="text-on-surface mt-2 text-xl font-bold tracking-tight text-balance md:text-2xl">
+                <h2 className="text-foreground mt-2 text-xl font-bold tracking-tight text-balance md:text-2xl">
                   Features and availability can change during testing.
                 </h2>
-                <p className="text-on-surface-variant mt-3 max-w-2xl text-sm leading-relaxed md:text-base">
+                <p className="text-muted-foreground mt-3 max-w-2xl text-sm leading-relaxed md:text-base">
                   ShowCrafter is still being developed with its project stakeholders. Treat this
                   page as product information, not as evidence of current service health.
                 </p>
@@ -79,13 +79,13 @@ export default function StatusPage() {
                   const Icon = item.icon;
                   return (
                     <Card key={item.title} radius="lg" className="p-6">
-                      <div className="bg-surface-container-highest text-primary inline-flex h-10 w-10 items-center justify-center rounded-full">
+                      <div className="bg-accent text-primary inline-flex h-10 w-10 items-center justify-center rounded-full">
                         <Icon aria-hidden="true" size={19} strokeWidth={1.75} />
                       </div>
-                      <h2 className="text-on-surface mt-5 text-base font-bold tracking-tight">
+                      <h2 className="text-foreground mt-5 text-base font-bold tracking-tight">
                         {item.title}
                       </h2>
-                      <p className="text-on-surface-variant mt-2 text-sm leading-relaxed">
+                      <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
                         {item.description}
                       </p>
                     </Card>
@@ -94,10 +94,10 @@ export default function StatusPage() {
               </div>
             </div>
 
-            <div className="border-outline-variant/20 bg-surface-container-low mt-12 flex flex-col gap-4 rounded-2xl border p-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="border-border/20 bg-card mt-12 flex flex-col gap-4 rounded-2xl border p-6 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-on-surface text-base font-bold">Something not working?</h2>
-                <p className="text-on-surface-variant mt-1 text-sm">
+                <h2 className="text-foreground text-base font-bold">Something not working?</h2>
+                <p className="text-muted-foreground mt-1 text-sm">
                   Check the current channel status and include enough context to reproduce the
                   blocked workflow when a channel is available.
                 </p>

@@ -128,7 +128,7 @@ async function ShowsGrid({ query, sort, page }: { query: string; sort: SortKey; 
           </div>
         </ShowReplayPreviewProvider>
       ) : (
-        <div className="rounded-2xl border border-dashed border-[color:var(--color-border-subtle)] p-6 text-sm text-[color:var(--color-content-subtle)]">
+        <div className="border-border text-muted-foreground rounded-2xl border border-dashed p-6 text-sm">
           No shows match that search.
         </div>
       )}

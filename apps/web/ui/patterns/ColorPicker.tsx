@@ -16,15 +16,11 @@ import {
 import { Check } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/primitives/popover';
 import { FIREWORK_COLOR_VALUES } from '@showcrafter/fireworks/spec';
-import { cn } from '@/lib/utils';
+import { clamp, cn } from '@/lib/utils';
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
 type Hsv = { h: number; s: number; v: number };
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
 
 function normaliseHex(value: string): string {
   const trimmed = value.trim();
@@ -122,7 +118,7 @@ export function ColorPicker({
         disabled={disabled}
         aria-label={label}
         className={cn(
-          'group focus-visible:ring-ring/50 inline-flex h-9 items-center gap-2 rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] pr-2.5 pl-1.5 shadow-xs transition-colors hover:border-[color:var(--color-border-emphasis)] focus:outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-60',
+          'group focus-visible:ring-ring/50 border-input bg-card hover:border-border-emphasis inline-flex h-9 items-center gap-2 rounded-lg border pr-2.5 pl-1.5 shadow-xs transition-colors focus:outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-60',
           className,
         )}
       >
@@ -135,7 +131,7 @@ export function ColorPicker({
           aria-hidden
         />
         {showValue ? (
-          <span className="font-mono text-xs tracking-tight text-[color:var(--color-content-emphasis)] uppercase tabular-nums">
+          <span className="text-foreground font-mono text-xs tracking-tight uppercase tabular-nums">
             {hex}
           </span>
         ) : null}
@@ -150,7 +146,7 @@ export function ColorPicker({
             aria-hidden
           />
           <div className="relative flex-1">
-            <span className="pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 font-mono text-xs text-[color:var(--color-content-muted)]">
+            <span className="text-muted-foreground pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2 font-mono text-xs">
               #
             </span>
             <input
@@ -158,7 +154,7 @@ export function ColorPicker({
               value={hexDraft.replace(/^#/, '').toUpperCase()}
               maxLength={6}
               spellCheck={false}
-              className="focus-visible:ring-ring/50 h-8 w-full rounded-md border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] pr-2 pl-5 font-mono text-xs tracking-wide text-[color:var(--color-content-emphasis)] uppercase tabular-nums focus:outline-none focus-visible:ring-3"
+              className="focus-visible:ring-ring/50 border-input bg-card text-foreground h-8 w-full rounded-md border pr-2 pl-5 font-mono text-xs tracking-wide uppercase tabular-nums focus:outline-none focus-visible:ring-3"
               onChange={(event) => {
                 const raw = event.currentTarget.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
                 const candidate = `#${raw}`;
@@ -173,7 +169,7 @@ export function ColorPicker({
           </div>
         </div>
         {presets.length > 0 ? (
-          <div className="flex flex-wrap gap-1.5 border-t border-[color:var(--color-border-subtle)] pt-3">
+          <div className="border-border flex flex-wrap gap-1.5 border-t pt-3">
             {presets.map((preset) => {
               const active = preset.toLowerCase() === hex;
               return (
@@ -187,7 +183,7 @@ export function ColorPicker({
                   }}
                   className={cn(
                     'focus-visible:ring-ring/60 flex h-6 w-6 items-center justify-center rounded-full ring-1 ring-black/10 transition-transform ring-inset hover:scale-110 focus:outline-none focus-visible:ring-3',
-                    active && 'ring-2 ring-[color:var(--color-content-emphasis)]',
+                    active && 'ring-foreground ring-2',
                   )}
                   style={{ backgroundColor: preset }}
                 >

@@ -27,6 +27,7 @@ import {
 import { MIN_PRODUCT_DURATION_SECONDS } from '@/lib/cue-overlap.server';
 import { deleteCachedKeys } from '@/lib/server-cache';
 import { invalidateFireworkCatalogueCaches } from '@/lib/shows/cache-keys';
+import { slugify } from '@/lib/admin/slugs';
 
 type Result = { ok: true } | { ok: false; error: string };
 type CreateResult = { ok: true; id: string } | { ok: false; error: string };
@@ -100,14 +101,6 @@ const DeleteShotSchema = z.object({
 
 function firstError(error: z.ZodError): string {
   return error.issues[0]?.message ?? 'Invalid input.';
-}
-
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 60);
 }
 
 function finiteNumber(value: unknown): number | null {

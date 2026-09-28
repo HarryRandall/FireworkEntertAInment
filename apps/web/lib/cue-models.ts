@@ -38,9 +38,9 @@ export const CUE_MODEL_OPTIONS = [
   },
 ] as const;
 
-export type CueModel = (typeof CUE_MODEL_OPTIONS)[number]['value'];
+type CueModel = (typeof CUE_MODEL_OPTIONS)[number]['value'];
 
-export function isCueModel(value: string): value is CueModel {
+function isCueModel(value: string): value is CueModel {
   return CUE_MODEL_OPTIONS.some((option) => option.value === value);
 }
 

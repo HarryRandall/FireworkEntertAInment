@@ -104,8 +104,8 @@ function NavMenu({ label, href, items }: { label: string; href: string; items: M
                 <it.Icon aria-hidden="true" size={16} strokeWidth={1.9} />
               </span>
               <span>
-                <span className="text-on-surface block text-sm font-semibold">{it.t}</span>
-                <span className="text-on-surface-variant mt-px block text-[12.5px] leading-snug">
+                <span className="text-foreground block text-sm font-semibold">{it.t}</span>
+                <span className="text-muted-foreground mt-px block text-[12.5px] leading-snug">
                   {it.d}
                 </span>
               </span>
@@ -162,9 +162,9 @@ export function MarketingNavBar() {
   }, [open]);
 
   return (
-    <nav className="border-outline-variant/60 sticky top-0 z-50 border-b bg-[color-mix(in_srgb,var(--background)_80%,transparent)] backdrop-blur-xl">
+    <nav className="border-border/60 sticky top-0 z-50 border-b bg-[color-mix(in_srgb,var(--background)_80%,transparent)] backdrop-blur-xl">
       <Container className="flex h-[66px] items-center justify-between">
-        <Link href={authenticated ? '/home' : '/'} className="text-on-surface">
+        <Link href={authenticated ? '/home' : '/'} className="text-foreground">
           <BrandLockup />
         </Link>
 
@@ -204,7 +204,7 @@ export function MarketingNavBar() {
             aria-controls={mobileMenuId}
             aria-expanded={open}
             onClick={() => setOpen((o) => !o)}
-            className="border-outline-variant/60 bg-background text-on-surface-variant hover:text-on-surface focus-visible:border-ring focus-visible:ring-ring/50 inline-flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border outline-none focus-visible:ring-3"
+            className="border-border/60 bg-background text-muted-foreground hover:text-foreground focus-visible:border-ring focus-visible:ring-ring/50 inline-flex h-11 w-11 touch-manipulation items-center justify-center rounded-full border outline-none focus-visible:ring-3"
           >
             {open ? <X aria-hidden="true" size={20} /> : <Menu aria-hidden="true" size={20} />}
           </button>
@@ -216,20 +216,20 @@ export function MarketingNavBar() {
         data-state={open ? 'open' : 'closed'}
         aria-hidden={!open}
         inert={!open}
-        className={`${styles.mobileMenu} border-outline-variant/60 bg-background border-t lg:hidden`}
+        className={`${styles.mobileMenu} border-border/60 bg-background border-t lg:hidden`}
       >
         <Container className="flex flex-col gap-1 py-4">
           {FLAT_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className="text-on-surface-variant hover:bg-muted hover:text-on-surface rounded-lg px-3 py-3 text-base font-medium"
+              className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-lg px-3 py-3 text-base font-medium"
               onClick={() => setOpen(false)}
             >
               {link.label}
             </Link>
           ))}
-          <div className="border-outline-variant/60 mt-3 flex flex-col gap-3 border-t pt-4">
+          <div className="border-border/60 mt-3 flex flex-col gap-3 border-t pt-4">
             {authenticated ? (
               <Button href="/home" size="md" className="w-full" onClick={() => setOpen(false)}>
                 Home
@@ -238,7 +238,7 @@ export function MarketingNavBar() {
               <>
                 <Link
                   href="/login"
-                  className="text-on-surface-variant hover:bg-muted rounded-lg px-3 py-3 text-base font-medium"
+                  className="text-muted-foreground hover:bg-muted rounded-lg px-3 py-3 text-base font-medium"
                   onClick={() => setOpen(false)}
                 >
                   Log in

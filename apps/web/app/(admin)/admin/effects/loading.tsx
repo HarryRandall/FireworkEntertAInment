@@ -22,6 +22,8 @@ export default function AdminEffectsLoading() {
   return (
     <div
       className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-5"
+      role="status"
+      aria-busy="true"
       aria-label="Loading effects"
     >
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
@@ -29,7 +31,7 @@ export default function AdminEffectsLoading() {
           <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
             Effects
           </p>
-          <h1 className="text-foreground mt-1 text-2xl font-semibold tracking-tight">
+          <h1 className="text-foreground mt-1 text-2xl font-bold tracking-tight">
             {adminEffectsViewLabel(view)}
           </h1>
           <p className="text-muted-foreground mt-1 max-w-2xl text-sm">

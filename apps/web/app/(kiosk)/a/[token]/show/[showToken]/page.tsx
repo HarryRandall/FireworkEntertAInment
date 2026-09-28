@@ -41,7 +41,7 @@ export default async function AssortmentShowPage({
       <div className="mx-auto flex min-h-[calc(100dvh-4rem)] max-w-xl items-center px-4 py-12 sm:px-6">
         <Card className="w-full p-6 text-center">
           <h1 className="text-2xl font-bold">This show could not be generated</h1>
-          <p className="text-on-surface-variant mt-2 text-sm leading-6">
+          <p className="text-muted-foreground mt-2 text-sm leading-6">
             {show.generationError || 'Try generating another design from the same assortment.'}
           </p>
           <div className="mt-6 flex justify-center">
@@ -118,7 +118,7 @@ export default async function AssortmentShowPage({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Your show is ready</h1>
-          <p className="text-on-surface-variant mt-2">{assortment.name}</p>
+          <p className="text-muted-foreground mt-2">{assortment.name}</p>
         </div>
         <p className="font-mono text-2xl font-semibold tabular-nums">
           {formatBudget(show.budgetCents ?? show.totalCents)}
@@ -141,7 +141,7 @@ export default async function AssortmentShowPage({
             <Package className="text-primary mt-0.5" size={20} aria-hidden="true" />
             <div>
               <h2 className="font-semibold">{assortment.name}</h2>
-              <p className="text-on-surface-variant mt-1 text-sm">
+              <p className="text-muted-foreground mt-1 text-sm">
                 {pieceCount} included {pieceCount === 1 ? 'product' : 'products'}
               </p>
             </div>
@@ -153,7 +153,7 @@ export default async function AssortmentShowPage({
         <ul className="border-border mt-4 space-y-2 border-t pt-4">
           {show.snapshotItems.map((item) => (
             <li key={item.catalogueItemId} className="flex gap-3 text-sm">
-              <span className="text-on-surface-variant w-8 shrink-0 font-mono tabular-nums">
+              <span className="text-muted-foreground w-8 shrink-0 font-mono tabular-nums">
                 {item.quantity}x
               </span>
               <span>{item.name}</span>
@@ -166,7 +166,7 @@ export default async function AssortmentShowPage({
         <h2 id="not-happy-heading" className="text-lg font-semibold">
           Not happy with this design?
         </h2>
-        <p className="text-on-surface-variant mt-1 mb-4 text-sm leading-6">
+        <p className="text-muted-foreground mt-1 mb-4 text-sm leading-6">
           Generate a different timeline using this exact assortment. The products and quantities
           stay locked.
         </p>

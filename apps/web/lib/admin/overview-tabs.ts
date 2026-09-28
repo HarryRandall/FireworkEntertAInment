@@ -16,7 +16,7 @@ const tabOptionsByKey = new Map<AdminOverviewTabKey, AdminOverviewTabOption>(
   ADMIN_OVERVIEW_TAB_OPTIONS.map((option) => [option.key, option]),
 );
 
-export function getAdminOverviewTabOption(key: string | null | undefined): AdminOverviewTabOption {
+function getAdminOverviewTabOption(key: string | null | undefined): AdminOverviewTabOption {
   return (
     tabOptionsByKey.get(key as AdminOverviewTabKey) ??
     tabOptionsByKey.get(DEFAULT_ADMIN_OVERVIEW_TAB_KEY)!

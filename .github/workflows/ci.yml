@@ -56,6 +56,9 @@ jobs:
       - name: Run lint
         run: pnpm lint
 
+      - name: Check for unused files and exports
+        run: pnpm knip
+
       - name: Run typecheck
         run: pnpm typecheck
 
@@ -89,6 +92,9 @@ jobs:
 
       - name: Install analyser dependencies
         run: python -m pip install -r requirements.txt
+
+      - name: Lint analyser
+        run: python -m pip install ruff==0.16.9 && ruff check .
 
       - name: Run analyser unit tests
         run: python -m unittest discover -s tests -p "*test*.py"
@@ -151,6 +157,9 @@ jobs:
 
       - name: Install worker dependencies
         run: python -m pip install -r services/firework-import-worker/requirements.txt
+
+      - name: Lint worker
+        run: python -m pip install ruff==0.16.9 && ruff check services/firework-import-worker
 
       - name: Run worker unit tests
         run: python -m unittest discover -s services/firework-import-worker/tests -p "*test*.py"

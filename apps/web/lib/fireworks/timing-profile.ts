@@ -3,20 +3,20 @@ import type { FireworkSpecification } from '@/lib/show-domain';
 import { scaleDesignForCaliber, scaleDesignForEmphasis } from '@showcrafter/fireworks/design';
 import { estimateFireworkDesignTiming } from '@showcrafter/fireworks/timing';
 
-export type ProductTimingProfileChild = {
+type ProductTimingProfileChild = {
   firework: FireworkSpecification;
   timeOffsetSeconds: number;
   panDegrees?: number | null;
 };
 
-export type ProductTimingShot = {
+type ProductTimingShot = {
   productId: string;
   launchOffsetSeconds: number;
   impactOffsetSeconds: number;
   endOffsetSeconds: number;
 };
 
-export type ProductTimingIntervals = {
+type ProductTimingIntervals = {
   count: number;
   minSeconds: number;
   maxSeconds: number;

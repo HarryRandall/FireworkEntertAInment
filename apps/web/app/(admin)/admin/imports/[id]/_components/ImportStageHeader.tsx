@@ -27,9 +27,7 @@ export function ImportStageHeader({
           <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
             Video reconstruction
           </p>
-          <h1 className="text-foreground mt-1 text-2xl font-semibold tracking-tight sm:text-3xl">
-            {sourceName}
-          </h1>
+          <h1 className="text-foreground mt-1 text-2xl font-bold tracking-tight">{sourceName}</h1>
           <p className="text-muted-foreground mt-2 text-sm">
             Compare source evidence, renderer output and deterministic validation before publish.
           </p>

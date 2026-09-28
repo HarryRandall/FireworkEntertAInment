@@ -68,7 +68,7 @@ function transactionCreditLabel(transaction: AiCreditTransactionSummary) {
 
 function transactionCreditClass(transaction: AiCreditTransactionSummary) {
   const signedAmount = signedAiCreditAmount(transaction);
-  if (signedAmount > 0) return 'text-[color:var(--color-status-success)]';
+  if (signedAmount > 0) return 'text-status-success';
   if (transaction.type === 'debit') return 'text-foreground';
   return 'text-muted-foreground';
 }
@@ -107,7 +107,7 @@ export default async function UsageSettingsPage({ searchParams }: PageProps) {
               <Badge
                 solid
                 tone="success"
-                className="bg-[color-mix(in_srgb,var(--hl)_18%,transparent)] text-[color:var(--hl)]"
+                className="text-hl bg-[color-mix(in_srgb,var(--hl)_18%,transparent)]"
               >
                 Free
               </Badge>
@@ -126,7 +126,7 @@ export default async function UsageSettingsPage({ searchParams }: PageProps) {
               <CreditStat label="Reserved" value={creditLabel(Math.max(credits.reserved, 0))} />
             </dl>
 
-            <div className="rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)] p-4 sm:p-5">
+            <div className="border-border bg-popover rounded-xl border p-4 sm:p-5">
               <h2 className="font-heading text-sm font-medium">Usage limits</h2>
               <dl className="mt-3 grid gap-3 sm:grid-cols-2">
                 <CreditStat
@@ -163,7 +163,7 @@ export default async function UsageSettingsPage({ searchParams }: PageProps) {
             </CardAction>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="rounded-lg border border-[color:var(--hl)] bg-[color-mix(in_srgb,var(--hl)_9%,transparent)] px-3 py-3">
+            <div className="border-hl rounded-lg border bg-[color-mix(in_srgb,var(--hl)_9%,transparent)] px-3 py-3">
               <p className="text-sm font-semibold">Free</p>
               <p className="text-muted-foreground mt-1 text-xs">
                 The only plan available during the beta.
@@ -257,7 +257,7 @@ export default async function UsageSettingsPage({ searchParams }: PageProps) {
 
 function CreditStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-[color:var(--color-border-subtle)] px-3 py-2.5">
+    <div className="border-border rounded-lg border px-3 py-2.5">
       <dt className="text-muted-foreground text-xs">{label}</dt>
       <dd className="font-mono text-sm font-semibold tabular-nums">{value}</dd>
     </div>

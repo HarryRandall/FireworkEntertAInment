@@ -178,7 +178,7 @@ async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
                           <Link
                             href={href}
                             prefetch={false}
-                            className="min-w-0 truncate text-sm font-medium text-[color:var(--color-content-emphasis)] hover:underline focus:underline focus:outline-none"
+                            className="text-foreground min-w-0 truncate text-sm font-medium hover:underline focus:underline focus:outline-none"
                           >
                             {displayName}
                           </Link>
@@ -196,7 +196,7 @@ async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
                               <Link
                                 href={href}
                                 prefetch={false}
-                                className="min-w-0 truncate text-xs text-[color:var(--color-content-subtle)] hover:underline focus:underline focus:outline-none"
+                                className="text-muted-foreground min-w-0 truncate text-xs hover:underline focus:underline focus:outline-none"
                               >
                                 {user.email}
                               </Link>
@@ -207,9 +207,7 @@ async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
                               />
                             </>
                           ) : (
-                            <span className="text-xs text-[color:var(--color-content-subtle)]">
-                              No email
-                            </span>
+                            <span className="text-muted-foreground text-xs">No email</span>
                           )}
                         </span>
                       </span>
@@ -231,7 +229,7 @@ async function AdminUsersTable({ params }: { params: UsersSearchParams }) {
                   </td>
                   <td
                     className={tableCellClasses(
-                      'p-0 font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
+                      'text-muted-foreground p-0 font-mono text-xs tabular-nums',
                     )}
                   >
                     <Link href={href} prefetch={false} className={rowLinkClasses}>

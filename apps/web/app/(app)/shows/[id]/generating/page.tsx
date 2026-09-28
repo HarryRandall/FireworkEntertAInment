@@ -86,7 +86,9 @@ export default async function ShowGeneratingPage({ params, searchParams }: PageP
           </span>
           <div className="space-y-4">
             <div>
-              <h1 className="text-foreground text-2xl font-semibold">Show generation failed</h1>
+              <h1 className="text-foreground text-2xl font-bold tracking-tight">
+                Show generation failed
+              </h1>
               <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
                 We could not finish this show. Adjust the brief or start another show.
               </p>

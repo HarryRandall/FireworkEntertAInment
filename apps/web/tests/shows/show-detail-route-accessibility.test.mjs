@@ -95,5 +95,5 @@ test('generation and not-found routes keep their dedicated headings', () => {
 
   assert.match(chrome, /forceContentOnly \|\| segment === 'generating'/);
   assert.match(notFound, /<h1/);
-  assert.match(generating, /<h1[^>]*>Show generation failed<\/h1>/);
+  assert.match(generating, /<h1[^>]*>\s*Show generation failed\s*<\/h1>/);
 });

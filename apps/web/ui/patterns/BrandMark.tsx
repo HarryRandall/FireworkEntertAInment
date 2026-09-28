@@ -7,7 +7,7 @@ type BrandLockupProps = {
   markClassName?: string;
 };
 
-export function BrandMark({ className }: { className?: string }) {
+function BrandMark({ className }: { className?: string }) {
   const id = useId().replaceAll(':', '');
   const greenTrailId = `${id}-green-trail`;
   const blueTrailId = `${id}-blue-trail`;
@@ -94,7 +94,7 @@ export function BrandLockup({ className, labelClassName, markClassName }: BrandL
   return (
     <span
       className={cn(
-        'text-on-surface inline-flex min-w-0 items-center gap-1.5 text-xl font-semibold tracking-[-0.02em]',
+        'text-foreground inline-flex min-w-0 items-center gap-1.5 text-xl font-semibold tracking-[-0.02em]',
         className,
       )}
     >

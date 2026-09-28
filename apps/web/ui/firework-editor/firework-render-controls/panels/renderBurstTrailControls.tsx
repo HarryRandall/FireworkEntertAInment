@@ -298,11 +298,9 @@ export function renderBurstTrailControls(
             {editableStops.map((stop, index) => (
               <div
                 key={`${layerKey ?? 'base'}-trail-stop-${index}`}
-                className="rounded-lg border border-[color:var(--color-border-subtle)] p-3"
+                className="border-border rounded-lg border p-3"
               >
-                <p className="mb-3 text-xs font-semibold text-[color:var(--color-content-emphasis)]">
-                  Stop {index + 1}
-                </p>
+                <p className="text-foreground mb-3 text-xs font-semibold">Stop {index + 1}</p>
                 <div className={CONTROL_GRID_CLASS}>
                   <SliderField
                     label="Position"

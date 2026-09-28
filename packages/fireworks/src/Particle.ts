@@ -43,6 +43,8 @@ export class Particle {
   shape = 0;
   rotation = 0;
   spin = 0;
+  /** Seeded 0-1 value fixed at spawn: strobe selection and twinkle phase. */
+  phase = 0;
   /** Stable outer/core style-pair slot owned by the cue that spawned this particle. */
   headStyleSlot = 0;
   color = new THREE.Color();
@@ -66,15 +68,15 @@ export class Particle {
     this.life -= dt;
     this.size -= dt * this.decay;
 
-    // Quadratic drag, sign-preserving. Avoids NaN from 0/|0|.
+    // Quadratic drag acts against the full velocity (|v|·v), so a burst stays
+    // round instead of drifting towards a cube as diagonal stars keep speed.
+    // A step that would reverse the velocity stops it instead.
     const k = 0.5 * 0.47 * 1.22 * (Math.PI / 10000) * this.airResistance;
-    const ax = (-k * this.vx * Math.abs(this.vx)) / this.mass;
-    const ay = (-k * this.vy * Math.abs(this.vy)) / this.mass;
-    const az = (-k * this.vz * Math.abs(this.vz)) / this.mass;
-
-    this.vx = applyDragStep(this.vx, ax * dt);
-    this.vy = applyDragStep(this.vy, ay * dt) + this.gravity * dt;
-    this.vz = applyDragStep(this.vz, az * dt);
+    const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy + this.vz * this.vz);
+    const retained = Math.max(0, 1 - ((k * speed) / this.mass) * dt);
+    this.vx *= retained;
+    this.vy = this.vy * retained + this.gravity * dt;
+    this.vz *= retained;
 
     this.rotation += this.spin * dt;
 
@@ -131,6 +133,7 @@ export class Particle {
     this.rotation = 0;
     this.spin = 0;
     this.headStyleSlot = 0;
+    this.phase = 0;
     this.decay = 0;
     this.gravity = -9.82;
     this.drag = 0;
@@ -145,10 +148,4 @@ export class Particle {
     this.action = NOOP;
     this.effect = NOOP;
   }
-}
-
-function applyDragStep(velocity: number, delta: number): number {
-  const next = velocity + delta;
-  if (velocity !== 0 && Math.sign(next) !== Math.sign(velocity)) return 0;
-  return next;
 }

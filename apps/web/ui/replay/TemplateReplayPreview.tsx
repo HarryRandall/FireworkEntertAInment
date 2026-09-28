@@ -493,7 +493,7 @@ export function TemplateReplayPreview({
         <>
           <div className="pointer-events-none absolute top-3 right-3 z-10 rounded-lg border border-white/15 bg-black/45 px-2.5 py-1.5 text-right text-xs text-white shadow-sm backdrop-blur transition-all duration-200 group-hover:-translate-y-1 group-hover:opacity-0 group-focus-visible:-translate-y-1 group-focus-visible:opacity-0">
             <span className="inline-flex items-center justify-end gap-1">
-              <Heart size={14} className="fill-current text-[color:var(--destructive)]" />
+              <Heart size={14} className="text-destructive fill-current" />
               <span className="tabular-nums">{template.likeCount}</span>
             </span>
             <span

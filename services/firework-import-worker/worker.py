@@ -7,7 +7,6 @@ import subprocess
 import tempfile
 import time
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
 
 from media_analysis import (
@@ -145,10 +144,6 @@ DEFAULT_RECONSTRUCTION_SYSTEM_PROMPT = (
     "those physical controls. Preserve a measured non-spherical geometry and only deviate from a calibrated prior "
     "when source or trusted-engine evidence supports the change."
 )
-
-
-def now_iso():
-    return datetime.now(timezone.utc).isoformat()
 
 
 def env_required(name):
@@ -439,34 +434,6 @@ def create_required_browser_normalized_video(
             "Could not create and store the required browser-safe comparison video"
         ) from exc
     return normalized_path, normalized_probe, normalized_storage_path
-
-
-def build_media_metadata(existing_metadata, source_probe, normalized_preview=None):
-    metadata = existing_metadata if isinstance(existing_metadata, dict) else {}
-    merged = dict(metadata)
-    merged["sourceProbe"] = {
-        "durationSeconds": round(float(source_probe.get("duration") or 0.0), 3),
-        "formatName": source_probe.get("format_name"),
-        "videoCodec": source_probe.get("video_codec"),
-        "audioCodec": source_probe.get("audio_codec"),
-        "width": source_probe.get("width"),
-        "height": source_probe.get("height"),
-        "pixelFormat": source_probe.get("pixel_format"),
-        "frameRate": source_probe.get("frame_rate"),
-        "videoProfile": source_probe.get("video_profile"),
-    }
-    if normalized_preview:
-        merged["normalizedPreview"] = normalized_preview
-    return merged
-
-
-def latest_refinement(outputs):
-    refinements = [row for row in outputs if row.get("output_type") == "refinement"]
-    if not refinements:
-        return None
-    payload = refinements[-1].get("payload") or {}
-    prompt = payload.get("prompt")
-    return prompt if isinstance(prompt, str) and prompt.strip() else None
 
 
 def _clamp_confidence(value):
@@ -2617,300 +2584,6 @@ def run_engine_validated_candidate_search(
     return selected_candidate, candidates, diagnostics, engine_evaluations
 
 
-class RunSuperseded(RuntimeError):
-    pass
-
-
-def run_id_for(job):
-    return job.get("_run_id") or job.get("processor_version")
-
-
-def run_metadata(job, stage, sequence):
-    return {
-        "id": run_id_for(job),
-        "stage": stage,
-        "sequence": sequence,
-        "workerVersion": WORKER_VERSION,
-        "pipelineVersion": PIPELINE_VERSION,
-        "recordedAt": now_iso(),
-    }
-
-
-def assert_current_run(supabase, job):
-    current = (
-        supabase.table("import_jobs")
-        .select("status,processor_version")
-        .eq("id", job["id"])
-        .single()
-        .execute()
-        .data
-    )
-    if (
-        not current
-        or current.get("status") != "processing"
-        or current.get("processor_version") != run_id_for(job)
-    ):
-        raise RunSuperseded(f"Import run {run_id_for(job)} is no longer current")
-
-
-def update_progress(supabase, job, progress):
-    result = (
-        supabase.table("import_jobs")
-        .update({"processing_progress": max(0, min(99, int(progress)))})
-        .eq("id", job["id"])
-        .eq("status", "processing")
-        .eq("processor_version", run_id_for(job))
-        .execute()
-    )
-    if not result.data:
-        raise RunSuperseded(f"Import run {run_id_for(job)} lost its processing lease")
-
-
-def append_output(supabase, job, output_type, payload, stage, sequence):
-    assert_current_run(supabase, job)
-    stored_payload = dict(payload) if isinstance(payload, dict) else {"value": payload}
-    stored_payload["_run"] = run_metadata(job, stage, sequence)
-    supabase.table("import_outputs").insert(
-        {
-            "import_job_id": job["id"],
-            "output_type": output_type,
-            "payload": stored_payload,
-        }
-    ).execute()
-
-
-def complete_run(supabase, job):
-    result = (
-        supabase.table("import_jobs")
-        .update(
-            {
-                "status": "needs_review",
-                "processing_progress": 100,
-                "completed_at": now_iso(),
-                "error_message": None,
-            }
-        )
-        .eq("id", job["id"])
-        .eq("status", "processing")
-        .eq("processor_version", run_id_for(job))
-        .execute()
-    )
-    if not result.data:
-        raise RunSuperseded(
-            f"Import run {run_id_for(job)} could not complete because it was superseded"
-        )
-
-
-def fail_current_run(supabase, job, exc):
-    supabase.table("import_jobs").update(
-        {
-            "status": "failed",
-            "processing_progress": 100,
-            "completed_at": now_iso(),
-            "error_message": str(exc)[:2000],
-        }
-    ).eq("id", job["id"]).eq("status", "processing").eq(
-        "processor_version", run_id_for(job)
-    ).execute()
-
-
-def claim_queued_job(supabase, job):
-    job_id = job["id"]
-    run_id = f"{WORKER_VERSION}#{uuid.uuid4()}"
-    # The status guard is the claim. If another worker got there first, this
-    # update affects zero rows and this worker skips the job.
-    result = (
-        supabase.table("import_jobs")
-        .update(
-            {
-                "status": "processing",
-                "processing_progress": 5,
-                "processor_version": run_id,
-                "started_at": now_iso(),
-                "error_message": None,
-            }
-        )
-        .eq("id", job_id)
-        .eq("status", "queued")
-        .execute()
-    )
-    if not result.data:
-        return None
-    claimed = (
-        supabase.table("import_jobs")
-        .select("*")
-        .eq("id", job_id)
-        .single()
-        .execute()
-        .data
-    )
-    if claimed:
-        claimed["_run_id"] = run_id
-    return claimed
-
-
-def process_job(supabase, job):
-    job_id = job["id"]
-    model = job.get("selected_model") or DEFAULT_MODEL
-    media_id = job.get("media_asset_id")
-    if not media_id:
-        raise RuntimeError("Import job has no media asset")
-
-    append_output(
-        supabase,
-        job,
-        "processing_log",
-        {"message": "Firework reconstruction started"},
-        "started",
-        0,
-    )
-
-    media_result = (
-        supabase.table("media_assets").select("*").eq("id", media_id).single().execute()
-    )
-    media = media_result.data
-    storage_path = media.get("storage_path")
-    if not storage_path:
-        raise RuntimeError("Media asset has no storage path")
-
-    with tempfile.TemporaryDirectory() as tmp:
-        tmp_dir = Path(tmp)
-        video_path = tmp_dir / "source-video.mp4"
-        video_bytes = supabase.storage.from_(BUCKET).download(storage_path)
-        video_path.write_bytes(video_bytes)
-        del video_bytes
-
-        source_probe = ffprobe_media(video_path)
-        validate_source_video(source_probe)
-        duration = float(source_probe.get("duration") or 0.0)
-        if duration <= 0:
-            raise RuntimeError("Video duration could not be measured")
-        if duration > MAX_DURATION_SECONDS:
-            raise RuntimeError(f"Video is {duration:.2f}s; maximum is 60s")
-
-        analysis_video_path = video_path
-        preview_metadata = None
-        if needs_browser_normalization(source_probe):
-            (
-                normalized_video_path,
-                normalized_probe,
-                preview_storage_path,
-            ) = create_required_browser_normalized_video(
-                supabase,
-                video_path,
-                tmp_dir,
-                source_probe,
-                storage_path,
-            )
-            preview_metadata = {
-                "storagePath": preview_storage_path,
-                "mimeType": "video/mp4",
-                "videoCodec": normalized_probe.get("video_codec"),
-                "audioCodec": normalized_probe.get("audio_codec"),
-            }
-            analysis_video_path = normalized_video_path
-
-        supabase.table("media_assets").update(
-            {
-                "duration_seconds": duration,
-                "width": source_probe.get("width"),
-                "height": source_probe.get("height"),
-                "metadata": build_media_metadata(
-                    media.get("metadata"),
-                    source_probe,
-                    normalized_preview=preview_metadata,
-                ),
-            }
-        ).eq("id", media_id).execute()
-        update_progress(supabase, job, 20)
-
-        frame_summary, frame_images = analyse_firework_video(
-            analysis_video_path, duration
-        )
-        append_output(
-            supabase, job, "frame_analysis", frame_summary, "video_analysis", 10
-        )
-
-        update_progress(supabase, job, 44)
-        audio_path = extract_audio_optional(video_path, tmp_dir, source_probe)
-        audio = analyse_audio_features(audio_path, duration)
-        append_output(supabase, job, "audio_analysis", audio, "audio_analysis", 20)
-
-        outputs = (
-            supabase.table("import_outputs")
-            .select("output_type,payload,created_at")
-            .eq("import_job_id", job_id)
-            .order("created_at")
-            .execute()
-            .data
-        )
-        refinement_prompt = latest_refinement(outputs)
-        reconstruction_prompt = fetch_prompt_config(
-            supabase, "firework_video_reconstruction"
-        )
-        update_progress(supabase, job, 60)
-
-        client = create_openrouter_client(model)
-
-        def generate(candidate_instruction, in_run_parent=None):
-            return call_openrouter_candidate(
-                client,
-                job["source_name"],
-                duration,
-                frame_summary,
-                frame_images,
-                audio,
-                refinement_prompt,
-                reconstruction_prompt,
-                candidate_instruction,
-                in_run_parent,
-            )
-
-        def critique(candidates, _video_observations):
-            return call_openrouter_critic(client, candidates, frame_summary)
-
-        spec, _candidates, model_outputs, diagnostics = run_reconstruction_passes(
-            generate,
-            critique,
-            frame_summary,
-            candidate_count=int(os.getenv("IMPORT_RECONSTRUCTION_CANDIDATES", "3")),
-            pass_count=int(os.getenv("IMPORT_RECONSTRUCTION_PASSES", "2")),
-        )
-        update_progress(supabase, job, 86)
-        for sequence, output in enumerate(model_outputs, start=30):
-            append_output(
-                supabase,
-                job,
-                "model_output",
-                output,
-                str(output.get("kind") or "model"),
-                sequence,
-            )
-
-        reconstruction = build_renderer_reconstruction(
-            spec, frame_summary, audio, diagnostics
-        )
-        validation = build_reconstruction_validation(spec, frame_summary, diagnostics)
-        append_output(
-            supabase,
-            job,
-            "generated_spec",
-            {
-                "model": model,
-                "processorVersion": WORKER_VERSION,
-                "pipelineVersion": PIPELINE_VERSION,
-                "refinementPrompt": refinement_prompt,
-                "spec": spec,
-                "reconstruction": reconstruction,
-                "validation": validation,
-            },
-            "generated_spec",
-            90,
-        )
-
-    complete_run(supabase, job)
-
-
 def process_reconstruction_run(supabase, run):
     run_started_monotonic = time.monotonic()
     deadline_seconds = max(
@@ -3228,89 +2901,23 @@ def process_next_reconstruction_run(supabase, modal_call_id=None):
         raise
 
 
-def process_job_by_id(supabase, job_id):
-    job = (
-        supabase.table("import_jobs")
-        .select("*")
-        .eq("id", job_id)
-        .single()
-        .execute()
-        .data
-    )
-    if not job or job.get("kind") != "firework_video" or job.get("status") != "queued":
-        return {"status": "skipped", "jobId": job_id}
-    claimed = claim_queued_job(supabase, job)
-    if not claimed:
-        return {"status": "skipped", "jobId": job_id}
-    try:
-        process_job(supabase, claimed)
-        return {"status": "needs_review", "jobId": job_id, "runId": run_id_for(claimed)}
-    except RunSuperseded:
-        return {"status": "superseded", "jobId": job_id, "runId": run_id_for(claimed)}
-    except Exception as exc:
-        fail_current_run(supabase, claimed, exc)
-        raise
-
-
 def main():
     validate_engine_environment()
     supabase = create_client(
         env_required("SUPABASE_URL"), env_required("SUPABASE_SERVICE_ROLE_KEY")
     )
     print(f"{WORKER_VERSION} polling every {POLL_SECONDS}s")
-    run_rpc_available = True
     while True:
-        if run_rpc_available:
-            try:
-                run_result = process_next_reconstruction_run(supabase)
-                if run_result["status"] != "idle":
-                    print(f"completed reconstruction run {run_result['runId']}")
-                    continue
-            except Exception as exc:
-                message = str(exc).lower()
-                if "claim_firework_import_run" in message and (
-                    "schema cache" in message
-                    or "could not find" in message
-                    or "does not exist" in message
-                ):
-                    print(
-                        "durable import-run RPCs are unavailable; using the legacy queued-job fallback"
-                    )
-                    run_rpc_available = False
-                else:
-                    print(f"failed durable reconstruction run: {exc}")
-                    continue
-
-        jobs = (
-            supabase.table("import_jobs")
-            .select("*")
-            .eq("kind", "firework_video")
-            .eq("status", "queued")
-            .order("created_at")
-            .limit(10)
-            .execute()
-            .data
-        )
-        job = next(
-            (candidate for candidate in jobs if not candidate.get("active_run_id")),
-            None,
-        )
-        if not job:
+        try:
+            run_result = process_next_reconstruction_run(supabase)
+        except Exception as exc:
+            print(f"failed durable reconstruction run: {exc}")
             time.sleep(POLL_SECONDS)
             continue
-        claimed = claim_queued_job(supabase, job)
-        if not claimed:
-            print(f"skipped already-claimed import {job['id']}")
-            continue
-        try:
-            print(f"processing import {claimed['id']}")
-            process_job(supabase, claimed)
-            print(f"completed import {claimed['id']}")
-        except RunSuperseded as exc:
-            print(f"stopped superseded import {claimed['id']}: {exc}")
-        except Exception as exc:
-            print(f"failed import {claimed['id']}: {exc}")
-            fail_current_run(supabase, claimed, exc)
+        if run_result["status"] == "idle":
+            time.sleep(POLL_SECONDS)
+        else:
+            print(f"completed reconstruction run {run_result['runId']}")
 
 
 if __name__ == "__main__":

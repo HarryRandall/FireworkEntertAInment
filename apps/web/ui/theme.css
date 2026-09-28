@@ -70,65 +70,19 @@
   --color-status-info: var(--status-info);
   --color-status-info-subtle: var(--status-info-subtle);
 
-  /* ---------- Compatibility aliases ---------- */
-  /* Existing components reference these - kept so the sweep can happen incrementally. */
+  /* Canonical Tailwind colours not defined by the shadcn inline block below. */
   --color-background: var(--background);
-  --color-surface: var(--color-bg-default);
-  --color-surface-dim: var(--color-bg-muted);
-  --color-surface-bright: var(--color-bg-default);
-  --color-surface-container-lowest: var(--color-bg-default);
-  --color-surface-container-low: var(--color-bg-default);
-  --color-surface-container: var(--color-bg-muted);
-  --color-surface-container-high: var(--color-bg-subtle);
-  --color-surface-container-highest: var(--color-bg-emphasis);
-  --color-surface-variant: var(--color-bg-emphasis);
-  --color-surface-tint: var(--color-accent);
-
-  --color-on-surface: var(--color-content-emphasis);
-  --color-on-surface-variant: var(--color-content-subtle);
-  --color-on-background: var(--color-content-emphasis);
-
   --color-primary: var(--primary);
-  --color-primary-container: var(--primary);
-  --color-primary-fixed: var(--color-bg-emphasis);
-  --color-primary-fixed-dim: var(--color-border-default);
-  --color-on-primary: var(--primary-foreground);
-  --color-on-primary-container: var(--primary-foreground);
-  --color-on-primary-fixed: var(--color-content-emphasis);
-  --color-on-primary-fixed-variant: var(--color-content-default);
-  --color-inverse-primary: var(--color-bg-default);
-
   --color-secondary: var(--secondary);
-  --color-secondary-container: var(--secondary);
-  --color-secondary-fixed: var(--color-bg-emphasis);
-  --color-secondary-fixed-dim: var(--color-border-default);
-  --color-on-secondary: var(--secondary-foreground);
-  --color-on-secondary-container: var(--secondary-foreground);
-  --color-on-secondary-fixed: var(--color-content-emphasis);
-  --color-on-secondary-fixed-variant: var(--color-content-default);
 
-  --color-tertiary: var(--color-accent);
-  --color-tertiary-container: var(--color-accent-subtle);
-  --color-tertiary-fixed: var(--color-accent-subtle);
-  --color-tertiary-fixed-dim: var(--color-accent-subtle);
-  --color-on-tertiary: var(--color-on-accent);
-  --color-on-tertiary-container: var(--color-accent-emphasis);
-  --color-on-tertiary-fixed: var(--color-accent-emphasis);
-  --color-on-tertiary-fixed-variant: var(--color-accent-emphasis);
-
-  --color-error: var(--color-status-danger);
-  --color-error-container: var(--color-status-danger-subtle);
-  --color-on-error: var(--color-content-inverted);
-  --color-on-error-container: var(--color-status-danger);
-  --color-success: var(--color-status-success);
-  --color-danger: var(--color-status-danger);
-  --color-highlight: var(--color-status-warning);
-
-  --color-outline: var(--color-border-default);
+  /* Legacy aliases still read by the fingerprinted replay canvas. Remove them
+     with its next renderer contract change. */
+  --color-surface-container-low: var(--color-bg-default);
+  --color-surface-container-high: var(--color-bg-subtle);
+  --color-on-surface: var(--color-content-emphasis);
+  --color-primary-container: var(--primary);
+  --color-on-primary-container: var(--primary-foreground);
   --color-outline-variant: var(--color-border-subtle);
-
-  --color-inverse-surface: var(--color-bg-inverted);
-  --color-inverse-on-surface: var(--color-content-inverted);
 
   /* Radius scale */
   --radius-pill: 9999px;

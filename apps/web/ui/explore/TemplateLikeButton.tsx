@@ -67,7 +67,7 @@ export function TemplateLikeButton({
       aria-busy={isPending}
       aria-pressed={liked}
       aria-label={`${liked ? 'Remove template from saved shows' : 'Save template'}, ${likeCount.toLocaleString('en-AU')} ${likeCount === 1 ? 'save' : 'saves'}`}
-      className="focus-glow-action border-border/70 bg-background/70 text-on-surface-variant hover:border-destructive/35 inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full border px-4 text-sm font-bold transition-[border-color,transform] focus:outline-none focus-visible:outline-none active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
+      className="focus-glow-action border-border/70 bg-background/70 text-muted-foreground hover:border-destructive/35 inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full border px-4 text-sm font-bold transition-[border-color,transform] focus:outline-none focus-visible:outline-none active:scale-[0.98] disabled:cursor-wait disabled:opacity-60"
     >
       <Heart
         aria-hidden="true"

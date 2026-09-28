@@ -97,10 +97,22 @@ export function mixColor(
   };
 }
 
-export function applyColorMix(from: THREE.Color, to: THREE.Color, amount: number): THREE.Color {
-  const mixed = mixColor(from, to, clamp(amount, 0, 1));
-  return new THREE.Color(mixed.r, mixed.g, mixed.b);
+/** Mix two colours; pass `out` on hot paths to reuse a scratch colour. */
+export function applyColorMix(
+  from: ColourLike,
+  to: ColourLike,
+  amount: number,
+  out: THREE.Color = new THREE.Color(),
+): THREE.Color {
+  const t = clamp(amount, 0, 1);
+  return out.setRGB(
+    from.r + (to.r - from.r) * t,
+    from.g + (to.g - from.g) * t,
+    from.b + (to.b - from.b) * t,
+  );
 }
+
+type ColourLike = { r: number; g: number; b: number };
 
 export function starOpeningProgress(
   elapsedSeconds: number,
@@ -117,14 +129,15 @@ export function starOpeningColor(
   target: THREE.Color,
   elapsedSeconds: number,
   lifeReferenceSeconds: number,
+  out?: THREE.Color,
 ): THREE.Color {
   const opening = head.opening.colour;
   if (!opening.enabled) return target;
-  const openingColor = new THREE.Color(opening.color.r, opening.color.g, opening.color.b);
   return applyColorMix(
-    openingColor,
+    opening.color,
     target,
     starOpeningProgress(elapsedSeconds, lifeReferenceSeconds, opening.fadePercent),
+    out,
   );
 }
 
@@ -156,14 +169,15 @@ export function starClosingColor(
   target: THREE.Color,
   remainingSeconds: number,
   lifeReferenceSeconds: number,
+  out?: THREE.Color,
 ): THREE.Color {
   const closing = head.closing.colour;
   if (!closing.enabled) return target;
-  const closingColor = new THREE.Color(closing.color.r, closing.color.g, closing.color.b);
   return applyColorMix(
     target,
-    closingColor,
+    closing.color,
     starClosingProgress(remainingSeconds, lifeReferenceSeconds, closing.fadePercent),
+    out,
   );
 }
 

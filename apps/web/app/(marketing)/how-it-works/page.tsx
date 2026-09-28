@@ -121,7 +121,7 @@ export default function HowItWorksPage() {
                   <Card radius="lg" className="relative h-full overflow-hidden p-7">
                     <span
                       aria-hidden="true"
-                      className="text-on-surface pointer-events-none absolute top-3 right-5 font-mono text-6xl font-bold tabular-nums opacity-[0.05]"
+                      className="text-foreground pointer-events-none absolute top-3 right-5 font-mono text-6xl font-bold tabular-nums opacity-[0.05]"
                     >
                       {step.number}
                     </span>
@@ -134,22 +134,22 @@ export default function HowItWorksPage() {
                           <div className="text-primary font-mono text-xs font-semibold tracking-wider tabular-nums">
                             STEP {step.number}
                           </div>
-                          <div className="text-on-surface-variant mt-0.5 text-xs font-medium tracking-wide uppercase">
+                          <div className="text-muted-foreground mt-0.5 text-xs font-medium tracking-wide uppercase">
                             {step.label}
                           </div>
                         </div>
                       </div>
-                      <h2 className="text-on-surface mt-6 text-xl font-bold tracking-tight text-balance">
+                      <h2 className="text-foreground mt-6 text-xl font-bold tracking-tight text-balance">
                         {step.title}
                       </h2>
-                      <p className="text-on-surface-variant mt-3 text-sm leading-relaxed">
+                      <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
                         {step.body}
                       </p>
                       <ul className="mt-6 space-y-2">
                         {step.details.map((detail) => (
                           <li
                             key={detail}
-                            className="text-on-surface flex items-center gap-2 text-sm font-medium"
+                            className="text-foreground flex items-center gap-2 text-sm font-medium"
                           >
                             <ArrowRight
                               aria-hidden="true"
@@ -170,11 +170,11 @@ export default function HowItWorksPage() {
         </Container>
       </section>
 
-      <section className="border-outline-variant/15 bg-surface-container-lowest border-y py-20 lg:py-24">
+      <section className="border-border/15 bg-card border-y py-20 lg:py-24">
         <Container>
           <div className="mx-auto max-w-4xl">
             <Eyebrow>Before and after Generate</Eyebrow>
-            <h2 className="text-on-surface mt-3 max-w-2xl text-3xl font-bold tracking-tight text-balance md:text-5xl">
+            <h2 className="text-foreground mt-3 max-w-2xl text-3xl font-bold tracking-tight text-balance md:text-5xl">
               One deliberate action separates setup from creation.
             </h2>
             <div className="mt-10 grid gap-5 md:grid-cols-3">
@@ -182,8 +182,8 @@ export default function HowItWorksPage() {
                 <div className="text-primary font-mono text-xs font-semibold tracking-wider uppercase">
                   Before
                 </div>
-                <h3 className="text-on-surface mt-3 text-lg font-bold">Prepare the inputs</h3>
-                <p className="text-on-surface-variant mt-2 text-sm leading-relaxed">
+                <h3 className="text-foreground mt-3 text-lg font-bold">Prepare the inputs</h3>
+                <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
                   Move through the six setup screens and, if selected, let the private audio upload
                   continue.
                 </p>
@@ -192,8 +192,8 @@ export default function HowItWorksPage() {
                 <div className="text-primary font-mono text-xs font-semibold tracking-wider uppercase">
                   Generate
                 </div>
-                <h3 className="text-on-surface mt-3 text-lg font-bold">Create the show</h3>
-                <p className="text-on-surface-variant mt-2 text-sm leading-relaxed">
+                <h3 className="text-foreground mt-3 text-lg font-bold">Create the show</h3>
+                <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
                   This button is the explicit user action that creates the show and starts cue
                   planning.
                 </p>
@@ -202,8 +202,8 @@ export default function HowItWorksPage() {
                 <div className="text-primary font-mono text-xs font-semibold tracking-wider uppercase">
                   After
                 </div>
-                <h3 className="text-on-surface mt-3 text-lg font-bold">Review the plan</h3>
-                <p className="text-on-surface-variant mt-2 text-sm leading-relaxed">
+                <h3 className="text-foreground mt-3 text-lg font-bold">Review the plan</h3>
+                <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
                   Inspect the preview, timeline, guide and shopping list when generation completes.
                 </p>
               </Card>
@@ -216,13 +216,13 @@ export default function HowItWorksPage() {
         <Container>
           <div className="mx-auto max-w-4xl">
             <Eyebrow>Questions and boundaries</Eyebrow>
-            <h2 className="text-on-surface mt-3 text-3xl font-bold tracking-tight text-balance md:text-5xl">
+            <h2 className="text-foreground mt-3 text-3xl font-bold tracking-tight text-balance md:text-5xl">
               Know what the current product does.
             </h2>
             <div className="mt-10 space-y-4">
               {FAQS.map((faq) => (
                 <Card key={faq.question} radius="lg" className="p-6 md:p-7">
-                  <h3 className="text-on-surface flex items-start gap-3 text-base font-bold">
+                  <h3 className="text-foreground flex items-start gap-3 text-base font-bold">
                     <ArrowRight
                       aria-hidden="true"
                       className="text-primary mt-0.5 shrink-0"
@@ -231,7 +231,7 @@ export default function HowItWorksPage() {
                     />
                     {faq.question}
                   </h3>
-                  <p className="text-on-surface-variant mt-3 pl-7 text-sm leading-relaxed">
+                  <p className="text-muted-foreground mt-3 pl-7 text-sm leading-relaxed">
                     {faq.answer}
                   </p>
                 </Card>

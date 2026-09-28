@@ -60,6 +60,7 @@ import {
 import { Archive, Braces, History, SlidersHorizontal } from 'lucide-react';
 import dynamic from 'next/dynamic';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { isEarlierUpdatedAt } from '@/ui/firework-editor/editor-document';
 
 type ParsedJson = { ok: true; value: Record<string, unknown> } | { ok: false; error: string };
 type TrailPreviewStarMode = 'none' | 'default' | 'custom';
@@ -195,16 +196,6 @@ function styleDefaultSavedSnapshotFromDetail(
     isArchived: styleDefault.isArchived,
     defaultsJson: styleDefault.defaultsJson,
   });
-}
-
-function isEarlierUpdatedAt(candidate: string, reference: string): boolean {
-  const candidateTime = Date.parse(candidate);
-  const referenceTime = Date.parse(reference);
-  return (
-    Number.isFinite(candidateTime) &&
-    Number.isFinite(referenceTime) &&
-    candidateTime < referenceTime
-  );
 }
 
 export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleDefaultDetail }) {
@@ -971,7 +962,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
 
       <PanelSection title="Archive">
         <div className="space-y-3">
-          <p className="text-sm leading-relaxed text-[color:var(--color-content-muted)]">
+          <p className="text-muted-foreground text-sm leading-relaxed">
             Archive this default when it should no longer be offered for new assignments.
           </p>
           <Button

@@ -1,6 +1,8 @@
 import { isGroundGeometry } from './behaviours.ts';
 import type { FireworkDesign, FireworkStarLayer, StarLayerKey } from './design.ts';
 import { groundEmissionDuration } from './emission.ts';
+import { STAR_DRAG } from './effects/constants.ts';
+import { estimateShellRiseHeight } from './effects/lift.ts';
 export type FireworkDesignTiming = {
   liftTimeSeconds: number;
   effectStartSeconds: number;
@@ -646,4 +648,17 @@ export function applyFireworkTimelineBoundaryEdit(
       setTailDuration(defaults, design, timeline.totalDurationSeconds - seconds);
     }
   }
+}
+
+/**
+ * Highest point a design's burst is expected to reach, in world units (cm):
+ * the shell's rise plus how far its fastest stars travel against drag. Used
+ * to frame a show so its tallest shell stays in view.
+ */
+export function estimateFireworkVisualTopCm(design: FireworkDesign): number {
+  const layers = [design.stars.outer, design.stars.core].filter((layer) => layer.enabled);
+  const fastest = Math.max(0, ...layers.map((layer) => layer.burst.speed[1]));
+  const reach = (fastest / STAR_DRAG) * 100;
+  if (isGroundFireworkEffect(design)) return reach * 1.5;
+  return estimateShellRiseHeight(design.liftVelocity * 0.96, design.shellLife) + reach;
 }

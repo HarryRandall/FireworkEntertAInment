@@ -57,7 +57,7 @@ export function ShowSummaryRow({
   return (
     <div
       className={cn(
-        'group grid grid-cols-[1fr_auto] items-center gap-3 border-b border-[color:var(--color-border-subtle)] px-4 py-3 last:border-b-0 hover:bg-[color:var(--color-bg-subtle)]/55',
+        'group border-border hover:bg-secondary/55 grid grid-cols-[1fr_auto] items-center gap-3 border-b px-4 py-3 last:border-b-0',
         className,
       )}
     >
@@ -68,23 +68,19 @@ export function ShowSummaryRow({
       >
         <PaletteStrip palette={show.palette} className="h-7 w-1" />
         <span className="min-w-0">
-          <span className="block truncate text-sm font-medium text-[color:var(--color-content-emphasis)]">
-            {show.title}
-          </span>
-          <span className="block truncate text-xs text-[color:var(--color-content-subtle)]">
-            {showMeta(show)}
-          </span>
+          <span className="text-foreground block truncate text-sm font-medium">{show.title}</span>
+          <span className="text-muted-foreground block truncate text-xs">{showMeta(show)}</span>
         </span>
       </Link>
       <div className="flex shrink-0 items-center gap-3 text-right">
         <div className="hidden min-w-24 sm:block">
           <div
-            className="font-mono text-xs font-medium text-[color:var(--color-content-emphasis)] tabular-nums"
+            className="text-foreground font-mono text-xs font-medium tabular-nums"
             title="Estimated retail cost of fireworks"
           >
             {formatBudget(show.totalCostCents)}
           </div>
-          <div className="text-[10px] text-[color:var(--color-content-subtle)]">
+          <div className="text-muted-foreground text-[10px]">
             Est. retail · {show.cueCount} cues
           </div>
         </div>
@@ -93,7 +89,7 @@ export function ShowSummaryRow({
             href={`/shows/${show.slug}/preview?autoplay=1`}
             prefetch={false}
             aria-label={`Play ${show.title}`}
-            className="focus-visible:ring-ring/50 inline-flex h-9 w-9 items-center justify-center rounded-md border border-[color:var(--color-border-subtle)] text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-emphasis)] hover:text-[color:var(--color-content-emphasis)] focus:outline-none focus-visible:ring-3"
+            className="focus-visible:ring-ring/50 border-border text-muted-foreground hover:bg-accent hover:text-foreground inline-flex h-9 w-9 items-center justify-center rounded-md border transition-colors focus:outline-none focus-visible:ring-3"
           >
             <Play size={15} fill="currentColor" />
           </Link>
@@ -131,12 +127,12 @@ export function TemplateSummaryCardView({
         className="flex h-full min-h-[10rem] flex-col overflow-hidden p-0"
       >
         <div
-          className="relative h-20 shrink-0 overflow-hidden border-b border-[color:var(--color-border-subtle)] bg-[image:var(--template-gradient)]"
+          className="border-border relative h-20 shrink-0 overflow-hidden border-b bg-[image:var(--template-gradient)]"
           style={style}
         >
           <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-0.5 rounded-md bg-black/35 px-2 py-1 text-right text-[11px] leading-4 text-white shadow-sm backdrop-blur">
             <span className="inline-flex items-center gap-1">
-              <Heart size={12} className="shrink-0 fill-current text-[color:var(--destructive)]" />
+              <Heart size={12} className="text-destructive shrink-0 fill-current" />
               <span className="tabular-nums">{template.likes}</span>
             </span>
             <span className="tabular-nums" title="Estimated retail cost of fireworks">
@@ -146,15 +142,13 @@ export function TemplateSummaryCardView({
         </div>
         <div className="flex flex-1 flex-col gap-3 p-3.5">
           <div className="min-w-0">
-            <h3 className="group-hover:text-foreground line-clamp-1 text-sm font-medium text-[color:var(--color-content-emphasis)]">
+            <h3 className="group-hover:text-foreground text-foreground line-clamp-1 text-sm font-medium">
               {template.title}
             </h3>
-            <p className="mt-1 line-clamp-1 text-xs text-[color:var(--color-content-subtle)]">
-              {template.theme}
-            </p>
+            <p className="text-muted-foreground mt-1 line-clamp-1 text-xs">{template.theme}</p>
           </div>
           {showCloneAction ? (
-            <span className="inline-flex h-7 items-center self-start rounded-md border border-[color:var(--color-border-subtle)] px-2.5 text-xs font-medium text-[color:var(--color-content-emphasis)]">
+            <span className="border-border text-foreground inline-flex h-7 items-center self-start rounded-md border px-2.5 text-xs font-medium">
               Clone and customise
             </span>
           ) : null}
@@ -194,10 +188,10 @@ export function PromptHero({ className, headingLevel = 'h2' }: PromptHeroProps) 
   return (
     <section className={cn('relative isolate mx-auto w-full max-w-3xl py-10', className)}>
       <div className="prompt-hero-glow" aria-hidden />
-      <Heading className="mb-6 text-center text-2xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)] sm:text-3xl">
+      <Heading className="text-foreground mb-6 text-center text-2xl font-semibold tracking-tight sm:text-3xl">
         Create any firework show you can imagine
       </Heading>
-      <div className="overflow-hidden rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)]/55 shadow-xs backdrop-blur-md">
+      <div className="border-border bg-popover/55 overflow-hidden rounded-2xl border shadow-xs backdrop-blur-md">
         <Textarea
           name="prompt"
           rows={2}

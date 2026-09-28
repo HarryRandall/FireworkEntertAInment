@@ -20,6 +20,7 @@ export type ParticleProps = {
   shape?: number;
   rotation?: number;
   spin?: number;
+  phase?: number;
   life?: number;
   mass?: number;
   decay?: number;
@@ -147,6 +148,7 @@ export class ParticlePool {
     p.rotation = prop.rotation ?? 0;
     p.spin = prop.spin ?? 0;
     p.headStyleSlot = this.spawnHeadStyleSlot;
+    p.phase = prop.phase ?? 0;
     p.life = life;
     p.maxLife = life;
     p.mass = prop.mass && prop.mass > 0 ? prop.mass : 1;
@@ -179,6 +181,17 @@ export class ParticlePool {
    * Propagate a cue's immutable head-style ownership through callback-spawned
    * descendants without making every effect emitter thread renderer metadata.
    */
+  /**
+   * Set the slot inherited by particles spawned from now on and return the
+   * previous one. The engine's hot update loop uses this directly instead of
+   * allocating a closure per particle per tick.
+   */
+  swapHeadStyleSlot(slot: number): number {
+    const previous = this.spawnHeadStyleSlot;
+    this.spawnHeadStyleSlot = slot;
+    return previous;
+  }
+
   withHeadStyleSlot<T>(slot: number, spawn: () => T): T {
     const previous = this.spawnHeadStyleSlot;
     this.spawnHeadStyleSlot = Number.isInteger(slot) && slot >= 0 ? slot : 0;

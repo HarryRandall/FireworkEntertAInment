@@ -179,7 +179,7 @@ export function ImportEngineValidationPanel({
                 className="border-border bg-muted/20 flex items-start gap-3 rounded-lg border p-3"
               >
                 <AlertTriangle
-                  className="mt-0.5 size-4 shrink-0 text-[color:var(--color-status-warning)]"
+                  className="text-status-warning mt-0.5 size-4 shrink-0"
                   aria-hidden="true"
                 />
                 <div className="min-w-0 flex-1">
@@ -201,7 +201,7 @@ export function ImportEngineValidationPanel({
         ) : (
           <div className="mt-3 flex items-start gap-2 text-sm">
             <CheckCircle2
-              className="mt-0.5 size-4 shrink-0 text-[color:var(--color-status-success)]"
+              className="text-status-success mt-0.5 size-4 shrink-0"
               aria-hidden="true"
             />
             <p className="text-muted-foreground">

@@ -1,12 +1,9 @@
 import type { AdminEffectPreview } from '@/lib/admin.types';
 import type { Json } from '@/lib/database.types';
+import { isRecord } from '@/lib/utils';
 
 const FALLBACK_COLORS = ['#00e5ff', '#8b5cf6'];
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 function normaliseHex(value: unknown): string | null {
   return typeof value === 'string' && HEX_COLOR.test(value) ? value.toLowerCase() : null;

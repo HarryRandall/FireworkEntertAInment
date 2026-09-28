@@ -176,19 +176,17 @@ async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
               <tr key={product.id} className={tableRowClasses()}>
                 <td
                   className={tableCellClasses(
-                    'font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
+                    'text-muted-foreground font-mono text-xs tabular-nums',
                   )}
                 >
                   {product.partNumber}
                 </td>
                 <td className={tableCellClasses()}>
-                  <div className="max-w-md truncate font-medium text-[color:var(--color-content-emphasis)]">
+                  <div className="text-foreground max-w-md truncate font-medium">
                     {product.name}
                   </div>
                   {product.fireworkType ? (
-                    <div className="mt-1 text-xs text-[color:var(--color-content-subtle)]">
-                      {product.fireworkType}
-                    </div>
+                    <div className="text-muted-foreground mt-1 text-xs">{product.fireworkType}</div>
                   ) : null}
                 </td>
                 <td className={tableCellClasses()}>
@@ -196,12 +194,12 @@ async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
                     {KIND_LABELS[product.kind] ?? product.kind}
                   </Badge>
                 </td>
-                <td className={tableCellClasses('text-[color:var(--color-content-subtle)]')}>
+                <td className={tableCellClasses('text-muted-foreground')}>
                   {formatManufacturerLabel(product.manufacturer)}
                 </td>
                 <td
                   className={tableCellClasses(
-                    'font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
+                    'text-muted-foreground font-mono text-xs tabular-nums',
                   )}
                 >
                   {formatDuration(product.durationSeconds)}

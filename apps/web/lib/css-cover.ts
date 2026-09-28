@@ -1,3 +1,4 @@
+import { clamp } from '@/lib/utils';
 /**
  * CSS cover - a lightweight, serialisable "visual identity" for a show,
  * rendered with CSS/SVG and small Canvas2D effects instead of a
@@ -128,10 +129,6 @@ function choice<T>(rng: Rng, items: readonly T[]): T {
 
 type Hsl = { hue: number; saturation: number; lightness: number };
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
-
 function hexToHsl(hex: string): Hsl | null {
   if (!HEX_RE.test(hex)) return null;
   const numeric = Number.parseInt(hex.slice(1), 16);
@@ -253,7 +250,7 @@ export function randomCssCover(): CssCover {
 }
 
 /** A stable CSS cover derived from any string (e.g. a template id). */
-export function cssCoverFromSeed(seed: string): CssCover {
+function cssCoverFromSeed(seed: string): CssCover {
   return buildCover(mulberry32(hashString(seed)));
 }
 

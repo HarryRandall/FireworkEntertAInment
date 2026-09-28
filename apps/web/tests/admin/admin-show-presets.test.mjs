@@ -159,7 +159,16 @@ test('cue parsing, previews, clone and import paths support catalogue-item cues'
 });
 
 test('admin show preset editor exposes replay, timeline, catalogue picker and publish controls', () => {
-  const editor = read('app/(admin)/admin/show-presets/[id]/_components/ShowPresetEditor.tsx');
+  const editor = [
+    'app/(admin)/admin/show-presets/[id]/_components/ShowPresetEditor.tsx',
+    'app/(admin)/admin/show-presets/[id]/_components/ShowPresetCueTimelineClip.tsx',
+    'app/(admin)/admin/show-presets/[id]/_components/ShowPresetCueInspector.tsx',
+    'app/(admin)/admin/show-presets/[id]/_components/ShowPresetProductPicker.tsx',
+    'app/(admin)/admin/show-presets/[id]/_components/ShowPresetReplayCanvas.tsx',
+    'app/(admin)/admin/show-presets/[id]/_components/show-preset-model.ts',
+  ]
+    .map(read)
+    .join('\n');
   const loading = read('app/(admin)/admin/show-presets/[id]/loading.tsx');
   const detailPage = read('app/(admin)/admin/show-presets/[id]/page.tsx');
   const listPage = read('app/(admin)/admin/show-presets/page.tsx');

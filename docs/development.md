@@ -30,7 +30,8 @@ python3.11 -m venv services/firework-import-worker/.venv
 services/firework-import-worker/.venv/bin/python -m pip install -r services/firework-import-worker/requirements.txt
 ```
 
-The import worker also needs FFmpeg and Playwright Chromium. Its
+Lint both services with `ruff check services` (config in the root `ruff.toml`; CI
+pins the version). The import worker also needs FFmpeg and Playwright Chromium. Its
 [service guide](../services/firework-import-worker/README.md) owns those details.
 `pnpm worker:firework-import` loads `apps/web/.env.local` (or `.env` as a fallback).
 
@@ -47,6 +48,10 @@ pnpm test:worker
 pnpm test:import-contract
 SHOWCRAFTER_RUN_CROSS_LANGUAGE_CONTRACT=1 services/music-analyser/.venv/bin/python services/music-analyser/tests/test_schema_validation.py
 ```
+
+`pnpm knip` reports unused files, exports and dependencies (CI runs it). Renderer
+fingerprinted sources and generated files are excluded in `knip.json`; exports
+kept only for tests are listed under `ignoreIssues`.
 
 Use `pnpm audit:ui` when adding or moving pages/components. Candidates need review
 before deletion. Check rendered light/dark, mobile and interaction states when

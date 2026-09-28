@@ -145,7 +145,7 @@ export async function listMultishots(): Promise<AdminMultishotSummary[]> {
 }
 
 /** Fireworks selectable as multishot shots. */
-export async function listFireworkOptions(): Promise<AdminMultishotFireworkOption[]> {
+async function listFireworkOptions(): Promise<AdminMultishotFireworkOption[]> {
   const supabase = await getServerClient();
   const { data, error } = await supabase
     .from('fireworks')

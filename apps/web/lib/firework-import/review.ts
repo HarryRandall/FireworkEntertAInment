@@ -10,6 +10,7 @@ import {
 } from '@/lib/firework-import/reconstruction';
 import { IMPORT_RENDER_METRICS_SCHEMA_VERSION } from '@/lib/firework-import/render-metrics';
 import { FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION } from '@/lib/firework-import/renderer-contract';
+import { isRecord } from '@/lib/utils';
 
 export type ImportOutputLike = {
   id: string;
@@ -140,9 +141,8 @@ export type ImportEngineMetricSummary = {
   }>;
 };
 
-export const IMPORT_ENGINE_PUBLICATION_SCORE_THRESHOLD = 0.78;
-export const IMPORT_ENGINE_RENDER_VALIDATOR_VERSION =
-  'showcrafter.engine-render-publication.v1' as const;
+const IMPORT_ENGINE_PUBLICATION_SCORE_THRESHOLD = 0.78;
+const IMPORT_ENGINE_RENDER_VALIDATOR_VERSION = 'showcrafter.engine-render-publication.v1' as const;
 const IMPORT_ENGINE_RENDER_RESULT_SCHEMA_VERSION = 'showcrafter.import-render-result.v1';
 const IMPORT_ENGINE_RENDER_HARNESS_VERSION = 'showcrafter.import-render-harness.v1';
 
@@ -159,7 +159,7 @@ export function isRunOwnedImportEngineReviewVideoPath(
   return Boolean(match && match[2].toLowerCase() === runId.toLowerCase());
 }
 
-export type ImportEnginePublicationEvidence = {
+type ImportEnginePublicationEvidence = {
   validatorVersion: typeof IMPORT_ENGINE_RENDER_VALIDATOR_VERSION;
   canonicalEvidence: Record<string, unknown>;
   metrics: ImportEngineMetricSummary;
@@ -202,10 +202,6 @@ export const IMPORT_REVIEW_STEPS = [
   'Review',
   'Publish',
 ] as const;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
 
 function text(value: unknown): string | null {
   return typeof value === 'string' && value.trim() ? value.trim() : null;

@@ -15,10 +15,7 @@ import type { CueEmphasis } from './schemas';
 export type { ImpactTiming } from './impact-clock';
 
 /** Renderer-matched lift time after calibre and cue emphasis are applied. */
-export function productLiftTimeSeconds(
-  product: FireworkSpecification,
-  emphasis: CueEmphasis,
-): number {
+function productLiftTimeSeconds(product: FireworkSpecification, emphasis: CueEmphasis): number {
   const compiled = product.renderDesign;
   if (!compiled) return Number.NaN;
   const scaled = scaleDesignForEmphasis(scaleDesignForCaliber(compiled, product.caliber), emphasis);
@@ -33,7 +30,7 @@ export function productLiftTimeSeconds(
  * late opening hit and break the beat-accuracy contract. Ground effects have
  * no lift phase and therefore launch directly on the musical impact.
  */
-export function scheduleProductForImpact(params: {
+function scheduleProductForImpact(params: {
   product: FireworkSpecification;
   emphasis: CueEmphasis;
   impactTimeSeconds: number;

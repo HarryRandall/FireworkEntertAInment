@@ -4,13 +4,9 @@ import { AlertCircle } from 'lucide-react';
 
 export function FormError({ message }: { message: string }) {
   return (
-    <div className="flex items-start gap-2.5 rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-status-danger-subtle)] px-3.5 py-2.5">
-      <AlertCircle
-        size={15}
-        className="mt-0.5 shrink-0 text-[color:var(--color-status-danger)]"
-        aria-hidden="true"
-      />
-      <p className="text-sm leading-snug text-[color:var(--color-status-danger)]">{message}</p>
+    <div className="border-border bg-status-danger-subtle flex items-start gap-2.5 rounded-md border px-3.5 py-2.5">
+      <AlertCircle size={15} className="text-status-danger mt-0.5 shrink-0" aria-hidden="true" />
+      <p className="text-status-danger text-sm leading-snug">{message}</p>
     </div>
   );
 }

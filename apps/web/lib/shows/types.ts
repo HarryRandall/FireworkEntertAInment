@@ -8,10 +8,10 @@
 import type { Database } from '@/lib/database.types';
 import type { ShoppingListItem } from '@/lib/show-domain';
 
-export type ShowRow = Database['public']['Tables']['shows']['Row'];
-export type ShowCueRow = Database['public']['Tables']['show_timeline_items']['Row'];
-export type FireworkEffectRow = Database['public']['Tables']['firework_effects']['Row'];
-export type FireworkVariantRow = Database['public']['Tables']['fireworks']['Row'];
+type ShowRow = Database['public']['Tables']['shows']['Row'];
+type ShowCueRow = Database['public']['Tables']['show_timeline_items']['Row'];
+type FireworkEffectRow = Database['public']['Tables']['firework_effects']['Row'];
+type FireworkVariantRow = Database['public']['Tables']['fireworks']['Row'];
 
 /** Subset of `shows` columns the UI actually consumes. Keep in sync with {@link SHOW_SELECT}. */
 export type ShowProjection = Pick<
@@ -65,7 +65,7 @@ export type FireworkEffectProjection = Pick<
   'id' | 'slug' | 'name' | 'pattern_key' | 'model_json'
 >;
 
-export type FireworkPreviewImageProjection = {
+type FireworkPreviewImageProjection = {
   source_revision: number;
   renderer_version: string | null;
   storage_path: string | null;

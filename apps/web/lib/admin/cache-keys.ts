@@ -10,7 +10,7 @@ import 'server-only';
 import { deleteCachedKeys } from '@/lib/server-cache';
 
 /** Admin-scoped sub-namespace. All admin keys must extend this prefix. */
-export const ADMIN_CACHE_PREFIX = 'platform:v1:admin';
+const ADMIN_CACHE_PREFIX = 'platform:v1:admin';
 /** TTL for short-lived admin reads (users, suppliers, imports, catalogue). */
 export const ADMIN_CACHE_TTL_SECONDS = 60;
 
@@ -45,7 +45,7 @@ export function getAdminEffectsCacheKey(): string {
 }
 
 /** Cache key for one effect-spec detail view. */
-export function getAdminEffectCacheKey(effectId: string): string {
+function getAdminEffectCacheKey(effectId: string): string {
   return `${ADMIN_CACHE_PREFIX}:effects:${effectId}:validated-render`;
 }
 
@@ -55,7 +55,7 @@ export function getAdminStyleDefaultsCacheKey(): string {
 }
 
 /** Cache key for one reusable firework star/trail default. */
-export function getAdminStyleDefaultCacheKey(defaultId: string): string {
+function getAdminStyleDefaultCacheKey(defaultId: string): string {
   return `${ADMIN_CACHE_PREFIX}:style-defaults:${defaultId}`;
 }
 
@@ -65,7 +65,7 @@ export function getAdminFireworksCacheKey(): string {
 }
 
 /** Cache key for one product-level firework detail editor. */
-export function getAdminFireworkCacheKey(productId: string): string {
+function getAdminFireworkCacheKey(productId: string): string {
   return `${ADMIN_CACHE_PREFIX}:fireworks:${productId}:validated-render`;
 }
 
@@ -160,30 +160,6 @@ export async function invalidateAdminMultishotsCache(multishotId?: string): Prom
 /** Invalidate the cached import jobs list. */
 export async function invalidateAdminImportsCache(): Promise<void> {
   await deleteCachedKeys([getAdminImportsCacheKey('active'), getAdminImportsCacheKey('archived')]);
-}
-
-/**
- * Invalidate roles. Also clears the user list because user permissions
- * are derived from role membership.
- */
-export async function invalidateAdminRolesCache(): Promise<void> {
-  await deleteCachedKeys([
-    getAdminRolesCacheKey(),
-    getAdminRolePermissionMatrixCacheKey(),
-    getAdminUsersCacheKey(),
-  ]);
-}
-
-/**
- * Invalidate permissions. Also clears the user list because per-user
- * effective permissions depend on the permission catalogue.
- */
-export async function invalidateAdminPermissionsCache(): Promise<void> {
-  await deleteCachedKeys([
-    getAdminPermissionsCacheKey(),
-    getAdminRolePermissionMatrixCacheKey(),
-    getAdminUsersCacheKey(),
-  ]);
 }
 
 /** Invalidate role permission defaults and user-facing permission rollups. */

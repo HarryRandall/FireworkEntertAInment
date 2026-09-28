@@ -26,7 +26,7 @@ import {
   CommandList,
 } from '@/ui/primitives/command';
 
-export type FilterOption = { value: string; label: string };
+type FilterOption = { value: string; label: string };
 
 export type FilterConfig =
   | {

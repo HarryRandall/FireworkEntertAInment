@@ -7,6 +7,7 @@ const { validateCatalogueRender } = await import('../../lib/admin/renderer-valid
 const renderer = await import('@showcrafter/fireworks/design');
 const styles = await import('@showcrafter/fireworks/style-defaults');
 const previewConstants = await import('../../lib/firework-card-preview.ts');
+const utils = await import('../../lib/utils.ts');
 
 function fixtureModule(path, dependencies) {
   const output = ts.transpileModule(readFileSync(new URL(path, import.meta.url), 'utf8'), {
@@ -37,6 +38,7 @@ function fixtureModule(path, dependencies) {
 function previewLoader({ effect, firework, preset }) {
   return fixtureModule('../../lib/firework-card-preview.server.ts', {
     'node:crypto': {},
+    '@/lib/utils': utils,
     '@/lib/admin/renderer-validation': { validateCatalogueRender },
     '@/lib/admin/effects.server': { getAdminEffectById: async () => effect },
     '@/lib/admin/fireworks.server': { getAdminFireworkById: async () => firework },

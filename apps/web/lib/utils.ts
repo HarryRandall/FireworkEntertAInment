@@ -1,9 +1,6 @@
 /**
- * Tiny isomorphic utility helpers shared across the app.
- *
- * Currently only exports {@link cn}, the canonical Tailwind class-merger used
- * by every component. Add new helpers here only when they are truly generic
- * (no Next, Supabase, or domain coupling).
+ * Tiny isomorphic utility helpers shared across the app. Add new helpers here
+ * only when they are truly generic (no Next, Supabase, or domain coupling).
  */
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -17,4 +14,14 @@ import { twMerge } from 'tailwind-merge';
  */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+/** Constrain `value` to `[min, max]`; defaults to the unit interval. */
+export function clamp(value: number, min = 0, max = 1): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+/** Plain object check for parsed JSON and other `unknown` input; arrays are excluded. */
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

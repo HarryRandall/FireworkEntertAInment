@@ -187,7 +187,7 @@ function ProfileThemeMenu() {
 
   return (
     <div
-      className="group/theme focus-within:text-accent-foreground hover:text-accent-foreground relative flex h-8 items-center gap-2 rounded-sm px-2 text-sm outline-hidden transition-colors select-none focus-within:bg-[color:var(--accent)] hover:bg-[color:var(--accent)]"
+      className="group/theme focus-within:text-accent-foreground hover:text-accent-foreground focus-within:bg-accent hover:bg-accent relative flex h-8 items-center gap-2 rounded-sm px-2 text-sm outline-hidden transition-colors select-none"
       role="radiogroup"
       aria-label="Interface theme"
     >

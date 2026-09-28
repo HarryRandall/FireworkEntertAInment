@@ -1,6 +1,6 @@
 /** Loading skeleton for the admin prompt control page. */
 
-import { AdminPromptsSkeleton } from '@/ui/shell/RouteSkeletons';
+import { AdminPromptsSkeleton } from '@/app/(admin)/_components/AdminSkeletons';
 
 export default function AdminPromptsLoading() {
   return <AdminPromptsSkeleton />;

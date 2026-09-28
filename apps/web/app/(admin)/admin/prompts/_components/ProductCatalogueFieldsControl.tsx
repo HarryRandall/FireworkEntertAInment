@@ -131,7 +131,7 @@ export function ProductCatalogueFieldsControl({ initialFields }: Props) {
                       className={cn(
                         'mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded border',
                         checked
-                          ? 'border-[color:var(--color-status-success)] bg-[color-mix(in_srgb,var(--color-status-success)_18%,transparent)] text-[color:var(--color-status-success)]'
+                          ? 'border-status-success text-status-success bg-[color-mix(in_srgb,var(--color-status-success)_18%,transparent)]'
                           : 'border-border text-transparent',
                       )}
                       aria-hidden

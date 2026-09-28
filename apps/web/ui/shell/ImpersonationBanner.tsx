@@ -55,7 +55,7 @@ export function ImpersonationBanner({
         aria-busy={pending}
         onClick={stop}
         className={cn(
-          'flex h-8 w-8 min-w-8 items-center justify-center rounded-lg border border-[color-mix(in_srgb,var(--color-status-warning)_44%,transparent)] bg-[color:var(--color-status-warning-subtle)] text-[color:var(--color-status-warning)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-status-warning)_16%,transparent)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-status-warning)] disabled:cursor-not-allowed disabled:opacity-60',
+          'bg-status-warning-subtle text-status-warning focus-visible:outline-status-warning flex h-8 w-8 min-w-8 items-center justify-center rounded-lg border border-[color-mix(in_srgb,var(--color-status-warning)_44%,transparent)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-status-warning)_16%,transparent)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60',
           className,
         )}
       >
@@ -78,7 +78,7 @@ export function ImpersonationBanner({
         <TooltipContent
           side="right"
           sideOffset={8}
-          className="max-w-56 bg-[color:var(--color-bg-inverted)] text-[color:var(--color-content-inverted)]"
+          className="bg-foreground text-background max-w-56"
         >
           Impersonating {target}. Started by {admin}, expires at {expiresAt}. Click to stop.
         </TooltipContent>
@@ -90,16 +90,13 @@ export function ImpersonationBanner({
     <section
       aria-label="Active impersonation session"
       className={cn(
-        'flex w-full items-center gap-2 rounded-lg border border-[color-mix(in_srgb,var(--color-status-warning)_42%,transparent)] bg-[color:var(--color-status-warning-subtle)] px-2 py-1.5 text-left text-[color:var(--color-content-emphasis)]',
+        'bg-status-warning-subtle text-foreground flex w-full items-center gap-2 rounded-lg border border-[color-mix(in_srgb,var(--color-status-warning)_42%,transparent)] px-2 py-1.5 text-left',
         className,
       )}
     >
       <div className="flex min-w-0 flex-1 flex-col">
         <span className="truncate text-xs font-semibold">Impersonating</span>
-        <span
-          suppressHydrationWarning
-          className="truncate text-[11px] font-medium text-[color:var(--color-content-default)]"
-        >
+        <span suppressHydrationWarning className="text-foreground truncate text-[11px] font-medium">
           Expires at {expiresAt}
         </span>
       </div>
@@ -109,7 +106,7 @@ export function ImpersonationBanner({
         disabled={pending}
         aria-busy={pending}
         onClick={stop}
-        className="flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] px-2 text-xs font-medium text-[color:var(--color-content-emphasis)] transition-colors hover:bg-[color:var(--color-bg-muted)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)] disabled:cursor-not-allowed disabled:opacity-60"
+        className="border-border bg-card text-foreground hover:bg-muted focus-visible:outline-foreground flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg border px-2 text-xs font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {pending ? (
           <Loader2

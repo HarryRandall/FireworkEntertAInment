@@ -14,7 +14,7 @@ import {
 
 function LoadingStat({ label }: { label: string }) {
   return (
-    <div className="rounded-lg border border-[color:var(--color-border-subtle)] px-3 py-2.5">
+    <div className="border-border rounded-lg border px-3 py-2.5">
       <dt className="text-muted-foreground text-xs">{label}</dt>
       <dd className="mt-1">
         <Skeleton className="h-4 w-24" />
@@ -25,7 +25,7 @@ function LoadingStat({ label }: { label: string }) {
 
 export default function UsageSettingsLoading() {
   return (
-    <div className="space-y-4" aria-label="Loading usage">
+    <div className="space-y-4" role="status" aria-busy="true" aria-label="Loading usage">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_18rem]">
         <Card>
           <CardHeader>

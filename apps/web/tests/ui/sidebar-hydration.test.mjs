@@ -48,10 +48,10 @@ test('shared brand control preserves collapse, hover and mobile behaviour', () =
 test('shared sidebar brand lockup keeps a stable text colour on hover', () => {
   const source = readFileSync(join(root, 'ui/shell/shell-utils.ts'), 'utf8');
   assert.match(source, /SIDEBAR_BRAND_BUTTON_CLASS/);
-  assert.match(source, /text-on-surface/);
+  assert.match(source, /text-foreground/);
   assert.match(source, /overflow-visible/);
   assert.match(source, /hover:bg-sidebar-accent/);
-  assert.match(source, /hover:text-on-surface/);
+  assert.match(source, /hover:text-foreground/);
   assert.match(source, /\[&_svg\.brand-logo-mark\]:size-10!/);
   assert.match(source, /group-data-\[collapsible=icon\]:group-hover\/brand:opacity-0/);
 });
@@ -99,7 +99,7 @@ test('shared profile theme picker stays compact', () => {
   const themeBlock = profileMenu.slice(profileMenu.indexOf('function ProfileThemeMenu()'));
 
   assert.match(themeBlock, /aria-label="Interface theme"/);
-  assert.match(themeBlock, /hover:bg-\[color:var\(--accent\)\]/);
+  assert.match(themeBlock, /hover:bg-accent/);
   assert.match(themeBlock, /flex h-8 items-center gap-2 rounded-sm px-2/);
   assert.match(
     themeBlock,

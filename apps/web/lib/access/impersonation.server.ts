@@ -39,7 +39,7 @@ export function impersonationCookieOptions(): CookieOptions {
   };
 }
 
-export async function getImpersonationReturnToken(): Promise<string | null> {
+async function getImpersonationReturnToken(): Promise<string | null> {
   const cookieStore = await cookies();
   return cookieStore.get(IMPERSONATION_RETURN_COOKIE)?.value ?? null;
 }

@@ -8,7 +8,7 @@ export default function AdminImportsLoading() {
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-6" aria-busy="true">
       <header className="space-y-1">
-        <h1 className="text-foreground text-2xl font-semibold tracking-tight text-balance">
+        <h1 className="text-foreground text-2xl font-bold tracking-tight text-balance">
           Firework imports
         </h1>
         <p className="text-muted-foreground max-w-3xl text-sm text-pretty">

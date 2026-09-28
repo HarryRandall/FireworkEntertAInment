@@ -26,10 +26,8 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
   return (
     <ResetPasswordShell>
       <div className="space-y-1">
-        <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
-          Set a new password
-        </h1>
-        <p className="text-sm text-[color:var(--color-content-subtle)]">
+        <h1 className="text-foreground text-xl font-semibold tracking-tight">Set a new password</h1>
+        <p className="text-muted-foreground text-sm">
           Pick a strong password you don&apos;t use anywhere else.
         </p>
       </div>
@@ -43,7 +41,7 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
           </div>
           <Link
             href="/forgot-password"
-            className="block text-sm font-medium text-[color:var(--color-content-emphasis)] hover:underline"
+            className="text-foreground block text-sm font-medium hover:underline"
           >
             Request a new reset link
           </Link>

@@ -21,9 +21,9 @@ export function effectSplitCrossette(
   audible: boolean,
   budget: ShellEffectBudget,
 ): void {
-  if (audible && budget.crackleSoundsRemaining > 0 && rng.next() < 0.18) {
+  if (audible && budget.crackleSoundsRemaining > 0 && ctx.sh.chance(0.18)) {
     budget.crackleSoundsRemaining -= 1;
-    ctx.sh.playRandomCrackle(0.08, rng);
+    ctx.sh.playRandomCrackle(0.08);
   }
   const fragments = design.split.fragments;
   const baseAngle = rng.next() * Math.PI;
@@ -248,17 +248,17 @@ export function effectCrackleEffect(
   budget: ShellEffectBudget,
 ): void {
   const crackle = design.crackle;
-  if (audible && budget.crackleSoundsRemaining > 0 && rng.next() < crackle.soundChance) {
+  if (audible && budget.crackleSoundsRemaining > 0 && ctx.sh.chance(crackle.soundChance)) {
     budget.crackleSoundsRemaining -= 1;
     switch (design.crackle.sound) {
       case 'lightBoom':
-        ctx.sh.playRandomLightBoom(crackle.soundVolume, rng);
+        ctx.sh.playRandomLightBoom(crackle.soundVolume);
         break;
       case 'heavyBoom':
-        ctx.sh.playRandomHeavyBoom(crackle.soundVolume, rng);
+        ctx.sh.playRandomHeavyBoom(crackle.soundVolume);
         break;
       default:
-        ctx.sh.playRandomCrackle(crackle.soundVolume, rng);
+        ctx.sh.playRandomCrackle(crackle.soundVolume);
     }
   }
   const fragmentColour =
@@ -290,9 +290,6 @@ export function effectCrackleEffect(
       r: fragmentColour.r,
       g: fragmentColour.g,
       b: fragmentColour.b,
-      h: rng.next(),
-      s: rng.next(),
-      l: rng.next(),
       vx: particle.vx * 0.12 + direction.x * speed,
       vy: particle.vy * 0.12 + direction.y * speed,
       vz: particle.vz * 0.12 + direction.z * speed,

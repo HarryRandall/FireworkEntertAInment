@@ -109,10 +109,8 @@ export function PermissionExceptionsPanel({
     <Card radius="lg" className="p-5">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-sm font-medium text-[color:var(--color-content-emphasis)]">
-            Permission exceptions
-          </h2>
-          <p className="mt-0.5 max-w-2xl text-xs text-[color:var(--color-content-subtle)]">
+          <h2 className="text-foreground text-sm font-medium">Permission exceptions</h2>
+          <p className="text-muted-foreground mt-0.5 max-w-2xl text-xs">
             Permission overrides are listed only when customised for this user. Defaults come from
             the selected role.
           </p>
@@ -130,7 +128,7 @@ export function PermissionExceptionsPanel({
         </div>
       </div>
       {exceptions.length > 0 ? (
-        <div className="divide-y divide-[color:var(--color-border-subtle)]">
+        <div className="divide-border divide-y">
           {exceptions.map((exception) => (
             <PermissionExceptionRow
               key={exception.permission.id}
@@ -145,7 +143,7 @@ export function PermissionExceptionsPanel({
           ))}
         </div>
       ) : (
-        <p className="text-sm text-[color:var(--color-content-subtle)]">
+        <p className="text-muted-foreground text-sm">
           No custom permissions. This user inherits the {roleName} role defaults.
         </p>
       )}

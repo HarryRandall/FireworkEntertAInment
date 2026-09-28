@@ -226,18 +226,14 @@ test('manual cue additions defer schedule safety to the guarded database mutatio
   assert.match(overlap, /throw new Error\('Could not read the multishot duration\.'/);
 });
 
-test('firework import worker claims queued jobs atomically', () => {
+test('firework import worker claims runs atomically through the durable RPC', () => {
   const worker = readFileSync(
     join(repoRoot, '../../services/firework-import-worker/worker.py'),
     'utf8',
   );
   assert.match(worker, /def claim_reconstruction_run/);
   assert.match(worker, /supabase\.rpc\([\s\S]*?"claim_firework_import_run"/);
-  assert.match(worker, /def claim_queued_job/);
-  assert.match(
-    worker,
-    /\.eq\("id", job_id\)[\s\S]*?\.eq\("status", "queued"\)[\s\S]*?\.execute\(\)/,
-  );
-  assert.match(worker, /if not result\.data:/);
-  assert.match(worker, /claimed = claim_queued_job\(supabase, job\)/);
+  // The retired table-polling fallback must not return.
+  assert.doesNotMatch(worker, /def claim_queued_job/);
+  assert.doesNotMatch(worker, /legacy queued-job fallback/);
 });

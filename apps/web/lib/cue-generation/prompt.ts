@@ -31,7 +31,7 @@ export function productAliases(products: readonly FireworkSpecification[]) {
   return { shown, aliasById, idByAlias };
 }
 
-export function projectCatalogue(
+function projectCatalogue(
   products: readonly FireworkSpecification[],
   aliasById: ReadonlyMap<string, string>,
   selectedFields?: readonly ProductCatalogueField[] | null,
@@ -64,7 +64,7 @@ export function projectCatalogue(
   });
 }
 
-export function projectSections(sections: readonly PlanSection[], fallback: ShowPlan) {
+function projectSections(sections: readonly PlanSection[], fallback: ShowPlan) {
   return sections.map((section) => {
     const suggested = fallback.sections[section.index];
     return {
@@ -83,7 +83,7 @@ export function projectSections(sections: readonly PlanSection[], fallback: Show
   });
 }
 
-export function buildSongSummary(analysis: AnalyserResult | null, songDuration: number) {
+function buildSongSummary(analysis: AnalyserResult | null, songDuration: number) {
   if (!analysis) {
     return {
       durationSeconds: songDuration,
@@ -139,7 +139,7 @@ export const DEFAULT_SHOW_CUE_SYSTEM_PROMPT = [
 ].join('\n');
 
 /** Editable guidance about using the catalogue. */
-export const DEFAULT_SHOW_CUE_PRODUCT_CONTEXT_TEXT = [
+const DEFAULT_SHOW_CUE_PRODUCT_CONTEXT_TEXT = [
   'Product context:',
   '  - The catalogue is the complete list of products for this show, referred to by alias (p1, p2 ...).',
   '  - Heroes are the products that headline a section: pick one to three whose colours and effects fit that section. Prefer large calibres for peak and finale heroes.',

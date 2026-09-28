@@ -12,7 +12,7 @@ export const metadata: Metadata = {
 
 export default function KioskLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="bg-background text-on-surface min-h-dvh">
+    <div className="bg-background text-foreground min-h-dvh">
       <SkipLink />
       <header className="border-border/70 border-b">
         <div className="mx-auto flex h-16 w-full max-w-3xl items-center px-4 sm:px-6">

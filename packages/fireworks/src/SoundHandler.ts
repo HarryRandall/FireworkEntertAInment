@@ -1,13 +1,13 @@
 /**
  * Plays the per-shell sound effects (mortar lift, boom, crackle).
  *
- * Each {@link SoundKey} maps to a small bank of audio files; we round-robin
- * (seeded) through them so repeated bursts don't sound identical. Audio
- * decoding happens lazily — the first call to `play()` for a key warms its
- * AudioBuffers.
+ * Each {@link SoundKey} maps to a small bank of audio files; a seeded pick
+ * keeps repeated bursts from sounding identical. Sound owns its own random
+ * stream: whether audio is muted, loaded or playing must never change the
+ * numbers that lay out stars.
  */
 import * as THREE from 'three';
-import type { RandomSource } from './random.ts';
+import { createSeededRng } from './random.ts';
 
 export type SoundKey = 'mortar' | 'lightBoom' | 'heavyBoom' | 'crackle';
 export type SoundAssets = Record<SoundKey, readonly string[]>;
@@ -23,6 +23,7 @@ export class SoundHandler {
   private muted = false;
   private loaded = false;
   private playbackPaused = false;
+  private readonly random = createSeededRng(0x50_4e_44);
 
   constructor(
     private readonly assets: SoundAssets = {
@@ -90,31 +91,35 @@ export class SoundHandler {
     }
   }
 
-  playRandomMortar(volume = 1, rng?: RandomSource): void {
-    this.playRandom('mortar', volume, rng);
+  playRandomMortar(volume = 1): void {
+    this.playRandom('mortar', volume);
   }
 
-  playRandomLightBoom(volume = 1, rng?: RandomSource): void {
-    this.playRandom('lightBoom', volume, rng);
+  playRandomLightBoom(volume = 1): void {
+    this.playRandom('lightBoom', volume);
   }
 
-  playRandomHeavyBoom(volume = 1, rng?: RandomSource): void {
-    this.playRandom('heavyBoom', volume, rng);
+  playRandomHeavyBoom(volume = 1): void {
+    this.playRandom('heavyBoom', volume);
   }
 
-  playRandomCrackle(volume = 0.1, rng?: RandomSource): void {
-    this.playRandom('crackle', volume, rng);
+  playRandomCrackle(volume = 0.1): void {
+    this.playRandom('crackle', volume);
   }
 
-  private playRandom(key: SoundKey, volume: number, rng?: RandomSource): void {
+  /** Chance roll for optional sounds, drawn from the sound stream. */
+  chance(probability: number): boolean {
+    return this.random.next() < probability;
+  }
+
+  private playRandom(key: SoundKey, volume: number): void {
     // Nothing new should start while paused; a suspended context would queue
     // it silently and blast it on resume.
     if (this.muted || this.playbackPaused) return;
     void this.resume();
     const pool = this.buffers[key];
     if (!pool.length) return;
-    const random = rng?.next() ?? Math.random();
-    const buffer = pool[Math.floor(random * pool.length)];
+    const buffer = pool[Math.floor(this.random.next() * pool.length)];
     const sound = new THREE.Audio(this.listener);
     sound.setBuffer(buffer);
     sound.setLoop(false);

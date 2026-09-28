@@ -20,25 +20,6 @@ import { reservePasswordRecoveryEmailRequest } from '@/lib/auth/password-recover
 
 type Result = { ok: true } | { ok: false; error: string };
 
-type UserStatusRpcClient = {
-  rpc(
-    functionName: 'set_user_status',
-    args: { p_user_id: string; p_status: 'active' | 'suspended' },
-  ): PromiseLike<{ data: string | null; error: { message: string } | null }>;
-};
-
-type PermissionOverrideMode = 'grant' | 'deny' | 'clear';
-
-type PermissionOverrideRpcClient = {
-  rpc(
-    functionName: 'set_user_permission_overrides',
-    args: {
-      p_user_id: string;
-      p_overrides: { permission_id: string; mode: PermissionOverrideMode }[];
-    },
-  ): PromiseLike<{ data: number | null; error: { message: string } | null }>;
-};
-
 const SetStatusSchema = z.object({
   userId: z
     .string()
@@ -99,8 +80,7 @@ export async function setUserStatusAction(input: z.infer<typeof SetStatusSchema>
   }
 
   const supabase = createClient(await cookies());
-  const statusRpc = supabase as unknown as UserStatusRpcClient;
-  const { data: updatedUserId, error } = await statusRpc.rpc('set_user_status', {
+  const { data: updatedUserId, error } = await supabase.rpc('set_user_status', {
     p_user_id: parsed.data.userId,
     p_status: parsed.data.status,
   });
@@ -227,8 +207,7 @@ async function applyUserPermissionOverrides(input: unknown): Promise<Result> {
   if (!parsed.success) return { ok: false, error: 'Invalid input.' };
 
   const supabase = createClient(await cookies());
-  const overrideRpc = supabase as unknown as PermissionOverrideRpcClient;
-  const { data: processedCount, error } = await overrideRpc.rpc('set_user_permission_overrides', {
+  const { data: processedCount, error } = await supabase.rpc('set_user_permission_overrides', {
     p_user_id: parsed.data.userId,
     p_overrides: parsed.data.overrides.map((override) => ({
       permission_id: override.permissionId,

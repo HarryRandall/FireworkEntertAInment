@@ -1,4 +1,4 @@
-import type { ComponentPropsWithoutRef, ReactNode } from 'react';
+import type { ComponentPropsWithoutRef } from 'react';
 import { Label } from '@/ui/primitives/label';
 import { cn } from '@/lib/utils';
 import { uiStyles } from '@/ui/patterns/styles';
@@ -34,20 +34,6 @@ export function FieldLabel({
 export function FieldHint({ className, children, ...rest }: ComponentPropsWithoutRef<'p'>) {
   return (
     <p className={cn(uiStyles.text.hint, className)} {...rest}>
-      {children}
-    </p>
-  );
-}
-
-/** Danger-toned error text for failed validation. */
-export function FieldError({
-  className,
-  children,
-  ...rest
-}: ComponentPropsWithoutRef<'p'> & { children?: ReactNode }) {
-  if (!children) return null;
-  return (
-    <p className={cn(uiStyles.text.error, className)} {...rest}>
       {children}
     </p>
   );

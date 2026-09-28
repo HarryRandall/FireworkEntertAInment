@@ -7,6 +7,8 @@ export default function AdminFireworksLoading() {
   return (
     <div
       className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-8"
+      role="status"
+      aria-busy="true"
       aria-label="Loading fireworks"
     >
       <FilterSkeleton

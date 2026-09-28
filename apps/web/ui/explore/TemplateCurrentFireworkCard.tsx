@@ -52,7 +52,7 @@ export function TemplateCurrentFireworkCard({
 
   return (
     <Card radius="md" className="p-4">
-      <h2 className="text-on-surface text-sm font-semibold">Current firework</h2>
+      <h2 className="text-foreground text-sm font-semibold">Current firework</h2>
 
       {activeCue ? (
         <div className="mt-3 space-y-4">
@@ -87,7 +87,7 @@ function TimelineCue({
   const description = cue.description || cue.firework.description;
   const isCurrent = tone === 'current';
   const nameClassName = isCurrent
-    ? 'text-on-surface block min-w-0 text-sm leading-snug font-semibold'
+    ? 'text-foreground block min-w-0 text-sm leading-snug font-semibold'
     : 'text-muted-foreground block min-w-0 text-xs leading-snug font-medium';
   const linkedNameClassName = `${nameClassName} rounded-sm underline-offset-4 transition-colors hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-card`;
   const fireworkAdminId = cue.firework.variant?.id ?? cue.firework.id;
@@ -133,7 +133,7 @@ function TimelineCue({
           <p
             className={
               isCurrent
-                ? 'text-on-surface-variant mt-1 line-clamp-2 text-xs leading-relaxed'
+                ? 'text-muted-foreground mt-1 line-clamp-2 text-xs leading-relaxed'
                 : 'text-muted-foreground/80 mt-1 line-clamp-1 text-[11px] leading-relaxed'
             }
           >

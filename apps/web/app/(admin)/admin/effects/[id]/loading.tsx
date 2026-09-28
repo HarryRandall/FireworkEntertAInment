@@ -1,6 +1,6 @@
 /** Loading skeleton for the admin effect editor. */
 
-import { AdminEffectEditorSkeleton } from '@/ui/shell/RouteSkeletons';
+import { AdminEffectEditorSkeleton } from '@/app/(admin)/_components/AdminSkeletons';
 
 export default function AdminEffectEditorLoading() {
   return (

@@ -156,7 +156,7 @@ async function ExploreShelves({ sort }: { sort: LibrarySort | null }) {
 
   if (templates.length === 0) {
     return (
-      <p className="border-outline-variant/35 bg-surface-container-low text-on-surface-variant rounded-xl border border-dashed p-5 text-sm">
+      <p className="border-border/35 bg-card text-muted-foreground rounded-xl border border-dashed p-5 text-sm">
         No show templates are available right now. Check back later.
       </p>
     );
@@ -178,17 +178,17 @@ async function ExploreShelves({ sort }: { sort: LibrarySort | null }) {
         <section className="space-y-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-on-surface text-xl font-semibold tracking-tight">
+              <h2 className="text-foreground text-xl font-semibold tracking-tight">
                 {activeShelf.title}
               </h2>
-              <p className="text-on-surface-variant mt-1 text-sm">
+              <p className="text-muted-foreground mt-1 text-sm">
                 {activeShelf.templates.length.toLocaleString()}{' '}
                 {activeShelf.templates.length === 1 ? 'template' : 'templates'}
               </p>
             </div>
             <Link
               href="/library"
-              className="text-on-surface-variant hover:text-on-surface inline-flex h-10 items-center gap-2 rounded-full border border-[color:var(--color-border-subtle)] px-4 text-sm font-medium transition-colors"
+              className="text-muted-foreground hover:text-foreground border-border inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors"
             >
               <ChevronLeft size={16} />
               Back to shelves
@@ -201,7 +201,7 @@ async function ExploreShelves({ sort }: { sort: LibrarySort | null }) {
               ))}
             </div>
           ) : (
-            <p className="border-outline-variant/35 bg-surface-container-low text-on-surface-variant rounded-xl border border-dashed p-5 text-sm">
+            <p className="border-border/35 bg-card text-muted-foreground rounded-xl border border-dashed p-5 text-sm">
               No templates match this collection yet.
             </p>
           )}

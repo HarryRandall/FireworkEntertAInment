@@ -15,17 +15,17 @@ export function SocialProof() {
         <div className="flex flex-col items-center gap-1.5">
           <h2
             id="project-stakeholders"
-            className="text-on-surface-variant text-center text-xs font-semibold tracking-[0.18em] uppercase"
+            className="text-muted-foreground text-center text-xs font-semibold tracking-[0.18em] uppercase"
           >
             Project stakeholders
           </h2>
-          <Underline width={68} color="currentColor" className="text-on-surface-variant/45" />
+          <Underline width={68} color="currentColor" className="text-muted-foreground/45" />
         </div>
         <ul className="flex flex-wrap justify-center gap-3">
           {STAKEHOLDERS.map((stakeholder) => (
             <li
               key={stakeholder}
-              className="border-outline-variant/40 bg-surface-container-low text-on-surface rounded-full border px-5 py-2.5 text-center text-sm font-bold tracking-[-0.01em]"
+              className="border-border/40 bg-card text-foreground rounded-full border px-5 py-2.5 text-center text-sm font-bold tracking-[-0.01em]"
             >
               {stakeholder}
             </li>

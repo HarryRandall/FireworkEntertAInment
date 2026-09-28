@@ -54,7 +54,7 @@ export async function getActivePromptConfig(key: PromptConfigKey): Promise<Promp
   return data ? mapPromptConfig(data as PromptConfigRow) : null;
 }
 
-export function getDefaultShowGenerationMode(): GenerationMode {
+function getDefaultShowGenerationMode(): GenerationMode {
   return process.env.CUE_GENERATION_MODE === 'llm' ? 'llm' : 'fast';
 }
 
@@ -96,8 +96,4 @@ export async function getShowCueGenerationSettings(): Promise<GenerationSetting>
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
-}
-
-export async function getShowCueGenerationMode(): Promise<GenerationMode> {
-  return (await getShowCueGenerationSettings()).generationMode;
 }

@@ -58,7 +58,7 @@ test('shared data table uses the reference table chrome', () => {
   );
   assert.match(source, /px-4 py-3 align-middle text-sm whitespace-nowrap text-foreground/);
   assert.doesNotMatch(source, /uppercase tracking-wide/);
-  assert.doesNotMatch(source, /hover:bg-\[color:var\(--color-bg-muted\)\]/);
+  assert.doesNotMatch(source, /hover:bg-muted/);
 });
 
 test('table pagination follows the reference count and ellipsis behaviour', () => {
@@ -184,8 +184,10 @@ test('base effects and style defaults both use renderer preview card grids', () 
 });
 
 test('admin table loading footer mirrors the compact pagination controls', () => {
-  const source = readFileSync(join(root, 'ui/shell/RouteSkeletons.tsx'), 'utf8');
-  const start = source.indexOf('function AdminTablePaginationSkeleton()');
+  const source =
+    readFileSync(join(root, 'ui/shell/RouteSkeletons.tsx'), 'utf8') +
+    readFileSync(join(root, 'app/(admin)/_components/AdminSkeletons.tsx'), 'utf8');
+  const start = source.indexOf('function TablePaginationSkeleton()');
   const end = source.indexOf('function getTableSkeletonCellClass', start);
   const paginationSkeleton = source.slice(start, end);
 

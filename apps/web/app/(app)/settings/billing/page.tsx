@@ -111,11 +111,7 @@ export default function BillingSettingsPage() {
               <div className="grid gap-3 sm:grid-cols-2">
                 {PLAN_FEATURES.map((feature) => (
                   <div key={feature} className="text-foreground flex items-center gap-2 text-sm">
-                    <CheckCircle2
-                      aria-hidden
-                      size={16}
-                      className="shrink-0 text-[color:var(--color-status-success)]"
-                    />
+                    <CheckCircle2 aria-hidden size={16} className="text-status-success shrink-0" />
                     <span>{feature}</span>
                   </div>
                 ))}
@@ -198,8 +194,8 @@ function PlanCard({ plan }: { plan: (typeof BILLING_PLANS)[number] }) {
     <article
       className={`flex min-h-full flex-col rounded-xl border p-4 ${
         plan.featured
-          ? 'border-[color:var(--hl)] bg-[color-mix(in_srgb,var(--hl)_8%,transparent)]'
-          : 'border-[color:var(--color-border-subtle)]'
+          ? 'border-hl bg-[color-mix(in_srgb,var(--hl)_8%,transparent)]'
+          : 'border-border'
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -224,7 +220,7 @@ function PlanCard({ plan }: { plan: (typeof BILLING_PLANS)[number] }) {
               aria-hidden
               size={15}
               className={`mt-0.5 shrink-0 ${
-                plan.featured ? 'text-[color:var(--color-status-success)]' : 'text-muted-foreground'
+                plan.featured ? 'text-status-success' : 'text-muted-foreground'
               }`}
             />
             <span>{feature}</span>

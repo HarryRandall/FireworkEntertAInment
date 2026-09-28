@@ -63,7 +63,7 @@ export function EditorStyleDefaultControls({
   }
 
   return (
-    <div className="space-y-3 border-t border-[color:var(--color-border-subtle)] pt-5">
+    <div className="border-border space-y-3 border-t pt-5">
       <Field>
         <div className="flex items-center gap-1.5">
           <FieldLabel>{label}</FieldLabel>
@@ -104,7 +104,7 @@ export function EditorStyleDefaultControls({
           </DropdownMenu>
         </div>
         {!isCustom && inheritedLabel ? (
-          <p className="text-xs text-[color:var(--color-content-muted)]">{inheritedLabel}</p>
+          <p className="text-muted-foreground text-xs">{inheritedLabel}</p>
         ) : null}
       </Field>
       <Dialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen}>

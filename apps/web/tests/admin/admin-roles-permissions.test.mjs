@@ -100,13 +100,13 @@ test('user detail renders permission exceptions instead of every permission row'
   assert.doesNotMatch(addDialog, /flex h-4 w-4/);
   assert.doesNotMatch(addDialog, /font-mono/);
   assert.doesNotMatch(addDialog, /formatCategory/);
-  assert.match(userAction, /functionName: 'set_user_permission_overrides'/);
+  assert.match(userAction, /supabase\.rpc\('set_user_permission_overrides'/);
   assert.match(
     databaseTypes,
     /set_user_permission_overrides: \{[\s\S]*?Args: \{ p_overrides: Json; p_user_id: string \}[\s\S]*?Returns: number/,
   );
   assert.match(
     userAction,
-    /overrideRpc\.rpc\([\s\S]*?'set_user_permission_overrides'[\s\S]*?processedCount !== parsed\.data\.overrides\.length/,
+    /supabase\.rpc\([\s\S]*?'set_user_permission_overrides'[\s\S]*?processedCount !== parsed\.data\.overrides\.length/,
   );
 });

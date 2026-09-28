@@ -3,7 +3,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 
-export type PreviewStatus = 'loading' | 'playing' | 'paused';
+type PreviewStatus = 'loading' | 'playing' | 'paused';
 
 export interface PreviewState {
   trackId: string;

@@ -22,7 +22,8 @@ test('the live WebGL replay surface owns the card clipping radius', () => {
 test('replay loading layers preserve the same rounded clipping', () => {
   const backdrop = read('ui/replay/ReplayStageBackdrop.tsx');
   const loadingStage = read('ui/replay/ReplayPanelLoadingStage.tsx');
-  const skeletons = read('ui/shell/RouteSkeletons.tsx');
+  const skeletons =
+    read('ui/shell/RouteSkeletons.tsx') + read('app/(admin)/_components/AdminSkeletons.tsx');
 
   for (const source of [backdrop, loadingStage, skeletons]) assert.match(source, /bg-stage-night/);
   assert.match(backdrop, /overflow-hidden rounded-\[inherit\]/);

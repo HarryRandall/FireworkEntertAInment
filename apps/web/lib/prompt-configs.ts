@@ -40,10 +40,6 @@ export type GenerationSetting = {
   updatedAt: string;
 };
 
-export function isPromptConfigKey(value: unknown): value is PromptConfigKey {
-  return typeof value === 'string' && (PROMPT_CONFIG_KEYS as readonly string[]).includes(value);
-}
-
 export function asGenerationMode(value: unknown): GenerationMode {
   return value === 'llm' ? 'llm' : 'fast';
 }

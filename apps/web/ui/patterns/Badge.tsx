@@ -30,37 +30,36 @@ type Tone =
 
 const dotClasses: Record<Tone, string> = {
   neutral: 'bg-muted-foreground',
-  success: 'bg-[color:var(--color-status-success)]',
+  success: 'bg-status-success',
   danger: 'bg-destructive',
-  warning: 'bg-[color:var(--color-status-warning)]',
-  info: 'bg-[color:var(--color-status-info)]',
+  warning: 'bg-status-warning',
+  info: 'bg-status-info',
   accent: 'bg-primary',
   violet: 'bg-violet-500',
   sky: 'bg-sky-500',
   'amber-soft': 'bg-amber-500',
   primary: 'bg-primary',
-  live: 'bg-[color:var(--color-status-success)]',
+  live: 'bg-status-success',
   wow: 'bg-primary',
 };
 
 // Status colours pair with tested subtle surfaces. Brand/category chips keep
 // their tinted fills and readable foregrounds in both themes.
 const solidClasses: Record<Tone, string> = {
-  neutral:
-    'border-transparent bg-[color:var(--color-bg-subtle)] text-[color:var(--color-content-emphasis)]',
+  neutral: 'border-transparent bg-secondary text-foreground',
   success: 'border-transparent bg-status-success-subtle text-status-success',
   danger: 'border-transparent bg-status-danger-subtle text-status-danger',
   warning: 'border-transparent bg-status-warning-subtle text-status-warning',
   info: 'border-transparent bg-status-info-subtle text-status-info',
   accent:
-    'border-transparent bg-[color-mix(in_srgb,var(--primary)_14%,transparent)] text-[color:var(--color-content-emphasis)]',
+    'border-transparent bg-[color-mix(in_srgb,var(--primary)_14%,transparent)] text-foreground',
   violet: 'border-transparent bg-violet-500/18 text-violet-700 dark:text-violet-300',
   sky: 'border-transparent bg-sky-500/18 text-sky-700 dark:text-sky-300',
   'amber-soft': 'border-transparent bg-amber-500/18 text-amber-700 dark:text-amber-300',
   primary:
-    'border-transparent bg-[color-mix(in_srgb,var(--primary)_14%,transparent)] text-[color:var(--color-content-emphasis)]',
+    'border-transparent bg-[color-mix(in_srgb,var(--primary)_14%,transparent)] text-foreground',
   live: 'border-transparent bg-status-success-subtle text-status-success',
-  wow: 'border-transparent bg-[color-mix(in_srgb,var(--primary)_14%,transparent)] text-[color:var(--color-content-emphasis)]',
+  wow: 'border-transparent bg-[color-mix(in_srgb,var(--primary)_14%,transparent)] text-foreground',
 };
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement>>;
@@ -116,43 +115,6 @@ export function Badge({
       ) : null}
       {children}
     </span>
-  );
-}
-
-type ChoiceChipSize = 'sm' | 'md';
-
-const chipSizeClasses: Record<ChoiceChipSize, string> = {
-  sm: 'h-7 gap-1.5 rounded-md px-2.5 text-xs',
-  md: 'h-8 gap-2 rounded-md px-3 text-sm',
-};
-
-/** Toggleable chip used for inline single-select filters. */
-export function ChoiceChip({
-  selected = false,
-  size = 'sm',
-  className,
-  children,
-  ...rest
-}: React.ComponentPropsWithoutRef<'button'> & {
-  selected?: boolean;
-  size?: ChoiceChipSize;
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={selected}
-      className={cn(
-        'focus-visible:ring-ring/50 inline-flex items-center border font-medium transition-colors focus:outline-none focus-visible:ring-3',
-        chipSizeClasses[size],
-        selected
-          ? 'bg-primary text-primary-foreground border-transparent'
-          : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
-        className,
-      )}
-      {...rest}
-    >
-      {children}
-    </button>
   );
 }
 

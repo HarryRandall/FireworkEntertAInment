@@ -640,6 +640,7 @@ export function ImportRenderHarness() {
             showLoadingBar={false}
             showStarfield={false}
             preserveDrawingBuffer
+            autoFrame={false}
             onCaptureController={onController}
           />
         </div>

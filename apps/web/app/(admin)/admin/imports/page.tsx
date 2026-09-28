@@ -46,7 +46,7 @@ export default async function AdminImportsPage({ searchParams }: PageProps) {
   return (
     <div className="mx-auto w-full max-w-[1400px] space-y-6">
       <header className="space-y-1">
-        <h1 className="text-foreground text-2xl font-semibold tracking-tight text-balance">
+        <h1 className="text-foreground text-2xl font-bold tracking-tight text-balance">
           Firework imports
         </h1>
         <p className="text-muted-foreground max-w-3xl text-sm text-pretty">
@@ -272,7 +272,12 @@ async function ImportJobList({ searchParams }: { searchParams: SearchParams }) {
 
 function ImportTableSkeleton() {
   return (
-    <div className="space-y-4" aria-label="Loading reconstruction jobs">
+    <div
+      className="space-y-4"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading reconstruction jobs"
+    >
       <Skeleton className="h-10 max-w-3xl" />
       <DataTableShell caption="Loading reconstruction jobs">
         <table className={tableClasses('min-w-[920px]')}>

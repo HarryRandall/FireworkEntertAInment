@@ -977,10 +977,10 @@ export default function NewShowPageClient({
           <div className="relative isolate mx-auto w-full max-w-4xl">
             <div className="prompt-hero-glow" aria-hidden />
             <div className="text-center">
-              <h1 className="text-3xl leading-tight font-bold tracking-tight text-[color:var(--color-content-emphasis)] sm:text-4xl lg:text-5xl">
+              <h1 className="text-foreground text-3xl leading-tight font-bold tracking-tight sm:text-4xl lg:text-5xl">
                 {activeStep.title}
               </h1>
-              <p className="mt-3 text-sm text-[color:var(--color-content-subtle)] sm:text-base">
+              <p className="text-muted-foreground mt-3 text-sm sm:text-base">
                 {activeStep.description}
               </p>
             </div>
@@ -990,7 +990,7 @@ export default function NewShowPageClient({
                 {/* Mirrors the home-page PromptHero panel sizing so the wizard's
                       describe step feels like a continuation of it. */}
                 <div className="mx-auto w-full max-w-3xl">
-                  <div className="overflow-hidden rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)]/55 shadow-xs backdrop-blur-md">
+                  <div className="border-border bg-popover/55 overflow-hidden rounded-2xl border shadow-xs backdrop-blur-md">
                     <label htmlFor="show-description" className="sr-only">
                       Creative brief
                     </label>
@@ -1083,7 +1083,7 @@ export default function NewShowPageClient({
                             className={cn(
                               'has-[input:focus-visible]:ring-ring/50 min-w-0 cursor-pointer rounded-xl border px-3 py-2.5 text-left transition-[border-color,background-color,box-shadow] has-[input:focus-visible]:ring-3',
                               selected
-                                ? 'border-foreground/55 text-foreground bg-[color:var(--accent)] shadow-sm'
+                                ? 'border-foreground/55 text-foreground bg-accent shadow-sm'
                                 : 'border-border bg-card/70 text-muted-foreground hover:border-foreground/25 hover:bg-[color:color-mix(in_srgb,var(--accent)_60%,transparent)]',
                             )}
                           >
@@ -1117,11 +1117,11 @@ export default function NewShowPageClient({
                     hasSelection={Boolean(pendingJamendoTrack || uploadedAudio?.source)}
                   />
                   <div className="flex items-center gap-3 py-1">
-                    <span className="h-px flex-1 bg-[color:var(--color-border-default)]" />
-                    <span className="text-xs font-medium tracking-wide text-[color:var(--color-content-muted)] uppercase">
+                    <span className="bg-input h-px flex-1" />
+                    <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                       or choose another option
                     </span>
-                    <span className="h-px flex-1 bg-[color:var(--color-border-default)]" />
+                    <span className="bg-input h-px flex-1" />
                   </div>
                   <div className="grid gap-4 md:grid-cols-2">
                     <div
@@ -1133,7 +1133,7 @@ export default function NewShowPageClient({
                           : undefined
                       }
                       className={cn(
-                        'rounded-xl focus:outline-none focus-visible:ring-3 focus-visible:ring-[color:var(--color-status-danger)]/35',
+                        'focus-visible:ring-status-danger/35 rounded-xl focus:outline-none focus-visible:ring-3',
                         soundtrackMode === 'none' && 'opacity-50',
                       )}
                     >
@@ -1152,32 +1152,26 @@ export default function NewShowPageClient({
                       aria-label="Continue without a soundtrack"
                       onClick={chooseNoSoundtrack}
                       className={cn(
-                        'focus-visible:ring-ring/50 relative flex min-h-36 w-full items-center gap-4 rounded-xl border-2 bg-[color:var(--color-bg-elevated)] p-5 text-left shadow-sm transition-[border-color,box-shadow,transform] focus:outline-none focus-visible:ring-3 active:scale-[0.99]',
+                        'focus-visible:ring-ring/50 bg-popover relative flex min-h-36 w-full items-center gap-4 rounded-xl border-2 p-5 text-left shadow-sm transition-[border-color,box-shadow,transform] focus:outline-none focus-visible:ring-3 active:scale-[0.99]',
                         soundtrackMode === 'none'
-                          ? 'border-[color:var(--color-content-emphasis)]'
-                          : 'border-[color:var(--color-border-default)] hover:border-[color:var(--color-content-emphasis)]/40',
+                          ? 'border-foreground'
+                          : 'border-input hover:border-foreground/40',
                       )}
                     >
                       {soundtrackMode === 'none' ? (
                         <span
                           aria-hidden="true"
-                          className="absolute top-3 right-3 inline-flex h-5 w-5 items-center justify-center rounded-full border border-[color:var(--color-content-emphasis)] bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)] shadow-sm"
+                          className="border-foreground bg-foreground text-background absolute top-3 right-3 inline-flex h-5 w-5 items-center justify-center rounded-full border shadow-sm"
                         >
                           <Check size={12} strokeWidth={3} />
                         </span>
                       ) : null}
-                      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)]">
-                        <MicOff
-                          size={18}
-                          strokeWidth={1.75}
-                          className="text-[color:var(--color-content-muted)]"
-                        />
+                      <span className="border-border bg-popover flex h-11 w-11 shrink-0 items-center justify-center rounded-full border">
+                        <MicOff size={18} strokeWidth={1.75} className="text-muted-foreground" />
                       </span>
                       <span className="flex flex-col gap-0.5">
-                        <span className="text-sm font-semibold text-[color:var(--color-content-emphasis)]">
-                          No soundtrack
-                        </span>
-                        <span className="text-xs leading-relaxed text-[color:var(--color-content-subtle)]">
+                        <span className="text-foreground text-sm font-semibold">No soundtrack</span>
+                        <span className="text-muted-foreground text-xs leading-relaxed">
                           Design to a rhythm instead - the show builds its own arc.
                         </span>
                       </span>
@@ -1200,20 +1194,16 @@ export default function NewShowPageClient({
                         hint={audioDuration ? formatDuration(audioDuration) : 'Auto'}
                         description="Run the show for the full length of your soundtrack."
                         diagram={
-                          <Waves
-                            size={16}
-                            strokeWidth={1.75}
-                            className="text-[color:var(--color-content-muted)]"
-                          />
+                          <Waves size={16} strokeWidth={1.75} className="text-muted-foreground" />
                         }
                         onSelect={() => setLengthChoice('match')}
                       />
                       <div className="flex items-center gap-3 py-1">
-                        <span className="h-px flex-1 bg-[color:var(--color-border-default)]" />
-                        <span className="text-xs font-medium tracking-wide text-[color:var(--color-content-muted)] uppercase">
+                        <span className="bg-input h-px flex-1" />
+                        <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
                           or
                         </span>
-                        <span className="h-px flex-1 bg-[color:var(--color-border-default)]" />
+                        <span className="bg-input h-px flex-1" />
                       </div>
                     </>
                   ) : null}
@@ -1231,11 +1221,7 @@ export default function NewShowPageClient({
                           hint={`${option.minutes} min`}
                           description={option.description}
                           diagram={
-                            <Icon
-                              size={16}
-                              strokeWidth={1.75}
-                              className="text-[color:var(--color-content-muted)]"
-                            />
+                            <Icon size={16} strokeWidth={1.75} className="text-muted-foreground" />
                           }
                           onSelect={() => setLengthChoice(option.minutes)}
                         />
@@ -1353,7 +1339,7 @@ export default function NewShowPageClient({
                       ))}
                     </div>
                   </fieldset>
-                  <div className="flex flex-col items-center gap-1.5 text-sm text-[color:var(--color-content-subtle)]">
+                  <div className="text-muted-foreground flex flex-col items-center gap-1.5 text-sm">
                     <div className="flex flex-wrap items-center justify-center gap-3">
                       <label htmlFor="measured-site-width">I&apos;ve measured</label>
                       <Input
@@ -1387,7 +1373,7 @@ export default function NewShowPageClient({
                       <p
                         id="measured-site-width-error"
                         role="alert"
-                        className="text-xs font-medium text-[color:var(--color-status-danger)]"
+                        className="text-status-danger text-xs font-medium"
                       >
                         {measuredWidthError}
                       </p>
@@ -1420,7 +1406,7 @@ export default function NewShowPageClient({
                         Generate show
                       </Button>
                     )}
-                    <p className="mt-3 text-center text-xs text-[color:var(--color-content-subtle)]">
+                    <p className="text-muted-foreground mt-3 text-center text-xs">
                       {generationPresentation ? (
                         <>
                           This will use {displayedGenerationCost} AI credit

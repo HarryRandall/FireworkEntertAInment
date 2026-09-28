@@ -136,8 +136,8 @@ test('an attached Jamendo track is presented as a neutral song profile', () => {
   assert.match(search, /Browse more music/);
   assert.match(search, /Search by track, artist, mood, or genre/);
   assert.match(audioUpload, /source\?\.imageUrl/);
-  assert.match(audioUpload, /bg-\[color:var\(--color-bg-elevated\)\]/);
-  assert.match(audioUpload, /bg-\[color:var\(--color-status-success\)\]/);
+  assert.match(audioUpload, /bg-popover/);
+  assert.match(audioUpload, /bg-status-success/);
   assert.doesNotMatch(
     audioUpload,
     /bg-\[color-mix\(in_srgb,var\(--color-status-success\)_8%,transparent\)\]/,

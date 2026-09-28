@@ -13,6 +13,8 @@ export function WizardLoading() {
   return (
     <div
       className="new-show-wizard-screen -mx-6 -my-6 flex flex-1 sm:-mx-8 lg:-mx-10"
+      role="status"
+      aria-busy="true"
       aria-label="Loading show wizard"
     >
       <div className="relative z-10 flex w-full flex-col px-6 pt-5 pb-6 sm:px-10">
@@ -23,7 +25,7 @@ export function WizardLoading() {
               <Skeleton className="h-9 w-72 max-w-full sm:h-11 sm:w-96" />
               <Skeleton className="mt-3 h-4 w-64 max-w-full sm:h-5" />
             </div>
-            <div className="mt-8 overflow-hidden rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)]/55 shadow-xs backdrop-blur-md">
+            <div className="border-border bg-popover/55 mt-8 overflow-hidden rounded-2xl border shadow-xs backdrop-blur-md">
               <div className="h-28 p-4">
                 <Skeleton className="h-4 w-56 max-w-full" />
               </div>

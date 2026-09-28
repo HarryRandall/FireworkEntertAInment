@@ -40,6 +40,11 @@ import {
 import { effectEmitBurstTrailParticle } from './trails.ts';
 import type { EffectContext, ShellEffectBudget } from './types.ts';
 
+// Per-tick colour scratch. Effects run synchronously, one particle at a time.
+const SCRATCH_TARGET = new THREE.Color();
+const SCRATCH_OPENING = new THREE.Color();
+const SCRATCH_VISIBLE = new THREE.Color();
+
 export function effectSpawnStarLayer(
   ctx: EffectContext,
   layerKey: StarLayerKey,
@@ -286,9 +291,7 @@ export function effectSpawnEffectStar(
     r: initialColor.r,
     g: initialColor.g,
     b: initialColor.b,
-    h: rng.next(),
-    s: rng.next(),
-    l: rng.next(),
+    phase: rng.next(),
     life: o.life,
     // Stars hold their size for their whole life and glow out via the
     // renderer's burn-out fade.
@@ -344,7 +347,7 @@ export function effectStarBehaviour(
   const closingLifeReference = Math.max(0.1, particle.maxLife);
   let targetColor = color;
   if (secondary && !layer.head.closing.colour.enabled && particle.maxLife > 0 && ageRatio > 0.42) {
-    targetColor = applyColorMix(color, secondary, (ageRatio - 0.42) / 0.45);
+    targetColor = applyColorMix(color, secondary, (ageRatio - 0.42) / 0.45, SCRATCH_TARGET);
   }
 
   if (
@@ -357,12 +360,14 @@ export function effectStarBehaviour(
       targetColor,
       elapsedSeconds,
       openingLifeReference,
+      SCRATCH_OPENING,
     );
     const visibleColor = starClosingColor(
       layer.head,
       openingColor,
       particle.life,
       closingLifeReference,
+      SCRATCH_VISIBLE,
     );
     particle.color.setRGB(visibleColor.r, visibleColor.g, visibleColor.b);
   }
@@ -376,9 +381,9 @@ export function effectStarBehaviour(
   if (design.strobe.enabled) {
     // Stable selection keeps the same stars affected while editing the blink rhythm.
     const amount = clamp(design.strobe.amountPercent / 100, 0, 1);
-    const affected = amount >= 1 || (particle.i * 0.6180339887) % 1 < amount;
+    const affected = amount >= 1 || particle.phase < amount;
     if (affected) {
-      const phase = (time * design.strobe.frequencyHz + particle.i * design.strobe.desync) % 1;
+      const phase = (time * design.strobe.frequencyHz + particle.phase * design.strobe.desync) % 1;
       const lit = phase < design.strobe.dutyCycle;
       // Darkness is visibility, not death: size zero would recycle the particle.
       particle.size = dynamicSize;

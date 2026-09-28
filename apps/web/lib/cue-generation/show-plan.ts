@@ -20,6 +20,7 @@ import {
   type EffectFamily,
   type PromptConstraints,
 } from './prompt-constraints';
+import { clamp } from '@/lib/utils';
 
 export const SECTION_ROLES = [
   'opener',
@@ -30,7 +31,7 @@ export const SECTION_ROLES = [
   'finale',
   'outro',
 ] as const;
-export type SectionRole = (typeof SECTION_ROLES)[number];
+type SectionRole = (typeof SECTION_ROLES)[number];
 
 /** How a section moves across launch positions. */
 export const MOTIFS = ['unison', 'mirror', 'alternate', 'chase', 'sweep'] as const;
@@ -38,30 +39,6 @@ export type Motif = (typeof MOTIFS)[number];
 
 /** 0 = every other bar, 1 = every bar, 2 = half bars, 3 = every beat, 4 = beats and off-beats. */
 export type DensityLevel = 0 | 1 | 2 | 3 | 4;
-
-export const COLOUR_FAMILIES = [
-  'red',
-  'green',
-  'blue',
-  'purple',
-  'gold',
-  'white',
-  'silver',
-  'orange',
-  'pink',
-] as const satisfies readonly ColourFamily[];
-
-export const EFFECT_FAMILIES = [
-  'crackle',
-  'strobe',
-  'ring',
-  'crossette',
-  'horsetail',
-  'floral',
-  'falling leaves',
-  'glitter',
-  'willow',
-] as const satisfies readonly EffectFamily[];
 
 /** Analysed section with the context both the prompt and the realiser need. */
 export type PlanSection = {
@@ -141,7 +118,7 @@ export function buildPlanSections(
     const local = points.length
       ? points.reduce((sum, point) => sum + point.energy, 0) / points.length
       : section.energy;
-    return clamp01(Number.isFinite(local) ? local : 0.5);
+    return clamp(Number.isFinite(local) ? local : 0.5);
   });
   const ranked = [...energies].sort((a, b) => a - b);
   const climaxes = (analysis?.key_moments ?? []).filter((moment) => moment.type === 'climax');
@@ -430,10 +407,6 @@ function clampDensity(value: number): DensityLevel {
 
 function unique<T>(values: T[]): T[] {
   return Array.from(new Set(values));
-}
-
-function clamp01(value: number): number {
-  return Math.max(0, Math.min(1, value));
 }
 
 function round3(value: number): number {

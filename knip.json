@@ -1,0 +1,38 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/**/*.{js,mjs,ts}"]
+    },
+    "apps/web": {
+      "entry": ["tests/**/*.mjs", "scripts/**/*.mjs"],
+      "project": ["**/*.{ts,tsx}"],
+      "ignore": [
+        "ui/primitives/**",
+        "lib/database.types.ts",
+        "lib/firework-import/reconstruction.ts",
+        "lib/firework-import/render-metrics.ts",
+        "lib/firework-import/reconstruction-shot.ts",
+        "ui/replay/FireworkReplayCanvas.tsx",
+        "app/internal/import-render/ImportRenderHarness.tsx"
+      ],
+      "ignoreDependencies": ["server-only", "tailwindcss", "tw-animate-css", "shadcn"]
+    },
+    "packages/*": {
+      "entry": ["tests/**/*.mjs", "src/**/*.ts"],
+      "project": ["src/**/*.ts"]
+    }
+  },
+  "ignoreIssues": {
+    "apps/web/lib/admin/editor-snapshots.ts": ["exports"],
+    "apps/web/lib/admin/prompts.server.ts": ["exports"],
+    "apps/web/lib/admin/roles.server.ts": ["exports"],
+    "apps/web/lib/ai-credits.server.ts": ["exports", "types"],
+    "apps/web/lib/cue-generation/schemas.ts": ["exports"],
+    "apps/web/lib/cue-overlap.server.ts": ["exports"],
+    "apps/web/lib/firework-preview-image.ts": ["exports", "types"],
+    "apps/web/ui/shows/ShowSummaryCards.tsx": ["exports"],
+    "apps/web/lib/admin/multishot-constraints.ts": ["duplicates"],
+    "apps/web/lib/firework-import/jobs.ts": ["exports"]
+  }
+}

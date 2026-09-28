@@ -131,7 +131,7 @@ export function FireworkBrowseCard({
   const media = (
     <div
       ref={mediaRef}
-      className="bg-stage-night relative aspect-[16/10] overflow-hidden border-b border-[color:var(--color-border-subtle)]"
+      className="bg-stage-night border-border relative aspect-[16/10] overflow-hidden border-b"
     >
       {/* Shimmer only while a real poster is loading. Cards without a
           persisted poster show the stage backdrop, not a permanent skeleton. */}
@@ -173,7 +173,7 @@ export function FireworkBrowseCard({
   );
 
   const cardClasses = cn(
-    'group border-border bg-card text-card-foreground min-w-0 overflow-hidden rounded-xl border shadow-xs transition-[border-color,box-shadow,transform] duration-200 hover:border-[color:var(--color-border-strong)] hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-within:ring-2 focus-within:ring-primary/45 focus-within:ring-offset-2 focus-within:ring-offset-background motion-reduce:transition-none',
+    'group border-border bg-card text-card-foreground min-w-0 overflow-hidden rounded-xl border shadow-xs transition-[border-color,box-shadow,transform] duration-200 hover:border-border-emphasis hover:shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/45 focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-within:ring-2 focus-within:ring-primary/45 focus-within:ring-offset-2 focus-within:ring-offset-background motion-reduce:transition-none',
     className,
   );
 

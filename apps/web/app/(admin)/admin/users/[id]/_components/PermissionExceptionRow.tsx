@@ -91,19 +91,17 @@ export function PermissionExceptionRow({
   };
 
   return (
-    <div className="flex flex-col gap-3 border-b border-[color:var(--color-border-subtle)] py-3 last:border-b-0 md:flex-row md:items-center md:justify-between">
+    <div className="border-border flex flex-col gap-3 border-b py-3 last:border-b-0 md:flex-row md:items-center md:justify-between">
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-1.5">
-          <span className="text-sm font-medium text-[color:var(--color-content-emphasis)]">
-            {permission.name}
-          </span>
+          <span className="text-foreground text-sm font-medium">{permission.name}</span>
           <InfoTooltip text={permission.description ?? permission.name} />
         </div>
       </div>
       <div
         role="radiogroup"
         aria-label={`Override ${permission.name}`}
-        className="inline-flex w-fit rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-0.5"
+        className="border-border bg-card inline-flex w-fit rounded-md border p-0.5"
       >
         {CHOICES.map((choice) => {
           const Icon = choice.icon;
@@ -122,16 +120,16 @@ export function PermissionExceptionRow({
               disabled={isPending}
               onClick={() => updateMode(choice.value)}
               className={cn(
-                'inline-flex h-8 cursor-pointer items-center gap-1.5 rounded px-3 text-xs font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)] disabled:cursor-wait disabled:opacity-70',
+                'focus-visible:outline-foreground inline-flex h-8 cursor-pointer items-center gap-1.5 rounded px-3 text-xs font-medium transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-wait disabled:opacity-70',
                 selected
                   ? choice.value === 'grant'
-                    ? 'bg-[color:var(--color-status-success-subtle)] text-[color:var(--color-status-success)]'
-                    : 'bg-[color:var(--color-status-danger-subtle)] text-[color:var(--color-status-danger)]'
+                    ? 'bg-status-success-subtle text-status-success'
+                    : 'bg-status-danger-subtle text-status-danger'
                   : choice.value === 'clear'
                     ? inheritedAllowed
-                      ? 'text-[color:var(--color-status-success)] hover:bg-[color:var(--color-status-success-subtle)]'
-                      : 'text-[color:var(--color-status-danger)] hover:bg-[color:var(--color-status-danger-subtle)]'
-                    : 'text-[color:var(--color-content-subtle)] hover:bg-[color:var(--color-bg-muted)] hover:text-[color:var(--color-content-emphasis)]',
+                      ? 'text-status-success hover:bg-status-success-subtle'
+                      : 'text-status-danger hover:bg-status-danger-subtle'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
               )}
             >
               <Icon size={13} />
