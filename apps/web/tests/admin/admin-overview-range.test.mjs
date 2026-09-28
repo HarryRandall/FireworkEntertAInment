@@ -96,7 +96,8 @@ test('admin overview chart buckets follow the selected range window', () => {
 test('admin overview layout avoids narrow-width overflow', () => {
   const page = read('app/(admin)/admin/page.tsx');
   const charts = read('app/(admin)/admin/_components/AdminOverviewCharts.tsx');
-  const skeleton = read('ui/shell/RouteSkeletons.tsx');
+  const skeleton =
+    read('ui/shell/RouteSkeletons.tsx') + read('app/(admin)/_components/AdminSkeletons.tsx');
 
   assert.doesNotMatch(page, /title: 'Users'/);
   assert.doesNotMatch(page, /TabsTrigger value="users"/);

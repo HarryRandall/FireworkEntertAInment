@@ -1,6 +1,6 @@
 /** Loading skeleton for the admin style-default editor. */
 
-import { AdminStyleDefaultEditorSkeleton } from '@/ui/shell/RouteSkeletons';
+import { AdminStyleDefaultEditorSkeleton } from '@/app/(admin)/_components/AdminSkeletons';
 
 export default function AdminStyleDefaultEditorLoading() {
   return (

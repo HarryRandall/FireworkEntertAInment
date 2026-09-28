@@ -1,6 +1,6 @@
 /** Loading skeleton for the admin catalogue list. */
 
-import { AdminTableRouteSkeleton } from '@/ui/shell/RouteSkeletons';
+import { AdminTableRouteSkeleton } from '@/app/(admin)/_components/AdminSkeletons';
 
 export default function AdminCatalogueLoading() {
   return (

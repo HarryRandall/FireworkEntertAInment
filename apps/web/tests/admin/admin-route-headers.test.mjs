@@ -25,7 +25,9 @@ test('admin route pages do not render page header bands', () => {
 });
 
 test('shared loading skeletons do not include the old admin route header band', () => {
-  const source = readFileSync(join(root, 'ui/shell/RouteSkeletons.tsx'), 'utf8');
+  const source =
+    readFileSync(join(root, 'ui/shell/RouteSkeletons.tsx'), 'utf8') +
+    readFileSync(join(root, 'app/(admin)/_components/AdminSkeletons.tsx'), 'utf8');
 
   assert.doesNotMatch(source, /function AdminRouteHeaderSkeleton/);
   assert.doesNotMatch(source, /<AdminRouteHeaderSkeleton/);

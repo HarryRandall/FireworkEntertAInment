@@ -184,8 +184,10 @@ test('base effects and style defaults both use renderer preview card grids', () 
 });
 
 test('admin table loading footer mirrors the compact pagination controls', () => {
-  const source = readFileSync(join(root, 'ui/shell/RouteSkeletons.tsx'), 'utf8');
-  const start = source.indexOf('function AdminTablePaginationSkeleton()');
+  const source =
+    readFileSync(join(root, 'ui/shell/RouteSkeletons.tsx'), 'utf8') +
+    readFileSync(join(root, 'app/(admin)/_components/AdminSkeletons.tsx'), 'utf8');
+  const start = source.indexOf('function TablePaginationSkeleton()');
   const end = source.indexOf('function getTableSkeletonCellClass', start);
   const paginationSkeleton = source.slice(start, end);
 

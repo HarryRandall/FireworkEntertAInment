@@ -284,7 +284,8 @@ test('shader-heavy app routes use neutral loading skeletons', () => {
   assert.match(libraryPage, /LibraryCardsSkeleton/);
   assert.doesNotMatch(libraryPage, /ShaderCover|shaderCoverGradient|shaderCoverFromSeed/);
 
-  const routeSkeletons = read('ui/shell/RouteSkeletons.tsx');
+  const routeSkeletons =
+    read('ui/shell/RouteSkeletons.tsx') + read('app/(admin)/_components/AdminSkeletons.tsx');
   const start = routeSkeletons.indexOf('function ExploreCardSkeleton(');
   const end = routeSkeletons.indexOf('/** Skeleton for the `/admin`', start);
   const librarySkeleton = routeSkeletons.slice(start, end);

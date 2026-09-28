@@ -8,7 +8,7 @@ import {
   AdminUserActivitySkeleton,
   AdminUserPermissionsSkeleton,
   AdminUserRoleSkeleton,
-} from '@/ui/shell/RouteSkeletons';
+} from '@/app/(admin)/_components/AdminSkeletons';
 import { Badge } from '@/ui/patterns/Badge';
 import { Card } from '@/ui/patterns/Card';
 import { GeneratedAvatar } from '@/ui/patterns/GeneratedAvatar';

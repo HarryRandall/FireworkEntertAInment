@@ -186,7 +186,8 @@ test('multishot timeline keeps clips on explicit expandable tracks', () => {
 test('multishot preview uses shared admin transport fullscreen and loading chrome', () => {
   const editor = read('app/(admin)/admin/multishots/[id]/_components/MultishotEditor.tsx');
   const loading = read('app/(admin)/admin/multishots/[id]/loading.tsx');
-  const routeSkeletons = read('ui/shell/RouteSkeletons.tsx');
+  const routeSkeletons =
+    read('ui/shell/RouteSkeletons.tsx') + read('app/(admin)/_components/AdminSkeletons.tsx');
   const previewStage = editor.slice(
     editor.indexOf('function PreviewStage('),
     editor.indexOf('// --- Timeline'),
