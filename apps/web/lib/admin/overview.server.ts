@@ -36,7 +36,7 @@ type AnalysisRow = Pick<
 
 type CueRow = Pick<Database['public']['Tables']['show_timeline_items']['Row'], 'created_at'>;
 
-export type AdminOverviewShowMetric = {
+type AdminOverviewShowMetric = {
   id: string;
   title: string;
   slug: string;
@@ -51,7 +51,7 @@ export type AdminOverviewShowMetric = {
   location: string | null;
 };
 
-export type AdminOverviewAnalysisMetric = {
+type AdminOverviewAnalysisMetric = {
   id: string;
   status: string;
   createdAt: string;
@@ -59,7 +59,7 @@ export type AdminOverviewAnalysisMetric = {
   runtimeMs: number | null;
 };
 
-export type AdminOverviewCueMetric = {
+type AdminOverviewCueMetric = {
   createdAt: string;
 };
 

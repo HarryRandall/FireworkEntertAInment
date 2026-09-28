@@ -68,7 +68,7 @@ export type DashboardSummary = WorkspaceSummary & {
   communityTemplates: TemplateSummaryCard[];
 };
 
-export const PALETTE_HEX: Record<string, string> = {
+const PALETTE_HEX: Record<string, string> = {
   gold: '#EFB93F',
   silver: '#C9CDD3',
   emerald: '#2EC487',
@@ -103,7 +103,7 @@ function pickPaletteNames(seed: string): [string, string, string] {
   return [names[0] ?? 'silver', names[1] ?? 'blue', names[2] ?? 'emerald'];
 }
 
-export function buildVisualPalette(seed: string): VisualPalette {
+function buildVisualPalette(seed: string): VisualPalette {
   const names = pickPaletteNames(seed || 'showcrafter');
   return {
     names,
@@ -115,7 +115,7 @@ export function buildVisualPalette(seed: string): VisualPalette {
   };
 }
 
-export function buildEnergySeries(seed: string, cueCount: number, buckets = 48): number[] {
+function buildEnergySeries(seed: string, cueCount: number, buckets = 48): number[] {
   const hash = hashString(seed || 'showcrafter');
   const phase = (hash % 360) * (Math.PI / 180);
   const density = Math.min(0.36, Math.max(0.06, cueCount / 180));

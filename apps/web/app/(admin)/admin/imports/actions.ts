@@ -34,10 +34,8 @@ import { requirePermission } from '@/lib/access/current-profile.server';
 import {
   DEFAULT_OPENROUTER_MODEL,
   IMPORT_VIDEO_BUCKET,
-  ImportedFireworkSpecSchema,
   MAX_IMPORT_VIDEO_SECONDS,
   OPENROUTER_MODEL_OPTIONS,
-  type ImportedFireworkSpec,
 } from '@/lib/firework-import/jobs';
 import {
   IMPORT_RECONSTRUCTION_VALIDATOR_VERSION,
@@ -130,14 +128,6 @@ const RefinementSchema = z.object({
 const SelectImportCandidateSchema = z.object({
   id: z.string().uuid(),
   candidateId: z.string().uuid(),
-});
-
-const ManualDraftSchema = z.object({
-  id: z.string().uuid(),
-  name: z.string().trim().min(1).max(180),
-  description: z.string().trim().max(1200).optional(),
-  durationSeconds: z.coerce.number().min(0.1).max(MAX_IMPORT_VIDEO_SECONDS),
-  spec: z.string().trim().min(2).max(20_000),
 });
 
 const ApproveImportSchema = z.object({
@@ -320,48 +310,6 @@ async function verifyCallerOwnedUploadObject(
   }
   const exists = (data ?? []).some((item) => item.name === objectName);
   return exists ? null : 'Uploaded video was not found in storage. Upload it again.';
-}
-
-// ===========================================================================
-// 3. Generic import-job CRUD
-// ===========================================================================
-
-/**
- * Create a manual import-job row (no media upload). Used by the admin imports
- * page for non-video sources like glossaries and supplier stock CSVs.
- */
-export async function createImportJobAction(formData: FormData): Promise<void> {
-  const admin = await requirePermission('admin.manage_imports');
-  if (!admin) return;
-  const parsed = ImportJobSchema.safeParse({
-    kind: formData.get('kind'),
-    sourceName: formData.get('sourceName'),
-    sourceUrl: formData.get('sourceUrl') ?? '',
-    status: formData.get('status') ?? 'draft',
-    rowCount: formData.get('rowCount') ?? '',
-  });
-  if (!parsed.success) return console.error(firstError(parsed.error));
-  if (parsed.data.kind === 'firework_video') {
-    console.error('[createImportJobAction] video imports require the guarded upload workflow.');
-    return;
-  }
-
-  const rowCount = typeof parsed.data.rowCount === 'number' ? parsed.data.rowCount : null;
-  const supabase = createClient(await cookies());
-  const { error } = await supabase.from('import_jobs').insert({
-    kind: parsed.data.kind,
-    source_name: parsed.data.sourceName,
-    source_url: parsed.data.sourceUrl || null,
-    status: parsed.data.status,
-    row_count: rowCount,
-    created_by: admin.id,
-  });
-  if (error) {
-    console.error('[createImportJobAction] failed:', error);
-    return;
-  }
-  await invalidateAdminImportsCache();
-  revalidatePath('/admin/imports');
 }
 
 // ===========================================================================
@@ -558,81 +506,6 @@ export async function selectImportCandidateAction(
   await invalidateAdminImportsCache();
   revalidatePath(`/admin/imports/${parsed.data.id}`);
   return { ok: true };
-}
-
-/**
- * Persist a manual edit to the draft spec. Validated through
- * {@link ImportedFireworkSpecSchema} so we never store malformed JSON.
- */
-export async function updateImportDraftSpecAction(formData: FormData): Promise<void> {
-  const admin = await requirePermission('admin.manage_imports');
-  if (!admin) return;
-  const parsed = ManualDraftSchema.safeParse({
-    id: formData.get('id'),
-    name: formData.get('name'),
-    description: formData.get('description') ?? '',
-    durationSeconds: formData.get('durationSeconds'),
-    spec: formData.get('spec') ?? '',
-  });
-  if (!parsed.success) return console.error(firstError(parsed.error));
-
-  const supabase = createClient(await cookies());
-  const { data: job, error: jobError } = await supabase
-    .from('import_jobs')
-    .select('kind')
-    .eq('id', parsed.data.id)
-    .maybeSingle();
-  if (jobError || !job) {
-    console.error('[updateImportDraftSpecAction] import lookup failed:', jobError);
-    return;
-  }
-  if (job.kind === 'firework_video') {
-    console.error(
-      '[updateImportDraftSpecAction] renderer-native video candidates cannot be edited as legacy drafts.',
-    );
-    return;
-  }
-
-  let specJson: unknown;
-  try {
-    specJson = JSON.parse(parsed.data.spec);
-  } catch (error) {
-    console.error('[updateImportDraftSpecAction] invalid spec JSON:', error);
-    return;
-  }
-
-  const result = ImportedFireworkSpecSchema.safeParse({
-    name: parsed.data.name,
-    description: parsed.data.description || null,
-    durationSeconds: parsed.data.durationSeconds,
-    confidence: 0.85,
-    spec: specJson,
-  });
-  if (!result.success) {
-    console.error('[updateImportDraftSpecAction] invalid spec:', result.error);
-    return;
-  }
-  const spec: ImportedFireworkSpec = result.data;
-
-  const { error } = await supabase.from('import_outputs').insert({
-    import_job_id: parsed.data.id,
-    output_type: 'draft_spec',
-    payload: {
-      source: 'manual_adjustment',
-      adjustedBy: admin.id,
-      spec,
-    } as Json,
-  });
-  if (error) {
-    console.error('[updateImportDraftSpecAction] failed:', error);
-    return;
-  }
-  await supabase
-    .from('import_jobs')
-    .update({ status: 'needs_review', processing_progress: 100 })
-    .eq('id', parsed.data.id);
-  await invalidateAdminImportsCache();
-  revalidatePath(`/admin/imports/${parsed.data.id}`);
 }
 
 /**

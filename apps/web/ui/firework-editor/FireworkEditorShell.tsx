@@ -24,7 +24,7 @@ import {
 import { RendererPartsTree } from './RendererPartsTree';
 import { RendererDiagnostics, type EditorRenderDiagnostics } from './RendererDiagnostics';
 
-export type FireworkEditorShellChip = {
+type FireworkEditorShellChip = {
   label: string;
   value: string | null;
   icon?: LucideIcon;

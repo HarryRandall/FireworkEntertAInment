@@ -105,7 +105,7 @@ function cadenceFit(
   return weight ? clamp(total / weight) : null;
 }
 
-export function buildAssortmentMusicProfile(
+function buildAssortmentMusicProfile(
   items: readonly AssortmentMusicItem[],
   profiles: ProductTimingProfiles,
 ) {

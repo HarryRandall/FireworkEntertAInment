@@ -199,7 +199,7 @@ export function Inspector({
   );
 }
 
-export function AnglePlaneControl({
+function AnglePlaneControl({
   label,
   icon,
   value,
@@ -296,7 +296,7 @@ export function AnglePlaneControl({
   );
 }
 
-export function FireworkPicker({
+function FireworkPicker({
   value,
   specs,
   onChange,
@@ -405,7 +405,7 @@ export function FireworkPicker({
   );
 }
 
-export function FireworkDetails({ spec }: { spec: FireworkSpecification | undefined }) {
+function FireworkDetails({ spec }: { spec: FireworkSpecification | undefined }) {
   if (!spec) return null;
   const palette = fireworkPaletteOf(spec);
 

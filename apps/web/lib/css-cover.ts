@@ -250,7 +250,7 @@ export function randomCssCover(): CssCover {
 }
 
 /** A stable CSS cover derived from any string (e.g. a template id). */
-export function cssCoverFromSeed(seed: string): CssCover {
+function cssCoverFromSeed(seed: string): CssCover {
   return buildCover(mulberry32(hashString(seed)));
 }
 

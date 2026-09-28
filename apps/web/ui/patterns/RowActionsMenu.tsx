@@ -12,7 +12,7 @@ import {
 } from '@/ui/primitives/dropdown-menu';
 import { cn } from '@/lib/utils';
 
-export type RowAction = {
+type RowAction = {
   label: string;
   icon?: ReactNode;
   onSelect: () => void;

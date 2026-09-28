@@ -141,9 +141,8 @@ export type ImportEngineMetricSummary = {
   }>;
 };
 
-export const IMPORT_ENGINE_PUBLICATION_SCORE_THRESHOLD = 0.78;
-export const IMPORT_ENGINE_RENDER_VALIDATOR_VERSION =
-  'showcrafter.engine-render-publication.v1' as const;
+const IMPORT_ENGINE_PUBLICATION_SCORE_THRESHOLD = 0.78;
+const IMPORT_ENGINE_RENDER_VALIDATOR_VERSION = 'showcrafter.engine-render-publication.v1' as const;
 const IMPORT_ENGINE_RENDER_RESULT_SCHEMA_VERSION = 'showcrafter.import-render-result.v1';
 const IMPORT_ENGINE_RENDER_HARNESS_VERSION = 'showcrafter.import-render-harness.v1';
 
@@ -160,7 +159,7 @@ export function isRunOwnedImportEngineReviewVideoPath(
   return Boolean(match && match[2].toLowerCase() === runId.toLowerCase());
 }
 
-export type ImportEnginePublicationEvidence = {
+type ImportEnginePublicationEvidence = {
   validatorVersion: typeof IMPORT_ENGINE_RENDER_VALIDATOR_VERSION;
   canonicalEvidence: Record<string, unknown>;
   metrics: ImportEngineMetricSummary;

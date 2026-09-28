@@ -16,7 +16,7 @@ const FIREWORK_SLUG_ALIASES: Record<string, string> = {
   willow: 'willow-gold',
 };
 
-export function toTemplateReplayCue(
+function toTemplateReplayCue(
   cue: ShowTemplateCue,
   index: number,
   specBySlug: Map<string, FireworkSpecification>,

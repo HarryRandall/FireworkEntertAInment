@@ -10,7 +10,7 @@ import { createClient } from '@/lib/supabase/server';
 
 export const PASSWORD_RECOVERY_COOKIE = 'showcrafter_password_recovery';
 export const PASSWORD_RECOVERY_TOKEN_COOKIE = 'showcrafter_password_recovery_token';
-export const PASSWORD_RECOVERY_TTL_SECONDS = PASSWORD_RECOVERY_PROOF_TTL_SECONDS;
+const PASSWORD_RECOVERY_TTL_SECONDS = PASSWORD_RECOVERY_PROOF_TTL_SECONDS;
 
 type CookieStore = Awaited<ReturnType<typeof cookies>>;
 

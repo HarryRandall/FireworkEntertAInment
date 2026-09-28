@@ -59,19 +59,6 @@ export const getDashboardSummary = cache(async (): Promise<DashboardSummary> => 
   return buildDashboardSummary(shows, templates);
 });
 
-export const getDashboardSummaryWithTemplates = cache(
-  async (): Promise<{
-    summary: DashboardSummary;
-    templates: ShowTemplateSummary[];
-  }> => {
-    const [shows, templates] = await Promise.all([listShowsForCurrentUser(), listShowTemplates()]);
-    return {
-      summary: buildDashboardSummary(shows, templates),
-      templates,
-    };
-  },
-);
-
 export async function getWorkspaceSummary(): Promise<WorkspaceSummary> {
   const userId = await getCurrentUserId();
   if (!userId) return EMPTY_WORKSPACE_SUMMARY;

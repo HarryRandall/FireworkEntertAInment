@@ -43,7 +43,7 @@ import { isRecord } from '@/lib/utils';
 export type AdminFireworkCardPreviewKind = Exclude<FireworkCardPreviewKind, 'catalogue'>;
 export type AdminFireworkCardPreviewSourceKind = AdminFireworkCardPreviewKind | 'style-default';
 
-export const FIREWORK_CARD_PREVIEW_MAX_CUES = 80;
+const FIREWORK_CARD_PREVIEW_MAX_CUES = 80;
 
 const PREVIEW_COLOR = '#22d3ee';
 const PREVIEW_LEAD_SECONDS = 0.3;

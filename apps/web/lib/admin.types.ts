@@ -182,22 +182,6 @@ export type AdminStyleDefaultDetail = AdminStyleDefaultSummary & {
   history: AdminEditorVersion[];
 };
 
-export type AdminLinkedProduct = {
-  id: string;
-  partNumber: string;
-  name: string;
-  manufacturer: string | null;
-  fireworkType: string | null;
-  durationSeconds: number | null;
-  shots: {
-    id: string;
-    shotIndex: number;
-    timeOffsetSeconds: number;
-    panDegrees: number;
-    caliber: string | null;
-  }[];
-};
-
 export type AdminEffectSummary = {
   renderDiagnostics: RenderDiagnostic[];
   id: string;
@@ -338,7 +322,7 @@ export type AdminShowPresetSummary = ShowTemplate & {
   resolvableCueCount: number;
 };
 
-export type AdminShowPresetCatalogueItem = {
+type AdminShowPresetCatalogueItem = {
   id: string;
   slug: string;
   name: string;

@@ -9,7 +9,7 @@ type QualityCue = {
   tube: 0 | 1 | 2;
 };
 
-export type ChoreographyIssue =
+type ChoreographyIssue =
   | { kind: 'missing_section'; detail: string; hard: false }
   | { kind: 'long_gap'; detail: string; hard: false }
   | { kind: 'weak_strong_moments'; detail: string; hard: false }

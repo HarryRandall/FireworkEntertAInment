@@ -56,6 +56,9 @@ jobs:
       - name: Run lint
         run: pnpm lint
 
+      - name: Check for unused files and exports
+        run: pnpm knip
+
       - name: Run typecheck
         run: pnpm typecheck
 

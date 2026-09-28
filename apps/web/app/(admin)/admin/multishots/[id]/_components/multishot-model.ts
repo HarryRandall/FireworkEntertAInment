@@ -14,7 +14,7 @@ export const PX_PER_SECOND = 96;
 
 export const MIN_CLIP_PX = 46;
 
-export const MIN_TIMELINE_TRACK_COUNT = 4;
+const MIN_TIMELINE_TRACK_COUNT = 4;
 
 export const TIMELINE_TRACK_HEIGHT_PX = 48;
 
@@ -24,7 +24,7 @@ export const TIMELINE_CLIP_INSET_PX = 5;
 
 export const MIN_TIMELINE_SECONDS = 6;
 
-export const DEFAULT_FIREWORK_DURATION = 2.4;
+const DEFAULT_FIREWORK_DURATION = 2.4;
 
 export const SAVE_DEBOUNCE_MS = 650;
 
@@ -32,9 +32,9 @@ export const SCRUB_COMMIT_MS = 60;
 
 export const PREVIEW_TRANSPORT_IDLE_MS = 2000;
 
-export const INSPECTOR_RAIL_WIDTH_PX = 340;
+const INSPECTOR_RAIL_WIDTH_PX = 340;
 
-export const INSPECTOR_RAIL_GAP_PX = 20;
+const INSPECTOR_RAIL_GAP_PX = 20;
 
 export const INSPECTOR_RENDER_OVERSCAN_PX = INSPECTOR_RAIL_WIDTH_PX + INSPECTOR_RAIL_GAP_PX;
 
@@ -54,7 +54,7 @@ export const TILT_PRESETS = [
   { value: 50, label: 'F 50°', title: 'Deep front tilt' },
 ];
 
-export const SHOT_SELECTION_KEEP_SELECTOR = [
+const SHOT_SELECTION_KEEP_SELECTOR = [
   '[data-preserve-shot-selection]',
   '[data-slot="select-content"]',
   '[data-slot="select-item"]',
@@ -179,7 +179,7 @@ export function formatTimelineTimestamp(seconds: number): string {
   return `${minutes}:${wholeSeconds}.${tenths}`;
 }
 
-export const GUIDE_GRAVITY = -9.82;
+const GUIDE_GRAVITY = -9.82;
 
 export function burstCentre(
   spec: FireworkSpecification | undefined,

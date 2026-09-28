@@ -16,7 +16,7 @@
  * `global: { fetch }`.
  */
 
-export function createSupabaseFetch(timeoutMs = 8_000) {
+function createSupabaseFetch(timeoutMs = 8_000) {
   return async function supabaseFetch(
     input: RequestInfo | URL,
     init?: RequestInit,

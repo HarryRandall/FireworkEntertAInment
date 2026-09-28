@@ -184,15 +184,6 @@ export function formatTotal(cents: number): string {
   })}`;
 }
 
-export function formatRelativeDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString(undefined, {
-    month: 'short',
-    day: '2-digit',
-    year: 'numeric',
-  });
-}
-
 export function formatStableDateTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';

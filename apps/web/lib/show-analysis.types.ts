@@ -9,7 +9,7 @@
 /** Lifecycle state of an analyser run. */
 export type AnalysisStatus = 'running' | 'completed' | 'failed';
 
-export type AnalyserEnergyPoint = {
+type AnalyserEnergyPoint = {
   time: number;
   energy: number;
 };
@@ -39,7 +39,7 @@ export type AnalyserBuildup = {
   energy_rise: number;
 };
 
-export type AnalyserFireworkCue = {
+type AnalyserFireworkCue = {
   time: number;
   end?: number;
   effect: string;
@@ -55,7 +55,7 @@ export type AnalyserFireworkCue = {
   genre_hint?: string;
 };
 
-export type AnalyserTimingBreakdown = {
+type AnalyserTimingBreakdown = {
   download_ms: number;
   decode_ms: number;
   beat_ms: number;
@@ -67,13 +67,13 @@ export type AnalyserTimingBreakdown = {
   total_ms: number;
 };
 
-export type AnalyserAnalysisMeta = {
+type AnalyserAnalysisMeta = {
   mode: 'fast' | string;
   runner_version: string;
   timings_ms: AnalyserTimingBreakdown;
 };
 
-export type AnalyserMusicProfile = {
+type AnalyserMusicProfile = {
   genre_hint?: string;
   key_signature?: {
     root?: string;
@@ -94,7 +94,7 @@ export type AnalyserMusicProfile = {
   };
 };
 
-export type AnalyserShowPersonality = {
+type AnalyserShowPersonality = {
   preset?: string;
   blend_weights?: {
     user: number;
@@ -111,12 +111,12 @@ export type AnalyserShowPersonality = {
   genre_hint?: string;
 };
 
-export type AnalyserFinaleWindow = {
+type AnalyserFinaleWindow = {
   start: number;
   end: number;
 };
 
-export type AnalyserAnchorWindow = {
+type AnalyserAnchorWindow = {
   type: 'climax' | 'buildup' | string;
   anchor_time: number;
   start: number;
@@ -125,7 +125,7 @@ export type AnalyserAnchorWindow = {
   energy_rise?: number;
 };
 
-export type AnalyserDerivedFeatures = {
+type AnalyserDerivedFeatures = {
   finale_window?: AnalyserFinaleWindow | null;
   quietest_section_index?: number | null;
   highest_energy_section_index?: number | null;

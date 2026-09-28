@@ -243,7 +243,7 @@ export function Timeline({
   );
 }
 
-export function ShotClip({
+function ShotClip({
   shot,
   spec,
   duration,

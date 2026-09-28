@@ -7,15 +7,10 @@ import { clamp } from '@/lib/utils';
  * Pure module: no React, no DOM. Safe to import on the server.
  */
 
-export type ShaderCoverKind =
-  | 'grain-gradient'
-  | 'mesh-gradient'
-  | 'warp'
-  | 'simplex-noise'
-  | 'god-rays';
+type ShaderCoverKind = 'grain-gradient' | 'mesh-gradient' | 'warp' | 'simplex-noise' | 'god-rays';
 
-export type WarpShape = 'checks' | 'stripes' | 'edge';
-export type GrainShape = 'wave' | 'dots' | 'truchet' | 'corners' | 'ripple' | 'blob' | 'sphere';
+type WarpShape = 'checks' | 'stripes' | 'edge';
+type GrainShape = 'wave' | 'dots' | 'truchet' | 'corners' | 'ripple' | 'blob' | 'sphere';
 
 export type ShaderCover = {
   kind: ShaderCoverKind;
@@ -169,7 +164,7 @@ function normaliseCoverColor(color: string): string {
   return hslToHex(hue, saturation, lightness);
 }
 
-export function normaliseCoverColors(colors: string[]): string[] {
+function normaliseCoverColors(colors: string[]): string[] {
   const normalised = colors
     .filter((color) => HEX_RE.test(color))
     .map((color) => normaliseCoverColor(color));
@@ -232,11 +227,6 @@ function buildCover(rng: Rng): ShaderCover {
     proportion: between(rng, 0.08, 0.88),
     swirlIterations: intBetween(rng, 10, 20),
   };
-}
-
-/** A fresh, fully random cover. Use at show-creation time. */
-export function randomShaderCover(): ShaderCover {
-  return buildCover(mulberry32((Math.random() * 0xffffffff) >>> 0));
 }
 
 /** A stable cover derived from any string (e.g. a template id). */

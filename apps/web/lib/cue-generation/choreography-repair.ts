@@ -4,9 +4,9 @@ import type { ChoreographyScore } from './quality';
 export type ChoreographyPlanner = GenerationMode | 'beat';
 type Candidate<T> = { cues: T[]; quality: ChoreographyScore; planner: ChoreographyPlanner };
 
-export const MUSIC_REPAIR_TRIGGERS = { anchorAccuracy: 0.8, cadenceScore: 0.5 } as const;
+const MUSIC_REPAIR_TRIGGERS = { anchorAccuracy: 0.8, cadenceScore: 0.5 } as const;
 
-export function choreographyNeedsRepair(quality: ChoreographyScore): boolean {
+function choreographyNeedsRepair(quality: ChoreographyScore): boolean {
   return (
     quality.issues.some((issue) => issue.kind !== 'unused_launch_position') ||
     (quality.musicSync?.anchorAccuracy != null &&

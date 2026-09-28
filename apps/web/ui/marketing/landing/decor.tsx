@@ -126,25 +126,6 @@ export function Underline({
   );
 }
 
-/* ---------- Avatar (initials) ---------- */
-export function Avatar({ name, tone = 'var(--show-gold)' }: { name: string; tone?: string }) {
-  const initials = name
-    .split(' ')
-    .map((w) => w[0])
-    .slice(0, 2)
-    .join('');
-  return (
-    <span
-      className="inline-flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-sm font-semibold text-white"
-      style={{
-        background: `linear-gradient(135deg, color-mix(in srgb, ${tone} 70%, black), ${tone})`,
-      }}
-    >
-      {initials}
-    </span>
-  );
-}
-
 /* ---------- Palette dots ---------- */
 export function PaletteDots({ palette }: { palette: string[] }) {
   return (

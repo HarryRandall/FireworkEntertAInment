@@ -18,11 +18,11 @@ export const TIMELINE_INSET_PX = 2;
 
 export const MIN_TIMELINE_SECONDS = 10;
 
-export const DEFAULT_CUE_DURATION_SECONDS = 2.4;
+const DEFAULT_CUE_DURATION_SECONDS = 2.4;
 
-export const MAX_TIMELINE_SECONDS = 60 * 60;
+const MAX_TIMELINE_SECONDS = 60 * 60;
 
-export const FIREWORK_SLUG_ALIASES: Record<string, string> = {
+const FIREWORK_SLUG_ALIASES: Record<string, string> = {
   chrysanthemum: 'gold-chrysanthemum',
   comet: 'comet-gold',
   finale_barrage: 'white-strobe',
@@ -30,7 +30,7 @@ export const FIREWORK_SLUG_ALIASES: Record<string, string> = {
   willow: 'willow-gold',
 };
 
-export type CueEmphasis = 'normal' | 'accent' | 'peak';
+type CueEmphasis = 'normal' | 'accent' | 'peak';
 
 export type LocalCue = {
   uid: string;
@@ -111,7 +111,7 @@ export function buildProductLookup(
   return lookup;
 }
 
-export function resolveProduct(
+function resolveProduct(
   cue: ShowTemplateCue,
   lookup: Map<string, FireworkSpecification>,
 ): FireworkSpecification | null {

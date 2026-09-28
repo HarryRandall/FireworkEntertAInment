@@ -42,7 +42,7 @@ function resolveCueSpecification(
   );
 }
 
-export function selectReferencedShowTemplateSpecifications(
+function selectReferencedShowTemplateSpecifications(
   cues: ShowTemplateCue[],
   specifications: FireworkSpecification[],
 ) {

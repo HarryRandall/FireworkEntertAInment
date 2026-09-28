@@ -28,7 +28,7 @@ import {
   INSPECTOR_RENDER_OVERSCAN_PX,
 } from './multishot-model';
 
-export const LazyFireworkReplayCanvas = dynamic(
+const LazyFireworkReplayCanvas = dynamic(
   () => import('@/ui/replay/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
   { ssr: false, loading: () => <ReplayCanvasSkeleton /> },
 );

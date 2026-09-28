@@ -49,6 +49,10 @@ pnpm test:import-contract
 SHOWCRAFTER_RUN_CROSS_LANGUAGE_CONTRACT=1 services/music-analyser/.venv/bin/python services/music-analyser/tests/test_schema_validation.py
 ```
 
+`pnpm knip` reports unused files, exports and dependencies (CI runs it). Renderer
+fingerprinted sources and generated files are excluded in `knip.json`; exports
+kept only for tests are listed under `ignoreIssues`.
+
 Use `pnpm audit:ui` when adding or moving pages/components. Candidates need review
 before deletion. Check rendered light/dark, mobile and interaction states when
 shared UI behaviour changes. Keep servers stopped while builds replace their

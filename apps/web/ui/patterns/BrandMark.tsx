@@ -7,7 +7,7 @@ type BrandLockupProps = {
   markClassName?: string;
 };
 
-export function BrandMark({ className }: { className?: string }) {
+function BrandMark({ className }: { className?: string }) {
   const id = useId().replaceAll(':', '');
   const greenTrailId = `${id}-green-trail`;
   const blueTrailId = `${id}-blue-trail`;

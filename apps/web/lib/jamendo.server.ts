@@ -586,7 +586,7 @@ export async function getJamendoTrackForImport(trackId: string): Promise<Jamendo
   );
 }
 
-export function isTrustedJamendoAudioUrl(value: string): boolean {
+function isTrustedJamendoAudioUrl(value: string): boolean {
   return isJamendoUrl(value);
 }
 

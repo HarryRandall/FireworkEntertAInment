@@ -1,7 +1,6 @@
 /** Feedback primitives: InlineAlert / EmptyState / Skeleton / ProgressIndicator for status surfaces and loading states. */
 import type { ReactNode } from 'react';
-import { AlertTriangle, CheckCircle2, Info, Loader2 } from 'lucide-react';
-import { Progress } from '@/ui/primitives/progress';
+import { AlertTriangle, CheckCircle2, Info } from 'lucide-react';
 import { Skeleton as ShadcnSkeleton } from '@/ui/primitives/skeleton';
 import { cn } from '@/lib/utils';
 
@@ -131,17 +130,4 @@ export function EmptyNotice({ children, className }: { children: ReactNode; clas
 /** Thin wrapper around the shadcn Skeleton, use for loading placeholders. */
 export function Skeleton({ className }: { className?: string }) {
   return <ShadcnSkeleton className={cn('rounded-md', className)} />;
-}
-
-/** Labelled progress bar, use for determinate progress (upload, import jobs). */
-export function ProgressIndicator({ label, value }: { label: string; value?: number }) {
-  return (
-    <div className="space-y-2" role="status" aria-label={label}>
-      <div className="text-muted-foreground flex items-center gap-2 text-xs">
-        <Loader2 size={14} className="animate-spin motion-reduce:animate-none" aria-hidden="true" />
-        {label}
-      </div>
-      <Progress value={value ?? 42} className="bg-muted [&>div]:bg-primary h-1" />
-    </div>
-  );
 }

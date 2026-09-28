@@ -115,11 +115,7 @@ function oklchColour(hue: number, lightness: number, chroma: number) {
   return `oklch(${lightness} ${chroma} ${hue})`;
 }
 
-export function generatedAvatarInitials(
-  name?: string | null,
-  email?: string | null,
-  fallback = 'SC',
-) {
+function generatedAvatarInitials(name?: string | null, email?: string | null, fallback = 'SC') {
   const source = (name?.trim() || email?.split('@')[0] || fallback).trim();
   const words = source
     .replace(/@.*$/, '')

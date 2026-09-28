@@ -662,58 +662,6 @@ export async function listReplayPreviewCuesForShow(
     .filter((cue) => cue.timeSeconds <= previewWindowSeconds + 0.001);
 }
 
-/**
- * Batched replay-cue loader for listing pages. Fetches one `show_timeline_items`
- * query for every show id and one `catalogue_items` join for the distinct
- * catalogue items, then groups the expanded cues by show id. Replaces the
- * 12-call per-show fan-out that made `/shows` issue up to 24 parallel Supabase
- * requests per page. Returns a map with an entry (possibly empty) for every
- * requested show id.
- */
-export async function listReplayCuesForShows(showIds: string[]): Promise<Map<string, ReplayCue[]>> {
-  const result = new Map<string, ReplayCue[]>();
-  if (showIds.length === 0) return result;
-  const userId = await getCurrentUserId();
-  if (!userId) {
-    for (const id of showIds) result.set(id, []);
-    return result;
-  }
-
-  const uniqueShowIds = [...new Set(showIds)];
-  const supabase = await getServerClient();
-  const { data, error } = await supabase
-    .from('show_timeline_items')
-    .select(SHOW_CUE_SELECT)
-    .in('show_id', uniqueShowIds)
-    .not('time_seconds', 'is', null)
-    .order('time_seconds', { ascending: true })
-    .order('position', { ascending: true });
-  if (error) {
-    if (isSupabaseTransientNetworkError(error)) throw new ShowsNetworkError(error);
-    console.error('[shows.server] listReplayCuesForShows failed:', error);
-    for (const id of uniqueShowIds) result.set(id, []);
-    return result;
-  }
-
-  const rows = (data ?? []) as ReplayCueRow[];
-  const rowsByShowId = new Map<string, ReplayCueRow[]>();
-  for (const id of uniqueShowIds) rowsByShowId.set(id, []);
-  for (const row of rows) {
-    const list = rowsByShowId.get(row.show_id);
-    if (list) list.push(row);
-  }
-
-  const catalogueItemIds = [
-    ...new Set(rows.map((r) => r.catalogue_item_id).filter((id): id is string => id != null)),
-  ];
-  const shotsByCatalogueItem = await fetchShotsByCatalogueItem(supabase, catalogueItemIds);
-
-  for (const showId of uniqueShowIds) {
-    result.set(showId, expandReplayCues(rowsByShowId.get(showId) ?? [], shotsByCatalogueItem));
-  }
-  return result;
-}
-
 /** Per-show shopping list with pricing. Cached with the standard TTL. */
 export async function listShoppingItemsForShow(showId: string): Promise<ShoppingListItem[]> {
   const userId = await getCurrentUserId();

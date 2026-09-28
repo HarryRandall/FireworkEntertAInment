@@ -33,7 +33,7 @@ export const FIREWORK_TYPES: Record<
   },
 };
 
-export function isFireworkTypeKey(value: unknown): value is FireworkTypeKey {
+function isFireworkTypeKey(value: unknown): value is FireworkTypeKey {
   return typeof value === 'string' && (FIREWORK_TYPE_KEYS as readonly string[]).includes(value);
 }
 

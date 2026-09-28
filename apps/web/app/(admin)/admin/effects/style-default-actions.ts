@@ -139,7 +139,7 @@ async function refresh(defaultId?: string) {
   revalidatePath('/admin/fireworks');
 }
 
-export async function createStyleDefault(
+async function createStyleDefault(
   input: z.infer<typeof CreateStyleDefaultSchema>,
 ): Promise<CreateResult> {
   if (!(await requirePermission('admin.manage_catalogue'))) {

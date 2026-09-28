@@ -118,43 +118,6 @@ export function Badge({
   );
 }
 
-type ChoiceChipSize = 'sm' | 'md';
-
-const chipSizeClasses: Record<ChoiceChipSize, string> = {
-  sm: 'h-7 gap-1.5 rounded-md px-2.5 text-xs',
-  md: 'h-8 gap-2 rounded-md px-3 text-sm',
-};
-
-/** Toggleable chip used for inline single-select filters. */
-export function ChoiceChip({
-  selected = false,
-  size = 'sm',
-  className,
-  children,
-  ...rest
-}: React.ComponentPropsWithoutRef<'button'> & {
-  selected?: boolean;
-  size?: ChoiceChipSize;
-}) {
-  return (
-    <button
-      type="button"
-      aria-pressed={selected}
-      className={cn(
-        'focus-visible:ring-ring/50 inline-flex items-center border font-medium transition-colors focus:outline-none focus-visible:ring-3',
-        chipSizeClasses[size],
-        selected
-          ? 'bg-primary text-primary-foreground border-transparent'
-          : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
-        className,
-      )}
-      {...rest}
-    >
-      {children}
-    </button>
-  );
-}
-
 /** Small uppercase eyebrow label, typically rendered above section titles. */
 export function Eyebrow({
   className,

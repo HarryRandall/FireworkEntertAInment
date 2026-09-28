@@ -31,7 +31,7 @@ export const SECTION_ROLES = [
   'finale',
   'outro',
 ] as const;
-export type SectionRole = (typeof SECTION_ROLES)[number];
+type SectionRole = (typeof SECTION_ROLES)[number];
 
 /** How a section moves across launch positions. */
 export const MOTIFS = ['unison', 'mirror', 'alternate', 'chase', 'sweep'] as const;
@@ -39,30 +39,6 @@ export type Motif = (typeof MOTIFS)[number];
 
 /** 0 = every other bar, 1 = every bar, 2 = half bars, 3 = every beat, 4 = beats and off-beats. */
 export type DensityLevel = 0 | 1 | 2 | 3 | 4;
-
-export const COLOUR_FAMILIES = [
-  'red',
-  'green',
-  'blue',
-  'purple',
-  'gold',
-  'white',
-  'silver',
-  'orange',
-  'pink',
-] as const satisfies readonly ColourFamily[];
-
-export const EFFECT_FAMILIES = [
-  'crackle',
-  'strobe',
-  'ring',
-  'crossette',
-  'horsetail',
-  'floral',
-  'falling leaves',
-  'glitter',
-  'willow',
-] as const satisfies readonly EffectFamily[];
 
 /** Analysed section with the context both the prompt and the realiser need. */
 export type PlanSection = {

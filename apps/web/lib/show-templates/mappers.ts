@@ -38,7 +38,7 @@ function unresolvedTemplateCue(index: number, description?: unknown): ShowTempla
 }
 
 /** Parse template cues without hiding malformed stored entries from repair or clone guards. */
-export function parseTemplateCues(value: Json): ShowTemplateCue[] {
+function parseTemplateCues(value: Json): ShowTemplateCue[] {
   if (!Array.isArray(value)) return [];
   return value.map((item, index) => {
     if (!isRecord(item)) return unresolvedTemplateCue(index);

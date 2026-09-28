@@ -13,7 +13,7 @@ export const SHOW_STYLE_KEYS = ['signature', 'cinematic', 'minimalist', 'beat_te
 export type ShowStyleKey = (typeof SHOW_STYLE_KEYS)[number];
 
 /** Which generation path the style uses. */
-export type ShowStyleEngine = 'llm' | 'beat';
+type ShowStyleEngine = 'llm' | 'beat';
 
 export type ShowStyleDefinition = {
   key: ShowStyleKey;
