@@ -799,11 +799,15 @@ export async function generateCuesForShow(params: {
 
   let replacedCount: number | null = null;
   try {
-    const { data, error: replaceError } = await supabase.rpc('replace_show_timeline_items', {
-      p_show_id: showId,
-      p_user_id: userId,
-      p_items: rows as Json,
-    });
+    const { data, error: replaceError } = await supabase.rpc(
+      'replace_generated_show_timeline_items',
+      {
+        p_show_id: showId,
+        p_user_id: userId,
+        p_items: rows as Json,
+        p_lease_token: claim.lease_token,
+      },
+    );
     if (replaceError) {
       const message = `Could not replace generated cues: ${replaceError.message}`;
       timings.dbWriteMs = elapsedMs(dbStart);
