@@ -32,7 +32,7 @@ import { GENERATED_LAUNCH_INTERVAL_SECONDS } from './launch-spacing';
 import { shouldKeepPlannedMoment } from './moment-groups';
 import { recurringMotifIds } from './motifs';
 import type { CueEmphasis, ShowBriefRow } from './schemas';
-import { occupiedLaunchPositions } from './show-options';
+import { isGroundEffect, occupiedLaunchPositions } from './show-options';
 import { asShowStyleKey } from './show-styles';
 
 export type BeatSyncPlanResult = {
@@ -233,6 +233,7 @@ export function planCuesOnBeats(params: {
           product,
           emphasis,
           targetTimeSeconds: impactTimeSeconds,
+          timingProfile: params.timingProfiles?.get(product.id)?.[emphasis],
         });
         if (!timing) continue;
         const occupiedTubes = occupiedLaunchPositions(product, tube, maxTubes);
@@ -695,15 +696,6 @@ function sustainedScore(
     colourFit * 0.5 +
     briefFit * 0.12
   );
-}
-
-function isGroundEffect(product: FireworkSpecification): boolean {
-  const geometry = product.renderDesign?.geometry;
-  if (geometry === 'upward_fan' || geometry === 'roman_candle' || geometry === 'fountain') {
-    return true;
-  }
-  const text = `${product.name} ${product.description ?? ''}`.toLowerCase();
-  return /fountain|gerb|roman candle|mine/.test(text);
 }
 
 function emphasisForTarget(target: BeatMoment, direction: CreativeDirection): CueEmphasis {

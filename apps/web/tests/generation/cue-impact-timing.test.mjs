@@ -56,22 +56,23 @@ test('ground effects launch on impact and impossible opening aerial hits are ski
   assert.equal(scheduleImpactWithLift(Number.NaN, 1), null);
 });
 
-test('direct shells use renderer-matched impacts while multishots anchor their sequence', () => {
+test('every planner lands the first visible burst on the musical time', () => {
   const timing = read('lib/cue-generation/impact-timing.ts');
   const fast = read('lib/cue-generation/fast-planner.ts');
   const beat = read('lib/cue-generation/beat-sync-planner.ts');
-  const runner = read('lib/cue-generation/runner.server.ts');
+  const realiser = read('lib/cue-generation/plan-realiser.ts');
   const prompt = read('lib/cue-generation/prompt.ts');
 
   assert.match(timing, /scaleDesignForCaliber\(compiled, product\.caliber\)/);
   assert.match(timing, /scaleDesignForEmphasis/);
   assert.match(timing, /estimateFireworkLiftTimeSeconds/);
-  assert.match(fast, /scheduleProductForCueSlot/);
-  assert.match(beat, /scheduleProductForCueSlot/);
-  assert.match(runner, /scheduleProductForCueSlot/);
-  assert.match(prompt, /For a direct single shot, t is its visible burst/);
-  assert.match(prompt, /For a multishot, t is the start of its sustained sequence/);
-  assert.doesNotMatch(prompt, /fires it exactly on that beat/);
+  // Multishots launch early by their first child's impact offset.
+  assert.match(timing, /timingProfile\.firstImpactOffsetSeconds/);
+  for (const planner of [fast, beat, realiser]) {
+    assert.match(planner, /scheduleProductForCueSlot\(\{[\s\S]*?timingProfile:/);
+  }
+  // The model never places times; the engine compensates lift.
+  assert.match(prompt, /You do not choose beats, times or launch positions/);
 });
 
 test('the card-preview lead-in cannot leak into full show replay timing', () => {
@@ -172,19 +173,13 @@ test('beat precision honours sparse pacing, palette and requested structural mom
   assert.match(beat, /occupied\.push\(\.\.\.accepted\.windows\)/);
 });
 
-test('LLM generation falls back when validation leaves a visibly thin show', () => {
+test('plan shows fall back to the beat planner only on hard failures', () => {
   const runner = read('lib/cue-generation/runner.server.ts');
 
-  assert.match(runner, /const targetFillRatio = sparseGeneration \? 0\.5 : 0\.75/);
-  assert.match(runner, /estimateAchievableCueCount/);
-  assert.match(runner, /slot\.nearClimax \|\| slot\.emphasis === 'peak'/);
-  assert.match(runner, /simultaneousStrongMoments/);
-  assert.match(runner, /usedTubes\.size < maxTubes/);
-  assert.match(
-    runner,
-    /accepted\.length < minimumViableCount \|\|[\s\S]*missingProtectedSlots\.length > 0 \|\|[\s\S]*missingMultiTubeChoreography/,
-  );
-  assert.match(runner, /LLM did not meet viable show requirements after validation/);
+  // Deliberate lulls are soft issues; only hard ones reject the plan.
+  assert.match(runner, /!checked\.quality\.issues\.some\(\(issue\) => issue\.hard\)/);
+  assert.match(runner, /inspectCandidate\(buildBeatPlan\(\)\.cues, slots\)/);
+  assert.doesNotMatch(runner, /targetFillRatio/);
 });
 
 test('the example minimalist brief produces precise sparse planning with a surprise', () => {

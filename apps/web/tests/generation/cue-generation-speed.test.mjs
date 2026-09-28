@@ -13,7 +13,8 @@ const prompt = readFileSync(join(root, 'lib/cue-generation/prompt.ts'), 'utf8');
 const fastPlanner = readFileSync(join(root, 'lib/cue-generation/fast-planner.ts'), 'utf8');
 const runner = readFileSync(join(root, 'lib/cue-generation/runner.server.ts'), 'utf8');
 const promptConfigs = readFileSync(join(root, 'lib/prompt-configs.server.ts'), 'utf8');
-const schemas = readFileSync(join(root, 'lib/cue-generation/schemas.ts'), 'utf8');
+const showPlan = readFileSync(join(root, 'lib/cue-generation/show-plan.ts'), 'utf8');
+const llmPlan = readFileSync(join(root, 'lib/cue-generation/llm-plan.server.ts'), 'utf8');
 const envExample = readFileSync(join(root, '.env.example'), 'utf8');
 
 test('cue generation defaults to GPT-4.1 Mini via OpenRouter while keeping env override', () => {
@@ -39,7 +40,9 @@ test('cue generation defaults to local fast planning instead of waiting on OpenR
   assert.match(runner, /generationSettings = await getShowCueGenerationSettings\(\)/);
   assert.match(promptConfigs, /getDefaultShowGenerationSettings/);
   assert.match(promptConfigs, /process\.env\.CUE_GENERATION_MODE === 'llm' \? 'llm' : 'fast'/);
-  assert.match(runner, /if \(generationMode === 'fast'\)/);
+  // Fast generation realises the deterministic plan; only 'llm' calls the model.
+  assert.match(runner, /buildDefaultShowPlan\(/);
+  assert.match(runner, /if \(generationMode === 'llm'\)/);
   assert.match(runner, /planCuesFast\(/);
   assert.match(fastPlanner, /export function planCuesFast/);
   assert.match(fastPlanner, /MAX_FAST_CUES = 220/);
@@ -47,18 +50,19 @@ test('cue generation defaults to local fast planning instead of waiting on OpenR
   assert.doesNotMatch(envExample, /CUE_GENERATION_MODE/);
 });
 
-test('cue slot target and response cap stay reduced', () => {
+test('the model reply is one small entry per section', () => {
   assert.match(beatGrid, /const TARGET_SLOTS = 160;/);
   assert.match(beatGrid, /const MAX_TARGET_SLOTS = 220;/);
-  assert.match(prompt, /Constraints: cues\.length 1-360/);
-  assert.match(schemas, /z\.array\(AssignmentSchema\)\.min\(1\)\.max\(360\)/);
-  assert.doesNotMatch(beatGrid, /const TARGET_SLOTS = 240;/);
-  assert.doesNotMatch(schemas, /\.max\(640\)/);
+  assert.match(showPlan, /\.min\(1\)\s*\.max\(64\)/);
+  // Aliases rather than UUIDs keep the reply short and untruncatable.
+  assert.match(prompt, /`p\$\{index \+ 1\}`/);
+  assert.doesNotMatch(showPlan, /\.uuid\(\)/);
+  assert.match(llmPlan, /finish_reason === 'length'/);
 });
 
 test('catalogue prompt projection is compact', () => {
-  assert.match(prompt, /compactText\(product\.description, 140\)/);
-  assert.match(prompt, /Object\.keys\(effects\)\.length/);
+  assert.match(prompt, /compactText\(product\.description, 100\)/);
+  assert.match(prompt, /MAX_PROMPT_PRODUCTS = 120/);
   assert.match(prompt, /selectedFields\?: readonly ProductCatalogueField\[\] \| null/);
   assert.match(prompt, /include\('description'\)/);
   assert.match(prompt, /Catalogue fields sent in this request/);
@@ -72,15 +76,14 @@ test('cue generation emits server timing logs for the critical stages', () => {
   assert.match(runner, /slotCount,/);
   assert.match(runner, /catalogueCount,/);
   assert.match(runner, /acceptedCount,/);
-  assert.match(runner, /droppedCount,/);
   assert.match(runner, /promptBytes,/);
   assert.match(runner, /fastPlanMs:/);
   assert.match(runner, /llmMs:/);
   assert.match(runner, /totalMs:/);
-  assert.match(runner, /const LLM_CUE_TIMEOUT_MS = 25_000/);
-  assert.match(runner, /max_tokens: 3600/);
-  assert.match(runner, /timeout: LLM_CUE_TIMEOUT_MS/);
-  assert.match(runner, /maxRetries: 0/);
+  assert.match(runner, /console\.info\('\[cue-generation\] show plan'/);
+  assert.match(llmPlan, /const LLM_PLAN_TIMEOUT_MS = 75_000/);
+  assert.match(llmPlan, /max_tokens: LLM_PLAN_MAX_TOKENS/);
+  assert.match(llmPlan, /timeout: LLM_PLAN_TIMEOUT_MS/);
 });
 
 test('timeline persistence retries thrown network and timeout failures', () => {

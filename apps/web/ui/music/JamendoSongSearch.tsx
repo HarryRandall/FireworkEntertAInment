@@ -3,10 +3,12 @@
 
 import {
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
   type KeyboardEvent,
+  type MouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 import {
@@ -37,6 +39,7 @@ import {
   type JamendoGenre,
   type JamendoSearchTrack,
 } from '@/lib/music-library.types';
+import { usePreviewAudio, type PreviewState } from '@/ui/music/usePreviewAudio';
 
 const GENRE_LABELS: Record<JamendoGenre, string> = {
   ambient: 'Ambient',
@@ -88,6 +91,15 @@ function responseError(value: unknown, fallback: string): string {
     return value.error;
   }
   return fallback;
+}
+
+/** Parse a JSON body, tolerating HTML error pages from proxies and gateways. */
+async function readJson(res: Response): Promise<unknown> {
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
 }
 
 function clockTime(seconds: number): string {
@@ -157,12 +169,17 @@ export function JamendoSongSearch({
   const [hasMore, setHasMore] = useState(false);
 
   const [importingTrackId, setImportingTrackId] = useState<string | null>(null);
-  const [previewingTrackId, setPreviewingTrackId] = useState<string | null>(null);
-  const [previewLoadingTrackId, setPreviewLoadingTrackId] = useState<string | null>(null);
-  const [previewTime, setPreviewTime] = useState(0);
-  const [previewDuration, setPreviewDuration] = useState(0);
+  const {
+    preview,
+    error: previewError,
+    clearError: clearPreviewError,
+    toggle: togglePreview,
+    stop: stopPreview,
+    seekTo,
+  } = usePreviewAudio();
+  const titleId = useId();
+  const searchInputId = useId();
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const requestTokenRef = useRef(0);
   // Mirror of the visible list so an async "load more" always appends to the
   // latest committed tracks, never a stale closure value.
@@ -195,7 +212,7 @@ export function JamendoSongSearch({
     setTracks([]);
     try {
       const res = await fetch(`${apiEndpoint}?mode=recommend`, { cache: 'no-store' });
-      const value: unknown = await res.json();
+      const value = await readJson(res);
       if (!res.ok)
         throw new Error(responseError(value, 'Recommendations are temporarily unavailable.'));
       if (requestTokenRef.current !== token) return;
@@ -211,23 +228,6 @@ export function JamendoSongSearch({
   useEffect(() => {
     tracksRef.current = tracks;
   }, [tracks]);
-
-  useEffect(
-    () => () => {
-      audioRef.current?.pause();
-      audioRef.current = null;
-    },
-    [],
-  );
-
-  function stopPreview() {
-    audioRef.current?.pause();
-    audioRef.current = null;
-    setPreviewingTrackId(null);
-    setPreviewLoadingTrackId(null);
-    setPreviewTime(0);
-    setPreviewDuration(0);
-  }
 
   async function loadBrowse(
     nextGenre: JamendoGenre | null,
@@ -278,7 +278,7 @@ export function JamendoSongSearch({
       const res = await fetch(`${apiEndpoint}?${params.toString()}`, {
         cache: 'no-store',
       });
-      const value: unknown = await res.json();
+      const value = await readJson(res);
       if (!res.ok) throw new Error(responseError(value, 'Browsing failed. Please try again.'));
       if (requestTokenRef.current !== token) return [];
       const next = tracksFrom(value);
@@ -337,7 +337,7 @@ export function JamendoSongSearch({
       const res = await fetch(`${apiEndpoint}?q=${encodeURIComponent(cleaned)}`, {
         cache: 'no-store',
       });
-      const value: unknown = await res.json();
+      const value = await readJson(res);
       if (!res.ok) throw new Error(responseError(value, 'Song search failed. Please try again.'));
       if (requestTokenRef.current !== token) return;
       setTracks(tracksFrom(value));
@@ -367,78 +367,9 @@ export function JamendoSongSearch({
     if (!hasSearched || mode === 'recommend') void loadBrowse(null, 0, false);
   }
 
-  function togglePreview(track: JamendoSearchTrack) {
-    const current = audioRef.current;
-    if (previewingTrackId === track.trackId && current) {
-      if (!current.paused) {
-        current.pause();
-        setPreviewingTrackId(null);
-      } else {
-        void current.play().catch(() => stopPreview());
-        setPreviewingTrackId(track.trackId);
-      }
-      return;
-    }
-
-    current?.pause();
-    const audio = new Audio(track.previewUrl);
-    audio.preload = 'metadata';
-    audio.onloadedmetadata = () =>
-      setPreviewDuration(Number.isFinite(audio.duration) ? audio.duration : track.durationSeconds);
-    audio.ontimeupdate = () => setPreviewTime(audio.currentTime);
-    audio.onplaying = () => setPreviewLoadingTrackId(null);
-    audio.onended = () => {
-      setPreviewingTrackId(null);
-      setPreviewLoadingTrackId(null);
-      setPreviewTime(0);
-    };
-    audioRef.current = audio;
-    setPreviewTime(0);
-    setPreviewDuration(track.durationSeconds);
-    setPreviewLoadingTrackId(track.trackId);
-    setPreviewingTrackId(track.trackId);
-    void audio.play().catch(() => {
-      stopPreview();
-      setError('The song preview could not start. Try again.');
-    });
-  }
-
-  function seekPreview(fraction: number) {
-    const audio = audioRef.current;
-    if (!audio) return;
-    const total =
-      Number.isFinite(audio.duration) && audio.duration > 0 ? audio.duration : previewDuration;
-    if (!total) return;
-    const next = Math.min(Math.max(fraction, 0), 1) * total;
-    audio.currentTime = next;
-    setPreviewTime(next);
-  }
-
-  function handleScrubberPointer(event: ReactPointerEvent<HTMLDivElement>) {
-    const rect = event.currentTarget.getBoundingClientRect();
-    if (rect.width === 0) return;
-    seekPreview((event.clientX - rect.left) / rect.width);
-  }
-
-  function handleScrubberKey(event: KeyboardEvent<HTMLDivElement>) {
-    const total = previewDuration || 1;
-    if (event.key === 'ArrowRight' || event.key === 'ArrowUp') {
-      event.preventDefault();
-      seekPreview((previewTime + 5) / total);
-    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowDown') {
-      event.preventDefault();
-      seekPreview((previewTime - 5) / total);
-    } else if (event.key === 'Home') {
-      event.preventDefault();
-      seekPreview(0);
-    } else if (event.key === 'End') {
-      event.preventDefault();
-      seekPreview(1);
-    }
-  }
-
   async function selectTrack(track: JamendoSearchTrack) {
     stopPreview();
+    clearPreviewError();
     setImportingTrackId(track.trackId);
     setError(null);
     try {
@@ -472,12 +403,12 @@ export function JamendoSongSearch({
 
   return (
     <section
-      aria-labelledby="jamendo-search-title"
+      aria-labelledby={titleId}
       className="rounded-xl border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-elevated)] p-5 shadow-sm"
     >
       <div className="flex items-center gap-1.5">
         <h3
-          id="jamendo-search-title"
+          id={titleId}
           className="text-base font-semibold text-[color:var(--color-content-emphasis)]"
         >
           Music library
@@ -528,7 +459,10 @@ export function JamendoSongSearch({
       <Dialog
         open={open}
         onOpenChange={(next) => {
-          if (!next) stopPreview();
+          if (!next) {
+            stopPreview();
+            clearPreviewError();
+          }
           setOpen(next);
         }}
       >
@@ -540,12 +474,12 @@ export function JamendoSongSearch({
             </DialogDescription>
 
             <div role="search" className="mt-2 flex gap-2">
-              <label htmlFor="jamendo-song-search" className="sr-only">
+              <label htmlFor={searchInputId} className="sr-only">
                 Search tracks
               </label>
               <div className="relative flex-1">
                 <Input
-                  id="jamendo-song-search"
+                  id={searchInputId}
                   type="search"
                   value={query}
                   maxLength={80}
@@ -567,7 +501,7 @@ export function JamendoSongSearch({
                     type="button"
                     onClick={() => {
                       setQuery('');
-                      document.getElementById('jamendo-song-search')?.focus();
+                      document.getElementById(searchInputId)?.focus();
                     }}
                     aria-label="Clear search"
                     className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--color-content-subtle)] transition-colors hover:text-[color:var(--color-content-emphasis)]"
@@ -624,12 +558,12 @@ export function JamendoSongSearch({
           </DialogHeader>
 
           <div className="overflow-y-auto px-4 py-3">
-            {error ? (
+            {(error ?? previewError) ? (
               <p
                 role="alert"
                 className="mb-3 rounded-lg border border-[color:var(--color-status-danger)]/35 bg-[color-mix(in_srgb,var(--color-status-danger)_7%,transparent)] px-3 py-2 text-xs text-[color:var(--color-status-danger)]"
               >
-                {error}
+                {error ?? previewError}
               </p>
             ) : null}
 
@@ -660,21 +594,12 @@ export function JamendoSongSearch({
                   <TrackRow
                     key={track.trackId}
                     track={track}
-                    previewing={previewingTrackId === track.trackId}
-                    previewLoading={previewLoadingTrackId === track.trackId}
+                    preview={preview?.trackId === track.trackId ? preview : null}
                     importing={importingTrackId === track.trackId}
                     importLocked={importingTrackId !== null}
-                    progress={
-                      previewingTrackId === track.trackId && previewDuration > 0
-                        ? Math.min(previewTime / previewDuration, 1)
-                        : 0
-                    }
-                    previewTime={previewTime}
-                    previewDuration={previewDuration}
                     onTogglePreview={() => togglePreview(track)}
+                    onSeek={seekTo}
                     onSelect={() => void selectTrack(track)}
-                    onScrubberPointer={handleScrubberPointer}
-                    onScrubberKey={handleScrubberKey}
                   />
                 ))}
               </ul>
@@ -685,7 +610,7 @@ export function JamendoSongSearch({
                 <Button
                   type="button"
                   variant="secondary"
-                  onClick={() => void loadBrowse(genre, nextOffset, true, true, 5)}
+                  onClick={() => void loadBrowse(genre, nextOffset, true)}
                   disabled={loadingMore}
                 >
                   {loadingMore ? (
@@ -725,7 +650,7 @@ function GenreChip({
       aria-pressed={active}
       className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
         active
-          ? 'border-[color:var(--primary)] bg-[color:var(--primary)] text-white'
+          ? 'border-primary bg-primary text-primary-foreground'
           : 'border-[color:var(--color-border-default)] text-[color:var(--color-content-subtle)] hover:border-[color:var(--color-border-strong,var(--color-content-subtle))] hover:text-[color:var(--color-content-emphasis)]'
       }`}
     >
@@ -736,56 +661,43 @@ function GenreChip({
 
 function TrackRow({
   track,
-  previewing,
-  previewLoading,
+  preview,
   importing,
   importLocked,
-  progress,
-  previewTime,
-  previewDuration,
   onTogglePreview,
+  onSeek,
   onSelect,
-  onScrubberPointer,
-  onScrubberKey,
 }: {
   track: JamendoSearchTrack;
-  previewing: boolean;
-  previewLoading: boolean;
+  /** Present when this track is the loaded preview, playing or paused. */
+  preview: PreviewState | null;
   importing: boolean;
   importLocked: boolean;
-  progress: number;
-  previewTime: number;
-  previewDuration: number;
   onTogglePreview: () => void;
+  onSeek: (seconds: number) => void;
   onSelect: () => void;
-  onScrubberPointer: (event: ReactPointerEvent<HTMLDivElement>) => void;
-  onScrubberKey: (event: KeyboardEvent<HTMLDivElement>) => void;
 }) {
-  const bars = useMemo(
-    () =>
-      Array.isArray(track.peaks) && track.peaks.length > 0
-        ? track.peaks
-        : waveformBars(track.trackId),
-    [track.peaks, track.trackId],
-  );
+  const active = preview !== null;
+  const playing = preview !== null && preview.status !== 'paused';
+  const loading = preview?.status === 'loading';
 
   return (
     <li>
       <div
         onClick={() => {
-          // Once playing, only the pause button stops it; row clicks never pause.
-          if (!importLocked && !previewing) onTogglePreview();
+          // Row clicks only start a preview; pausing needs the explicit button.
+          if (!importLocked && !active) onTogglePreview();
         }}
         className={`group cursor-pointer rounded-lg border p-2.5 transition-colors ${
-          previewing
+          active
             ? 'border-[color:var(--primary)]/40 bg-[color-mix(in_srgb,var(--primary)_5%,transparent)]'
             : 'border-[color:var(--color-border-subtle)] hover:border-[color:var(--color-border-default)] hover:bg-[color:var(--color-bg-subtle)]'
         }`}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:flex-nowrap">
           <button
             type="button"
-            aria-label={`${previewing ? 'Pause' : 'Preview'} ${track.title} by ${track.artist}`}
+            aria-label={`${playing ? 'Pause' : 'Play'} ${track.title} by ${track.artist}`}
             onClick={(event) => {
               event.stopPropagation();
               if (!importLocked) onTogglePreview();
@@ -807,19 +719,19 @@ function TrackRow({
               </span>
             )}
             <span
-              className={`absolute inset-0 flex items-center justify-center text-white transition-opacity ${
-                previewing
-                  ? 'bg-black/45 opacity-100'
-                  : 'bg-black/45 opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'
+              className={`absolute inset-0 flex items-center justify-center bg-black/45 text-white transition-opacity ${
+                active
+                  ? 'opacity-100'
+                  : 'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100'
               }`}
             >
-              {previewLoading ? (
+              {loading ? (
                 <Loader2
                   size={16}
                   className="animate-spin motion-reduce:animate-none"
                   aria-hidden="true"
                 />
-              ) : previewing ? (
+              ) : playing ? (
                 <Pause size={16} fill="currentColor" aria-hidden="true" />
               ) : (
                 <Play size={16} fill="currentColor" aria-hidden="true" />
@@ -827,7 +739,7 @@ function TrackRow({
             </span>
           </button>
 
-          <div className="w-52 shrink-0">
+          <div className="min-w-0 flex-1 sm:w-52 sm:flex-none">
             <div className="flex items-center gap-1">
               <span className="truncate text-sm font-medium text-[color:var(--color-content-emphasis)]">
                 {track.title}
@@ -857,53 +769,6 @@ function TrackRow({
             </p>
           </div>
 
-          <div
-            {...(previewing
-              ? {
-                  role: 'slider',
-                  tabIndex: 0,
-                  'aria-label': `Seek preview of ${track.title}`,
-                  'aria-valuemin': 0,
-                  'aria-valuemax': Math.round(previewDuration),
-                  'aria-valuenow': Math.round(previewTime),
-                  'aria-valuetext': `${clockTime(previewTime)} of ${clockTime(previewDuration)}`,
-                  onPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => {
-                    event.stopPropagation();
-                    onScrubberPointer(event);
-                  },
-                  onKeyDown: onScrubberKey,
-                }
-              : { 'aria-hidden': true })}
-            className={`relative hidden h-8 min-w-0 flex-1 sm:block ${
-              previewing ? 'cursor-pointer touch-none select-none' : 'opacity-70'
-            }`}
-          >
-            <div className="flex h-full items-center gap-[2px]">
-              {bars.map((height, index) => (
-                <span
-                  key={index}
-                  className="min-w-[2px] flex-1 rounded-full bg-[color:var(--color-border-default)] group-hover:bg-[color:var(--color-content-subtle)]/60"
-                  style={{ height: `${Math.round(height * 100)}%` }}
-                />
-              ))}
-            </div>
-            {previewing ? (
-              <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0 flex h-full items-center gap-[2px] motion-safe:transition-[clip-path] motion-safe:duration-150 motion-safe:ease-linear"
-                style={{ clipPath: `inset(0 ${Math.max(0, 100 - progress * 100)}% 0 0)` }}
-              >
-                {bars.map((height, index) => (
-                  <span
-                    key={index}
-                    className="min-w-[2px] flex-1 rounded-full bg-[color:var(--primary)]"
-                    style={{ height: `${Math.round(height * 100)}%` }}
-                  />
-                ))}
-              </div>
-            ) : null}
-          </div>
-
           <Button
             type="button"
             size="sm"
@@ -912,7 +777,7 @@ function TrackRow({
               onSelect();
             }}
             disabled={importLocked}
-            className="shrink-0"
+            className="shrink-0 sm:order-last"
           >
             {importing ? (
               <Loader2
@@ -923,8 +788,123 @@ function TrackRow({
             ) : null}
             {importing ? 'Attaching' : 'Use track'}
           </Button>
+
+          <Waveform track={track} preview={preview} onSeek={onSeek} />
         </div>
       </div>
     </li>
+  );
+}
+
+/**
+ * Track shape that doubles as the seek bar for the active preview. On phones it
+ * only appears for the active track, on its own line below the title.
+ */
+function Waveform({
+  track,
+  preview,
+  onSeek,
+}: {
+  track: JamendoSearchTrack;
+  preview: PreviewState | null;
+  onSeek: (seconds: number) => void;
+}) {
+  const bars = useMemo(
+    () =>
+      Array.isArray(track.peaks) && track.peaks.length > 0
+        ? track.peaks
+        : waveformBars(track.trackId),
+    [track.peaks, track.trackId],
+  );
+  const draggingRef = useRef(false);
+  const duration = preview?.duration ?? 0;
+  const time = preview?.time ?? 0;
+  const progress = duration > 0 ? Math.min(time / duration, 1) : 0;
+
+  function seekFromPointer(event: ReactPointerEvent<HTMLDivElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    if (rect.width === 0 || duration <= 0) return;
+    onSeek(((event.clientX - rect.left) / rect.width) * duration);
+  }
+
+  function handleKey(event: KeyboardEvent<HTMLDivElement>) {
+    const target =
+      event.key === 'ArrowRight' || event.key === 'ArrowUp'
+        ? time + 5
+        : event.key === 'ArrowLeft' || event.key === 'ArrowDown'
+          ? time - 5
+          : event.key === 'Home'
+            ? 0
+            : event.key === 'End'
+              ? duration
+              : null;
+    if (target === null) return;
+    event.preventDefault();
+    onSeek(target);
+  }
+
+  const bar = (height: number, index: number, className: string) => (
+    <span
+      key={index}
+      className={`min-w-[2px] flex-1 rounded-full ${className}`}
+      style={{ height: `${Math.round(height * 100)}%` }}
+    />
+  );
+
+  return (
+    <div
+      {...(preview
+        ? {
+            role: 'slider',
+            tabIndex: 0,
+            'aria-label': `Seek preview of ${track.title}`,
+            'aria-valuemin': 0,
+            'aria-valuemax': Math.round(duration),
+            'aria-valuenow': Math.round(time),
+            'aria-valuetext': `${clockTime(time)} of ${clockTime(duration)}`,
+            onClick: (event: MouseEvent<HTMLDivElement>) => event.stopPropagation(),
+            onPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => {
+              event.stopPropagation();
+              event.currentTarget.setPointerCapture(event.pointerId);
+              draggingRef.current = true;
+              seekFromPointer(event);
+            },
+            onPointerMove: (event: ReactPointerEvent<HTMLDivElement>) => {
+              if (draggingRef.current) seekFromPointer(event);
+            },
+            onPointerUp: () => {
+              draggingRef.current = false;
+            },
+            onPointerCancel: () => {
+              draggingRef.current = false;
+            },
+            onKeyDown: handleKey,
+          }
+        : { 'aria-hidden': true })}
+      className={`relative h-8 min-w-0 ${
+        preview
+          ? 'basis-full cursor-pointer touch-none select-none sm:flex-1 sm:basis-auto'
+          : 'hidden flex-1 opacity-70 sm:block'
+      }`}
+    >
+      <div className="flex h-full items-center gap-[2px]">
+        {bars.map((height, index) =>
+          bar(
+            height,
+            index,
+            'bg-[color:var(--color-border-default)] group-hover:bg-[color:var(--color-content-subtle)]/60',
+          ),
+        )}
+      </div>
+      {preview ? (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 flex h-full items-center gap-[2px] motion-safe:transition-[clip-path] motion-safe:duration-150 motion-safe:ease-linear"
+          style={{ clipPath: `inset(0 ${Math.max(0, 100 - progress * 100)}% 0 0)` }}
+        >
+          {bars.map((height, index) => bar(height, index, 'bg-[color:var(--primary)]'))}
+        </div>
+      ) : null}
+    </div>
   );
 }

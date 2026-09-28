@@ -53,13 +53,14 @@ const MIN_INTENSITY = 0.1;
 const WINDOW_COUNT = 12;
 const COVERAGE_SLOT_SHARE = 0.75;
 
-function vibeFor(label: string): SlotVibe {
+/** Map an analyser section label to the vibe planners reason about. */
+export function vibeForSectionLabel(label: string): SlotVibe {
   const l = label.toLowerCase();
   if (l.includes('chorus') && l.includes('pre')) return 'pre-chorus';
   if (l.includes('chorus')) return 'chorus';
   if (l.includes('drop')) return 'drop';
   if (l.includes('verse')) return 'verse';
-  if (l.includes('bridge')) return 'bridge';
+  if (l.includes('bridge') || l.includes('breakdown')) return 'bridge';
   if (l.includes('build') || l.includes('rise')) return 'buildup';
   if (l.includes('intro') || l.includes('opening')) return 'intro';
   if (l.includes('outro') || l.includes('end') || l.includes('finale')) return 'outro';
@@ -192,7 +193,7 @@ function scoreBeatAt(
 ): Scored {
   const section = sectionAt(t, ctx.sections);
   const sectionLabel = section?.label ?? 'unknown';
-  const vibe = vibeFor(sectionLabel);
+  const vibe = vibeForSectionLabel(sectionLabel);
   const { intensity, nearClimax } = intensityAt(t, section, vibe, ctx.keyMoments, ctx.buildups);
 
   const isDownbeat = ctx.hasDownbeats ? ctx.nearDownbeat(t) : i % ctx.beatsPerBar === 0;
@@ -324,7 +325,7 @@ function appendOnsetAccentSlots(params: {
   const isStrongSection = (t: number) => {
     const s = sections.find((sec) => t >= sec.start && t < sec.end);
     if (!s) return false;
-    const v = vibeFor(s.label);
+    const v = vibeForSectionLabel(s.label);
     return v === 'chorus' || v === 'drop' || s.intensity === 'high';
   };
   const nearBeat = (t: number) => beats.some((b) => Math.abs(b - t) <= 0.08);
@@ -339,7 +340,7 @@ function appendOnsetAccentSlots(params: {
   }
   for (const t of chosen) {
     const section = sections.find((s) => t >= s.start && t < s.end);
-    const vibe = section ? vibeFor(section.label) : 'verse';
+    const vibe = section ? vibeForSectionLabel(section.label) : 'verse';
     slots.push({
       index: nextIndex++,
       time: Number(t.toFixed(3)),

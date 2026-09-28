@@ -6,6 +6,7 @@
  * planner from independently forgetting the shell's lift phase.
  */
 import type { FireworkSpecification } from '@/lib/show-domain';
+import type { ProductTimingProfile } from '@/lib/fireworks/timing-profile';
 import { scaleDesignForCaliber, scaleDesignForEmphasis } from '@showcrafter/fireworks/design';
 import { estimateFireworkLiftTimeSeconds } from '@showcrafter/fireworks/timing';
 import { scheduleImpactWithLift, type ImpactTiming } from './impact-clock';
@@ -43,20 +44,25 @@ export function scheduleProductForImpact(params: {
 }
 
 /**
- * Schedule a catalogue item against a musical slot.
+ * Schedule a catalogue item against a musical slot so its first visible burst
+ * lands on the slot.
  *
- * Direct fireworks use burst compensation. A multishot row expands later into
- * child shots with individual offsets, designs, calibres and launch angles, so
- * its parent slot can only promise the start of the sustained sequence.
+ * Direct fireworks compensate their own lift. A multishot expands later into
+ * child shots with individual offsets and lifts, so it needs its resolved
+ * timing profile: the sequence launches early by the first child's impact
+ * offset. Without a complete profile the sequence can only start on the slot.
  */
 export function scheduleProductForCueSlot(params: {
   product: FireworkSpecification;
   emphasis: CueEmphasis;
   targetTimeSeconds: number;
+  timingProfile?: ProductTimingProfile;
 }): ImpactTiming | null {
-  const { product, emphasis, targetTimeSeconds } = params;
+  const { product, emphasis, targetTimeSeconds, timingProfile } = params;
   if ((product.shotCount ?? 1) > 1) {
-    return scheduleImpactWithLift(targetTimeSeconds, 0);
+    const firstImpact =
+      timingProfile?.completeness === 'complete' ? timingProfile.firstImpactOffsetSeconds : null;
+    return scheduleImpactWithLift(targetTimeSeconds, firstImpact ?? 0);
   }
   return scheduleProductForImpact({
     product,

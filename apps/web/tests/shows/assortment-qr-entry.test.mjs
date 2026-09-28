@@ -247,7 +247,7 @@ test('exact ledger accepts A2 B1 C3 and rejects under, over and unknown products
   });
 });
 
-test('fast, beat, LLM, fallback and final validation all require exact use', async () => {
+test('fast, beat, fallback and final validation all require exact use', async () => {
   const [runner, fast, beat] = await Promise.all([
     source('runner'),
     source('fast'),
@@ -255,8 +255,8 @@ test('fast, beat, LLM, fallback and final validation all require exact use', asy
   ]);
   assert.match(fast, /requireExactProductQuantityLedger\(\s*cues,\s*availabilityByProductId/);
   assert.match(beat, /requireExactProductQuantityLedger\(\s*cues,\s*availabilityByProductId/);
-  assert.match(runner, /requiredProductQuantities: assortmentLedger/);
-  assert.match(runner, /quantityMismatches\.length > 0[\s\S]*runBeatFallback\(\)/);
+  // Exact packs never take the section-plan path, which cannot place exact quantities.
+  assert.match(runner, /usePlanRealiser = generationMode !== 'beat' && assortmentLedger == null/);
   assert.match(runner, /requireExactProductQuantityLedger\([\s\S]*'Final cue validation'/);
 });
 
