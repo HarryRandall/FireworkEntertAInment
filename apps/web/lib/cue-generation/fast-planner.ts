@@ -343,6 +343,7 @@ function acceptFirstPlacement(
       product: product.product,
       emphasis,
       targetTimeSeconds: slot.time,
+      timingProfile: choiceContext.timingProfiles?.get(product.product.id)?.[emphasis],
     });
     if (!timing) continue;
     if (product.isMultiShot && multiImpacts.has(timing.impactTimeSeconds)) continue;

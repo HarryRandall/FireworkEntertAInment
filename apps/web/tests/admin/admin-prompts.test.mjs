@@ -57,13 +57,12 @@ test('cue generation loads saved mode and prompt config', () => {
   const promptServer = readFileSync(join(root, 'lib/prompt-configs.server.ts'), 'utf8');
 
   assert.match(runner, /generationSettings = await getShowCueGenerationSettings\(\)/);
-  assert.match(runner, /if \(generationMode === 'fast'\)/);
+  const llmPlan = readFileSync(join(root, 'lib/cue-generation/llm-plan.server.ts'), 'utf8');
+  assert.match(runner, /if \(generationMode === 'llm'\)/);
   assert.match(runner, /getActivePromptConfig\('show_cue_generation'\)/);
-  assert.match(runner, /systemPromptText: promptConfig\?\.systemPromptText/);
-  assert.match(runner, /productContextText: promptConfig\?\.productContextText/);
+  assert.match(llmPlan, /systemPromptText: params\.promptConfig\?\.systemPromptText/);
+  assert.match(llmPlan, /productContextText: params\.promptConfig\?\.productContextText/);
   assert.match(runner, /productCatalogueFields: generationSettings\.productCatalogueFields/);
-  assert.match(runner, /productIndex = new Map\(products\.map/);
-  assert.match(runner, /productIndex\.get\(cue\.productId\)/);
   assert.match(promptServer, /getDefaultShowGenerationSettings/);
   assert.match(promptServer, /process\.env\.CUE_GENERATION_MODE === 'llm'/);
   assert.match(promptServer, /product_catalogue_fields/);
@@ -72,7 +71,10 @@ test('cue generation loads saved mode and prompt config', () => {
   assert.match(prompt, /DEFAULT_SHOW_CUE_PRODUCT_CONTEXT_TEXT/);
   assert.match(prompt, /selectedFields\?: readonly ProductCatalogueField\[\] \| null/);
   assert.match(prompt, /Catalogue fields sent in this request/);
-  assert.match(prompt, /compactText\(product\.description, 140\)/);
+  assert.match(prompt, /compactText\(product\.description, 100\)/);
+  // Saved guidance cannot replace the output contract, which is always last.
+  assert.match(prompt, /fieldContext, PLAN_OUTPUT_CONTRACT\]/);
+  assert.match(prompt, /isLegacySlotPrompt/);
 });
 
 test('admin prompt action is RBAC gated and invalidates prompt cache', () => {

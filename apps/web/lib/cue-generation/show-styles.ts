@@ -33,15 +33,14 @@ export const SHOW_STYLES: Record<ShowStyleKey, ShowStyleDefinition> = {
     name: 'Signature',
     tagline: 'Big, beat-driven, crowd-pleasing',
     description:
-      'The flagship ShowCrafter look: choruses saturate every tube, buildups ramp hard, and the finale empties the racks.',
+      'The flagship ShowCrafter look: bold choruses, builds that ramp hard, and a finale that empties the racks.',
     engine: 'llm',
     promptDirectives: [
       'Style: SIGNATURE (high-energy crowd-pleaser).',
-      '  - Choruses and drops saturate every safe musical moment: start lane-local multi-shot beds at section boundaries, then stack the remaining free tubes on db:1 accents.',
-      '  - Buildups must audibly ramp - increase density and product size beat over beat into the drop; the last beat before the drop is em:2.',
-      '  - Reserve your 2-3 largest-calibre, highest products for fin:1 (finale window) slots and stack every free tube on its structural accents.',
-      '  - Match product size to em tiers: em:2 gets the biggest, em:1 medium, em:0 small singles.',
-      '  - Favour bold, saturated colours and aggressive effect rotation (crackle, strobe, crossette).',
+      '  - Choruses and drops are peaks at density 2-3 with mirror or unison motifs; verses stay at 1-2 so the choruses land.',
+      '  - Builds climb into the drop with crackle and glitter.',
+      '  - Bold, saturated palettes and aggressive effect rotation (crackle, strobe, crossette) in peaks.',
+      '  - The finale is density 3-4 in unison with the largest products as heroes.',
     ].join('\n'),
   },
   cinematic: {
@@ -53,11 +52,10 @@ export const SHOW_STYLES: Record<ShowStyleKey, ShowStyleDefinition> = {
     engine: 'llm',
     promptDirectives: [
       'Style: CINEMATIC BUILD (narrative arc).',
-      '  - Open sparse and elegant: single shells with long trails, about 40-50% fill in the intro, firing only on db:1 downbeats.',
-      '  - Each section should feel larger than the last - track a rising arc across the whole song, climbing em tiers as energy grows.',
-      '  - Use willows, horsetails, and falling-leaves effects for emotional moments; save strobes for em:2 peaks.',
-      '  - The fin:1 finale window is gold-dominant: willows, glitter, and crackle layered across all tubes, with the largest products held back for it.',
-      '  - Never spike the energy early; the loudest 20 seconds of the show must be the last 20 seconds of loud music.',
+      '  - Open sparse and elegant: density 0-1, willows and long trails, mirror motif.',
+      '  - Each section feels larger than the last; raise density and product size gradually across the song.',
+      '  - Willows, horsetails and falling leaves for emotional passages; save strobes for the biggest peaks.',
+      '  - The finale is gold-dominant (willow, glitter, crackle) and the loudest passage of the show.',
     ].join('\n'),
   },
   minimalist: {
@@ -69,11 +67,10 @@ export const SHOW_STYLES: Record<ShowStyleKey, ShowStyleDefinition> = {
     engine: 'llm',
     promptDirectives: [
       'Style: MINIMALIST ELEGANCE (restraint).',
-      '  - Target around 55-65% overall fill; silence is part of the design.',
-      '  - Prefer single-shot shells with clean shapes (peony, chrysanthemum, ring) over dense cakes.',
-      '  - Keep a narrow palette: at most two colour families plus white/silver.',
-      '  - Fire only on the strongest beats - downbeats, climaxes, and section boundaries.',
-      '  - The finale is fuller but never chaotic; think synchronised pairs, not barrage.',
+      '  - Keep most sections at density 0-1 and peaks at 2; silence is part of the design.',
+      '  - Prefer clean single shells (peony, chrysanthemum, ring) over dense cakes.',
+      '  - At most two colour families plus white or silver across the show.',
+      '  - The finale is fuller but never chaotic: mirror motif at density 2-3.',
     ].join('\n'),
   },
   beat_test: {

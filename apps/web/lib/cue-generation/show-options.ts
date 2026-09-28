@@ -136,3 +136,18 @@ export function occupiedLaunchPositions(
     new Set([parentPosition, ...(product.launchPositionOverrideIndices ?? [])]),
   ).sort((a, b) => a - b) as Array<0 | 1 | 2>;
 }
+
+/** Fountains, candles and mines fire from the ground with no lift phase. */
+export function isGroundEffect(product: {
+  name: string;
+  description?: string | null;
+  renderDesign?: { geometry?: string } | null;
+}): boolean {
+  const geometry = product.renderDesign?.geometry;
+  if (geometry === 'upward_fan' || geometry === 'roman_candle' || geometry === 'fountain') {
+    return true;
+  }
+  return /fountain|gerb|roman candle|mine/.test(
+    `${product.name} ${product.description ?? ''}`.toLowerCase(),
+  );
+}

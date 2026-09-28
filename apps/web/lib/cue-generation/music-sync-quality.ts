@@ -53,10 +53,9 @@ export function evaluateMusicSync({
     const slot = slotsByIndex.get(cue.slotIndex);
     const profile = profileFor(timingProfiles, cue);
     if (!slot || !profile || profile.completeness !== 'complete') continue;
-    const multishot = profile.resolvedShotCount > 1 || (profile.shotCount ?? 1) > 1;
-    const actualAnchor = multishot
-      ? cue.timeSeconds
-      : cue.timeSeconds != null && profile.firstImpactOffsetSeconds != null
+    // Singles and multishots alike are judged on their first visible burst.
+    const actualAnchor =
+      cue.timeSeconds != null && profile.firstImpactOffsetSeconds != null
         ? cue.timeSeconds + profile.firstImpactOffsetSeconds
         : null;
     if (actualAnchor == null || !Number.isFinite(actualAnchor)) continue;

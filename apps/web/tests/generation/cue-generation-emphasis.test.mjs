@@ -11,14 +11,13 @@ function read(path) {
   return readFileSync(join(root, path), 'utf8');
 }
 
-test('LLM assignment schema allows an optional emphasis override', () => {
+test('cue emphasis stays a closed set', () => {
   const schemas = read('lib/cue-generation/schemas.ts');
 
   assert.match(
     schemas,
     /export const CUE_EMPHASIS_VALUES = \['normal', 'accent', 'peak'\] as const;/,
   );
-  assert.match(schemas, /emphasis: z\.enum\(CUE_EMPHASIS_VALUES\)\.optional\(\),/);
 });
 
 test('cue runner replaces show_timeline_items transactionally with emphasis', () => {
@@ -27,11 +26,11 @@ test('cue runner replaces show_timeline_items transactionally with emphasis', ()
   const beatSync = read('lib/cue-generation/beat-sync-planner.ts');
   const types = read('lib/database.types.ts');
 
-  // Reconstructed cue carries emphasis, defaulting to the slot's computed value.
+  const realiser = read('lib/cue-generation/plan-realiser.ts');
+  // Reconstructed cue carries emphasis.
   assert.match(runner, /emphasis: CueEmphasis;/);
-  assert.match(runner, /const emphasis = a\.emphasis \?\? slot\.emphasis;/);
-  assert.match(runner, /impactTimeSeconds: timing\.impactTimeSeconds,[\s\S]*?emphasis,/);
-  // Both planner paths produce emphasis-bearing cues.
+  // Every planner path produces emphasis-bearing cues.
+  assert.match(realiser, /const emphasis = emphasisFor\(moment, direction\)/);
   assert.match(fastPlanner, /emphasis: CueEmphasis;/);
   assert.match(fastPlanner, /const emphasis: CueEmphasis = isSurprise/);
   assert.match(fastPlanner, /direction\.softEnding && slot\.finale/);

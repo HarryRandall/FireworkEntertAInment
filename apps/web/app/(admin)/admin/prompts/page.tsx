@@ -13,6 +13,7 @@ import { Textarea } from '@/ui/patterns/Input';
 import { getAdminPromptControlData } from '@/lib/admin/prompts.server';
 import { type GenerationSetting, type PromptConfig } from '@/lib/prompt-configs';
 import { cn } from '@/lib/utils';
+import { DEFAULT_SHOW_CUE_SYSTEM_PROMPT, isLegacySlotPrompt } from '@/lib/cue-generation/prompt';
 import { GenerationModeControl } from '@/app/(admin)/admin/prompts/_components/GenerationModeControl';
 import {
   PromptConfigForm,
@@ -77,6 +78,7 @@ async function AdminPromptsContent({ activeKey }: { activeKey: PromptTabKey }) {
   const { configs, generationSetting } = data;
   const showPrompt = promptByKey(configs, 'show_cue_generation');
   const videoPrompt = promptByKey(configs, 'firework_video_reconstruction');
+  const legacyShowPrompt = showPrompt ? isLegacySlotPrompt(showPrompt.systemPromptText) : false;
 
   return (
     <>
@@ -92,7 +94,12 @@ async function AdminPromptsContent({ activeKey }: { activeKey: PromptTabKey }) {
           textareaRows={20}
           fieldName="systemPromptText"
           fieldLabel="Show generation system prompt"
-          description="Define the system instructions used when the LLM turns a song and creative brief into show cues."
+          fieldValue={legacyShowPrompt ? DEFAULT_SHOW_CUE_SYSTEM_PROMPT : undefined}
+          description={
+            legacyShowPrompt
+              ? 'The saved prompt was written for the retired per-cue format and is ignored. The current default guidance is shown below; save to replace the stored prompt.'
+              : 'Creative guidance for the model that plans each section of the show. The app adds the output format, so it cannot be changed here.'
+          }
         />
       ) : activeKey === 'product_context' && showPrompt ? (
         <ProductContextEditor prompt={showPrompt} setting={generationSetting} />

@@ -94,5 +94,5 @@ test('synthetic beat fallback is only used when no music analysis id exists', ()
   assert.match(runner, /musicAnalysisId\s*\?\s*loadAnalysisState/);
   assert.match(runner, /status: 'absent', analysis: null/);
   assert.match(runner, /Music analysis completed without usable output/);
-  assert.match(prompt, /No AI song analysis was available/);
+  assert.match(prompt, /No song analysis was available/);
 });
