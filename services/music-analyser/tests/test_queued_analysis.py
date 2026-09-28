@@ -57,7 +57,8 @@ class QueuedAnalysisTests(unittest.TestCase):
 
 
 class LightweightImageImportTests(unittest.TestCase):
-    def test_endpoint_module_imports_without_worker_only_modules(self):
+    def test_endpoints_import_without_worker_modules_or_recurring_schedule(self):
+        test_case = self
         class Image:
             @classmethod
             def debian_slim(cls, **kwargs):
@@ -70,6 +71,7 @@ class LightweightImageImportTests(unittest.TestCase):
             def cls(self, **kwargs):
                 return lambda target: target
             def function(self, **kwargs):
+                test_case.assertNotIn("schedule", kwargs)
                 return lambda target: target
         fake_modal = types.SimpleNamespace(
             Image=Image, App=App,
@@ -78,7 +80,6 @@ class LightweightImageImportTests(unittest.TestCase):
             method=lambda **kwargs: lambda target: target,
             fastapi_endpoint=lambda **kwargs: lambda target: target,
             asgi_app=lambda **kwargs: lambda target: target,
-            Cron=lambda value: None,
         )
         original_import = builtins.__import__
         def lightweight_import(name, *args, **kwargs):

@@ -170,6 +170,6 @@ test('callback authentication denies absent or incorrect secrets', () => {
 test('overdue analysis replaces the countdown with delay and recovery messages', () => {
   assert.equal(generationDelayLabel('analysing', 100, 110), null);
   assert.match(generationDelayLabel('analysing', 180, 110), /longer than expected/);
-  assert.match(generationDelayLabel('analysing', 300, 110), /retry automatically/);
+  assert.match(generationDelayLabel('analysing', 300, 110), /Contact an admin/);
   assert.match(generationDelayLabel('generating', 90, 45), /longer than expected/);
 });

@@ -55,14 +55,4 @@ def deliver_callback(payload, outcome, runtime_ms):
         except requests.RequestException:
             if attempt == 3:
                 raise
-    raise RuntimeError("Analyser callback could not be saved; the lease will be recovered.")
-
-
-def reconcile_work():
-    response = requests.post(
-        app_origin() + "/api/internal/music-analysis/reconcile",
-        headers={"Authorization": "Bearer " + os.environ["ANALYSER_SHARED_SECRET"]},
-        timeout=285, allow_redirects=False,
-    )
-    response.raise_for_status()
-    return response.json()
+    raise RuntimeError("Analyser callback could not be saved; manual recovery may be required.")

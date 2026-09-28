@@ -188,12 +188,3 @@ def api():
         return {"analysis_id": payload["analysis_id"], "call_id": call.object_id, "status": "accepted"}
 
     return web_app
-
-
-@app.function(image=web_image, secrets=[modal.Secret.from_name("showcrafter"), callback_config],
-              schedule=modal.Cron("* * * * *"), timeout=300, max_containers=1)
-def reconcile_analysis_work():
-    """Recover expired leases and ready cues independently of browser polling."""
-    from queued_analysis import reconcile_work
-
-    return reconcile_work()
