@@ -163,6 +163,9 @@ test('callback authentication denies absent or incorrect secrets', () => {
   assert.equal(authoriseAnalyserCallback('Bearer secret', undefined), false);
   assert.equal(authoriseAnalyserCallback('Bearer wrong', 'secret'), false);
   assert.equal(authoriseAnalyserCallback('Bearer secret', 'secret'), true);
+  assert.equal(authoriseAnalyserCallback('Bearer secret', ' secret\n'), true);
+  assert.equal(authoriseAnalyserCallback('Bearer ', ' \n'), false);
+  assert.equal(authoriseAnalyserCallback('Bearer wrong', ' secret\n'), false);
 });
 test('overdue analysis replaces the countdown with delay and recovery messages', () => {
   assert.equal(generationDelayLabel('analysing', 100, 110), null);
