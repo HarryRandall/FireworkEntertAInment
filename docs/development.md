@@ -30,7 +30,8 @@ python3.11 -m venv services/firework-import-worker/.venv
 services/firework-import-worker/.venv/bin/python -m pip install -r services/firework-import-worker/requirements.txt
 ```
 
-The import worker also needs FFmpeg and Playwright Chromium. Its
+Lint both services with `ruff check services` (config in the root `ruff.toml`; CI
+pins the version). The import worker also needs FFmpeg and Playwright Chromium. Its
 [service guide](../services/firework-import-worker/README.md) owns those details.
 `pnpm worker:firework-import` loads `apps/web/.env.local` (or `.env` as a fallback).
 

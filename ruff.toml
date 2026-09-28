@@ -1,0 +1,9 @@
+# Python lint for services/. Formatting is not enforced yet.
+target-version = "py311"
+extend-exclude = [".venv", "node_modules", "apps", "packages"]
+
+[lint]
+# Syntax errors, pyflakes (unused and undefined names) and bugbear.
+select = ["E9", "F", "B"]
+# Pairwise loops such as zip(items, items[1:]) differ in length by design.
+ignore = ["B905"]

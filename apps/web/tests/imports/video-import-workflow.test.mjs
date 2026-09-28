@@ -41,12 +41,11 @@ test('container worker performs deterministic media analysis and multi-pass mode
   assert.match(worker, /STRICT_IMPORT_SPEC_SCHEMA/);
   assert.match(reconstruction, /jsonschema/);
   assert.match(worker, /MAX_DURATION_SECONDS = 60/);
-  assert.match(worker, /generated_spec/);
   assert.match(worker, /FireworkEffectSpecV3/);
   assert.match(worker, /observations/);
   assert.match(worker, /effectSpec\.shots/);
   assert.match(worker, /libx264/);
-  assert.match(worker, /normalizedPreview/);
+  assert.match(worker, /p_normalized_preview/);
   assert.match(worker, /run_reconstruction_passes/);
   assert.match(worker, /build_renderer_reconstruction/);
   assert.match(worker, /build_reconstruction_validation/);
