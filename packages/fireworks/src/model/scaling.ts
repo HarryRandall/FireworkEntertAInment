@@ -12,6 +12,26 @@ export function parseCaliberMm(caliber: string): number | null {
   return null;
 }
 
+/**
+ * How a shell grows with calibre, relative to {@link CALIBER_BASELINE_MM}.
+ * Real break height and spread grow roughly in proportion to calibre, which
+ * would put a 150 mm shell far out of frame beside a 30 mm cake. These
+ * exponents keep the proportions believable (bigger shells break higher,
+ * wider, denser and hang longer) while a whole show stays in one frame.
+ */
+export const CALIBER_SCALING = {
+  /** Break height: lift velocity scales by half this, as height grows with v^2. */
+  height: 0.35,
+  /** Burst radius, through star speed. */
+  spread: 0.5,
+  /** Star count and emission rate. */
+  stars: 0.8,
+  /** Star burn time. */
+  life: 0.2,
+  /** Scene flash brightness. */
+  flash: 0.5,
+} as const;
+
 export function scaleDesignForCaliber(
   design: FireworkDesign,
   caliber: string | null,
@@ -19,14 +39,20 @@ export function scaleDesignForCaliber(
   if (!caliber) return design;
   const mm = parseCaliberMm(caliber);
   if (!mm) return design;
-  const scale = mm / CALIBER_BASELINE_MM;
+  const ratio = mm / CALIBER_BASELINE_MM;
+  const factor = (exponent: number) => Math.pow(ratio, exponent);
+  const spread = factor(CALIBER_SCALING.spread);
+  const stars = factor(CALIBER_SCALING.stars);
+  const life = factor(CALIBER_SCALING.life);
+  const lift = factor(CALIBER_SCALING.height / 2);
   const scaleLayer = (layer: FireworkStarLayer): FireworkStarLayer => ({
     ...layer,
-    emissionRate: Math.max(1, Math.min(MAX_FOUNTAIN_RATE, layer.emissionRate * scale)),
-    count: Math.round(Math.max(1, Math.min(MAX_STAR_COUNT, layer.count * scale))),
+    emissionRate: Math.max(1, Math.min(MAX_FOUNTAIN_RATE, layer.emissionRate * stars)),
+    count: Math.round(Math.max(1, Math.min(MAX_STAR_COUNT, layer.count * stars))),
     burst: {
       ...layer.burst,
-      speed: [layer.burst.speed[0] * scale, layer.burst.speed[1] * scale],
+      speed: [layer.burst.speed[0] * spread, layer.burst.speed[1] * spread],
+      life: [Math.min(30, layer.burst.life[0] * life), Math.min(30, layer.burst.life[1] * life)],
     },
   });
   const outer = scaleLayer(design.stars.outer);
@@ -36,7 +62,12 @@ export function scaleDesignForCaliber(
     burst: outer.burst,
     burstTrail: outer.burstTrail,
     stars: { outer, core },
-    burstFlashIntensity: Math.min(MAX_BURST_FLASH_INTENSITY, design.burstFlashIntensity * scale),
+    burstFlashIntensity: Math.min(
+      MAX_BURST_FLASH_INTENSITY,
+      design.burstFlashIntensity * factor(CALIBER_SCALING.flash),
+    ),
+    liftVelocity: design.liftVelocity * lift,
+    shellLife: Math.min(60, design.shellLife * lift),
   };
 }
 

@@ -30,7 +30,13 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import type { ReplayCue } from '@/lib/show-domain';
 import { FireworksEngine, type SnapshotCacheData } from '@showcrafter/fireworks/FireworksEngine';
 import type { FireworkSceneMode } from '@showcrafter/fireworks/World';
-import { DEFAULT_LAUNCH_POSITIONS, type LaunchPosition } from '@showcrafter/fireworks/design';
+import {
+  DEFAULT_LAUNCH_POSITIONS,
+  scaleDesignForCaliber,
+  scaleDesignForEmphasis,
+  type LaunchPosition,
+} from '@showcrafter/fireworks/design';
+import { estimateFireworkVisualTopCm } from '@showcrafter/fireworks/timing';
 import {
   DEFAULT_FIREWORK_HEAD_STYLE,
   DEFAULT_FIREWORK_RENDER_TUNING,
@@ -180,6 +186,11 @@ type Props = {
    */
   preserveDrawingBuffer?: boolean;
   /**
+   * Pull the camera back, keeping its angle, when the show's tallest burst
+   * would leave the default frame. Off for deterministic import capture.
+   */
+  autoFrame?: boolean;
+  /**
    * Exposes deterministic, non-interactive frame capture to the protected
    * import validator. The controller advances the same engine and composer as
    * the visible replay, and is never enabled by normal replay consumers.
@@ -231,6 +242,27 @@ const MAX_DEVICE_PIXEL_RATIO = 2;
 // target height the default distance (~3000) is right at the zoom-out limit.
 const DEFAULT_CAMERA_POSITION = new THREE.Vector3(0, 64, 2850);
 const DEFAULT_CAMERA_TARGET = new THREE.Vector3(0, 1000, 0);
+// Burst height (cm) the default view frames with a comfortable margin.
+const DEFAULT_FRAMED_TOP_CM = 2400;
+const MAX_AUTO_FRAME_SCALE = 3.5;
+
+/** Default-view scale that keeps every cue's highest star in frame. */
+function showFrameScale(cues: readonly ReplayCue[]): number {
+  let top = 0;
+  const seen = new Set<string>();
+  for (const cue of cues) {
+    const design = cue.firework.renderDesign;
+    const key = `${cue.firework.id}:${cue.firework.caliber}:${cue.emphasis ?? 'normal'}`;
+    if (!design || seen.has(key)) continue;
+    seen.add(key);
+    const scaled = scaleDesignForEmphasis(
+      scaleDesignForCaliber(design, cue.firework.caliber),
+      cue.emphasis,
+    );
+    top = Math.max(top, estimateFireworkVisualTopCm(scaled));
+  }
+  return Math.min(MAX_AUTO_FRAME_SCALE, Math.max(1, top / DEFAULT_FRAMED_TOP_CM));
+}
 const GROUND_PLANE_Y = 0;
 const MIN_CAMERA_HEIGHT = 24;
 // How far past horizontal (radians) the orbit may dip before the hard ceiling.
@@ -528,6 +560,7 @@ export function FireworkReplayCanvas({
   onToggleFullscreen,
   showStarfield = true,
   preserveDrawingBuffer = false,
+  autoFrame = true,
   onCaptureController,
   aimMarkers,
   selectedMarkerId = null,
@@ -539,6 +572,13 @@ export function FireworkReplayCanvas({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<FireworksEngine | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  // Set once the viewer moves the camera; auto-framing then leaves it alone.
+  const cameraAdjustedRef = useRef(false);
+  const autoFrameRef = useRef(autoFrame);
+  autoFrameRef.current = autoFrame;
+  const cuesForFrameRef = useRef(cues);
+  cuesForFrameRef.current = cues;
+  const frameShowRef = useRef<(scale: number) => void>(() => {});
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const composerRef = useRef<EffectComposer | null>(null);
   const controlsRef = useRef<OrbitControls | null>(null);
@@ -858,6 +898,7 @@ export function FireworkReplayCanvas({
     controls.update();
     controlsRef.current = controls;
     function onControlsStart() {
+      cameraAdjustedRef.current = true;
       renderFor(900);
     }
     function onControlsChange() {
@@ -1208,6 +1249,9 @@ export function FireworkReplayCanvas({
     const shouldPrime = primeSnapshots && (useAsyncPrime || primeOnCueChanges);
     engine.clear();
     engine.setCues(cues, { prime: shouldPrime, primeAsync: useAsyncPrime, cache: cached });
+    if (autoFrameRef.current && !cameraAdjustedRef.current) {
+      frameShowRef.current(showFrameScale(cues));
+    }
     if (engine.isPriming()) {
       // The RAF loop drives `stepPriming`, seeks to the playhead, fires
       // `onReady` when priming completes, and stores the finished snapshot
@@ -1501,11 +1545,20 @@ export function FireworkReplayCanvas({
   }
 
   function resetView() {
+    cameraAdjustedRef.current = false;
+    frameShow(autoFrameRef.current ? showFrameScale(cuesForFrameRef.current) : 1);
+  }
+
+  frameShowRef.current = frameShow;
+
+  /** Default composition scaled about the origin, so the angle never changes. */
+  function frameShow(scale: number) {
     const cam = cameraRef.current;
     const ctrl = controlsRef.current;
     if (!cam || !ctrl) return;
-    cam.position.copy(DEFAULT_CAMERA_POSITION);
-    ctrl.target.copy(DEFAULT_CAMERA_TARGET);
+    cam.position.copy(DEFAULT_CAMERA_POSITION).multiplyScalar(scale);
+    ctrl.target.copy(DEFAULT_CAMERA_TARGET).multiplyScalar(scale);
+    ctrl.maxDistance = Math.max(MAX_CAMERA_DISTANCE, cam.position.distanceTo(ctrl.target) * 1.2);
     floorLiftRef.current = 0;
     ctrl.update();
     renderFor(360);
