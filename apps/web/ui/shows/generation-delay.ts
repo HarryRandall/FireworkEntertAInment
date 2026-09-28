@@ -5,7 +5,7 @@ export function generationDelayLabel(
 ): string | null {
   if (elapsedSeconds < Math.max(estimateSeconds * 1.5, 60)) return null;
   if (phase === 'analysing' && elapsedSeconds >= 300)
-    return 'Analysis delayed. Recovery will retry automatically.';
+    return 'Analysis delayed. Contact an admin if it does not finish.';
   return phase === 'analysing'
     ? 'Your track is taking longer than expected.'
     : phase === 'finalising'

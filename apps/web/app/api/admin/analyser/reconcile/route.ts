@@ -1,6 +1,8 @@
-/** Cron-safe recovery for analysis, cue generation, credits, and private audio. */
+/** Explicit maintenance for analysis, cue generation, credits and private audio. */
 
 import { NextResponse } from 'next/server';
+import { requirePermission } from '@/lib/access/current-profile.server';
+import { recoverMusicAnalysisWork } from '@/lib/music-analysis-recovery.server';
 import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
 import { runMusicAnalysisForUpload } from '@/lib/show-analysis-runner.server';
 import { generateCuesForShow } from '@/lib/cue-generation/runner.server';
@@ -299,4 +301,39 @@ export async function GET(request: Request) {
     },
     { status: errors.length === 0 ? 200 : 500 },
   );
+}
+
+/** Admin recovery deliberately excludes the retention cleanup in GET. */
+export async function POST() {
+  const admin = await requirePermission('admin.manage_imports');
+  if (!admin)
+    return NextResponse.json(
+      { ok: false, error: 'You do not have permission to recover analyser jobs.' },
+      { status: 403 },
+    );
+  if (!process.env.ANALYSER_DISPATCH_URL?.trim())
+    return NextResponse.json(
+      { ok: false, error: 'Queued analysis is not configured.' },
+      { status: 503 },
+    );
+  const supabase = createServiceRoleSupabase();
+  if (!supabase)
+    return NextResponse.json(
+      { ok: false, error: 'Analysis recovery is not configured.' },
+      { status: 503 },
+    );
+  try {
+    const result = await recoverMusicAnalysisWork(supabase);
+    return NextResponse.json(result, { status: result.ok ? 200 : 500 });
+  } catch (error) {
+    console.error('[admin/analyser] recovery failed:', error);
+    return NextResponse.json(
+      {
+        ok: false,
+        error:
+          'Recovery could not finish. Some jobs may already have progressed. Check their status before trying again.',
+      },
+      { status: 500 },
+    );
+  }
 }

@@ -131,11 +131,20 @@ and Vercel continue to use the existing `ANALYSER_SHARED_SECRET`; no database
 credential is sent to Modal. Keep `ANALYSER_URL` pointed at the synchronous
 `SongAnalyser.analyse` endpoint for warm-up and legacy show analysis.
 
-Modal's `reconcile_analysis_work` runs every minute, calling the authenticated
-`/api/internal/music-analysis/reconcile` route. It recovers one claimable analysis
-and one ready cue job per run, expires exhausted attempts through the existing
-RPCs, and preserves reservations during retries. This works on Vercel Hobby
-without a frequent Vercel cron. It does not purge stored audio. Existing admin
+There is no recurring Modal recovery schedule. Normal jobs start through the
+API and save results through the callback. Admins with `admin.manage_imports`
+can use **Recover stalled jobs** under **Admin > Generation** to run one bounded
+pass: up to one claimable analysis and one ready cue job, plus finalisation of
+up to ten exhausted attempts of each type through the existing refund RPCs.
+Each click is independent; the control does not poll, repeat or keep Modal warm.
+Unexpired leases are left alone. Retryable failures wait for another manual pass
+once due; permanently failed jobs are not restarted. The admin POST endpoint is
+`/api/admin/analyser/reconcile`; it does not purge audio. The shared-secret
+`/api/internal/music-analysis/reconcile` API remains available for explicit
+trusted calls, with no timer invoking it.
+
+Removing the schedule requires redeploying the Modal analyser. A web release
+alone does not stop an already deployed schedule. Existing admin
 retention reconciliation remains a separate operation authorised by `CRON_SECRET`.
-Deploy the callback routes before enabling `ANALYSER_DISPATCH_URL`. The scheduler
-returns an error until both the web routes and dispatch configuration are ready.
+Deploy the callback routes before enabling `ANALYSER_DISPATCH_URL`. Manual
+recovery requires the web routes and dispatch configuration to be ready.

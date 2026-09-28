@@ -3,6 +3,7 @@
 import { Suspense, type ReactNode } from 'react';
 import { ArrowDownRight, ArrowUpRight } from 'lucide-react';
 import { AdminOverviewContentSkeleton } from '@/app/(admin)/_components/AdminSkeletons';
+import { AnalysisRecoveryControl } from '@/app/(admin)/admin/_components/AnalysisRecoveryControl';
 import { AnalyserWarmthControl } from '@/app/(admin)/admin/_components/AnalyserWarmthControl';
 import { AdminOverviewTabs } from '@/app/(admin)/admin/_components/AdminOverviewTabs';
 import { AdminOverviewToolbar } from '@/app/(admin)/admin/_components/AdminOverviewToolbar';
@@ -328,6 +329,7 @@ async function GenerationTabContent({ range }: { range: AdminOverviewRangeOption
 
   return (
     <TabsContent value="generation" className="flex flex-col gap-4">
+      <AnalysisRecoveryControl canManage={canManageAnalyser} />
       <AnalyserWarmthControl initialState={warmthState} canManage={canManageAnalyser} />
 
       <div className="grid grid-cols-1 items-stretch gap-4 xl:grid-cols-12">
