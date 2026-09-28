@@ -304,6 +304,8 @@
 }
 
 .eta {
+  text-align: right;
+  max-width: 80%;
   font-variant-numeric: tabular-nums;
   color: var(--color-content-muted);
   font-size: 0.8125rem;

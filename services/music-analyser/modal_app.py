@@ -8,9 +8,10 @@ that does not fit (size or runtime) inside a Vercel serverless function.
 Deploy from this directory:
 
     modal secret create showcrafter ANALYSER_SHARED_SECRET=<random-32-bytes>
-    modal deploy modal_app.py
+    SHOWCRAFTER_APP_ORIGIN=https://your-showcrafter-domain.example modal deploy modal_app.py
 
-The printed URL becomes the Next.js `ANALYSER_URL` env var.
+The SongAnalyser.analyse URL remains `ANALYSER_URL`. Set
+`ANALYSER_DISPATCH_URL` to the lightweight API URL plus `/runs`.
 Set `ANALYSER_ALLOWED_AUDIO_HOSTS` in the Modal secret when Supabase Storage
 uses a custom domain. Standard `*.supabase.co` storage hosts are allowed by
 default.
@@ -27,20 +28,28 @@ from fastapi import Header, HTTPException
 
 from audio_download import AudioDownloadError, download_audio
 
+WORKER_DIRECTORY = Path(__file__).resolve().parent
+
 image = (
-    modal.Image.debian_slim()
+    modal.Image.debian_slim(python_version="3.11")
     .apt_install("ffmpeg", "libsndfile1")
-    .pip_install_from_requirements("requirements.txt")
+    .pip_install_from_requirements(str(WORKER_DIRECTORY / "requirements.txt"))
     .pip_install("fastapi[standard]")
-    .add_local_python_source("showcrafter", "audio_download")
+    .add_local_python_source("showcrafter", "audio_download", "queued_analysis")
 )
 
 app = modal.App("showcrafter-analyser")
+callback_config = modal.Secret.from_dict({
+    "SHOWCRAFTER_APP_ORIGIN": os.environ.get("SHOWCRAFTER_APP_ORIGIN", ""),
+})
+web_image = (modal.Image.debian_slim(python_version="3.11")
+             .pip_install("fastapi[standard]", "requests")
+             .add_local_python_source("queued_analysis"))
 
 
 @app.cls(
     image=image,
-    secrets=[modal.Secret.from_name("showcrafter")],
+    secrets=[modal.Secret.from_name("showcrafter"), callback_config],
     timeout=600,
     cpu=2.0,
     memory=4096,
@@ -84,10 +93,30 @@ class SongAnalyser:
         payload: dict,
         authorization: Annotated[str, Header()] = "",
     ):
-        expected = os.environ.get("ANALYSER_SHARED_SECRET", "")
-        if not expected or authorization != f"Bearer {expected}":
+        from queued_analysis import authorise
+
+        if not authorise(authorization):
             raise HTTPException(status_code=401, detail="unauthorized")
 
+        return self._analyse(payload)
+
+    @modal.method()
+    def analyse_queued(self, payload: dict):
+        from queued_analysis import deliver_callback, validate_job
+
+        validate_job(payload)
+        started = time.perf_counter()
+        try:
+            outcome = {"ok": True, "analysis": self._analyse(payload)}
+        except HTTPException as exc:
+            outcome = {"ok": False, "error": str(exc.detail)[:2000], "status": exc.status_code}
+        except Exception:
+            # Do not expose stack traces, signed audio URLs or request credentials.
+            outcome = {"ok": False, "error": "Song analysis failed unexpectedly.", "status": 500}
+        deliver_callback(payload, outcome, round((time.perf_counter() - started) * 1000))
+        return {"analysis_id": payload["analysis_id"], "status": "delivered"}
+
+    def _analyse(self, payload):
         if payload.get("warmup") is True:
             from showcrafter import SCHEMA_VERSION
 
@@ -137,3 +166,34 @@ class SongAnalyser:
                     f"total_ms={timings['total_ms']}"
                 )
             return result
+
+
+@app.function(image=web_image, secrets=[modal.Secret.from_name("showcrafter"), callback_config], timeout=60)
+@modal.asgi_app()
+def api():
+    from fastapi import FastAPI
+    from queued_analysis import authorise, validate_job
+
+    web_app = FastAPI(docs_url=None, redoc_url=None)
+
+    @web_app.post("/runs", status_code=202)
+    async def submit(payload: dict, authorization: Annotated[str, Header()] = ""):
+        if not authorise(authorization):
+            raise HTTPException(status_code=401, detail="unauthorised")
+        try:
+            validate_job(payload)
+        except (ValueError, KeyError, TypeError):
+            raise HTTPException(status_code=400, detail="invalid analysis job") from None
+        call = await SongAnalyser().analyse_queued.spawn.aio(payload)
+        return {"analysis_id": payload["analysis_id"], "call_id": call.object_id, "status": "accepted"}
+
+    return web_app
+
+
+@app.function(image=web_image, secrets=[modal.Secret.from_name("showcrafter"), callback_config],
+              schedule=modal.Cron("* * * * *"), timeout=300, max_containers=1)
+def reconcile_analysis_work():
+    """Recover expired leases and ready cues independently of browser polling."""
+    from queued_analysis import reconcile_work
+
+    return reconcile_work()

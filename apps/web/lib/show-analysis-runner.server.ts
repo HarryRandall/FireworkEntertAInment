@@ -14,6 +14,7 @@
 import 'server-only';
 
 import { randomUUID } from 'crypto';
+import { getTrustedAppOrigin } from '@/lib/app-origin';
 import { revalidatePath } from 'next/cache';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/database.types';
@@ -33,7 +34,8 @@ const ANALYSIS_LEASE_SECONDS = 900;
 const MAX_ANALYSIS_ATTEMPTS = 3;
 const RETRY_DELAYS_SECONDS = [30, 120] as const;
 const MAX_ANALYSER_RESPONSE_BYTES = 8 * 1024 * 1024;
-const ANALYSER_REQUEST_TIMEOUT_MS = 11 * 60 * 1000;
+const ANALYSER_REQUEST_TIMEOUT_MS = 240 * 1000;
+const ANALYSER_DISPATCH_TIMEOUT_MS = 30 * 1000;
 
 type AppSupabaseClient = SupabaseClient<Database>;
 
@@ -195,7 +197,8 @@ async function runHostedAnalyser(params: {
   audioPath: string;
   personality: string;
   analysisId?: string;
-}): Promise<AnalyserV14Result> {
+  leaseToken?: string;
+}): Promise<AnalyserV14Result | null> {
   const analyserUrl = process.env.ANALYSER_URL;
   const analyserSecret = process.env.ANALYSER_SHARED_SECRET;
   if (!analyserUrl || !analyserSecret) {
@@ -215,9 +218,14 @@ async function runHostedAnalyser(params: {
     );
   }
 
+  const dispatchUrl = params.leaseToken ? process.env.ANALYSER_DISPATCH_URL?.trim() : null;
+  const callbackOrigin = dispatchUrl ? getTrustedAppOrigin() : null;
+  if (dispatchUrl && !callbackOrigin) {
+    throw new AnalyseError('The analyser callback origin is not configured.', 500);
+  }
   let response: Response;
   try {
-    response = await fetch(analyserUrl, {
+    response = await fetch(dispatchUrl || analyserUrl, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${analyserSecret}`,
@@ -227,8 +235,16 @@ async function runHostedAnalyser(params: {
         analysis_id: params.analysisId,
         audio_url: signed.signedUrl,
         personality: params.personality,
+        ...(dispatchUrl
+          ? {
+              lease_token: params.leaseToken,
+              callback_url: `${callbackOrigin}/api/internal/music-analysis/callback`,
+            }
+          : {}),
       }),
-      signal: AbortSignal.timeout(ANALYSER_REQUEST_TIMEOUT_MS),
+      signal: AbortSignal.timeout(
+        dispatchUrl ? ANALYSER_DISPATCH_TIMEOUT_MS : ANALYSER_REQUEST_TIMEOUT_MS,
+      ),
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -260,6 +276,26 @@ async function runHostedAnalyser(params: {
     );
   }
 
+  if (dispatchUrl) {
+    let accepted: unknown;
+    try {
+      accepted = JSON.parse(bodyText);
+    } catch {
+      /* Invalid acknowledgements must retry. */
+    }
+    if (
+      response.status !== 202 ||
+      typeof accepted !== 'object' ||
+      accepted === null ||
+      !('analysis_id' in accepted) ||
+      accepted.analysis_id !== params.analysisId ||
+      !('status' in accepted) ||
+      accepted.status !== 'accepted'
+    ) {
+      throw new AnalyseError('The song analyser did not acknowledge the queued job.', 502, true);
+    }
+    return null;
+  }
   try {
     return parseAnalyserResponse(bodyText);
   } catch (error) {
@@ -389,112 +425,106 @@ export async function runMusicAnalysisForUpload(params: {
       audioPath: typedRow.audio_path,
       personality,
       analysisId: typedRow.analysis_id,
+      leaseToken: typedRow.lease_token,
     });
-    const contextMarkdown = buildAiContextMarkdown({
-      personality,
-      analysis,
-    });
-    const runtimeMs = Date.now() - startedAt;
-
-    const { data: completed, error: updateError } = await params.supabase.rpc(
-      'complete_song_analysis_attempt',
-      {
-        p_analysis_id: typedRow.analysis_id,
-        p_lease_token: typedRow.lease_token,
-        p_analysis_json: analysis as unknown as Json,
-        p_markdown: contextMarkdown,
-        p_schema_version: analysis.schema_version,
-        p_runner_version: ANALYSER_RUNNER_VERSION,
-        p_runtime_ms: runtimeMs,
-      },
-    );
-    if (updateError) {
-      console.error('[show-analysis-runner] music analysis completion failed:', updateError);
+    if (!analysis) {
       return {
         ok: false,
+        pending: true,
         analysisId: typedRow.analysis_id,
         userId: typedRow.user_id,
-        pending: true,
-        error: 'Could not save analysis output. The lease will be recovered.',
+        error: 'Music analysis is queued in Modal.',
       };
     }
-    if (!completed) {
-      return classifyUnclaimedMusicAnalysis({
-        supabase: params.supabase,
-        analysisId: typedRow.analysis_id,
-        fallbackUserId: typedRow.user_id,
-        error: 'Music analysis completion lost its lease.',
-      });
-    }
-
-    return {
-      ok: true,
-      analysisId: typedRow.analysis_id,
-      userId: typedRow.user_id,
-      contextMarkdown,
-    };
+    return completeMusicAnalysisAttempt(
+      params.supabase,
+      typedRow,
+      analysis,
+      Date.now() - startedAt,
+    );
   } catch (error) {
     const runtimeMs = Date.now() - startedAt;
     const message = error instanceof Error ? error.message : String(error);
     const retryable = error instanceof AnalyseError && error.retryable;
 
-    if (retryable && typedRow.attempt_count < MAX_ANALYSIS_ATTEMPTS) {
-      const retryDelay =
-        RETRY_DELAYS_SECONDS[
-          Math.min(typedRow.attempt_count - 1, RETRY_DELAYS_SECONDS.length - 1)
-        ] ?? RETRY_DELAYS_SECONDS[RETRY_DELAYS_SECONDS.length - 1];
-      const { data: scheduled, error: retryError } = await params.supabase.rpc(
-        'schedule_song_analysis_retry',
-        {
-          p_analysis_id: typedRow.analysis_id,
-          p_lease_token: typedRow.lease_token,
-          p_error_message: truncate(message, 2000),
-          p_runtime_ms: runtimeMs,
-          p_retry_delay_seconds: retryDelay,
-        },
-      );
-      if (retryError) {
-        console.error('[show-analysis-runner] music analysis retry scheduling failed:', retryError);
-        return {
-          ok: false,
-          analysisId: typedRow.analysis_id,
-          userId: typedRow.user_id,
-          pending: true,
-          error: `${message} The lease will be recovered.`,
-        };
-      }
-      if (!scheduled) {
-        return classifyUnclaimedMusicAnalysis({
-          supabase: params.supabase,
-          analysisId: typedRow.analysis_id,
-          fallbackUserId: typedRow.user_id,
-          error: 'Music analysis retry lost its lease.',
-        });
-      }
-      return {
-        ok: false,
-        analysisId: typedRow.analysis_id,
-        userId: typedRow.user_id,
-        pending: true,
-        retryScheduled: true,
-        error: message,
-      };
-    }
+    return failMusicAnalysisAttempt(params.supabase, typedRow, message, runtimeMs, retryable);
+  }
+}
 
-    const { data: failed, error: failureError } = await params.supabase.rpc(
-      'fail_song_analysis_attempt',
+async function completeMusicAnalysisAttempt(
+  supabase: AppSupabaseClient,
+  typedRow: MusicAnalysisRow,
+  analysis: AnalyserV14Result,
+  runtimeMs: number,
+): Promise<RunShowAnalysisResult> {
+  const personality = typedRow.personality;
+  const contextMarkdown = buildAiContextMarkdown({
+    personality,
+    analysis,
+  });
+
+  const { data: completed, error: updateError } = await supabase.rpc(
+    'complete_song_analysis_attempt',
+    {
+      p_analysis_id: typedRow.analysis_id,
+      p_lease_token: typedRow.lease_token,
+      p_analysis_json: analysis as unknown as Json,
+      p_markdown: contextMarkdown,
+      p_schema_version: analysis.schema_version,
+      p_runner_version: ANALYSER_RUNNER_VERSION,
+      p_runtime_ms: runtimeMs,
+    },
+  );
+  if (updateError) {
+    console.error('[show-analysis-runner] music analysis completion failed:', updateError);
+    return {
+      ok: false,
+      analysisId: typedRow.analysis_id,
+      userId: typedRow.user_id,
+      pending: true,
+      error: 'Could not save analysis output. The lease will be recovered.',
+    };
+  }
+  if (!completed) {
+    return classifyUnclaimedMusicAnalysis({
+      supabase,
+      analysisId: typedRow.analysis_id,
+      fallbackUserId: typedRow.user_id,
+      error: 'Music analysis completion lost its lease.',
+    });
+  }
+
+  return {
+    ok: true,
+    analysisId: typedRow.analysis_id,
+    userId: typedRow.user_id,
+    contextMarkdown,
+  };
+}
+
+async function failMusicAnalysisAttempt(
+  supabase: AppSupabaseClient,
+  typedRow: MusicAnalysisRow,
+  message: string,
+  runtimeMs: number,
+  retryable: boolean,
+): Promise<RunShowAnalysisResult> {
+  if (retryable && typedRow.attempt_count < MAX_ANALYSIS_ATTEMPTS) {
+    const retryDelay =
+      RETRY_DELAYS_SECONDS[Math.min(typedRow.attempt_count - 1, RETRY_DELAYS_SECONDS.length - 1)] ??
+      RETRY_DELAYS_SECONDS[RETRY_DELAYS_SECONDS.length - 1];
+    const { data: scheduled, error: retryError } = await supabase.rpc(
+      'schedule_song_analysis_retry',
       {
         p_analysis_id: typedRow.analysis_id,
         p_lease_token: typedRow.lease_token,
         p_error_message: truncate(message, 2000),
         p_runtime_ms: runtimeMs,
+        p_retry_delay_seconds: retryDelay,
       },
     );
-    if (failureError) {
-      console.error(
-        '[show-analysis-runner] music analysis failure persistence failed:',
-        failureError,
-      );
+    if (retryError) {
+      console.error('[show-analysis-runner] music analysis retry scheduling failed:', retryError);
       return {
         ok: false,
         analysisId: typedRow.analysis_id,
@@ -503,21 +533,97 @@ export async function runMusicAnalysisForUpload(params: {
         error: `${message} The lease will be recovered.`,
       };
     }
-    if (!failed) {
+    if (!scheduled) {
       return classifyUnclaimedMusicAnalysis({
-        supabase: params.supabase,
+        supabase,
         analysisId: typedRow.analysis_id,
         fallbackUserId: typedRow.user_id,
-        error: 'Music analysis failure lost its lease.',
+        error: 'Music analysis retry lost its lease.',
       });
     }
     return {
       ok: false,
       analysisId: typedRow.analysis_id,
       userId: typedRow.user_id,
+      pending: true,
+      retryScheduled: true,
       error: message,
     };
   }
+
+  const { data: failed, error: failureError } = await supabase.rpc('fail_song_analysis_attempt', {
+    p_analysis_id: typedRow.analysis_id,
+    p_lease_token: typedRow.lease_token,
+    p_error_message: truncate(message, 2000),
+    p_runtime_ms: runtimeMs,
+  });
+  if (failureError) {
+    console.error(
+      '[show-analysis-runner] music analysis failure persistence failed:',
+      failureError,
+    );
+    return {
+      ok: false,
+      analysisId: typedRow.analysis_id,
+      userId: typedRow.user_id,
+      pending: true,
+      error: `${message} The lease will be recovered.`,
+    };
+  }
+  if (!failed) {
+    return classifyUnclaimedMusicAnalysis({
+      supabase,
+      analysisId: typedRow.analysis_id,
+      fallbackUserId: typedRow.user_id,
+      error: 'Music analysis failure lost its lease.',
+    });
+  }
+  return {
+    ok: false,
+    analysisId: typedRow.analysis_id,
+    userId: typedRow.user_id,
+    error: message,
+  };
+}
+
+export async function finishQueuedMusicAnalysis(params: {
+  supabase: AppSupabaseClient;
+  analysisId: string;
+  leaseToken: string;
+  runtimeMs: number;
+  outcome: { ok: true; analysis: AnalyserV14Result } | { ok: false; error: string; status: number };
+}): Promise<RunShowAnalysisResult> {
+  const { data: row, error } = await params.supabase
+    .from('song_analyses')
+    .select('id, user_id, audio_path, personality, attempt_count, lease_token, status')
+    .eq('id', params.analysisId)
+    .maybeSingle();
+  if (error) throw new Error('Could not inspect the analyser callback lease.', { cause: error });
+  if (!row || row.status !== 'running' || row.lease_token !== params.leaseToken) {
+    return { ok: false, cancelled: true, error: 'Stale or duplicate analyser callback ignored.' };
+  }
+  const claim: MusicAnalysisRow = {
+    analysis_id: row.id,
+    user_id: row.user_id,
+    audio_path: row.audio_path,
+    personality: row.personality,
+    attempt_count: row.attempt_count,
+    lease_token: params.leaseToken,
+  };
+  return params.outcome.ok
+    ? completeMusicAnalysisAttempt(
+        params.supabase,
+        claim,
+        params.outcome.analysis,
+        params.runtimeMs,
+      )
+    : failMusicAnalysisAttempt(
+        params.supabase,
+        claim,
+        params.outcome.error,
+        params.runtimeMs,
+        isRetryableAnalyserStatus(params.outcome.status),
+      );
 }
 
 export async function runShowAnalysisForShow(params: {
@@ -570,6 +676,7 @@ export async function runShowAnalysisForShow(params: {
       personality,
       analysisId,
     });
+    if (!analysis) throw new AnalyseError('Legacy show analysis did not return output.', 502, true);
     const contextMarkdown = buildAiContextMarkdown({
       show: typedShow,
       personality,
