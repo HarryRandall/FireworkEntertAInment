@@ -27,7 +27,13 @@ test('shared brand controls do not use neutral accent foregrounds', () => {
 });
 
 test('multishot metadata keeps summary badges beside the title', () => {
-  const editor = read('app/(admin)/admin/multishots/[id]/_components/MultishotEditor.tsx');
+  const editor =
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotEditor.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotMetaBar.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotPreviewStage.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotTimeline.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotInspector.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/multishot-model.ts');
   const metaBar = editor.slice(editor.indexOf('function MetaBar('));
   const titleIndex = metaBar.indexOf('{name ||');
   const durationBadgeIndex = metaBar.indexOf('{durationLabel}');
@@ -50,7 +56,13 @@ test('multishot metadata keeps summary badges beside the title', () => {
 });
 
 test('multishot inspector only opens for a selected shot', () => {
-  const editor = read('app/(admin)/admin/multishots/[id]/_components/MultishotEditor.tsx');
+  const editor =
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotEditor.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotMetaBar.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotPreviewStage.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotTimeline.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotInspector.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/multishot-model.ts');
   const inspector = editor.slice(editor.indexOf('function Inspector('));
 
   assert.doesNotMatch(inspector, /Shot inspector/);
@@ -92,15 +104,21 @@ test('multishot inspector only opens for a selected shot', () => {
 });
 
 test('multishot firework picker exposes searchable descriptive information', () => {
-  const editor = read('app/(admin)/admin/multishots/[id]/_components/MultishotEditor.tsx');
-  const picker = editor.slice(
-    editor.indexOf('function FireworkPicker('),
-    editor.indexOf('function FireworkDetails('),
-  );
-  const details = editor.slice(
-    editor.indexOf('function FireworkDetails('),
-    editor.indexOf('function Inspector('),
-  );
+  const editor =
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotEditor.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotMetaBar.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotPreviewStage.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotTimeline.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotInspector.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/multishot-model.ts');
+  // Each function body runs to the next top-level declaration.
+  const functionSource = (name) => {
+    const start = editor.indexOf(`function ${name}(`);
+    const end = editor.indexOf('\n}\n', start);
+    return editor.slice(start, end === -1 ? undefined : end);
+  };
+  const picker = functionSource('FireworkPicker');
+  const details = functionSource('FireworkDetails');
 
   assert.match(
     picker,
@@ -118,7 +136,13 @@ test('multishot firework picker exposes searchable descriptive information', () 
 });
 
 test('multishot selection stays active on preview, clips, inspector controls, and firework menu items', () => {
-  const editor = read('app/(admin)/admin/multishots/[id]/_components/MultishotEditor.tsx');
+  const editor =
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotEditor.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotMetaBar.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotPreviewStage.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotTimeline.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotInspector.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/multishot-model.ts');
   const keepSelector = editor.slice(
     editor.indexOf('const SHOT_SELECTION_KEEP_SELECTOR = ['),
     editor.indexOf('type SaveState'),
@@ -147,7 +171,13 @@ test('multishot selection stays active on preview, clips, inspector controls, an
 });
 
 test('multishot timeline keeps clips on explicit expandable tracks', () => {
-  const editor = read('app/(admin)/admin/multishots/[id]/_components/MultishotEditor.tsx');
+  const editor =
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotEditor.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotMetaBar.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotPreviewStage.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotTimeline.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotInspector.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/multishot-model.ts');
   const timeline = editor.slice(
     editor.indexOf('function Timeline('),
     editor.indexOf('function ShotClip('),
@@ -184,7 +214,13 @@ test('multishot timeline keeps clips on explicit expandable tracks', () => {
 });
 
 test('multishot preview uses shared admin transport fullscreen and loading chrome', () => {
-  const editor = read('app/(admin)/admin/multishots/[id]/_components/MultishotEditor.tsx');
+  const editor =
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotEditor.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotMetaBar.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotPreviewStage.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotTimeline.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/MultishotInspector.tsx') +
+    read('app/(admin)/admin/multishots/[id]/_components/multishot-model.ts');
   const loading = read('app/(admin)/admin/multishots/[id]/loading.tsx');
   const routeSkeletons =
     read('ui/shell/RouteSkeletons.tsx') + read('app/(admin)/_components/AdminSkeletons.tsx');

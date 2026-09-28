@@ -61,8 +61,13 @@ test('clean replay consumers opt into the shared fullscreen dialog contract', ()
     'app/(admin)/admin/multishots/[id]/_components/MultishotEditor.tsx',
   ];
 
+  // The multishot editor passes the fullscreen container to its preview stage.
+  const sourceFor = (path) =>
+    path.includes('/multishots/')
+      ? read(path) + read(path.replace('MultishotEditor.tsx', 'MultishotPreviewStage.tsx'))
+      : read(path);
   for (const path of consumers) {
-    const source = read(path);
+    const source = sourceFor(path);
     assert.match(source, /usePreviewFullscreen(?:<HTMLElement>)?\(\{ dialogLabel:/, path);
     assert.match(source, /fullscreenContainerRef/, path);
     assert.match(source, /fullscreenContainerProps/, path);
