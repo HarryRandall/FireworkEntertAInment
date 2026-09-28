@@ -800,6 +800,7 @@ export function FireworkReplayViewer({
             aria-busy={!replayReady}
           >
             <LazyFireworkReplayCanvas
+              compactPreview
               cues={sortedCues}
               elapsed={elapsed}
               playbackRef={elapsedRef}

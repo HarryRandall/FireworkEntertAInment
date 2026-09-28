@@ -72,3 +72,21 @@ export function inferAudioContentType(file: File): string {
       return 'audio/mpeg';
   }
 }
+
+/** Derive the automatic title from the current selection, never a previous track. */
+export function deriveShowTitle({
+  trackTitle,
+  filename,
+  description,
+}: {
+  trackTitle?: string;
+  filename?: string;
+  description: string;
+}): string {
+  return (
+    trackTitle?.trim() ||
+    suggestTitleFromFilename(filename ?? '') ||
+    deriveTitleFromDescription(description) ||
+    'Untitled show'
+  );
+}

@@ -430,6 +430,7 @@ export function TemplateReplayPreview({
       >
         {shouldMountCanvas ? (
           <MemoizedFireworkReplayCanvas
+            compactPreview
             cues={cues}
             elapsed={elapsed}
             playbackRef={elapsedRef}

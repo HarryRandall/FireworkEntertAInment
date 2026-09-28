@@ -15,6 +15,7 @@ export type FireOptions = {
   audible: boolean;
   panDegrees?: number;
   tiltDegrees?: number;
+  compactPreview?: boolean;
 };
 
 export type LaunchShell = FireworkDesign['launch']['shell'];

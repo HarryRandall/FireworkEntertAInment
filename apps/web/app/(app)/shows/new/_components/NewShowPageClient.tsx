@@ -95,10 +95,9 @@ import type {
   UploadedAudio,
 } from '@/app/(app)/shows/new/types';
 import {
-  deriveTitleFromDescription,
+  deriveShowTitle,
   inferAudioContentType,
   sanitizeStorageName,
-  suggestTitleFromFilename,
 } from '@/app/(app)/shows/new/utils';
 
 type SoundtrackMode = 'song' | 'none';
@@ -289,7 +288,11 @@ export default function NewShowPageClient({
   const [audioUploadError, setAudioUploadError] = useState<string | null>(null);
   const [uploadedAudio, setUploadedAudio] = useState<UploadedAudio | null>(null);
   const [pendingJamendoTrack, setPendingJamendoTrack] = useState<JamendoSearchTrack | null>(null);
-  const [title, setTitle] = useState('');
+  const title = deriveShowTitle({
+    description,
+    trackTitle: pendingJamendoTrack?.title ?? uploadedAudio?.source?.title,
+    filename: audioFile?.name ?? uploadedAudio?.originalName,
+  });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioUploadErrorRef = useRef<HTMLDivElement>(null);
   const shouldFocusAudioUploadErrorRef = useRef(false);
@@ -529,14 +532,6 @@ export default function NewShowPageClient({
       return;
     }
     if (uploadedAudio) discardUploadedAudio(uploadedAudio);
-    // Nothing else to type: the title comes from the track name (editable
-    // later on the show page).
-    if (!title.trim()) {
-      const suggested = suggestTitleFromFilename(file.name);
-      if (suggested) {
-        setTitle(suggested);
-      }
-    }
     setSoundtrackMode('song');
     setLengthChoice(null);
     setAudioFile(file);
@@ -624,7 +619,6 @@ export default function NewShowPageClient({
 
   const attachJamendoTrack = async (track: JamendoSearchTrack): Promise<void> => {
     if (uploadedAudio) discardUploadedAudio(uploadedAudio);
-    if (!title.trim()) setTitle(track.title);
     setSoundtrackMode('song');
     setLengthChoice(null);
     setAudioFile(null);
@@ -783,13 +777,8 @@ export default function NewShowPageClient({
   // splash swap on Generate has its loading state cached and appears instantly.
   useEffect(() => {
     if (stepIndex !== STEPS.length - 1) return;
-    const candidateTitle =
-      title.trim() ||
-      suggestTitleFromFilename(audioFile?.name ?? '') ||
-      deriveTitleFromDescription(description) ||
-      'Untitled show';
-    router.prefetch(`/shows/${slugifyTitle(candidateTitle)}/generating`);
-  }, [stepIndex, title, audioFile, description, router]);
+    router.prefetch(`/shows/${slugifyTitle(title)}/generating`);
+  }, [stepIndex, title, router]);
 
   /**
    * Detached runner for the post-navigation generation work. Deliberately NOT
@@ -820,15 +809,7 @@ export default function NewShowPageClient({
       if (generationPresentationError) retryGenerationPresentation();
       return;
     }
-    // No manual title entry anywhere: track name first, then the brief.
-    const finalTitle =
-      title.trim() ||
-      suggestTitleFromFilename(audioFile?.name ?? '') ||
-      deriveTitleFromDescription(description) ||
-      'Untitled show';
-    if (finalTitle !== title) {
-      setTitle(finalTitle);
-    }
+    const finalTitle = title;
     setIsLaunching(true);
     // Navigate to the generating route immediately so the URL and splash swap
     // happens on click, not after the server action returns. If the server

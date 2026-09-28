@@ -107,6 +107,8 @@ export type FireworksEngineOptions = {
     issue: import('./model/diagnostics.ts').RenderDiagnostic & { rendererFingerprint?: string },
   ) => void;
   showStarfield?: boolean;
+  /** Lower tall show-preview launches without changing authored designs or burst times. */
+  compactPreview?: boolean;
 };
 
 export class FireworksEngine {
@@ -874,6 +876,7 @@ export class FireworksEngine {
         audible,
         panDegrees: cue.shotPanDegrees ?? 0,
         tiltDegrees: cue.shotTiltDegrees ?? 0,
+        compactPreview: this.options.compactPreview,
       });
     });
   }
