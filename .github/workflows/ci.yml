@@ -183,6 +183,9 @@ jobs:
   database:
     name: Fresh database and access checks
     runs-on: ubuntu-latest
+    env:
+      # Supabase's official mirror avoids public ECR limits on shared runners.
+      SUPABASE_INTERNAL_IMAGE_REGISTRY: ghcr.io
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6

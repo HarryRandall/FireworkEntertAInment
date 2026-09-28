@@ -71,6 +71,11 @@ snapshots, schema migrations, SQL tests and fresh hosted installations.
 `pnpm db:setup` installs local content and synthetic accounts; `pnpm db:env`
 creates the app's local environment file without overwriting an existing one.
 
+The fresh database CI job pulls the pinned Supabase images from the official
+`ghcr.io/supabase` mirror using `SUPABASE_INTERNAL_IMAGE_REGISTRY=ghcr.io`.
+This avoids public ECR download limits on shared GitHub runners. Local commands
+retain the CLI's default registry unless that environment variable is set.
+
 ## Deployment
 
 For Vercel, set the project Root Directory to `apps/web` and include files outside
