@@ -13,6 +13,7 @@ import {
   estimateShellRiseHeight,
   flatLiftScatterOffset,
   launchShellShapeValue,
+  previewShellRiseHeight,
   liftGuidedPosition,
   liftParticleDensityScale,
   liftPathAge,
@@ -71,6 +72,11 @@ export function effectFire(
   const forwardVelocity = Math.sin(tiltRadians) * Math.max(1.0, liftVelocity * 0.42);
   const verticalVelocity = liftVelocity * Math.max(0.82, Math.cos(panRadians) * 0.96);
   const liftRiseHeight = estimateShellRiseHeight(verticalVelocity, design.shellLife);
+  const previewRise = options.compactPreview
+    ? previewShellRiseHeight(liftRiseHeight)
+    : liftRiseHeight;
+  const liftScale = previewRise / liftRiseHeight;
+  const compressed = liftScale < 1;
   const shellSize = shell.size;
   const guidedShellVisible = shell.visible && usesGuidedLiftPath(design.launch.liftParticles);
   let liftPreviousPosition: Pos | null = null;
@@ -87,13 +93,26 @@ export function effectFire(
     s: 0.5,
     l: 0.5,
     shape:
-      shell.visible && !guidedShellVisible ? launchShellShapeValue(shell) : HIDDEN_PARTICLE_SHAPE,
+      shell.visible && !guidedShellVisible && !compressed
+        ? launchShellShapeValue(shell)
+        : HIDDEN_PARTICLE_SHAPE,
     r: shellColor.r,
     g: shellColor.g,
     b: shellColor.b,
     life: design.shellLife,
     decay: 0,
     effect: (p, dt, t) => {
+      // Simulate the original flight so the apex/fuse still hits its planned
+      // beat. Only launch drawing and emissions use the shorter preview path.
+      const physicalY = p.y;
+      const physicalVy = p.vy;
+      if (compressed) {
+        p.y = position.y + (physicalY - position.y) * liftScale;
+        p.vy *= liftScale;
+      }
+      if (compressed && shell.visible && !guidedShellVisible) {
+        effectSpawnGuidedLaunchShell(ctx, p, design, shellColor, shellSize, dt);
+      }
       const previousPosition = liftPreviousPosition;
       effectShellEffect(
         ctx,
@@ -105,20 +124,23 @@ export function effectFire(
         liftRng,
         smokeRng,
         position.y,
-        liftRiseHeight,
+        previewRise,
         shellColor,
         shellSize,
         previousPosition,
       );
       liftPreviousPosition = { x: p.x, y: p.y, z: p.z };
+      p.y = physicalY;
+      p.vy = physicalVy;
     },
     // A time fuse breaks the shell at its apex or when the fuse burns out,
     // whichever comes first; a shell never silently expires unburst.
     condition: (p) => p.vy <= 0 || p.life <= 0,
     action: (p, dt, t) => {
+      if (compressed) p.y = position.y + (p.y - position.y) * liftScale;
       if (guidedShellVisible) {
         const liftStopY =
-          position.y + liftRiseHeight * clamp(design.launch.liftParticles.height / 100, 0, 1);
+          position.y + previewRise * clamp(design.launch.liftParticles.height / 100, 0, 1);
         const guided = liftGuidedPosition(p, design.launch.liftParticles, t, position.y, liftStopY);
         p.x = guided.x;
         p.y = guided.y;

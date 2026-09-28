@@ -193,6 +193,7 @@ export function ShowPreviewPanel({
           ].join(' ')}
         >
           <FireworkReplayCanvas
+            compactPreview
             cues={DEMO_SHOW_CUES}
             elapsed={elapsed}
             playbackRef={playbackRef}

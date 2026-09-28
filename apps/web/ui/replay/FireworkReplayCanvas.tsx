@@ -190,6 +190,8 @@ type Props = {
    * would leave the default frame. Off for deterministic import capture.
    */
   autoFrame?: boolean;
+  /** Compact heights and closer framing for consumer shows, excluding catalogue editors. */
+  compactPreview?: boolean;
   /**
    * Exposes deterministic, non-interactive frame capture to the protected
    * import validator. The controller advances the same engine and composer as
@@ -561,6 +563,7 @@ export function FireworkReplayCanvas({
   showStarfield = true,
   preserveDrawingBuffer = false,
   autoFrame = true,
+  compactPreview = false,
   onCaptureController,
   aimMarkers,
   selectedMarkerId = null,
@@ -574,6 +577,7 @@ export function FireworkReplayCanvas({
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   // Set once the viewer moves the camera; auto-framing then leaves it alone.
   const cameraAdjustedRef = useRef(false);
+  const compactPreviewRef = useRef(compactPreview);
   const autoFrameRef = useRef(autoFrame);
   autoFrameRef.current = autoFrame;
   const cuesForFrameRef = useRef(cues);
@@ -913,6 +917,7 @@ export function FireworkReplayCanvas({
 
     const engine = new FireworksEngine(scene, launchPositions, renderer, sceneMode, {
       showStarfield,
+      compactPreview,
       soundAssets: FIREWORK_SOUND_ASSETS,
     });
     engine.attachListenerToCamera(camera);
@@ -1221,7 +1226,7 @@ export function FireworkReplayCanvas({
     const engine = engineRef.current;
     if (!engine) return;
     const targetElapsed = playbackRef ? playbackRef.current : internalElapsedRef.current;
-    const cacheKey = replaySimulationCacheKey(cues, launchPositions);
+    const cacheKey = `${compactPreviewRef.current ? 'compact' : 'authored'}:${replaySimulationCacheKey(cues, launchPositions)}`;
     // Re-renders can re-fire this effect with content-identical cues (array
     // identity churn from parent state like play/pause). Re-applying would
     // clear() the live particles and re-seek — a visible blink — so skip when
@@ -1551,13 +1556,20 @@ export function FireworkReplayCanvas({
 
   frameShowRef.current = frameShow;
 
-  /** Default composition scaled about the origin, so the angle never changes. */
+  /** Reset to the compact show composition or the scaled authored view. */
   function frameShow(scale: number) {
     const cam = cameraRef.current;
     const ctrl = controlsRef.current;
     if (!cam || !ctrl) return;
-    cam.position.copy(DEFAULT_CAMERA_POSITION).multiplyScalar(scale);
-    ctrl.target.copy(DEFAULT_CAMERA_TARGET).multiplyScalar(scale);
+    if (compactPreviewRef.current) {
+      // A tall finale must not shrink the opening. Height compression keeps
+      // show bursts in a stable band; editors and import capture retain scale.
+      cam.position.set(0, 64, 1800);
+      ctrl.target.set(0, 700, 0);
+    } else {
+      cam.position.copy(DEFAULT_CAMERA_POSITION).multiplyScalar(scale);
+      ctrl.target.copy(DEFAULT_CAMERA_TARGET).multiplyScalar(scale);
+    }
     ctrl.maxDistance = Math.max(MAX_CAMERA_DISTANCE, cam.position.distanceTo(ctrl.target) * 1.2);
     floorLiftRef.current = 0;
     ctrl.update();

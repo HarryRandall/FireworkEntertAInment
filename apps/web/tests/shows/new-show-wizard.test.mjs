@@ -108,7 +108,8 @@ test('new show wizard advances ready uploaded music without hidden title validat
   assert.doesNotMatch(page, /setFieldError\('title'\)/);
   assert.doesNotMatch(page, /focusTitleRequirement/);
   assert.doesNotMatch(page, /type="hidden" name="title"/);
-  assert.match(page, /deriveTitleFromDescription\(description\)/);
+  assert.match(page, /const title = deriveShowTitle\(/);
+  assert.doesNotMatch(page, /setTitle/);
 });
 
 test('new show wizard blocks invalid measured widths instead of substituting a preset', () => {

@@ -35,6 +35,14 @@ export function estimateShellRiseHeight(initialVelocityY: number, shellLife: num
   return Math.max(1, height);
 }
 
+// Preview height is a presentation choice. Keep lower shells unchanged and
+// smoothly compress tall launches into a 7-12 m band, retaining their order.
+export function previewShellRiseHeight(height: number): number {
+  const knee = 700;
+  const headroom = 500;
+  return height <= knee ? height : knee + headroom * (1 - Math.exp(-(height - knee) / headroom));
+}
+
 export function launchShellShapeValue(shell: LaunchShell): number {
   switch (shell.shape) {
     case 'orb':
