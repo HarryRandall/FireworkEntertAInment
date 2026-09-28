@@ -61,7 +61,7 @@ export function effectFire(
     effectFireFountain(ctx, design, position, color, rng, options.audible, smokeRng, budget);
     return;
   }
-  if (options.audible && design.sound.launch) ctx.sh.playRandomMortar(1.0, rng);
+  if (options.audible && design.sound.launch) ctx.sh.playRandomMortar(1.0);
   ctx.lights.newLight({ x: position.x, y: 30, z: position.z }, new THREE.Color(0.7, 0.3, 0), 10);
   effectSpawnMortarSmoke(ctx, position, design, smokeRng);
   const liftVelocity = design.liftVelocity;
@@ -112,7 +112,9 @@ export function effectFire(
       );
       liftPreviousPosition = { x: p.x, y: p.y, z: p.z };
     },
-    condition: (p) => p.vy <= 0,
+    // A time fuse breaks the shell at its apex or when the fuse burns out,
+    // whichever comes first; a shell never silently expires unburst.
+    condition: (p) => p.vy <= 0 || p.life <= 0,
     action: (p, dt, t) => {
       if (guidedShellVisible) {
         const liftStopY =

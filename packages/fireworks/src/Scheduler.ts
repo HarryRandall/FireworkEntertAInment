@@ -23,11 +23,13 @@ export class Scheduler {
   }
 
   /**
-   * Reset all cues to unfired (used on a backwards seek).
+   * Mark cues after a restored snapshot as unfired. Snapshots capture state
+   * after their own boundary cues fired, so a cue exactly at `time` stays
+   * fired; resetting it would launch it a second time.
    */
   resetFiredAfter(time: number): void {
     for (const sc of this.cues) {
-      if (sc.cue.timeSeconds >= time) sc.fired = false;
+      sc.fired = sc.cue.timeSeconds <= time + 0.000001;
     }
   }
 

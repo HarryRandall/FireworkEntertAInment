@@ -27,9 +27,9 @@ export function effectDetonate(
   if (audible) {
     if (boom !== 'none') {
       if (boom === 'heavy') {
-        ctx.sh.playRandomHeavyBoom(1.0, rng);
+        ctx.sh.playRandomHeavyBoom(1.0);
       } else {
-        ctx.sh.playRandomLightBoom(1.0, rng);
+        ctx.sh.playRandomLightBoom(1.0);
       }
     }
   }

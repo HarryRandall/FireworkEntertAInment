@@ -43,6 +43,8 @@ export class Particle {
   shape = 0;
   rotation = 0;
   spin = 0;
+  /** Seeded 0-1 value fixed at spawn: strobe selection and twinkle phase. */
+  phase = 0;
   /** Stable outer/core style-pair slot owned by the cue that spawned this particle. */
   headStyleSlot = 0;
   color = new THREE.Color();
@@ -131,6 +133,7 @@ export class Particle {
     this.rotation = 0;
     this.spin = 0;
     this.headStyleSlot = 0;
+    this.phase = 0;
     this.decay = 0;
     this.gravity = -9.82;
     this.drag = 0;

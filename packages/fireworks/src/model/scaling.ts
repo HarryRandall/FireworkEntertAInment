@@ -7,7 +7,7 @@ export const CALIBER_BASELINE_MM = 30;
 export function parseCaliberMm(caliber: string): number | null {
   const mm = caliber.match(/^(\d+(?:\.\d+)?)\s*mm$/i);
   if (mm) return parseFloat(mm[1]);
-  const inches = caliber.match(/^(\d+(?:\.\d+)?)\s*["""]/);
+  const inches = caliber.match(/^(\d+(?:\.\d+)?)\s*(?:["\u201D\u2033]|in\b|inch)/i);
   if (inches) return parseFloat(inches[1]) * 25.4;
   return null;
 }
@@ -78,6 +78,8 @@ export function scaleDesignForEmphasis(
     stars: { outer, core },
     burstFlashIntensity: Math.min(MAX_BURST_FLASH_INTENSITY, design.burstFlashIntensity * scale),
     liftVelocity: liftVelocity * scale,
+    // A faster lift needs a proportionally longer fuse to reach its apex.
+    shellLife: Math.min(60, design.shellLife * scale),
   };
 }
 

@@ -1,8 +1,8 @@
 [
   {
     "slug": "peony",
-    "hash": "0919bf64428fb8b6e49c5d7c0d5f5a1b126690fa6ea65d5a31173a8c8eeff5bf",
-    "peakParticles": 2833,
+    "hash": "c476ef1493bd654003609ffefa9588d12b34a99e57fbdb198875d8895ed34a6b",
+    "peakParticles": 2800,
     "timing": {
       "liftTimeSeconds": 1.6666666666666656,
       "effectStartSeconds": 1.6666666666666656,
@@ -10,12 +10,12 @@
       "fadeFinishSeconds": 8.166666666666666,
       "endSeconds": 8.166666666666666
     },
-    "simulationMs": 60
+    "simulationMs": 245
   },
   {
     "slug": "chrysanthemum",
-    "hash": "7c611573d69c5396cf47253735331b8675a48c57165e5b9974af14403b94d700",
-    "peakParticles": 2770,
+    "hash": "afb615d4793362a340dd4e2c0c6b813b895aed5340143cfdc761f2f6818dcf7a",
+    "peakParticles": 2744,
     "timing": {
       "liftTimeSeconds": 2.1499999999999972,
       "effectStartSeconds": 2.1499999999999972,
@@ -23,12 +23,12 @@
       "fadeFinishSeconds": 8.649999999999997,
       "endSeconds": 8.649999999999997
     },
-    "simulationMs": 88
+    "simulationMs": 225
   },
   {
     "slug": "brocade",
-    "hash": "03068247631bb9a3d275b0869a53b75f066e6e834b543a0a0044f4939ebfe34e",
-    "peakParticles": 2880,
+    "hash": "9151fa85e33c400762354d328f1c8f2058268c8a8f615004b9b408656b41a018",
+    "peakParticles": 2862,
     "timing": {
       "liftTimeSeconds": 1.2333333333333338,
       "effectStartSeconds": 1.2333333333333338,
@@ -36,12 +36,12 @@
       "fadeFinishSeconds": 7.733333333333334,
       "endSeconds": 7.733333333333334
     },
-    "simulationMs": 68
+    "simulationMs": 161
   },
   {
     "slug": "kamuro",
-    "hash": "a0243871349113a4d30e900d79824df92d3f741a2263ef7ce85ba1bb122578dd",
-    "peakParticles": 2842,
+    "hash": "df9ad8dccd3a42ef31390456d3f2f468484999e67201f0ce575edf489b4b6d44",
+    "peakParticles": 2773,
     "timing": {
       "liftTimeSeconds": 2.3499999999999965,
       "effectStartSeconds": 2.3499999999999965,
@@ -49,12 +49,12 @@
       "fadeFinishSeconds": 8.849999999999996,
       "endSeconds": 10.149999999999997
     },
-    "simulationMs": 72
+    "simulationMs": 271
   },
   {
     "slug": "willow",
-    "hash": "2b3aece2e805ef2578cefdbfb95368ffe268aa4a8131c2a5cbbac07274d1491d",
-    "peakParticles": 2232,
+    "hash": "9430255f9f2f607171160735cc1b5e3efb04b3a2acb49e54ea45760814945793",
+    "peakParticles": 2266,
     "timing": {
       "liftTimeSeconds": 2.1499999999999972,
       "effectStartSeconds": 2.1499999999999972,
@@ -62,12 +62,12 @@
       "fadeFinishSeconds": 13.349999999999998,
       "endSeconds": 13.349999999999998
     },
-    "simulationMs": 118
+    "simulationMs": 376
   },
   {
     "slug": "palm",
-    "hash": "da3af9d887ed592bb9bb6bf75228e607e9182cc7ad3907fc970a3bf734b51f5b",
-    "peakParticles": 1986,
+    "hash": "4942d7e1d2762bcfa1f082be5713c849b44fe3b9968d86e9807ab96784e70320",
+    "peakParticles": 1734,
     "timing": {
       "liftTimeSeconds": 2.1499999999999972,
       "effectStartSeconds": 2.1499999999999972,
@@ -75,12 +75,12 @@
       "fadeFinishSeconds": 8.649999999999997,
       "endSeconds": 8.649999999999997
     },
-    "simulationMs": 37
+    "simulationMs": 119
   },
   {
     "slug": "ring",
-    "hash": "21336ded88e1900d82c5dd2f6c2683041af901a9dd51ef3af1946eafe0451200",
-    "peakParticles": 2489,
+    "hash": "26ba1f518e73895b65a5f09cce22453716ae3f7d8e02baee3273584b47bd1352",
+    "peakParticles": 2577,
     "timing": {
       "liftTimeSeconds": 2.1499999999999972,
       "effectStartSeconds": 2.1499999999999972,
@@ -88,11 +88,11 @@
       "fadeFinishSeconds": 7.479999999999997,
       "endSeconds": 7.479999999999997
     },
-    "simulationMs": 44
+    "simulationMs": 114
   },
   {
     "slug": "saturn",
-    "hash": "761a3d5309d127659ab40fc32343f0012d180b3203e343d6b887ddbc22e40e2d",
+    "hash": "aaea9168e2d9f4815487cf534dc070a0213bbd931dc743b6d37ef707ef1267f5",
     "peakParticles": 1378,
     "timing": {
       "liftTimeSeconds": 2.0499999999999976,
@@ -101,12 +101,12 @@
       "fadeFinishSeconds": 4.509999999999998,
       "endSeconds": 6.529999999999998
     },
-    "simulationMs": 21
+    "simulationMs": 39
   },
   {
     "slug": "crossette",
-    "hash": "ebf0083950aec8c4866d064d49606551c8ca862b45bf76b16a3fb99dde4b074d",
-    "peakParticles": 1924,
+    "hash": "8031b33c8e6c552ee6b5912c74977a506c803b2d7353a8dd1e9ce606a6352023",
+    "peakParticles": 2026,
     "timing": {
       "liftTimeSeconds": 1.9666666666666646,
       "effectStartSeconds": 1.9666666666666646,
@@ -114,12 +114,12 @@
       "fadeFinishSeconds": 8.466666666666665,
       "endSeconds": 8.466666666666665
     },
-    "simulationMs": 64
+    "simulationMs": 159
   },
   {
     "slug": "double_break",
-    "hash": "764ac475f37e63549cf0a03fbb35c15187ed06af61f402534a29b428d05ff2e8",
-    "peakParticles": 2015,
+    "hash": "5721b79e60e8cbd87b9a9fe2f2d89f93f4997b4e682218b5d809c4eb9b640589",
+    "peakParticles": 2051,
     "timing": {
       "liftTimeSeconds": 2.533333333333329,
       "effectStartSeconds": 2.533333333333329,
@@ -127,12 +127,12 @@
       "fadeFinishSeconds": 9.03333333333333,
       "endSeconds": 9.03333333333333
     },
-    "simulationMs": 68
+    "simulationMs": 157
   },
   {
     "slug": "bowtie",
-    "hash": "60a48cf20f135cf3a2826a72a3b129815cb954405891250cf63dea5bc8a60a47",
-    "peakParticles": 2049,
+    "hash": "d45aecc787567d6b5cab359d573d42a9a28ac4d9a19cf3604c99ca97236b639f",
+    "peakParticles": 1958,
     "timing": {
       "liftTimeSeconds": 1.9666666666666646,
       "effectStartSeconds": 1.9666666666666646,
@@ -140,12 +140,12 @@
       "fadeFinishSeconds": 8.466666666666665,
       "endSeconds": 8.466666666666665
     },
-    "simulationMs": 51
+    "simulationMs": 124
   },
   {
     "slug": "horsetail",
-    "hash": "b33ebb2129cb8156af1d0ad702f43b8430d740c4fab3700b3503c9f8362f3d45",
-    "peakParticles": 2194,
+    "hash": "4d3492d7b5f87ad404589543b0a0988227e91ccf4d95f47b73c3bbc6abe35c21",
+    "peakParticles": 2109,
     "timing": {
       "liftTimeSeconds": 1.7666666666666653,
       "effectStartSeconds": 1.7666666666666653,
@@ -153,11 +153,11 @@
       "fadeFinishSeconds": 12.166666666666666,
       "endSeconds": 13.466666666666667
     },
-    "simulationMs": 91
+    "simulationMs": 226
   },
   {
     "slug": "comet",
-    "hash": "852ed61687823d8054083f0579bea36900ff2a967a28465444ae13f798d35070",
+    "hash": "d2225000d463a0e4e7324b4cfe29add9fe2c097c6d46d6667321f1abc00117fb",
     "peakParticles": 1354,
     "timing": {
       "liftTimeSeconds": 2.933333333333328,
@@ -166,12 +166,12 @@
       "fadeFinishSeconds": 8.783333333333328,
       "endSeconds": 8.783333333333328
     },
-    "simulationMs": 24
+    "simulationMs": 42
   },
   {
     "slug": "mine",
-    "hash": "c877bf821b3a66cdcda499214d4b1aec7aa6d2fe566ffa985ce3348a1c74f351",
-    "peakParticles": 4063,
+    "hash": "d071bbcb068b5e0687a0f850f8aebafe36e61a2ed842994a75537f4efc12d1ce",
+    "peakParticles": 4101,
     "timing": {
       "liftTimeSeconds": 0,
       "effectStartSeconds": 0,
@@ -179,12 +179,12 @@
       "fadeFinishSeconds": 4.68,
       "endSeconds": 5.9799999999999995
     },
-    "simulationMs": 35
+    "simulationMs": 93
   },
   {
     "slug": "pearls",
-    "hash": "6f1154c7eee83d335ae183b638f103a9033b2f1e4e610c98cd057a1b0e7d2bff",
-    "peakParticles": 1514,
+    "hash": "96a27f599c2f95277820e881d23423ebdba5d25eaf7b8b2244139d15178a5318",
+    "peakParticles": 1518,
     "timing": {
       "liftTimeSeconds": 2.1499999999999972,
       "effectStartSeconds": 2.1499999999999972,
@@ -192,11 +192,11 @@
       "fadeFinishSeconds": 6.179999999999998,
       "endSeconds": 6.629999999999997
     },
-    "simulationMs": 42
+    "simulationMs": 46
   },
   {
     "slug": "pistil",
-    "hash": "0816fd98d82cd385bd9b014027d9ccee089ae92b6c88db95e32aecbb4680ca08",
+    "hash": "33072c6b1c6ad47fa5d50f1ffa642c889541e4e42e90f573d8927a4215e5f480",
     "peakParticles": 1357,
     "timing": {
       "liftTimeSeconds": 1.9666666666666646,
@@ -205,12 +205,12 @@
       "fadeFinishSeconds": 4.566666666666665,
       "endSeconds": 6.446666666666664
     },
-    "simulationMs": 28
+    "simulationMs": 75
   },
   {
     "slug": "nishiki",
-    "hash": "390f928f83863e59e1e644953c238b4cd420b397be92356e1da38cce6f60e12a",
-    "peakParticles": 1684,
+    "hash": "2fe5d532ff21b08ff6fd4e4c930c61c348149a2f9106d1b8ab6b315a001d34b6",
+    "peakParticles": 1650,
     "timing": {
       "liftTimeSeconds": 2.249999999999997,
       "effectStartSeconds": 2.249999999999997,
@@ -218,12 +218,12 @@
       "fadeFinishSeconds": 8.249999999999996,
       "endSeconds": 9.549999999999997
     },
-    "simulationMs": 68
+    "simulationMs": 116
   },
   {
     "slug": "strobe",
-    "hash": "b787cb7543ec9d458ef22f54cfd7b62c6bf3d2ff15f638c8cccbe6b36c28b3fd",
-    "peakParticles": 2319,
+    "hash": "80efeeceefdd66bce90363d92dc27c3899351d391889e632f8558cce9ea16198",
+    "peakParticles": 2346,
     "timing": {
       "liftTimeSeconds": 1.9666666666666646,
       "effectStartSeconds": 1.9666666666666646,
@@ -231,12 +231,12 @@
       "fadeFinishSeconds": 8.466666666666665,
       "endSeconds": 8.466666666666665
     },
-    "simulationMs": 60
+    "simulationMs": 102
   },
   {
     "slug": "crackle",
-    "hash": "38e66cc0f4f9c5444a217e8800b0464591dfac16ed42137455b7f3cd92d471ac",
-    "peakParticles": 3582,
+    "hash": "b363c921c07d20e3d552b5a9397cdff2152a0bfbf57eb2db8c1080168e323946",
+    "peakParticles": 3966,
     "timing": {
       "liftTimeSeconds": 1.7666666666666653,
       "effectStartSeconds": 1.7666666666666653,
@@ -244,12 +244,12 @@
       "fadeFinishSeconds": 8.266666666666666,
       "endSeconds": 9.566666666666666
     },
-    "simulationMs": 68
+    "simulationMs": 125
   },
   {
     "slug": "silverFish",
-    "hash": "e384521fb9fd9f7770bfadafea3132576c30207ff75fc800a30d06f4c04365a0",
-    "peakParticles": 2399,
+    "hash": "28eeb69fa8c5df4a7319b34960f876ac96db30a3feedb4dff05b2a066dfe4b0d",
+    "peakParticles": 2452,
     "timing": {
       "liftTimeSeconds": 1.7666666666666653,
       "effectStartSeconds": 1.7666666666666653,
@@ -257,12 +257,12 @@
       "fadeFinishSeconds": 4.366666666666665,
       "endSeconds": 6.246666666666664
     },
-    "simulationMs": 52
+    "simulationMs": 107
   },
   {
     "slug": "waterfall",
-    "hash": "9b2550abdcb01868657cec7db554d9a5558caff9119a027e28a4c45c253deed2",
-    "peakParticles": 2613,
+    "hash": "c1332ac312dfd53fe4aa191789c2d411b5049062791694b01813c8b782bd2f7a",
+    "peakParticles": 2648,
     "timing": {
       "liftTimeSeconds": 1.7666666666666653,
       "effectStartSeconds": 1.7666666666666653,
@@ -270,12 +270,12 @@
       "fadeFinishSeconds": 10.541666666666666,
       "endSeconds": 10.541666666666666
     },
-    "simulationMs": 122
+    "simulationMs": 346
   },
   {
     "slug": "whirl",
-    "hash": "54888d870fea8fe16c6a5c9457cccdd04d5363f27655a794ad27356b5cc3d537",
-    "peakParticles": 1718,
+    "hash": "c18234c38e1ac020bbd3c60979208edb712e6b4d81fff1ca7ee7873ca64d557a",
+    "peakParticles": 1758,
     "timing": {
       "liftTimeSeconds": 1.566666666666666,
       "effectStartSeconds": 1.566666666666666,
@@ -283,12 +283,12 @@
       "fadeFinishSeconds": 4.566666666666666,
       "endSeconds": 6.046666666666665
     },
-    "simulationMs": 30
+    "simulationMs": 64
   },
   {
     "slug": "roman_candle",
-    "hash": "740bb56d78ee647dcf76437aad6c772f51fb63c0b674f764dd19de806d13adad",
-    "peakParticles": 82,
+    "hash": "163e4bc3c37268aecb299da05480731b7d723da99c0cf516d1e4dcb578475488",
+    "peakParticles": 76,
     "timing": {
       "liftTimeSeconds": 0,
       "effectStartSeconds": 0,
@@ -296,12 +296,12 @@
       "fadeFinishSeconds": 11.58,
       "endSeconds": 11.58
     },
-    "simulationMs": 8
+    "simulationMs": 10
   },
   {
     "slug": "fountain",
-    "hash": "65f22dba3b52a9badaa012643c7d2a87dd2b548889a7be32ceaba918dc4e57e0",
-    "peakParticles": 6721,
+    "hash": "b279651c30cd13446075befd7899f69db0f684ecbeb970f1c2e4c5e5491b3b2a",
+    "peakParticles": 7496,
     "timing": {
       "liftTimeSeconds": 0,
       "effectStartSeconds": 0,
@@ -309,6 +309,6 @@
       "fadeFinishSeconds": 11.7,
       "endSeconds": 13
     },
-    "simulationMs": 99
+    "simulationMs": 248
   }
 ]

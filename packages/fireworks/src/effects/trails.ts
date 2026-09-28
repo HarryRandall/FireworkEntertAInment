@@ -172,16 +172,20 @@ export function effectEmitBurstTrailParticle(
       const elapsedSinceBirth = Math.max(0, particleAge - spreadBirthAge) * life;
       const distanceBehindHead =
         initialDistanceBehindHead + elapsedSinceBirth * relativeHeadSpeed * 100;
-      const nextSpread = scaleTrailScatter(
-        spreadVector,
+      // Inline scatter scaling: this runs for every trail particle every tick.
+      const radius = Math.max(
+        0,
         burstTrailSpreadRadius(trail, spreadPosition, distanceBehindHead, visibleTrailLength),
       );
-      p.x += nextSpread.x - currentSpreadX;
-      p.y += nextSpread.y - currentSpreadY;
-      p.z += nextSpread.z - currentSpreadZ;
-      currentSpreadX = nextSpread.x;
-      currentSpreadY = nextSpread.y;
-      currentSpreadZ = nextSpread.z;
+      const nextX = spreadVector.x * radius;
+      const nextY = spreadVector.y * radius;
+      const nextZ = spreadVector.z * radius;
+      p.x += nextX - currentSpreadX;
+      p.y += nextY - currentSpreadY;
+      p.z += nextZ - currentSpreadZ;
+      currentSpreadX = nextX;
+      currentSpreadY = nextY;
+      currentSpreadZ = nextZ;
       const nextTone = burstTrailParticleColorAt(
         particleAge,
         pathAge,

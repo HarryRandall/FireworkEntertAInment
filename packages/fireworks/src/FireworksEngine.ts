@@ -93,7 +93,7 @@ const SCRUB_DT = 1 / 24;
 // the step count keeps fast drags across busy shows responsive.
 const SCRUB_DRAG_DT = 1 / 12;
 const LARGE_JUMP_SECONDS = 0.35;
-const SNAPSHOT_STRIDE = 24;
+const SNAPSHOT_STRIDE = 25;
 // Sized for SNAPSHOT_INTERVAL below: 1200 half-second snapshots covers a
 // 10-minute show before eviction starts dropping the earliest entries.
 const MAX_SNAPSHOTS = 1200;
@@ -668,9 +668,16 @@ export class FireworksEngine {
     this.elapsed = 0;
     this.time = 0;
     this.snapshots.length = 0;
-    // Seed an empty t=0 snapshot so a seek back to the start restores instead
-    // of falling through to the from-zero rebuild, which would wipe the cache.
-    this.snapshots.push({ time: 0, state: this.captureSnapshot(), lossy: false });
+    // Seed a t=0 snapshot so a seek back to the start restores instead of
+    // falling through to the from-zero rebuild, which would wipe the cache.
+    // Like every snapshot, it holds the state after its boundary cues fired.
+    this.effects.setAudible(false);
+    for (const cue of this.scheduler.pop(0, 0)) this.fireCue(cue, false);
+    this.snapshots.push({
+      time: 0,
+      state: this.captureSnapshot(),
+      lossy: this.poolHasLiveCallbackParticles(),
+    });
     this.lastPrimeCaptureLossy = false;
     this.nextSnapshotAt = this.SNAPSHOT_INTERVAL;
     this.syncGeometry();
@@ -923,11 +930,17 @@ export class FireworksEngine {
   private advanceTo(target: number, audible: boolean): void {
     const dt = audible ? FIXED_DT : this.scrubbing ? SCRUB_DRAG_DT : SCRUB_DT;
     let cursor = this.elapsed;
+    // Playback advances in whole fixed steps and carries the remainder to the
+    // next frame, so the simulation is identical on 60 Hz, 120 Hz and dropped
+    // frames. Seeks land exactly on their target.
+    const end = audible
+      ? cursor + Math.floor((target - cursor) / FIXED_DT + 1e-6) * FIXED_DT
+      : target;
     this.effects.setAudible(audible);
     const boundaryCues = this.scheduler.pop(cursor, cursor);
     for (const cue of boundaryCues) this.fireCue(cue, audible);
-    while (cursor + 0.0001 < target) {
-      const next = Math.min(target, cursor + dt);
+    while (cursor + 0.0001 < end) {
+      const next = Math.min(end, cursor + dt);
       const due = this.scheduler.pop(cursor, next);
       // Existing particles advance to the boundary first. Dispatching a cue
       // before this tick gave a newly launched shell time from before its own
@@ -965,7 +978,7 @@ export class FireworksEngine {
         this.nextSnapshotAt = cursor + this.SNAPSHOT_INTERVAL;
       }
     }
-    this.elapsed = target;
+    this.elapsed = end;
     this.syncGeometry();
   }
 
@@ -974,11 +987,17 @@ export class FireworksEngine {
     const ps = this.pool.particles;
     const live = this.pool.aliveIndices;
     const count = this.pool.aliveCount;
-    for (let slot = 0; slot < count; slot++) {
-      const p = ps[live[slot]];
-      if (!p.alive) continue;
-      const headStyleSlot = p.headStyleSlot;
-      this.pool.withHeadStyleSlot(headStyleSlot, () => p.update(dt, this.time));
+    // Particles spawned during an update inherit their parent's style slot.
+    const previousSlot = this.pool.swapHeadStyleSlot(0);
+    try {
+      for (let slot = 0; slot < count; slot++) {
+        const p = ps[live[slot]];
+        if (!p.alive) continue;
+        this.pool.swapHeadStyleSlot(p.headStyleSlot);
+        p.update(dt, this.time);
+      }
+    } finally {
+      this.pool.swapHeadStyleSlot(previousSlot);
     }
     this.pool.compactAliveMax();
     this.lights.update(dt);
@@ -1026,7 +1045,8 @@ export class FireworksEngine {
       // amplitudes and faster frequencies caused per-particle flicker that
       // looked like noise rather than burning chemistry. Head orbs are exempt:
       // they are meant to read as a steady, constant core, so they never twinkle.
-      const twinkle = isStar && !isHead ? 0.9 + 0.1 * Math.sin(p.life * 4 + p.i * 0.5) : 1;
+      const twinkle =
+        isStar && !isHead ? 0.9 + 0.1 * Math.sin(p.life * 4 + p.phase * Math.PI * 2) : 1;
       const alpha = renderParticleAlpha(p, headStyle) * twinkle * clamp(p.alpha, 0, 1);
       if (isSmoke) {
         const si = smokeDrawCount * 3;
@@ -1242,6 +1262,7 @@ export class FireworksEngine {
       state.data[o + 21] = p.headStyleSlot;
       state.data[o + 22] = p.airResistance;
       state.data[o + 23] = p.terminalVelocity;
+      state.data[o + 24] = p.phase;
       w++;
     }
     return state;
@@ -1278,6 +1299,7 @@ export class FireworksEngine {
       p.headStyleSlot = state.data[o + 21] || 0;
       p.airResistance = state.data[o + 22];
       p.terminalVelocity = state.data[o + 23];
+      p.phase = state.data[o + 24];
       // Behaviour callbacks are lost on snapshot restore; remaining motion
       // keeps the captured physics until life expires. Acceptable for scrubbing.
       this.pool.restore(i, p);
@@ -1354,22 +1376,6 @@ export class FireworksEngine {
       particles: this.pool.aliveCount,
       scheduledEvents: this.scheduler.size(),
     };
-  }
-
-  /** Test/manual trigger from a specific design + launch index. */
-  fireDesign(design: FireworkDesign, launchIndex = 0): void {
-    const pos = this.world.getLaunchPosition(launchIndex);
-    const seed = mixSeed('manual', this.elapsed, launchIndex);
-    this.effects.setAudible(true);
-    const headStyleSlot = this.setLayerHeadStyles(design.stars.outer.head, design.stars.core.head);
-    this.pool.withHeadStyleSlot(headStyleSlot, () => {
-      this.effects.fire(design, pos, {
-        rng: createSeededRng(seed),
-        smokeRng: createSeededRng(mixSeed(seed, 'launch-smoke')),
-        liftRng: createSeededRng(mixSeed(seed, 'lift-particles')),
-        audible: true,
-      });
-    });
   }
 
   dispose(): void {

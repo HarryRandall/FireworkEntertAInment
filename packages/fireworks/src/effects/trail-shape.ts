@@ -361,16 +361,6 @@ export function scaleTrailScatter(
   };
 }
 
-export function burstTrailScatterOffset(
-  headVx: number,
-  headVy: number,
-  headVz: number,
-  radius: number,
-  rng: RandomSource,
-): { x: number; y: number; z: number } {
-  return scaleTrailScatter(burstTrailScatterVector(headVx, headVy, headVz, rng), radius);
-}
-
 export function chooseBurstTrailShape(
   weights: { circle: number; square: number; triangle: number },
   rng: RandomSource,

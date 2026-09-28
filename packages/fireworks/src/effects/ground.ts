@@ -21,7 +21,7 @@ export function effectFireMine(
   smokeRng: RandomSource = createSeededRng(mixSeed('mine-smoke-fallback')),
   budget: ShellEffectBudget = createShellEffectBudget(),
 ): void {
-  if (audible && design.sound.launch) ctx.sh.playRandomMortar(0.7, rng);
+  if (audible && design.sound.launch) ctx.sh.playRandomMortar(0.7);
   ctx.lights.newLight({ x: position.x, y: 35, z: position.z }, color, 12);
   effectSpawnMortarSmoke(ctx, position, design, smokeRng, 0.65);
   const shape = design.geometryTuning.upwardFan;
@@ -75,7 +75,7 @@ export function effectFireRomanCandle(
   smokeRng: RandomSource,
   budget: ShellEffectBudget,
 ): void {
-  if (audible && design.sound.launch) ctx.sh.playRandomMortar(0.45, rng);
+  if (audible && design.sound.launch) ctx.sh.playRandomMortar(0.45);
   effectSpawnMortarSmoke(ctx, position, design, smokeRng, 0.4);
   const shape = design.geometryTuning.romanCandle;
   const shotCounts = {
@@ -121,10 +121,10 @@ export function effectFireRomanCandle(
             layerKey === soundLayer &&
             audible &&
             budget.crackleSoundsRemaining > 0 &&
-            rng.next() < 0.55
+            ctx.sh.chance(0.55)
           ) {
             budget.crackleSoundsRemaining -= 1;
-            ctx.sh.playRandomCrackle(0.05, rng);
+            ctx.sh.playRandomCrackle(0.05);
           }
           const starSpeed =
             rangeRand(layer.burst.speed, rng) *
@@ -139,6 +139,14 @@ export function effectFireRomanCandle(
             shotCount,
             rng,
           );
+          const scatterX = (rng.next() - 0.5) * shape.muzzleScatter;
+          const scatterZ = (rng.next() - 0.5) * shape.muzzleScatter;
+          const vx = Math.sin(spread) * starSpeed * shape.lateralScale;
+          const vy = starSpeed * (shape.riseBase + rng.next() * shape.riseVariation);
+          const vz = Math.sin(azimuth) * starSpeed * shape.depthScale;
+          // Stars due earlier in this step start where they would be by now,
+          // so coarse seek steps do not release them as one clump.
+          const age = Math.max(0, elapsed - (shotIndex * interval + interval * 0.5));
           effectSpawnEffectStar(ctx, {
             design,
             layer,
@@ -146,14 +154,14 @@ export function effectFireRomanCandle(
             budget,
             rng,
             audible,
-            x: p.x + (rng.next() - 0.5) * shape.muzzleScatter,
-            y: p.y,
-            z: p.z + (rng.next() - 0.5) * shape.muzzleScatter,
-            vx: Math.sin(spread) * starSpeed * shape.lateralScale,
-            vy: starSpeed * (shape.riseBase + rng.next() * shape.riseVariation),
-            vz: Math.sin(azimuth) * starSpeed * shape.depthScale,
+            x: p.x + scatterX + vx * age * 100,
+            y: p.y + vy * age * 100,
+            z: p.z + scatterZ + vz * age * 100,
+            vx,
+            vy,
+            vz,
             color: starColor,
-            life: rangeRand(layer.burst.life, rng) * (shape.lifePercent / 100),
+            life: rangeRand(layer.burst.life, rng) * (shape.lifePercent / 100) - age,
             gravity: clampStarGravity(rangeRand(layer.burst.gravity, rng)),
             drag: STAR_DRAG * (shape.dragPercent / 100),
             headSizeScale: shape.headSizePercent / 100,
@@ -197,7 +205,7 @@ export function effectFireFountain(
   ctx.lights.newLight({ x: position.x, y: 70, z: position.z }, color, 11);
   if (audible && design.sound.launch && budget.crackleSoundsRemaining > 0) {
     budget.crackleSoundsRemaining -= 1;
-    ctx.sh.playRandomCrackle(0.12, rng);
+    ctx.sh.playRandomCrackle(0.12);
   }
 
   ctx.pp.new({
@@ -238,6 +246,14 @@ export function effectFireFountain(
             trailStarCount,
             rng,
           );
+          const scatterX = (rng.next() - 0.5) * shape.spawnScatter;
+          const scatterZ = (rng.next() - 0.5) * shape.spawnScatter;
+          const vx = Math.cos(azimuth) * lateral * shape.lateralScale;
+          const vy = Math.cos(cone) * starSpeed;
+          const vz = Math.sin(azimuth) * lateral * shape.lateralScale;
+          // Stars due earlier in this step start where they would be by now,
+          // so coarse seek steps do not release them as one clump.
+          const age = Math.max(0, elapsed - (starIndex + 1) / ratesPerSecond[layerKey]);
           effectSpawnEffectStar(ctx, {
             design,
             layer,
@@ -245,14 +261,14 @@ export function effectFireFountain(
             budget,
             rng,
             audible: false,
-            x: p.x + (rng.next() - 0.5) * shape.spawnScatter,
-            y: p.y,
-            z: p.z + (rng.next() - 0.5) * shape.spawnScatter,
-            vx: Math.cos(azimuth) * lateral * shape.lateralScale,
-            vy: Math.cos(cone) * starSpeed,
-            vz: Math.sin(azimuth) * lateral * shape.lateralScale,
+            x: p.x + scatterX + vx * age * 100,
+            y: p.y + vy * age * 100,
+            z: p.z + scatterZ + vz * age * 100,
+            vx,
+            vy,
+            vz,
             color: starColor,
-            life: rangeRand(layer.burst.life, rng) * (shape.lifePercent / 100),
+            life: rangeRand(layer.burst.life, rng) * (shape.lifePercent / 100) - age,
             gravity: clampStarGravity(rangeRand(layer.burst.gravity, rng)),
             drag: STAR_DRAG * (shape.dragPercent / 100),
             headSizeScale: shape.headSizePercent / 100,

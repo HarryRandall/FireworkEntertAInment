@@ -348,12 +348,15 @@ export function FireworkReplayViewer({
     if (!isPlaying) return;
     let frame = 0;
     startedAt.current = performance.now();
+    let lastFrameAt = startedAt.current;
     playheadStart.current = elapsedRef.current;
     lastUIElapsedRef.current = elapsedRef.current;
 
     function tick(now: number) {
       if (startedAt.current == null) return;
       const dtFromStart = (now - startedAt.current) / 1000;
+      const frameGap = (now - lastFrameAt) / 1000;
+      lastFrameAt = now;
       const audio = audioRef.current;
       const audioTime =
         audio && !audio.paused && !audio.ended && Number.isFinite(audio.currentTime)
@@ -361,8 +364,9 @@ export function FireworkReplayViewer({
           : null;
       // Browsers throttle/pause RAF on hidden tabs but performance.now() keeps
       // ticking. Without this re-anchor we'd leap the playhead by however long
-      // the tab was backgrounded and force the engine into a full replay.
-      if (audioTime == null && dtFromStart > 0.5) {
+      // the tab was backgrounded and force the engine into a full replay. Only
+      // a long gap between frames means that; normal frames keep the anchor.
+      if (audioTime == null && frameGap > 0.5) {
         startedAt.current = now;
         playheadStart.current = elapsedRef.current;
         frame = requestAnimationFrame(tick);
