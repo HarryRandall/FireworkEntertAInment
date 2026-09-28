@@ -89,10 +89,10 @@ function FeatureGrid({ features }: { features: readonly Feature[] }) {
               </span>
               <Badge tone="neutral">{feature.detail}</Badge>
             </div>
-            <h3 className="text-on-surface mt-5 text-xl font-bold tracking-tight">
+            <h3 className="text-foreground mt-5 text-xl font-bold tracking-tight">
               {feature.title}
             </h3>
-            <p className="text-on-surface-variant mt-3 text-sm leading-relaxed">{feature.body}</p>
+            <p className="text-muted-foreground mt-3 text-sm leading-relaxed">{feature.body}</p>
           </Card>
         );
       })}
@@ -114,10 +114,10 @@ export default function FeaturesPage() {
         <Container>
           <div className="mx-auto max-w-5xl">
             <Eyebrow>Prepare the show</Eyebrow>
-            <h2 className="text-on-surface mt-3 max-w-2xl text-3xl font-bold tracking-tight text-balance md:text-5xl">
+            <h2 className="text-foreground mt-3 max-w-2xl text-3xl font-bold tracking-tight text-balance md:text-5xl">
               Start with products and clear creative context.
             </h2>
-            <p className="text-on-surface-variant mt-4 max-w-2xl text-base leading-relaxed">
+            <p className="text-muted-foreground mt-4 max-w-2xl text-base leading-relaxed">
               Browse before signing in, or open the show creator to record the choices that should
               shape a new plan.
             </p>
@@ -126,14 +126,14 @@ export default function FeaturesPage() {
         </Container>
       </section>
 
-      <section className="border-outline-variant/15 bg-surface-container-lowest border-y py-20 lg:py-24">
+      <section className="border-border/15 bg-card border-y py-20 lg:py-24">
         <Container>
           <div className="mx-auto max-w-5xl">
             <Eyebrow>Generate and review</Eyebrow>
-            <h2 className="text-on-surface mt-3 max-w-2xl text-3xl font-bold tracking-tight text-balance md:text-5xl">
+            <h2 className="text-foreground mt-3 max-w-2xl text-3xl font-bold tracking-tight text-balance md:text-5xl">
               Create the timeline only when you choose Generate.
             </h2>
-            <p className="text-on-surface-variant mt-4 max-w-2xl text-base leading-relaxed">
+            <p className="text-muted-foreground mt-4 max-w-2xl text-base leading-relaxed">
               Uploading music can start analysis, but it does not create the show. The final action
               is the boundary between preparation and cue generation.
             </p>

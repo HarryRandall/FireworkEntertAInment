@@ -31,14 +31,8 @@ function LoginPageFallback() {
   return (
     <AuthShell>
       <div className="space-y-1">
-        <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
-          Welcome back
-        </h1>
-        <p
-          className="text-sm text-[color:var(--color-content-subtle)]"
-          role="status"
-          aria-live="polite"
-        >
+        <h1 className="text-foreground text-xl font-semibold tracking-tight">Welcome back</h1>
+        <p className="text-muted-foreground text-sm" role="status" aria-live="polite">
           Checking your sign-in link…
         </p>
       </div>
@@ -113,20 +107,20 @@ function LoginPageInner() {
   return (
     <AuthShell>
       <div className="space-y-1">
-        <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
+        <h1 className="text-foreground text-xl font-semibold tracking-tight">
           {step === 'email' ? 'Welcome back' : 'Enter your password'}
         </h1>
-        <p className="text-sm text-[color:var(--color-content-subtle)]">
+        <p className="text-muted-foreground text-sm">
           {step === 'email' ? 'Sign in to your ShowCrafter account' : email}
         </p>
       </div>
 
       {accountDeleted && step === 'email' ? (
         <p
-          className={`rounded-md border border-[color:var(--color-border-subtle)] px-3.5 py-2.5 text-sm ${
+          className={`border-border rounded-md border px-3.5 py-2.5 text-sm ${
             accountSessionCleanupPartial
-              ? 'bg-[color:var(--color-status-warning-subtle)] text-[color:var(--color-status-warning)]'
-              : 'bg-[color:var(--color-status-success-subtle)] text-[color:var(--color-status-success)]'
+              ? 'bg-status-warning-subtle text-status-warning'
+              : 'bg-status-success-subtle text-status-success'
           }`}
           role={accountSessionCleanupPartial ? 'alert' : 'status'}
         >
@@ -139,10 +133,7 @@ function LoginPageInner() {
       {step === 'email' ? (
         <form onSubmit={handleEmailContinue} noValidate className="space-y-4">
           <div className="space-y-2">
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-[color:var(--color-content-emphasis)]"
-            >
+            <label htmlFor="email" className="text-foreground block text-sm font-medium">
               Email address
             </label>
             <Input
@@ -179,7 +170,7 @@ function LoginPageInner() {
               setStep('email');
               setError(null);
             }}
-            className="flex items-center gap-1.5 text-sm text-[color:var(--color-content-subtle)] transition hover:text-[color:var(--color-content-emphasis)]"
+            className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm transition"
           >
             <ArrowLeft size={14} aria-hidden="true" />
             Use a different email
@@ -188,15 +179,12 @@ function LoginPageInner() {
           <form onSubmit={handleSignIn} noValidate className="space-y-4">
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-[color:var(--color-content-emphasis)]"
-                >
+                <label htmlFor="password" className="text-foreground block text-sm font-medium">
                   Password
                 </label>
                 <Link
                   href="/forgot-password"
-                  className="text-sm text-[color:var(--color-content-subtle)] hover:text-[color:var(--color-content-emphasis)] hover:underline"
+                  className="text-muted-foreground hover:text-foreground text-sm hover:underline"
                 >
                   Forgot password?
                 </Link>
@@ -229,11 +217,11 @@ function LoginPageInner() {
         </div>
       )}
 
-      <p className="text-sm text-[color:var(--color-content-subtle)]">
+      <p className="text-muted-foreground text-sm">
         No account?{' '}
         <Link
           href={buildAuthPageHref('/signup', nextPath)}
-          className="font-medium text-[color:var(--color-content-emphasis)] hover:underline"
+          className="text-foreground font-medium hover:underline"
         >
           Create one free
         </Link>

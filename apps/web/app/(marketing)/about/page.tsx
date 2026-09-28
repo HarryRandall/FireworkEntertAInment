@@ -55,10 +55,10 @@ export default function AboutPage() {
                 <Eyebrow>Project purpose</Eyebrow>
                 <Badge tone="neutral">COMP3500</Badge>
               </div>
-              <h2 className="text-on-surface mt-4 max-w-xl text-3xl font-bold tracking-tight text-balance">
+              <h2 className="text-foreground mt-4 max-w-xl text-3xl font-bold tracking-tight text-balance">
                 Consumer show planning for people without choreography experience.
               </h2>
-              <p className="text-on-surface-variant mt-4 max-w-2xl text-base leading-relaxed">
+              <p className="text-muted-foreground mt-4 max-w-2xl text-base leading-relaxed">
                 Users can browse retail fireworks and curated templates, describe a show, add an
                 optional soundtrack, generate catalogue-linked cues, preview the timeline and review
                 the products it requires.
@@ -76,7 +76,7 @@ export default function AboutPage() {
                 {STAKEHOLDERS.map((stakeholder) => (
                   <li
                     key={stakeholder}
-                    className="border-outline-variant/25 bg-surface-container-low text-on-surface rounded-xl border p-4 text-sm leading-snug font-semibold"
+                    className="border-border/25 bg-card text-foreground rounded-xl border p-4 text-sm leading-snug font-semibold"
                   >
                     {stakeholder}
                   </li>
@@ -87,11 +87,11 @@ export default function AboutPage() {
         </Container>
       </section>
 
-      <section className="border-outline-variant/15 bg-surface-container-lowest border-y py-20 lg:py-24">
+      <section className="border-border/15 bg-card border-y py-20 lg:py-24">
         <Container>
           <div className="mx-auto max-w-5xl">
             <Eyebrow>Product principles</Eyebrow>
-            <h2 className="text-on-surface mt-3 max-w-2xl text-3xl font-bold tracking-tight text-balance md:text-5xl">
+            <h2 className="text-foreground mt-3 max-w-2xl text-3xl font-bold tracking-tight text-balance md:text-5xl">
               Control stays with the person building the plan.
             </h2>
             <div className="mt-10 grid gap-5 md:grid-cols-3">
@@ -102,17 +102,17 @@ export default function AboutPage() {
                     <span className="bg-primary/15 text-primary inline-flex size-11 items-center justify-center rounded-xl">
                       <Icon aria-hidden="true" size={20} strokeWidth={1.8} />
                     </span>
-                    <h3 className="text-on-surface mt-5 text-lg font-bold tracking-tight">
+                    <h3 className="text-foreground mt-5 text-lg font-bold tracking-tight">
                       {principle.title}
                     </h3>
-                    <p className="text-on-surface-variant mt-3 text-sm leading-relaxed">
+                    <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
                       {principle.body}
                     </p>
                   </Card>
                 );
               })}
             </div>
-            <p className="text-on-surface-variant border-outline-variant/20 mt-8 border-l-2 pl-5 text-sm leading-relaxed">
+            <p className="text-muted-foreground border-border/20 mt-8 border-l-2 pl-5 text-sm leading-relaxed">
               ShowCrafter is a planning aid. It does not replace local rules, product instructions
               or qualified safety advice.
             </p>

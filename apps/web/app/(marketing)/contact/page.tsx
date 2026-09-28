@@ -33,16 +33,16 @@ export default function ContactPage() {
               </span>
               <div className="min-w-0 flex-1">
                 <Eyebrow>Current beta channel</Eyebrow>
-                <h2 className="text-on-surface mt-2 text-2xl font-bold tracking-tight text-balance sm:text-3xl">
+                <h2 className="text-foreground mt-2 text-2xl font-bold tracking-tight text-balance sm:text-3xl">
                   There is no monitored ShowCrafter inbox or public contact form today.
                 </h2>
-                <p className="text-on-surface-variant mt-4 leading-relaxed text-pretty">
+                <p className="text-muted-foreground mt-4 leading-relaxed text-pretty">
                   If you are already testing ShowCrafter with the project team, report problems
                   through the same invitation or project channel you received. Do not send
                   passwords, private audio links, API keys or other secrets.
                 </p>
 
-                <div className="border-outline-variant/40 bg-surface-container-low mt-7 flex items-start gap-4 rounded-2xl border p-5">
+                <div className="border-border/40 bg-card mt-7 flex items-start gap-4 rounded-2xl border p-5">
                   <Paperclip
                     aria-hidden
                     className="text-primary mt-0.5 shrink-0"
@@ -50,10 +50,10 @@ export default function ContactPage() {
                     strokeWidth={1.8}
                   />
                   <div>
-                    <h3 className="text-on-surface text-sm font-semibold">
+                    <h3 className="text-foreground text-sm font-semibold">
                       Useful details for a bug report
                     </h3>
-                    <p className="text-on-surface-variant mt-1 text-sm leading-relaxed">
+                    <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
                       Include the page URL, approximate time, what you expected, what happened and a
                       screenshot when it does not expose private information.
                     </p>
@@ -77,7 +77,7 @@ export default function ContactPage() {
               </span>
               <div>
                 <Eyebrow>Project stakeholders</Eyebrow>
-                <p className="text-on-surface-variant mt-2 text-sm leading-relaxed">
+                <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
                   ShowCrafter is developed with ICON Pyrotechnics International Co Ltd and
                   International Fireworks Pty Ltd.
                 </p>

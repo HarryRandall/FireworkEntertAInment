@@ -404,18 +404,15 @@ export function JamendoSongSearch({
   return (
     <section
       aria-labelledby={titleId}
-      className="rounded-xl border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-elevated)] p-5 shadow-sm"
+      className="border-input bg-popover rounded-xl border p-5 shadow-sm"
     >
       <div className="flex items-center gap-1.5">
-        <h3
-          id={titleId}
-          className="text-base font-semibold text-[color:var(--color-content-emphasis)]"
-        >
+        <h3 id={titleId} className="text-foreground text-base font-semibold">
           Music library
         </h3>
         <InfoTooltip text={LICENCE_NOTE} />
       </div>
-      <p className="mt-1 text-xs leading-relaxed text-[color:var(--color-content-subtle)]">
+      <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
         {hasSelection
           ? 'Your soundtrack is attached. You can still explore the library and choose another.'
           : 'Browse a free, licence-cleared library for a track to lead your show.'}
@@ -436,23 +433,23 @@ export function JamendoSongSearch({
         type="button"
         onClick={openDialog}
         disabled={disabled}
-        className="focus-visible:ring-ring group mt-3 flex w-full items-center gap-3 rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-subtle)] px-3 py-3 text-left transition-[border-color,background-color,box-shadow] hover:border-[color:var(--primary)]/45 hover:bg-[color:var(--color-bg-default)] hover:shadow-sm focus-visible:ring-3 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
+        className="focus-visible:ring-ring group border-input bg-secondary hover:border-primary/45 hover:bg-card mt-3 flex w-full items-center gap-3 rounded-lg border px-3 py-3 text-left transition-[border-color,background-color,box-shadow] hover:shadow-sm focus-visible:ring-3 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-60"
       >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)] text-[color:var(--primary)]">
+        <span className="border-border bg-popover text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-md border">
           <Library size={17} aria-hidden="true" />
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-semibold text-[color:var(--color-content-emphasis)]">
+          <span className="text-foreground block text-sm font-semibold">
             {hasSelection ? 'Browse more music' : 'Browse music library'}
           </span>
-          <span className="mt-0.5 block truncate text-xs text-[color:var(--color-content-subtle)]">
+          <span className="text-muted-foreground mt-0.5 block truncate text-xs">
             Search by track, artist, mood, or genre
           </span>
         </span>
         <ChevronRight
           size={16}
           aria-hidden="true"
-          className="shrink-0 text-[color:var(--color-content-muted)] transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
+          className="text-muted-foreground shrink-0 transition-transform group-hover:translate-x-0.5 motion-reduce:transition-none"
         />
       </button>
 
@@ -467,7 +464,7 @@ export function JamendoSongSearch({
         }}
       >
         <DialogContent className="grid h-[88vh] max-h-[900px] w-[96vw] grid-rows-[auto_1fr] gap-0 p-0 sm:max-w-5xl">
-          <DialogHeader className="border-b border-[color:var(--color-border-subtle)] p-5 pb-4">
+          <DialogHeader className="border-border border-b p-5 pb-4">
             <DialogTitle>Add music</DialogTitle>
             <DialogDescription>
               Preview a track, then attach it. Only downloadable Creative Commons tracks appear.
@@ -504,7 +501,7 @@ export function JamendoSongSearch({
                       document.getElementById(searchInputId)?.focus();
                     }}
                     aria-label="Clear search"
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-[color:var(--color-content-subtle)] transition-colors hover:text-[color:var(--color-content-emphasis)]"
+                    className="text-muted-foreground hover:text-foreground absolute inset-y-0 right-0 flex items-center pr-3 transition-colors"
                   >
                     <X size={15} aria-hidden="true" />
                   </button>
@@ -549,7 +546,7 @@ export function JamendoSongSearch({
                 type="button"
                 onClick={() => void surpriseMe()}
                 disabled={busy}
-                className="ml-auto inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium text-[color:var(--primary)] transition-colors hover:bg-[color-mix(in_srgb,var(--primary)_10%,transparent)] disabled:cursor-not-allowed disabled:opacity-50"
+                className="text-primary ml-auto inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors hover:bg-[color-mix(in_srgb,var(--primary)_10%,transparent)] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Shuffle size={13} aria-hidden="true" />
                 Surprise me
@@ -561,14 +558,14 @@ export function JamendoSongSearch({
             {(error ?? previewError) ? (
               <p
                 role="alert"
-                className="mb-3 rounded-lg border border-[color:var(--color-status-danger)]/35 bg-[color-mix(in_srgb,var(--color-status-danger)_7%,transparent)] px-3 py-2 text-xs text-[color:var(--color-status-danger)]"
+                className="border-status-danger/35 text-status-danger mb-3 rounded-lg border bg-[color-mix(in_srgb,var(--color-status-danger)_7%,transparent)] px-3 py-2 text-xs"
               >
                 {error ?? previewError}
               </p>
             ) : null}
 
             {loading ? (
-              <div className="flex items-center justify-center gap-2 py-10 text-sm text-[color:var(--color-content-subtle)]">
+              <div className="text-muted-foreground flex items-center justify-center gap-2 py-10 text-sm">
                 <Loader2
                   size={16}
                   className="animate-spin motion-reduce:animate-none"
@@ -581,7 +578,7 @@ export function JamendoSongSearch({
                     : 'Loading tracks'}
               </div>
             ) : tracks.length === 0 && hasSearched && !error ? (
-              <p className="py-10 text-center text-sm text-[color:var(--color-content-subtle)]">
+              <p className="text-muted-foreground py-10 text-center text-sm">
                 {mode === 'recommend'
                   ? 'No recommendations available. Browse the library or use your own song.'
                   : mode === 'search'
@@ -651,7 +648,7 @@ function GenreChip({
       className={`rounded-full border px-2.5 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
         active
           ? 'border-primary bg-primary text-primary-foreground'
-          : 'border-[color:var(--color-border-default)] text-[color:var(--color-content-subtle)] hover:border-[color:var(--color-border-strong,var(--color-content-subtle))] hover:text-[color:var(--color-content-emphasis)]'
+          : 'border-input text-muted-foreground hover:border-border-emphasis hover:text-foreground'
       }`}
     >
       {label}
@@ -690,8 +687,8 @@ function TrackRow({
         }}
         className={`group cursor-pointer rounded-lg border p-2.5 transition-colors ${
           active
-            ? 'border-[color:var(--primary)]/40 bg-[color-mix(in_srgb,var(--primary)_5%,transparent)]'
-            : 'border-[color:var(--color-border-subtle)] hover:border-[color:var(--color-border-default)] hover:bg-[color:var(--color-bg-subtle)]'
+            ? 'border-primary/40 bg-[color-mix(in_srgb,var(--primary)_5%,transparent)]'
+            : 'border-border hover:border-input hover:bg-secondary'
         }`}
       >
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 sm:flex-nowrap">
@@ -703,7 +700,7 @@ function TrackRow({
               if (!importLocked) onTogglePreview();
             }}
             disabled={importLocked}
-            className="relative h-11 w-11 shrink-0 overflow-hidden rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-subtle)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="border-border bg-secondary relative h-11 w-11 shrink-0 overflow-hidden rounded-md border disabled:cursor-not-allowed disabled:opacity-60"
           >
             {track.imageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -714,7 +711,7 @@ function TrackRow({
                 className="h-full w-full object-cover"
               />
             ) : (
-              <span className="flex h-full w-full items-center justify-center text-[color:var(--color-content-subtle)]">
+              <span className="text-muted-foreground flex h-full w-full items-center justify-center">
                 <Music size={18} aria-hidden="true" />
               </span>
             )}
@@ -741,21 +738,19 @@ function TrackRow({
 
           <div className="min-w-0 flex-1 sm:w-52 sm:flex-none">
             <div className="flex items-center gap-1">
-              <span className="truncate text-sm font-medium text-[color:var(--color-content-emphasis)]">
-                {track.title}
-              </span>
+              <span className="text-foreground truncate text-sm font-medium">{track.title}</span>
               <a
                 href={track.sourceUrl}
                 target="_blank"
                 rel="noreferrer"
                 onClick={(event) => event.stopPropagation()}
                 aria-label={`Open ${track.title} on Jamendo`}
-                className="shrink-0 text-[color:var(--color-content-subtle)] hover:text-[color:var(--color-content-emphasis)]"
+                className="text-muted-foreground hover:text-foreground shrink-0"
               >
                 <ExternalLink size={11} aria-hidden="true" />
               </a>
             </div>
-            <p className="truncate text-xs text-[color:var(--color-content-subtle)]">
+            <p className="text-muted-foreground truncate text-xs">
               {track.artist} · {formatDuration(track.durationSeconds)} ·{' '}
               <a
                 href={track.licenceUrl}
@@ -889,11 +884,7 @@ function Waveform({
     >
       <div className="flex h-full items-center gap-[2px]">
         {bars.map((height, index) =>
-          bar(
-            height,
-            index,
-            'bg-[color:var(--color-border-default)] group-hover:bg-[color:var(--color-content-subtle)]/60',
-          ),
+          bar(height, index, 'bg-input group-hover:bg-muted-foreground/60'),
         )}
       </div>
       {preview ? (
@@ -902,7 +893,7 @@ function Waveform({
           className="pointer-events-none absolute inset-0 flex h-full items-center gap-[2px] motion-safe:transition-[clip-path] motion-safe:duration-150 motion-safe:ease-linear"
           style={{ clipPath: `inset(0 ${Math.max(0, 100 - progress * 100)}% 0 0)` }}
         >
-          {bars.map((height, index) => bar(height, index, 'bg-[color:var(--primary)]'))}
+          {bars.map((height, index) => bar(height, index, 'bg-primary'))}
         </div>
       ) : null}
     </div>

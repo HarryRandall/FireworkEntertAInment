@@ -65,9 +65,9 @@ function formatCreditDelta(transaction: AiCreditTransactionSummary) {
 
 function creditDeltaClass(transaction: AiCreditTransactionSummary) {
   const amount = signedAiCreditAmount(transaction);
-  if (amount > 0) return 'text-[color:var(--color-status-success)]';
-  if (amount < 0) return 'text-[color:var(--color-content-emphasis)]';
-  return 'text-[color:var(--color-content-subtle)]';
+  if (amount > 0) return 'text-status-success';
+  if (amount < 0) return 'text-foreground';
+  return 'text-muted-foreground';
 }
 
 export default async function AdminUserDetailPage({ params }: PageProps) {
@@ -88,7 +88,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
     <div className="mx-auto w-full max-w-[1200px] space-y-8">
       <Link
         href="/admin/users"
-        className="inline-flex items-center gap-2 text-sm font-medium text-[color:var(--color-content-subtle)] hover:text-[color:var(--color-content-emphasis)]"
+        className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm font-medium"
       >
         <ArrowLeft size={16} />
         Back to users
@@ -99,7 +99,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
           <GeneratedAvatar name={user.fullName} email={user.email} size="lg" className="size-12" />
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-semibold text-[color:var(--color-content-emphasis)]">
+              <h1 className="text-foreground text-2xl font-bold tracking-tight">
                 {user.fullName || 'Unnamed user'}
               </h1>
               <Badge solid tone={statusTone(user.status)}>
@@ -109,7 +109,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
                 {primaryRole}
               </Badge>
             </div>
-            <p className="mt-1 text-sm text-[color:var(--color-content-subtle)]">
+            <p className="text-muted-foreground mt-1 text-sm">
               {user.email || 'No email on file'}
               {user.phone ? <span className="ml-3">{user.phone}</span> : null}
             </p>
@@ -137,9 +137,7 @@ export default async function AdminUserDetailPage({ params }: PageProps) {
         <AdminUserPermissionsCard user={user} />
       </Suspense>
 
-      <p className="text-xs text-[color:var(--color-content-muted)]">
-        Last updated {formatDate(user.updatedAt)}
-      </p>
+      <p className="text-muted-foreground text-xs">Last updated {formatDate(user.updatedAt)}</p>
     </div>
   );
 }
@@ -156,10 +154,8 @@ async function AdminUserAiCreditsCard({ userId }: { userId: string }) {
               <Coins size={16} />
             </span>
             <div>
-              <h2 className="text-sm font-medium text-[color:var(--color-content-emphasis)]">
-                AI credits
-              </h2>
-              <p className="mt-0.5 text-xs text-[color:var(--color-content-subtle)]">
+              <h2 className="text-foreground text-sm font-medium">AI credits</h2>
+              <p className="text-muted-foreground mt-0.5 text-xs">
                 Credit KPIs and recent spend for this user.
               </p>
             </div>
@@ -175,21 +171,19 @@ async function AdminUserAiCreditsCard({ userId }: { userId: string }) {
       </section>
 
       <div className="mt-5">
-        <h3 className="mb-2 text-xs font-semibold tracking-wide text-[color:var(--color-content-subtle)] uppercase">
+        <h3 className="text-muted-foreground mb-2 text-xs font-semibold tracking-wide uppercase">
           Recent spend
         </h3>
         {summary.recentTransactions.length > 0 ? (
-          <div className="divide-y divide-[color:var(--color-border-subtle)]">
+          <div className="divide-border divide-y">
             {summary.recentTransactions.slice(0, 5).map((transaction) => (
               <div
                 key={transaction.id}
                 className="grid grid-cols-[minmax(0,1fr)_auto] gap-3 py-2 text-sm"
               >
                 <div className="min-w-0">
-                  <p className="truncate font-medium text-[color:var(--color-content-emphasis)]">
-                    {transaction.label}
-                  </p>
-                  <p className="text-xs text-[color:var(--color-content-subtle)]">
+                  <p className="text-foreground truncate font-medium">{transaction.label}</p>
+                  <p className="text-muted-foreground text-xs">
                     {new Date(transaction.createdAt).toLocaleString()}
                   </p>
                 </div>
@@ -204,7 +198,7 @@ async function AdminUserAiCreditsCard({ userId }: { userId: string }) {
             ))}
           </div>
         ) : (
-          <p className="text-sm text-[color:var(--color-content-subtle)]">
+          <p className="text-muted-foreground text-sm">
             No AI usage activity has been recorded yet.
           </p>
         )}
@@ -237,12 +231,8 @@ async function AdminUserActivity({ userId }: { userId: string }) {
 
       <Card radius="lg" className="p-5">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-medium text-[color:var(--color-content-emphasis)]">
-            Activity (last 30 days)
-          </h2>
-          <span className="text-xs text-[color:var(--color-content-subtle)]">
-            Shows created per day
-          </span>
+          <h2 className="text-foreground text-sm font-medium">Activity (last 30 days)</h2>
+          <span className="text-muted-foreground text-xs">Shows created per day</span>
         </div>
         <UserActivityChart data={activity?.shows30d ?? []} />
       </Card>
@@ -258,10 +248,8 @@ async function AdminUserRoleCard({ user }: { user: AdminUser }) {
     <Card radius="lg" className="p-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-sm font-medium text-[color:var(--color-content-emphasis)]">Role</h2>
-          <p className="mt-0.5 text-xs text-[color:var(--color-content-subtle)]">
-            Changes save automatically.
-          </p>
+          <h2 className="text-foreground text-sm font-medium">Role</h2>
+          <p className="text-muted-foreground mt-0.5 text-xs">Changes save automatically.</p>
         </div>
         {primaryRoleRow ? (
           <UserRoleSelect userId={user.id} roles={roles} initialRoleId={primaryRoleRow.id} />

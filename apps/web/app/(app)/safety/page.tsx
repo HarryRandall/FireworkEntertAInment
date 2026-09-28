@@ -52,10 +52,10 @@ export default function SafetyPage() {
         <p className="text-primary font-mono text-xs font-semibold tracking-wider uppercase">
           Planning boundary
         </p>
-        <h1 className="text-on-surface mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
+        <h1 className="text-foreground mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
           Safety and legal checks happen outside ShowCrafter.
         </h1>
-        <p className="text-on-surface-variant mt-3 text-sm leading-relaxed sm:text-base">
+        <p className="text-muted-foreground mt-3 text-sm leading-relaxed sm:text-base">
           ShowCrafter helps organise a draft show plan. It does not determine whether fireworks may
           be purchased or used, whether a site is suitable, or how a display should be operated.
         </p>
@@ -72,18 +72,16 @@ export default function SafetyPage() {
               <span className="bg-primary/15 text-primary inline-flex size-10 items-center justify-center rounded-xl">
                 <Icon aria-hidden="true" size={18} />
               </span>
-              <h3 className="text-on-surface mt-4 text-base font-semibold">{boundary.title}</h3>
-              <p className="text-on-surface-variant mt-2 text-sm leading-relaxed">
-                {boundary.body}
-              </p>
+              <h3 className="text-foreground mt-4 text-base font-semibold">{boundary.title}</h3>
+              <p className="text-muted-foreground mt-2 text-sm leading-relaxed">{boundary.body}</p>
             </Card>
           );
         })}
       </section>
 
       <Card radius="md" className="p-5 sm:p-6">
-        <h2 className="text-on-surface text-lg font-semibold">Official Queensland resources</h2>
-        <p className="text-on-surface-variant mt-2 max-w-3xl text-sm leading-relaxed">
+        <h2 className="text-foreground text-lg font-semibold">Official Queensland resources</h2>
+        <p className="text-muted-foreground mt-2 max-w-3xl text-sm leading-relaxed">
           These links are starting points for the Queensland project context. Use the regulator for
           the jurisdiction where the activity would occur, and verify that its guidance is current.
         </p>
@@ -92,20 +90,20 @@ export default function SafetyPage() {
             <li key={link.href}>
               <a
                 href={link.href}
-                className="border-outline-variant/40 hover:border-outline focus-visible:ring-ring block h-full rounded-xl border p-4 transition-colors focus:outline-none focus-visible:ring-2"
+                className="border-border/40 hover:border-input focus-visible:ring-ring block h-full rounded-xl border p-4 transition-colors focus:outline-none focus-visible:ring-2"
               >
-                <span className="text-on-surface flex items-center gap-2 text-sm font-semibold">
+                <span className="text-foreground flex items-center gap-2 text-sm font-semibold">
                   {link.title}
                   <ExternalLink aria-hidden="true" size={14} />
                 </span>
-                <span className="text-on-surface-variant mt-2 block text-xs leading-relaxed">
+                <span className="text-muted-foreground mt-2 block text-xs leading-relaxed">
                   {link.body}
                 </span>
               </a>
             </li>
           ))}
         </ul>
-        <p className="text-on-surface-variant border-outline-variant/30 mt-5 border-t pt-4 text-xs leading-relaxed">
+        <p className="text-muted-foreground border-border/30 mt-5 border-t pt-4 text-xs leading-relaxed">
           If there is immediate danger to life or property in Australia, contact emergency services
           on 000. Do not use this page as an operational firing guide.
         </p>

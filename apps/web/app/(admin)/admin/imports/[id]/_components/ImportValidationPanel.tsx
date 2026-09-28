@@ -6,13 +6,13 @@ import type { ImportReviewCheck } from '@/lib/firework-import/review';
 const checkPresentation = {
   pass: {
     icon: CheckCircle2,
-    iconClass: 'text-[color:var(--color-status-success)]',
+    iconClass: 'text-status-success',
     label: 'Passed',
     tone: 'success' as const,
   },
   warning: {
     icon: AlertTriangle,
-    iconClass: 'text-[color:var(--color-status-warning)]',
+    iconClass: 'text-status-warning',
     label: 'Review',
     tone: 'warning' as const,
   },
@@ -24,7 +24,7 @@ const checkPresentation = {
   },
   info: {
     icon: CircleHelp,
-    iconClass: 'text-[color:var(--color-status-info)]',
+    iconClass: 'text-status-info',
     label: 'No evidence',
     tone: 'info' as const,
   },

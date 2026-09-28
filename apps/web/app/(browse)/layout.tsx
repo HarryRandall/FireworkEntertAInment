@@ -26,7 +26,7 @@ export default async function PublicBrowseLayout({ children }: { children: React
 
   if (!userId) {
     return (
-      <div className="bg-background text-on-surface flex min-h-screen flex-col">
+      <div className="bg-background text-foreground flex min-h-screen flex-col">
         <SkipLink />
         <MarketingNavBar />
         <main

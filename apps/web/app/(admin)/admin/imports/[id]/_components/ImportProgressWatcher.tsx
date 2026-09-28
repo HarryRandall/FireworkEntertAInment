@@ -196,7 +196,7 @@ export function ImportProgressWatcher({
         />
       </div>
       {connectionIssue ? (
-        <p className="text-xs text-[color:var(--color-status-warning)]" role="status">
+        <p className="text-status-warning text-xs" role="status">
           Live status is temporarily unavailable. Retrying with a slower interval.
         </p>
       ) : null}

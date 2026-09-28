@@ -655,7 +655,7 @@ export function ShowPresetEditor({
           ref={fullscreenContainerRef}
           {...fullscreenContainerProps}
           className={cn(
-            'bg-stage-night relative overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] text-white',
+            'bg-stage-night border-border relative overflow-hidden rounded-lg border text-white',
             isFullscreen
               ? 'fixed inset-[5vmin] z-[100] rounded-2xl border-white/12 shadow-[0_24px_60px_-20px_rgba(0,0,0,.85)]'
               : 'h-[520px]',
@@ -714,13 +714,11 @@ export function ShowPresetEditor({
 
       {isFullscreen ? <PreviewFullscreenBackdrop onExit={exitFullscreen} /> : null}
 
-      <section className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4">
+      <section className="border-border bg-card rounded-lg border p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-[color:var(--color-content-emphasis)]">
-              Timeline
-            </h2>
-            <p className="mt-1 text-xs text-[color:var(--color-content-subtle)]">
+            <h2 className="text-foreground text-sm font-semibold">Timeline</h2>
+            <p className="text-muted-foreground mt-1 text-xs">
               {cues.length} cues across {formatDuration(duration)}. Drag a cue to change its timing.
             </p>
           </div>
@@ -751,7 +749,7 @@ export function ShowPresetEditor({
           </InlineAlert>
         ) : null}
 
-        <div className="mt-4 overflow-x-auto rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)]">
+        <div className="border-border bg-muted mt-4 overflow-x-auto rounded-lg border">
           <div
             className="relative"
             style={{ width: timelineWidth, height: timelineHeight + 38 }}
@@ -760,13 +758,13 @@ export function ShowPresetEditor({
             {Array.from({ length: TIMELINE_ROW_COUNT }).map((_, rowIndex) => (
               <div
                 key={rowIndex}
-                className="absolute inset-x-0 rounded-md bg-[color:var(--color-bg-surface)]"
+                className="bg-card absolute inset-x-0 rounded-md"
                 style={{
                   top: rowIndex * (TIMELINE_ROW_HEIGHT_PX + TIMELINE_ROW_GAP_PX),
                   height: TIMELINE_ROW_HEIGHT_PX,
                 }}
               >
-                <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[10px] font-medium tracking-[0.08em] text-[color:var(--color-content-subtle)] uppercase">
+                <span className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[10px] font-medium tracking-[0.08em] uppercase">
                   Pos {rowIndex + 1}
                 </span>
               </div>
@@ -776,21 +774,19 @@ export function ShowPresetEditor({
                 key={second}
                 className={cn(
                   'absolute top-0 bottom-[38px] border-l',
-                  second % 5 === 0
-                    ? 'border-[color:var(--color-border-strong)]'
-                    : 'border-[color:var(--color-border-subtle)]',
+                  second % 5 === 0 ? 'border-border-emphasis' : 'border-border',
                 )}
                 style={{ left: second * PX_PER_SECOND }}
               >
                 {second % 5 === 0 ? (
-                  <span className="absolute top-[calc(100%+6px)] -translate-x-1/2 font-mono text-[10px] text-[color:var(--color-content-subtle)]">
+                  <span className="text-muted-foreground absolute top-[calc(100%+6px)] -translate-x-1/2 font-mono text-[10px]">
                     {formatTimelineTimestamp(second)}
                   </span>
                 ) : null}
               </div>
             ))}
             <div
-              className="absolute top-0 bottom-[38px] z-20 w-px bg-[color:var(--accent)] shadow-[0_0_18px_var(--accent)]"
+              className="bg-accent absolute top-0 bottom-[38px] z-20 w-px shadow-[0_0_18px_var(--accent)]"
               style={{ left: elapsed * PX_PER_SECOND }}
             />
             {cues.map((cue, index) => (
@@ -812,11 +808,11 @@ export function ShowPresetEditor({
         </div>
       </section>
 
-      <section className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] px-4 py-3">
+      <section className="border-border bg-card rounded-lg border px-4 py-3">
         <div className="flex min-w-0 flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <h2 className="truncate text-sm font-semibold text-[color:var(--color-content-emphasis)]">
+              <h2 className="text-foreground truncate text-sm font-semibold">
                 {title || 'Untitled preset'}
               </h2>
               <Badge tone={isPublished ? 'success' : 'neutral'} solid>
@@ -834,11 +830,9 @@ export function ShowPresetEditor({
               ) : null}
             </div>
             {description ? (
-              <p className="mt-1 truncate text-xs text-[color:var(--color-content-subtle)]">
-                {description}
-              </p>
+              <p className="text-muted-foreground mt-1 truncate text-xs">{description}</p>
             ) : null}
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-[color:var(--color-content-subtle)]">
+            <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
               <span className="inline-flex items-center gap-1.5 font-mono tabular-nums">
                 <Clock3 size={13} /> {formatDuration(duration)}
               </span>
@@ -887,7 +881,7 @@ export function ShowPresetEditor({
 
       <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
         <DialogContent className="max-h-[calc(100dvh-2rem)] !gap-0 overflow-hidden p-0 sm:max-w-[760px]">
-          <DialogHeader className="border-b border-[color:var(--color-border-subtle)] px-6 pt-6 pb-4">
+          <DialogHeader className="border-border border-b px-6 pt-6 pb-4">
             <DialogTitle className="text-lg">Edit preset details</DialogTitle>
             <DialogDescription>
               Keep the public-facing information concise. Less common publishing controls are under
@@ -943,7 +937,7 @@ export function ShowPresetEditor({
                     onChange={(event) => setDurationSeconds(event.target.value)}
                   />
                 </Field>
-                <label className="flex h-10 items-center gap-2 self-end rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)] px-3 text-sm text-[color:var(--color-content-emphasis)]">
+                <label className="border-border bg-muted text-foreground flex h-10 items-center gap-2 self-end rounded-md border px-3 text-sm">
                   <input
                     type="checkbox"
                     checked={isFeatured}
@@ -953,17 +947,17 @@ export function ShowPresetEditor({
                 </label>
               </div>
 
-              <details className="group rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)]">
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium text-[color:var(--color-content-emphasis)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)] focus-visible:outline-none">
+              <details className="group border-border bg-muted rounded-lg border">
+                <summary className="text-foreground focus-visible:ring-border-emphasis flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium focus-visible:ring-2 focus-visible:outline-none">
                   <span className="inline-flex items-center gap-2">
                     <Settings2 size={15} /> More settings
                   </span>
                   <ChevronDown
                     size={16}
-                    className="text-[color:var(--color-content-subtle)] transition-transform group-open:rotate-180"
+                    className="text-muted-foreground transition-transform group-open:rotate-180"
                   />
                 </summary>
-                <div className="grid gap-4 border-t border-[color:var(--color-border-subtle)] p-4 sm:grid-cols-2">
+                <div className="border-border grid gap-4 border-t p-4 sm:grid-cols-2">
                   <Field>
                     <FieldLabel htmlFor="preset-slug">Slug</FieldLabel>
                     <Input
@@ -1014,7 +1008,7 @@ export function ShowPresetEditor({
               </details>
             </div>
 
-            <DialogFooter className="border-t border-[color:var(--color-border-subtle)] px-6 py-4">
+            <DialogFooter className="border-border border-t px-6 py-4">
               <Button type="button" variant="secondary" onClick={() => setDetailsDialogOpen(false)}>
                 Close
               </Button>
@@ -1149,12 +1143,10 @@ function CueInspector({
 }) {
   if (!cue) {
     return (
-      <aside className="flex max-h-[520px] min-h-0 flex-col justify-between rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4">
+      <aside className="border-border bg-card flex max-h-[520px] min-h-0 flex-col justify-between rounded-lg border p-4">
         <div>
-          <h2 className="text-sm font-semibold text-[color:var(--color-content-emphasis)]">
-            Cue inspector
-          </h2>
-          <p className="mt-2 text-sm leading-relaxed text-[color:var(--color-content-subtle)]">
+          <h2 className="text-foreground text-sm font-semibold">Cue inspector</h2>
+          <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
             Select a timeline clip or insert a catalogue item to start editing cue timing.
           </p>
         </div>
@@ -1166,14 +1158,12 @@ function CueInspector({
   const palette = paletteOf(product);
 
   return (
-    <aside className="flex max-h-[520px] min-h-0 flex-col overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)]">
+    <aside className="border-border bg-card flex max-h-[520px] min-h-0 flex-col overflow-hidden rounded-lg border">
       <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 pt-4 pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold text-[color:var(--color-content-emphasis)]">
-              Cue inspector
-            </h2>
-            <p className="mt-1 truncate text-xs text-[color:var(--color-content-subtle)]">
+            <h2 className="text-foreground text-sm font-semibold">Cue inspector</h2>
+            <p className="text-muted-foreground mt-1 truncate text-xs">
               {product ? productLabel(product) : 'Unresolved catalogue item'}
             </p>
           </div>
@@ -1184,7 +1174,7 @@ function CueInspector({
           ) : null}
         </div>
 
-        <div className="flex items-center gap-3 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)] p-3">
+        <div className="border-border bg-muted flex items-center gap-3 rounded-lg border p-3">
           <span
             className="h-9 w-9 shrink-0 rounded-md border border-white/10"
             style={{
@@ -1192,10 +1182,10 @@ function CueInspector({
             }}
           />
           <div className="min-w-0 flex-1">
-            <p className="truncate text-sm font-medium text-[color:var(--color-content-emphasis)]">
+            <p className="text-foreground truncate text-sm font-medium">
               {product?.name ?? cue.catalogueItemSlug}
             </p>
-            <p className="mt-0.5 truncate text-xs text-[color:var(--color-content-subtle)]">
+            <p className="text-muted-foreground mt-0.5 truncate text-xs">
               {product ? productSummary(product) : 'Needs a catalogue item'}
             </p>
           </div>
@@ -1237,15 +1227,15 @@ function CueInspector({
           </Field>
         </div>
 
-        <details className="group rounded-lg border border-[color:var(--color-border-subtle)]">
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-xs font-medium text-[color:var(--color-content-emphasis)] focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)] focus-visible:outline-none">
+        <details className="group border-border rounded-lg border">
+          <summary className="text-foreground focus-visible:ring-border-emphasis flex cursor-pointer list-none items-center justify-between gap-3 px-3 py-2.5 text-xs font-medium focus-visible:ring-2 focus-visible:outline-none">
             Cue options
             <ChevronDown
               size={15}
-              className="text-[color:var(--color-content-subtle)] transition-transform group-open:rotate-180"
+              className="text-muted-foreground transition-transform group-open:rotate-180"
             />
           </summary>
-          <div className="border-t border-[color:var(--color-border-subtle)] p-3">
+          <div className="border-border border-t p-3">
             <Field>
               <FieldLabel>Emphasis</FieldLabel>
               <div className="grid grid-cols-3 gap-1.5">
@@ -1271,7 +1261,7 @@ function CueInspector({
         </details>
       </div>
 
-      <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-3">
+      <div className="border-border bg-card grid shrink-0 grid-cols-2 gap-2 border-t p-3">
         <Button variant="secondary" onClick={onDuplicate} disabled={busy}>
           <Copy size={14} /> Duplicate
         </Button>
@@ -1363,13 +1353,13 @@ function ProductPickerDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[calc(100dvh-2rem)] !gap-0 overflow-y-auto p-0 sm:max-w-[min(1200px,calc(100vw-2rem))] lg:overflow-hidden">
-        <DialogHeader className="border-b border-[color:var(--color-border-subtle)] px-6 py-5">
+        <DialogHeader className="border-border border-b px-6 py-5">
           <DialogTitle className="text-lg">
             {mode === 'insert' ? 'Insert catalogue item' : 'Replace catalogue item'}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col gap-3 border-b border-[color:var(--color-border-subtle)] px-6 py-4 sm:flex-row sm:items-center">
+        <div className="border-border flex flex-col gap-3 border-b px-6 py-4 sm:flex-row sm:items-center">
           <div className="min-w-0 flex-1">
             <Input
               value={query}
@@ -1382,7 +1372,7 @@ function ProductPickerDialog({
           <div
             role="group"
             aria-label="Filter catalogue type"
-            className="inline-flex shrink-0 rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)] p-1"
+            className="border-border bg-muted inline-flex shrink-0 rounded-md border p-1"
           >
             {(
               [
@@ -1410,8 +1400,8 @@ function ProductPickerDialog({
         </div>
 
         <div className="grid lg:h-[min(560px,calc(100dvh-14rem))] lg:min-h-0 lg:grid-cols-[minmax(280px,1fr)_minmax(0,2fr)]">
-          <div className="flex min-h-0 flex-col border-b border-[color:var(--color-border-subtle)] lg:border-r lg:border-b-0">
-            <div className="flex items-center justify-between gap-3 border-b border-[color:var(--color-border-subtle)] px-4 py-3 text-xs text-[color:var(--color-content-subtle)]">
+          <div className="border-border flex min-h-0 flex-col border-b lg:border-r lg:border-b-0">
+            <div className="border-border text-muted-foreground flex items-center justify-between gap-3 border-b px-4 py-3 text-xs">
               <span>{filteredProducts.length} items</span>
               <span>Name and type</span>
             </div>
@@ -1433,10 +1423,8 @@ function ProductPickerDialog({
                       onFocus={() => setSelectedId(product.id)}
                       onClick={() => setSelectedId(product.id)}
                       className={cn(
-                        'grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b border-[color:var(--color-border-subtle)] px-4 py-3 text-left text-sm transition-colors last:border-b-0 focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)] focus-visible:outline-none focus-visible:ring-inset',
-                        selected
-                          ? 'bg-[color:var(--color-bg-muted)] text-[color:var(--color-content-emphasis)]'
-                          : 'hover:bg-[color:var(--color-bg-muted)]',
+                        'border-border focus-visible:ring-border-emphasis grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 border-b px-4 py-3 text-left text-sm transition-colors last:border-b-0 focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset',
+                        selected ? 'bg-muted text-foreground' : 'hover:bg-muted',
                       )}
                     >
                       <span className="min-w-0 truncate font-medium">{product.name}</span>
@@ -1448,10 +1436,8 @@ function ProductPickerDialog({
                 })
               ) : (
                 <div className="flex h-40 flex-col items-center justify-center px-6 text-center">
-                  <Search size={18} className="text-[color:var(--color-content-subtle)]" />
-                  <p className="mt-2 text-sm font-medium text-[color:var(--color-content-emphasis)]">
-                    No matching items
-                  </p>
+                  <Search size={18} className="text-muted-foreground" />
+                  <p className="text-foreground mt-2 text-sm font-medium">No matching items</p>
                 </div>
               )}
             </div>
@@ -1492,7 +1478,7 @@ function ProductPickerDialog({
           </aside>
         </div>
 
-        <DialogFooter className="border-t border-[color:var(--color-border-subtle)] px-6 py-4">
+        <DialogFooter className="border-border border-t px-6 py-4">
           <Button variant="secondary" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>

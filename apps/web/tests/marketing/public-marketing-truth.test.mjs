@@ -69,7 +69,7 @@ test('homepage proof uses capabilities and documented stakeholders', () => {
   assert.match(socialProof, /ICON Pyrotechnics International Co Ltd/);
   assert.match(socialProof, /International Fireworks Pty Ltd/);
   assert.doesNotMatch(socialProof, /Stocked at retailers nationwide|SkyMart|BIG BANG SUPPLY/);
-  assert.doesNotMatch(socialProof, /text-on-surface-variant\/80/);
+  assert.doesNotMatch(socialProof, /text-muted-foreground\/80/);
 
   assert.match(showcase, /same Three\.js firework renderer/);
   assert.match(showcase, /Catalogue products/);

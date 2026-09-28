@@ -7,10 +7,10 @@ import { Skeleton } from '@/ui/patterns/Feedback';
 function SectionHeader({ title, href }: { title: string; href: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <h2 className="text-on-surface text-lg font-semibold tracking-tight">{title}</h2>
+      <h2 className="text-foreground text-lg font-semibold tracking-tight">{title}</h2>
       <Link
         href={href}
-        className="text-on-surface-variant hover:text-on-surface inline-flex items-center gap-1 rounded-full border border-[color:var(--color-border-subtle)] px-3 py-1 text-xs font-medium transition-colors"
+        className="text-muted-foreground hover:text-foreground border-border inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors"
       >
         See all
         <ChevronRight size={14} />
@@ -27,7 +27,7 @@ function FeaturedShowsSkeleton() {
         {Array.from({ length: 2 }).map((_, index) => (
           <div
             key={index}
-            className="relative min-h-[14rem] overflow-hidden rounded-2xl bg-[color:var(--color-bg-elevated)] shadow-sm"
+            className="bg-popover relative min-h-[14rem] overflow-hidden rounded-2xl shadow-sm"
           >
             <Skeleton className="absolute inset-0 rounded-2xl" />
             <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(0,0,0,0.36)_0%,rgba(0,0,0,0.18)_48%,rgba(0,0,0,0.04)_100%)]" />
@@ -96,7 +96,12 @@ function ExploreSkeleton() {
 
 export function HomeSectionsSkeleton() {
   return (
-    <div className="flex flex-col gap-7" aria-label="Loading home activity">
+    <div
+      className="flex flex-col gap-7"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading home activity"
+    >
       <FeaturedShowsSkeleton />
       <HomeCollectionsSection />
       <ExploreSkeleton />
@@ -108,6 +113,8 @@ export function HomePageSkeleton() {
   return (
     <div
       className="mx-auto flex w-full max-w-[1400px] flex-col gap-7 pt-10 sm:pt-14 lg:pt-20"
+      role="status"
+      aria-busy="true"
       aria-label="Loading home"
     >
       <PromptHero headingLevel="h1" />

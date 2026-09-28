@@ -11,7 +11,7 @@ import styles from './landing.module.css';
 /* ---------- Eyebrow (small uppercase label above section titles) ---------- */
 export function Eyebrow({ children }: { children: ReactNode }) {
   return (
-    <span className="text-on-surface-variant block text-xs font-semibold tracking-[0.18em] uppercase">
+    <span className="text-muted-foreground block text-xs font-semibold tracking-[0.18em] uppercase">
       {children}
     </span>
   );
@@ -253,10 +253,10 @@ export function ShowCard({
   return (
     <Link
       href={href}
-      className="border-outline-variant/60 bg-card focus-visible:ring-primary/45 focus-visible:ring-offset-background flex min-h-40 touch-manipulation flex-col overflow-hidden rounded-2xl border no-underline shadow-[var(--shadow-card)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
+      className="border-border/60 bg-card focus-visible:ring-primary/45 focus-visible:ring-offset-background flex min-h-40 touch-manipulation flex-col overflow-hidden rounded-2xl border no-underline shadow-[var(--shadow-card)] transition-[transform,box-shadow] duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-card-hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 motion-reduce:transition-none motion-reduce:hover:translate-y-0"
     >
       <div
-        className="border-outline-variant/60 relative h-20 flex-shrink-0 border-b"
+        className="border-border/60 relative h-20 flex-shrink-0 border-b"
         style={{ background: gradient }}
       >
         {(likes != null || budget != null) && (
@@ -278,11 +278,11 @@ export function ShowCard({
       </div>
       <div className="flex flex-1 flex-col gap-3 p-3.5">
         <div className="min-w-0">
-          <h3 className="text-on-surface truncate text-sm font-semibold">{title}</h3>
-          {theme && <p className="text-on-surface-variant mt-1 truncate text-xs">{theme}</p>}
+          <h3 className="text-foreground truncate text-sm font-semibold">{title}</h3>
+          {theme && <p className="text-muted-foreground mt-1 truncate text-xs">{theme}</p>}
         </div>
         {action && (
-          <span className="border-outline-variant/60 text-on-surface inline-flex h-7 items-center self-start rounded-lg border px-2.5 text-xs font-medium">
+          <span className="border-border/60 text-foreground inline-flex h-7 items-center self-start rounded-lg border px-2.5 text-xs font-medium">
             {action}
           </span>
         )}

@@ -94,7 +94,7 @@ export function BrandLockup({ className, labelClassName, markClassName }: BrandL
   return (
     <span
       className={cn(
-        'text-on-surface inline-flex min-w-0 items-center gap-1.5 text-xl font-semibold tracking-[-0.02em]',
+        'text-foreground inline-flex min-w-0 items-center gap-1.5 text-xl font-semibold tracking-[-0.02em]',
         className,
       )}
     >

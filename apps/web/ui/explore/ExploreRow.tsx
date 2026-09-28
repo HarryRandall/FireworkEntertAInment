@@ -61,11 +61,11 @@ export function ExploreRow({
   return (
     <section className="group/row relative">
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-on-surface text-lg font-semibold tracking-tight">{title}</h2>
+        <h2 className="text-foreground text-lg font-semibold tracking-tight">{title}</h2>
         {seeAllHref ? (
           <Link
             href={seeAllHref}
-            className="text-on-surface-variant hover:text-on-surface inline-flex cursor-pointer items-center gap-1 rounded-full border border-[color:var(--color-border-subtle)] px-3 py-1 text-xs font-medium transition-colors"
+            className="text-muted-foreground hover:text-foreground border-border inline-flex cursor-pointer items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors"
           >
             See all
             <ChevronRight size={14} />
@@ -89,10 +89,10 @@ export function ExploreRow({
 
         {/* Edge fades signalling there is more to scroll. */}
         {canScrollLeft ? (
-          <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-[color:var(--color-bg-default)] to-transparent" />
+          <div className="from-card pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r to-transparent" />
         ) : null}
         {canScrollRight ? (
-          <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-[color:var(--color-bg-default)] to-transparent" />
+          <div className="from-card pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l to-transparent" />
         ) : null}
 
         {canScrollLeft ? (
@@ -100,7 +100,7 @@ export function ExploreRow({
             type="button"
             aria-label={`Scroll ${title} left`}
             onClick={() => scrollBy(-1)}
-            className="focus-visible:ring-primary/45 focus-visible:ring-offset-background absolute top-[28%] left-0 z-20 hidden h-9 w-9 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)] text-[color:var(--color-content-default)] opacity-0 shadow-md transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100 hover:bg-[color:var(--color-bg-subtle)] focus:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 sm:flex"
+            className="focus-visible:ring-primary/45 focus-visible:ring-offset-background border-border bg-popover text-foreground hover:bg-secondary absolute top-[28%] left-0 z-20 hidden h-9 w-9 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border opacity-0 shadow-md transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100 focus:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 sm:flex"
           >
             <ChevronLeft aria-hidden="true" size={18} />
           </button>
@@ -110,7 +110,7 @@ export function ExploreRow({
             type="button"
             aria-label={`Scroll ${title} right`}
             onClick={() => scrollBy(1)}
-            className="focus-visible:ring-primary/45 focus-visible:ring-offset-background absolute top-[28%] right-0 z-20 hidden h-9 w-9 translate-x-1/2 cursor-pointer items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)] text-[color:var(--color-content-default)] opacity-0 shadow-md transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100 hover:bg-[color:var(--color-bg-subtle)] focus:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 sm:flex"
+            className="focus-visible:ring-primary/45 focus-visible:ring-offset-background border-border bg-popover text-foreground hover:bg-secondary absolute top-[28%] right-0 z-20 hidden h-9 w-9 translate-x-1/2 cursor-pointer items-center justify-center rounded-full border opacity-0 shadow-md transition-opacity group-focus-within/row:opacity-100 group-hover/row:opacity-100 focus:outline-none focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-offset-2 sm:flex"
           >
             <ChevronRight aria-hidden="true" size={18} />
           </button>

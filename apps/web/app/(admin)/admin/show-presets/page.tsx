@@ -149,10 +149,10 @@ async function ShowPresetsData({ searchParams }: { searchParams: PageProps['sear
                   </Badge>
                 </td>
                 <td className={tableCellClasses()}>
-                  <div className="line-clamp-2 max-w-md font-medium text-[color:var(--color-content-emphasis)]">
+                  <div className="text-foreground line-clamp-2 max-w-md font-medium">
                     {preset.title}
                   </div>
-                  <div className="mt-1 font-mono text-xs whitespace-nowrap text-[color:var(--color-content-subtle)] tabular-nums">
+                  <div className="text-muted-foreground mt-1 font-mono text-xs whitespace-nowrap tabular-nums">
                     {preset.slug}
                   </div>
                 </td>
@@ -181,7 +181,7 @@ async function ShowPresetsData({ searchParams }: { searchParams: PageProps['sear
                     <DuplicateShowPresetButton presetId={preset.id} />
                     <Link
                       href={`/admin/show-presets/${preset.id}`}
-                      className="inline-flex h-9 w-9 items-center justify-center rounded-md text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-muted)] hover:text-[color:var(--color-content-emphasis)] focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--color-content-emphasis)]"
+                      className="text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-foreground inline-flex h-9 w-9 items-center justify-center rounded-md transition-colors focus:outline-none focus-visible:outline-2 focus-visible:outline-offset-2"
                       aria-label={`Open ${preset.title}`}
                     >
                       <ArrowRight size={16} />

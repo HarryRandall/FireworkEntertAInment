@@ -36,14 +36,10 @@ function SignupPageFallback() {
   return (
     <AuthShell>
       <div className="space-y-1">
-        <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
+        <h1 className="text-foreground text-xl font-semibold tracking-tight">
           Create your account
         </h1>
-        <p
-          className="text-sm text-[color:var(--color-content-subtle)]"
-          role="status"
-          aria-live="polite"
-        >
+        <p className="text-muted-foreground text-sm" role="status" aria-live="polite">
           Preparing account creation…
         </p>
       </div>
@@ -128,29 +124,27 @@ function SignupPageInner() {
     <AuthShell>
       {step === 'confirm' ? (
         <div className="space-y-5 text-center" role="status" aria-live="polite">
-          <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-status-success-subtle)] text-[color:var(--color-status-success)]">
+          <div className="border-border bg-status-success-subtle text-status-success mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full border">
             <CheckCircle size={22} strokeWidth={1.8} aria-hidden="true" />
           </div>
           <div className="space-y-1">
-            <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
+            <h1 className="text-foreground text-xl font-semibold tracking-tight">
               Check your inbox
             </h1>
-            <p className="text-sm text-[color:var(--color-content-subtle)]">
+            <p className="text-muted-foreground text-sm">
               We sent a confirmation link to{' '}
-              <span className="font-medium text-[color:var(--color-content-emphasis)]">
-                {email}
-              </span>
-              . Click it to activate your account.
+              <span className="text-foreground font-medium">{email}</span>. Click it to activate
+              your account.
             </p>
-            <p className="mt-2 text-xs text-[color:var(--color-content-muted)]">
+            <p className="text-muted-foreground mt-2 text-xs">
               For security, open the link in this browser on this device.
             </p>
           </div>
-          <p className="text-sm text-[color:var(--color-content-subtle)]">
+          <p className="text-muted-foreground text-sm">
             Already confirmed?{' '}
             <Link
               href={buildAuthPageHref('/login', nextPath)}
-              className="font-medium text-[color:var(--color-content-emphasis)] hover:underline"
+              className="text-foreground font-medium hover:underline"
             >
               Sign in
             </Link>
@@ -159,10 +153,10 @@ function SignupPageInner() {
       ) : (
         <>
           <div className="space-y-1">
-            <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
+            <h1 className="text-foreground text-xl font-semibold tracking-tight">
               {step === 'email' ? 'Create your account' : 'Almost there'}
             </h1>
-            <p className="text-sm text-[color:var(--color-content-subtle)]">
+            <p className="text-muted-foreground text-sm">
               {step === 'email' ? 'Design your first firework show' : email}
             </p>
           </div>
@@ -170,10 +164,7 @@ function SignupPageInner() {
           {step === 'email' ? (
             <form onSubmit={handleEmailContinue} noValidate className="space-y-4">
               <div className="space-y-2">
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-[color:var(--color-content-emphasis)]"
-                >
+                <label htmlFor="email" className="text-foreground block text-sm font-medium">
                   Email address
                 </label>
                 <Input
@@ -210,7 +201,7 @@ function SignupPageInner() {
                   setStep('email');
                   setError(null);
                 }}
-                className="flex items-center gap-1.5 text-sm text-[color:var(--color-content-subtle)] transition hover:text-[color:var(--color-content-emphasis)]"
+                className="text-muted-foreground hover:text-foreground flex items-center gap-1.5 text-sm transition"
               >
                 <ArrowLeft size={14} aria-hidden="true" />
                 Use a different email
@@ -218,10 +209,7 @@ function SignupPageInner() {
 
               <form onSubmit={handleSignUp} noValidate className="space-y-3">
                 <div className="space-y-2">
-                  <label
-                    htmlFor="fullName"
-                    className="block text-sm font-medium text-[color:var(--color-content-emphasis)]"
-                  >
+                  <label htmlFor="fullName" className="text-foreground block text-sm font-medium">
                     Full name
                   </label>
                   <Input
@@ -243,10 +231,7 @@ function SignupPageInner() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label
-                    htmlFor="password"
-                    className="block text-sm font-medium text-[color:var(--color-content-emphasis)]"
-                  >
+                  <label htmlFor="password" className="text-foreground block text-sm font-medium">
                     Password
                   </label>
                   <Input
@@ -272,7 +257,7 @@ function SignupPageInner() {
                 <div className="space-y-2">
                   <label
                     htmlFor="confirmPassword"
-                    className="block text-sm font-medium text-[color:var(--color-content-emphasis)]"
+                    className="text-foreground block text-sm font-medium"
                   >
                     Confirm password
                   </label>
@@ -308,11 +293,11 @@ function SignupPageInner() {
             </div>
           )}
 
-          <p className="text-sm text-[color:var(--color-content-subtle)]">
+          <p className="text-muted-foreground text-sm">
             Already have an account?{' '}
             <Link
               href={buildAuthPageHref('/login', nextPath)}
-              className="font-medium text-[color:var(--color-content-emphasis)] hover:underline"
+              className="text-foreground font-medium hover:underline"
             >
               Sign in
             </Link>

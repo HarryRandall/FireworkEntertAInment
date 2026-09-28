@@ -27,10 +27,10 @@ export function ComingSoon({ eyebrow = 'Beta information', title, description }:
               </span>
               <div className="min-w-0 flex-1">
                 <Eyebrow>Current status</Eyebrow>
-                <h2 className="text-on-surface mt-2 text-2xl font-bold tracking-tight text-balance">
+                <h2 className="text-foreground mt-2 text-2xl font-bold tracking-tight text-balance">
                   This page is intentionally unavailable.
                 </h2>
-                <p className="text-on-surface-variant mt-3 leading-relaxed text-pretty">
+                <p className="text-muted-foreground mt-3 leading-relaxed text-pretty">
                   The route remains visible so its status is clear, but its content will not be
                   presented as complete until it has been checked and approved for public use.
                 </p>

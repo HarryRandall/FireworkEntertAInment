@@ -93,7 +93,7 @@ export function CoverPosterBackfill({ presets }: { presets: CoverBackfillPreset[
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p
-          className="text-on-surface-variant text-sm"
+          className="text-muted-foreground text-sm"
           role="status"
           aria-live="polite"
           aria-atomic="true"
@@ -130,7 +130,7 @@ export function CoverPosterBackfill({ presets }: { presets: CoverBackfillPreset[
           const isRendering = state.status === 'rendering';
           return (
             <Card key={preset.id} radius="md" className="overflow-hidden" aria-busy={isRendering}>
-              <div className="bg-surface-container relative aspect-[4/5] w-full">
+              <div className="bg-muted relative aspect-[4/5] w-full">
                 {preset.cover ? (
                   <CoverPoster
                     imagePath={state.coverImagePath}
@@ -138,7 +138,7 @@ export function CoverPosterBackfill({ presets }: { presets: CoverBackfillPreset[
                     eager={index < EAGER_POSTER_COUNT}
                   />
                 ) : (
-                  <div className="text-on-surface-variant flex h-full items-center justify-center text-xs">
+                  <div className="text-muted-foreground flex h-full items-center justify-center text-xs">
                     No cover
                   </div>
                 )}
@@ -153,8 +153,8 @@ export function CoverPosterBackfill({ presets }: { presets: CoverBackfillPreset[
               </div>
               <div className="flex items-center justify-between gap-2 p-3">
                 <div className="min-w-0">
-                  <div className="text-on-surface truncate text-sm font-medium">{preset.title}</div>
-                  <div className="text-on-surface-variant truncate font-mono text-[11px]">
+                  <div className="text-foreground truncate text-sm font-medium">{preset.title}</div>
+                  <div className="text-muted-foreground truncate font-mono text-[11px]">
                     {preset.slug}
                   </div>
                 </div>
@@ -197,7 +197,7 @@ export function CoverPosterBackfill({ presets }: { presets: CoverBackfillPreset[
                 </div>
               </div>
               {state.status === 'error' && state.message ? (
-                <div className="text-error px-3 pb-3 text-[11px]" role="alert">
+                <div className="text-status-danger px-3 pb-3 text-[11px]" role="alert">
                   {state.message}
                 </div>
               ) : null}

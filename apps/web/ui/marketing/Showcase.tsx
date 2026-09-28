@@ -40,14 +40,14 @@ const WORKFLOW_LINKS = [
 
 export function Showcase() {
   return (
-    <section id="showcase" className="bg-muted border-outline-variant/60 border-t py-24 lg:py-28">
+    <section id="showcase" className="bg-muted border-border/60 border-t py-24 lg:py-28">
       <Container>
         <Reveal className="relative mb-10 max-w-[660px]">
           <Eyebrow>See it live</Eyebrow>
-          <h2 className="text-on-surface mt-3 text-[clamp(34px,5vw,56px)] leading-[1.02] font-extrabold tracking-[-0.03em] text-balance">
+          <h2 className="text-foreground mt-3 text-[clamp(34px,5vw,56px)] leading-[1.02] font-extrabold tracking-[-0.03em] text-balance">
             Watch a show come together.
           </h2>
-          <p className="text-on-surface-variant mt-4 text-lg leading-relaxed">
+          <p className="text-muted-foreground mt-4 text-lg leading-relaxed">
             This self-contained demo uses the same Three.js firework renderer as ShowCrafter's
             preview. Use the playback control to watch its cue sequence.
           </p>
@@ -60,12 +60,12 @@ export function Showcase() {
         </Reveal>
 
         <Reveal className="mt-16 flex flex-wrap items-end justify-between gap-4">
-          <h3 className="text-on-surface m-0 text-2xl font-bold tracking-[-0.02em]">
+          <h3 className="text-foreground m-0 text-2xl font-bold tracking-[-0.02em]">
             Continue through the planning flow
           </h3>
           <Link
             href="/features"
-            className="text-on-surface inline-flex items-center gap-2 text-sm font-medium hover:underline"
+            className="text-foreground inline-flex items-center gap-2 text-sm font-medium hover:underline"
           >
             Explore every feature <ArrowRight aria-hidden="true" size={16} />
           </Link>

@@ -28,7 +28,7 @@ export function CTABand({
   secondaryLabel,
 }: CTABandProps) {
   return (
-    <section className="border-outline-variant/60 relative overflow-hidden border-t py-24">
+    <section className="border-border/60 relative overflow-hidden border-t py-24">
       {/* atmospheric wash mirrors the hero so the page closes as it opened */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="cta-rainbow-wash absolute top-[52%] left-1/2 h-[26rem] w-[min(60rem,105vw)] -translate-x-1/2 -translate-y-1/2" />
@@ -49,12 +49,12 @@ export function CTABand({
       <Container className="relative z-[2] mx-auto max-w-[720px] text-center">
         <Star4 size={24} className="mx-auto mb-[18px]" />
         <Reveal>
-          <h2 className="text-on-surface m-0 text-[clamp(34px,5.6vw,64px)] leading-none font-extrabold tracking-[-0.035em]">
+          <h2 className="text-foreground m-0 text-[clamp(34px,5.6vw,64px)] leading-none font-extrabold tracking-[-0.035em]">
             {title}
           </h2>
         </Reveal>
         <Reveal delay={0.08}>
-          <p className="text-on-surface-variant mx-auto mt-5 max-w-[520px] text-lg leading-relaxed">
+          <p className="text-muted-foreground mx-auto mt-5 max-w-[520px] text-lg leading-relaxed">
             {description}
           </p>
         </Reveal>

@@ -85,14 +85,14 @@ export const ShowReplayCoverCard = memo(function ShowReplayCoverCard({
       </div>
 
       <div className="mt-2.5 min-w-0">
-        <h2 className="text-on-surface group-hover:text-primary line-clamp-1 text-sm font-semibold transition-colors">
+        <h2 className="text-foreground group-hover:text-primary line-clamp-1 text-sm font-semibold transition-colors">
           {show.title}
         </h2>
-        <span className="text-on-surface-variant mt-0.5 line-clamp-1 block text-xs">
+        <span className="text-muted-foreground mt-0.5 line-clamp-1 block text-xs">
           {showMeta(show)}
         </span>
 
-        <div className="text-on-surface-variant mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
+        <div className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
           <span className="inline-flex items-center gap-1">
             <Clock3 size={12} />
             <span className="tabular-nums">{formatDuration(show.lengthSeconds)}</span>

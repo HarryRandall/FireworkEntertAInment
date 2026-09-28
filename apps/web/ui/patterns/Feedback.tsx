@@ -9,10 +9,10 @@ type AlertTone = 'info' | 'success' | 'warning' | 'danger';
 type AlertSize = 'default' | 'lg';
 
 const alertIconClasses: Record<AlertTone, string> = {
-  info: 'text-[color:var(--color-status-info)]',
-  success: 'text-[color:var(--color-status-success)]',
-  warning: 'text-[color:var(--color-status-warning)]',
-  danger: 'text-[color:var(--color-status-danger)]',
+  info: 'text-status-info',
+  success: 'text-status-success',
+  warning: 'text-status-warning',
+  danger: 'text-status-danger',
 };
 
 const alertIcons: Record<AlertTone, typeof Info> = {

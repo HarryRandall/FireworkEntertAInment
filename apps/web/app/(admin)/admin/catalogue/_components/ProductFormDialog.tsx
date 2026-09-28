@@ -143,7 +143,7 @@ export function ProductFormDialog({ initial, open: controlledOpen, onOpenChange,
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="block space-y-1">
-      <span className="text-xs font-medium text-[color:var(--color-content-subtle)]">{label}</span>
+      <span className="text-muted-foreground text-xs font-medium">{label}</span>
       {children}
     </label>
   );

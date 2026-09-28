@@ -20,10 +20,10 @@ export default async function ConfirmPasswordRecoveryPage() {
   return (
     <ResetPasswordShell>
       <div className="space-y-1">
-        <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
+        <h1 className="text-foreground text-xl font-semibold tracking-tight">
           Continue password reset
         </h1>
-        <p className="text-sm text-[color:var(--color-content-subtle)]">
+        <p className="text-muted-foreground text-sm">
           Confirm that you want to use this one-time link. Your password will not change until you
           choose a new one on the next screen.
         </p>
@@ -40,7 +40,7 @@ export default async function ConfirmPasswordRecoveryPage() {
           </div>
           <Link
             href="/forgot-password"
-            className="block text-sm font-medium text-[color:var(--color-content-emphasis)] hover:underline"
+            className="text-foreground block text-sm font-medium hover:underline"
           >
             Request a new reset link
           </Link>

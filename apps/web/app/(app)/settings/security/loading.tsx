@@ -7,7 +7,12 @@ const SECURITY_EVENTS = ['Last sign-in', 'Email confirmed', 'Account created'] a
 
 export default function SecuritySettingsLoading() {
   return (
-    <div className="space-y-5" aria-label="Loading security settings" aria-busy="true">
+    <div
+      className="space-y-5"
+      role="status"
+      aria-label="Loading security settings"
+      aria-busy="true"
+    >
       <Card size="sm">
         <CardHeader>
           <CardTitle>Password</CardTitle>

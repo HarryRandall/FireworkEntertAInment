@@ -166,7 +166,7 @@ export function ReplayTransportControls({
           className={cn(
             'focus-glow-action grid size-10 shrink-0 place-items-center rounded-full border transition focus:outline-none focus-visible:outline-none active:scale-[0.98] disabled:cursor-not-allowed disabled:text-white/35',
             isLooping
-              ? 'border-transparent bg-[color:var(--hl,#10b981)] text-black hover:brightness-110'
+              ? 'bg-hl border-transparent text-black hover:brightness-110'
               : 'border-white/15 bg-white/6 text-white hover:bg-white/12',
           )}
         >
@@ -178,10 +178,10 @@ export function ReplayTransportControls({
         <span className="min-w-[2.55rem] text-right font-mono text-[11px] text-white/75 tabular-nums">
           {formatDuration(safeElapsed)}
         </span>
-        <div className="relative flex h-7 min-w-0 items-center rounded-full outline-none select-none has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-[color:var(--hl,#10b981)] has-[input:focus-visible]:ring-offset-2 has-[input:focus-visible]:ring-offset-black">
+        <div className="has-[input:focus-visible]:ring-hl relative flex h-7 min-w-0 items-center rounded-full outline-none select-none has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-offset-2 has-[input:focus-visible]:ring-offset-black">
           <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 rounded-full bg-white/90" />
           <div
-            className="absolute top-1/2 left-0 h-1.5 -translate-y-1/2 rounded-full bg-[color:var(--hl,#10b981)]"
+            className="bg-hl absolute top-1/2 left-0 h-1.5 -translate-y-1/2 rounded-full"
             style={{ width: `${progress}%` }}
             aria-hidden="true"
           />
@@ -192,7 +192,7 @@ export function ReplayTransportControls({
               disabled={disabled}
               aria-label={`Jump to ${tick.label}`}
               onClick={() => jumpToTick(tick.timeSeconds)}
-              className="group/tick pointer-events-auto absolute top-1/2 z-20 flex h-5 w-4 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--hl,#10b981)] disabled:cursor-not-allowed"
+              className="group/tick focus-visible:ring-hl pointer-events-auto absolute top-1/2 z-20 flex h-5 w-4 -translate-x-1/2 -translate-y-1/2 cursor-pointer items-center justify-center rounded-sm outline-none focus-visible:ring-2 disabled:cursor-not-allowed"
               style={{ left: `${(tick.timeSeconds / safeDuration) * 100}%` }}
             >
               <span className="h-4 w-px rounded-full bg-black/40 shadow-[0_0_0_1px_rgba(255,255,255,.42)]" />
@@ -202,7 +202,7 @@ export function ReplayTransportControls({
             </button>
           ))}
           <span
-            className="absolute top-1/2 z-30 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[color:var(--hl,#10b981)] bg-white shadow-[0_1px_6px_rgba(0,0,0,.45)]"
+            className="border-hl absolute top-1/2 z-30 size-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 bg-white shadow-[0_1px_6px_rgba(0,0,0,.45)]"
             style={{ left: `${progress}%` }}
             aria-hidden="true"
           />

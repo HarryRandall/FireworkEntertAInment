@@ -128,7 +128,7 @@ export function ImportJobCard({
                 {job.selectedModel ? <Badge tone="neutral">{job.selectedModel}</Badge> : null}
                 {readOnly ? <Badge tone="info">Archived</Badge> : null}
                 {job.kind === 'firework_video' ? (
-                  <span className="text-on-surface-variant text-xs font-semibold tabular-nums">
+                  <span className="text-muted-foreground text-xs font-semibold tabular-nums">
                     {job.processingProgress}% processed
                   </span>
                 ) : null}
@@ -264,7 +264,10 @@ export function ImportJobCard({
         </div>
       </form>
       {job.errorMessage ? (
-        <p className="bg-error/10 text-error mt-3 rounded-lg p-3 text-sm" role="alert">
+        <p
+          className="bg-status-danger/10 text-status-danger mt-3 rounded-lg p-3 text-sm"
+          role="alert"
+        >
           {job.errorMessage}
         </p>
       ) : null}

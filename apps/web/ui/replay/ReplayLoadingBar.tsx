@@ -38,7 +38,7 @@ export function ReplayLoadingBar({
       className={cn(
         positionClass,
         widthClass,
-        'border-outline-variant/15 bg-surface-container-low/90 items-center rounded-lg border shadow-[var(--shadow-modal)] backdrop-blur',
+        'border-border/15 bg-card/90 items-center rounded-lg border shadow-[var(--shadow-modal)] backdrop-blur',
         compact ? 'gap-2 px-3 py-2' : 'gap-3 px-4 py-3',
       )}
       role="status"
@@ -52,7 +52,7 @@ export function ReplayLoadingBar({
       />
       <span
         className={cn(
-          'text-on-surface-variant shrink-0',
+          'text-muted-foreground shrink-0',
           compact ? 'text-xs font-semibold' : 'text-[10px] font-bold tracking-widest uppercase',
         )}
       >
@@ -60,7 +60,7 @@ export function ReplayLoadingBar({
       </span>
       {compact ? null : (
         <>
-          <div className="bg-surface-container-highest relative h-1.5 flex-1 overflow-hidden rounded-full">
+          <div className="bg-accent relative h-1.5 flex-1 overflow-hidden rounded-full">
             {determinate ? (
               <div
                 className="bg-primary h-full rounded-full transition-[width] duration-150 ease-out"
@@ -70,7 +70,7 @@ export function ReplayLoadingBar({
               <div className="bg-primary h-full w-full animate-pulse rounded-full opacity-70 motion-reduce:animate-none" />
             )}
           </div>
-          <span className="text-on-surface-variant w-9 shrink-0 text-right font-mono text-[11px] tabular-nums">
+          <span className="text-muted-foreground w-9 shrink-0 text-right font-mono text-[11px] tabular-nums">
             {determinate ? `${pct}%` : ''}
           </span>
         </>

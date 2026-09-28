@@ -63,28 +63,22 @@ export function SuppliersTableBody({ suppliers }: Props) {
 
         return (
           <tr key={supplier.id} className={tableRowClasses()}>
-            <td
-              className={tableCellClasses('font-medium text-[color:var(--color-content-emphasis)]')}
-            >
-              {supplier.name}
-            </td>
-            <td className={tableCellClasses('text-[color:var(--color-content-subtle)]')}>
+            <td className={tableCellClasses('text-foreground font-medium')}>{supplier.name}</td>
+            <td className={tableCellClasses('text-muted-foreground')}>
               {supplier.contactEmail || '-'}
             </td>
             <td
-              className={tableCellClasses(
-                'font-mono text-xs text-[color:var(--color-content-subtle)] tabular-nums',
-              )}
+              className={tableCellClasses('text-muted-foreground font-mono text-xs tabular-nums')}
             >
               {supplier.phone || '-'}
             </td>
-            <td className={tableCellClasses('text-[color:var(--color-content-subtle)]')}>
+            <td className={tableCellClasses('text-muted-foreground')}>
               {supplier.websiteUrl ? (
                 <a
                   href={supplier.websiteUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="underline decoration-dotted underline-offset-2 hover:text-[color:var(--color-content-emphasis)]"
+                  className="hover:text-foreground underline decoration-dotted underline-offset-2"
                 >
                   {supplier.websiteUrl.replace(/^https?:\/\//, '')}
                 </a>

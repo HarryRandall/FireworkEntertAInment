@@ -28,7 +28,12 @@ const SHOWS_LIST_SKELETON_COUNT = 24;
  *  stay as real chrome so the toolbar never flashes to a skeleton. */
 function ShowsListSkeleton() {
   return (
-    <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5" aria-label="Loading shows">
+    <div
+      className="mx-auto flex w-full max-w-[1600px] flex-col gap-5"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading shows"
+    >
       <header>
         <h1 className="text-foreground text-2xl font-bold tracking-tight">My shows</h1>
         <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
@@ -41,7 +46,7 @@ function ShowsListSkeleton() {
             <span className="sr-only">Search shows</span>
             <Search
               size={17}
-              className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-[color:var(--color-content-muted)]"
+              className="text-muted-foreground pointer-events-none absolute top-1/2 left-4 -translate-y-1/2"
             />
             <input
               disabled
@@ -51,10 +56,10 @@ function ShowsListSkeleton() {
           </label>
           <div className="border-input bg-background text-foreground inline-flex h-11 items-center justify-between rounded-xl border px-4 text-sm sm:min-w-36">
             <span className="inline-flex min-w-0 items-center gap-2">
-              <ListFilter size={16} className="shrink-0 text-[color:var(--color-content-subtle)]" />
+              <ListFilter size={16} className="text-muted-foreground shrink-0" />
               <span className="min-w-0 truncate">Last edited</span>
             </span>
-            <ChevronDown size={16} className="shrink-0 text-[color:var(--color-content-subtle)]" />
+            <ChevronDown size={16} className="text-muted-foreground shrink-0" />
           </div>
         </div>
       </section>
@@ -92,6 +97,7 @@ function ShowDetailChromeSkeleton({
   return (
     <div
       className="mx-auto w-full max-w-[1600px] space-y-6"
+      role="status"
       aria-label="Loading show"
       aria-busy="true"
     >

@@ -158,7 +158,7 @@ export function CatalogueToolbar({
         <span className="sr-only">Search catalogue</span>
         <Search
           size={16}
-          className="pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2 text-[color:var(--color-content-muted)]"
+          className="text-muted-foreground pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2"
         />
         <input
           value={draftQuery}
@@ -170,7 +170,7 @@ export function CatalogueToolbar({
           <button
             type="button"
             onClick={() => setDraftQuery('')}
-            className="absolute top-1/2 right-2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md text-[color:var(--color-content-muted)] transition-colors hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-default)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
+            className="text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:ring-border-emphasis absolute top-1/2 right-2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md transition-colors focus:outline-none focus-visible:ring-2"
             aria-label="Clear search"
           >
             <X size={14} />
@@ -237,12 +237,9 @@ function FilterDropdown({
           className="h-10 w-fit max-w-full rounded-md px-3"
           aria-label={ariaLabel}
         >
-          <ListFilter size={15} className="shrink-0 text-[color:var(--color-content-subtle)]" />
+          <ListFilter size={15} className="text-muted-foreground shrink-0" />
           <span className="min-w-0 truncate">{selectedLabel}</span>
-          <ChevronDown
-            size={15}
-            className="ml-1 shrink-0 text-[color:var(--color-content-subtle)]"
-          />
+          <ChevronDown size={15} className="text-muted-foreground ml-1 shrink-0" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-52 p-1">
@@ -253,10 +250,7 @@ function FilterDropdown({
               <CommandItem
                 value={allLabel}
                 onSelect={() => select('')}
-                className={cn(
-                  'rounded-md',
-                  selected === '' && 'text-[color:var(--color-content-emphasis)]',
-                )}
+                className={cn('rounded-md', selected === '' && 'text-foreground')}
               >
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center">
                   {selected === '' ? <Check size={14} /> : null}
@@ -270,10 +264,7 @@ function FilterDropdown({
                     key={option.value}
                     value={option.label}
                     onSelect={() => select(option.value)}
-                    className={cn(
-                      'rounded-md',
-                      isSelected && 'text-[color:var(--color-content-emphasis)]',
-                    )}
+                    className={cn('rounded-md', isSelected && 'text-foreground')}
                   >
                     <span className="flex h-4 w-4 shrink-0 items-center justify-center">
                       {isSelected ? <Check size={14} /> : null}
@@ -322,12 +313,9 @@ function DurationFilterPopover({
           className="h-10 w-fit max-w-full rounded-md px-3"
           aria-label="Filter by duration"
         >
-          <ListFilter size={15} className="shrink-0 text-[color:var(--color-content-subtle)]" />
+          <ListFilter size={15} className="text-muted-foreground shrink-0" />
           <span className="min-w-0 truncate">{label}</span>
-          <ChevronDown
-            size={15}
-            className="ml-1 shrink-0 text-[color:var(--color-content-subtle)]"
-          />
+          <ChevronDown size={15} className="text-muted-foreground ml-1 shrink-0" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-64 p-3">

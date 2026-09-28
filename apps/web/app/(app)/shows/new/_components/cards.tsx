@@ -44,10 +44,8 @@ export function ChoiceCard({
   return (
     <label
       className={cn(
-        'has-[input:focus-visible]:ring-ring/50 relative flex min-h-[5.5rem] w-full cursor-pointer flex-col justify-center gap-1 rounded-xl border-2 bg-[color:var(--color-bg-elevated)] p-4 text-left shadow-sm transition-[border-color,box-shadow,transform] active:scale-[0.99] has-[input:focus-visible]:ring-3 sm:p-5',
-        selected
-          ? 'border-[color:var(--color-content-emphasis)]'
-          : 'border-[color:var(--color-border-default)] hover:border-[color:var(--color-content-emphasis)]/40',
+        'has-[input:focus-visible]:ring-ring/50 bg-popover relative flex min-h-[5.5rem] w-full cursor-pointer flex-col justify-center gap-1 rounded-xl border-2 p-4 text-left shadow-sm transition-[border-color,box-shadow,transform] active:scale-[0.99] has-[input:focus-visible]:ring-3 sm:p-5',
+        selected ? 'border-foreground' : 'border-input hover:border-foreground/40',
         className,
       )}
     >
@@ -66,8 +64,8 @@ export function ChoiceCard({
             'absolute top-3 right-3 inline-flex h-5 w-5 items-center justify-center border transition-colors',
             multiple ? 'rounded-md' : 'rounded-full',
             selected
-              ? 'border-[color:var(--color-content-emphasis)] bg-[color:var(--color-content-emphasis)] text-[color:var(--color-content-inverted)] shadow-sm'
-              : 'border-[color:var(--color-border-default)] bg-[color:var(--color-bg-elevated)]/80',
+              ? 'border-foreground bg-foreground text-background shadow-sm'
+              : 'border-input bg-popover/80',
           )}
         >
           {selected ? <Check size={12} strokeWidth={3} /> : null}
@@ -75,17 +73,15 @@ export function ChoiceCard({
       ) : null}
       {diagram ? <span className="mb-1.5">{diagram}</span> : null}
       <span className="flex items-baseline justify-between gap-3 pr-6">
-        <span className="text-sm font-semibold text-[color:var(--color-content-emphasis)] sm:text-base">
-          {title}
-        </span>
+        <span className="text-foreground text-sm font-semibold sm:text-base">{title}</span>
         {hint ? (
-          <span className="shrink-0 font-mono text-sm font-semibold text-[color:var(--color-content-default)] tabular-nums">
+          <span className="text-foreground shrink-0 font-mono text-sm font-semibold tabular-nums">
             {hint}
           </span>
         ) : null}
       </span>
       {description ? (
-        <span className="text-xs leading-relaxed text-[color:var(--color-content-subtle)] sm:text-sm">
+        <span className="text-muted-foreground text-xs leading-relaxed sm:text-sm">
           {description}
         </span>
       ) : null}
@@ -108,7 +104,7 @@ export function PositionDots({ count }: { count: 1 | 2 | 3 }) {
             'h-2.5 w-2.5 rounded-full transition-colors',
             index < count
               ? 'bg-primary shadow-[0_0_8px_-1px_var(--primary)]'
-              : 'border border-[color:var(--color-border-default)]',
+              : 'border-input border',
           )}
         />
       ))}

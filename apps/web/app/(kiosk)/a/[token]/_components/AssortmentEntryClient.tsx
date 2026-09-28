@@ -163,20 +163,18 @@ export function AssortmentEntryClient({ token, assortment }: AssortmentEntryClie
         </div>
         <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{assortment.name}</h1>
         {assortment.description ? (
-          <p className="text-on-surface-variant mt-3 text-base leading-7">
-            {assortment.description}
-          </p>
+          <p className="text-muted-foreground mt-3 text-base leading-7">{assortment.description}</p>
         ) : null}
 
         <Card className="mt-6 p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-on-surface-variant text-sm">Assortment price</p>
+              <p className="text-muted-foreground text-sm">Assortment price</p>
               <p className="mt-1 font-mono text-2xl font-semibold tabular-nums">
                 {formatBudget(assortment.priceCents)}
               </p>
             </div>
-            <span className="bg-surface-container text-on-surface-variant inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium">
+            <span className="bg-muted text-muted-foreground inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium">
               <LockKeyhole size={13} aria-hidden="true" />
               Locked
             </span>
@@ -188,12 +186,12 @@ export function AssortmentEntryClient({ token, assortment }: AssortmentEntryClie
             <ul className="mt-3 space-y-2">
               {assortment.items.map((item) => (
                 <li key={item.catalogueItemId} className="flex items-start gap-3 text-sm">
-                  <span className="text-on-surface-variant w-8 shrink-0 font-mono tabular-nums">
+                  <span className="text-muted-foreground w-8 shrink-0 font-mono tabular-nums">
                     {item.quantity}x
                   </span>
                   <span className="min-w-0">
                     <span className="block font-medium">{item.name}</span>
-                    <span className="text-on-surface-variant block font-mono text-xs">
+                    <span className="text-muted-foreground block font-mono text-xs">
                       {item.partNumber}
                     </span>
                   </span>
@@ -210,7 +208,7 @@ export function AssortmentEntryClient({ token, assortment }: AssortmentEntryClie
               Choose your song
             </h2>
           </div>
-          <p className="text-on-surface-variant mt-1 text-sm leading-6">
+          <p className="text-muted-foreground mt-1 text-sm leading-6">
             Your show will use only the products and quantities in this assortment.
           </p>
           <div className="mt-4">
@@ -232,7 +230,7 @@ export function AssortmentEntryClient({ token, assortment }: AssortmentEntryClie
               <Music2 className="text-primary shrink-0" size={19} aria-hidden="true" />
               <span className="min-w-0">
                 <span className="block truncate text-sm font-semibold">{jamendoTrack.title}</span>
-                <span className="text-on-surface-variant block truncate text-xs">
+                <span className="text-muted-foreground block truncate text-xs">
                   {jamendoTrack.artist}
                 </span>
               </span>
@@ -240,23 +238,23 @@ export function AssortmentEntryClient({ token, assortment }: AssortmentEntryClie
           ) : null}
           <div className="my-4 flex items-center gap-3" aria-hidden="true">
             <span className="bg-border h-px flex-1" />
-            <span className="text-on-surface-variant text-xs font-medium tracking-wide uppercase">
+            <span className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
               or
             </span>
             <span className="bg-border h-px flex-1" />
           </div>
           <label
             htmlFor="assortment-song"
-            className="border-border bg-surface-container-low hover:bg-surface-container flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition-colors"
+            className="border-border bg-card hover:bg-muted flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition-colors"
           >
             <Music2 size={19} aria-hidden="true" />
             <span className="min-w-0 flex-1">
               <span className="block truncate text-sm font-medium">
                 {song?.name || 'Upload your own audio'}
               </span>
-              <span className="text-on-surface-variant block text-xs">MP3 / WAV / AAC / M4A</span>
+              <span className="text-muted-foreground block text-xs">MP3 / WAV / AAC / M4A</span>
             </span>
-            <span className="text-on-surface-variant text-xs">Up to 50 MB</span>
+            <span className="text-muted-foreground text-xs">Up to 50 MB</span>
           </label>
           <input
             ref={fileInputRef}
@@ -286,7 +284,7 @@ export function AssortmentEntryClient({ token, assortment }: AssortmentEntryClie
             <Sparkles size={18} aria-hidden="true" />
             {pending ? stage || 'Preparing your show' : 'Generate show'}
           </Button>
-          <p aria-live="polite" className="text-on-surface-variant mt-3 text-center text-xs">
+          <p aria-live="polite" className="text-muted-foreground mt-3 text-center text-xs">
             {pending ? stage : 'No account or catalogue setup needed'}
           </p>
         </section>

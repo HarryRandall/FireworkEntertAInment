@@ -4,8 +4,8 @@ import { Button } from '@/ui/patterns/Button';
 
 export function ShowsEmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[color:var(--color-border-subtle)] px-6 py-16 text-center">
-      <span className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[color:var(--color-bg-subtle)] text-[color:var(--color-content-subtle)]">
+    <div className="border-border flex flex-col items-center justify-center rounded-2xl border border-dashed px-6 py-16 text-center">
+      <span className="bg-secondary text-muted-foreground mb-5 inline-flex h-12 w-12 items-center justify-center rounded-full">
         <Sparkles size={22} aria-hidden />
       </span>
       <h2 className="text-foreground text-lg font-semibold tracking-tight">No shows yet</h2>

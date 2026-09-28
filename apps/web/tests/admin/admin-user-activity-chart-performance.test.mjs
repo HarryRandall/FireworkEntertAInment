@@ -34,6 +34,6 @@ test('the empty state returns before the lazy chart is rendered', async () => {
 
   assert.ok(emptyStateIndex >= 0);
   assert.ok(lazyPlotIndex > emptyStateIndex);
-  assert.match(chart, /className="h-44/);
+  assert.match(chart, /className="(?:[^"]* )?h-44\b/);
   assert.match(chart, /Loading activity chart/);
 });

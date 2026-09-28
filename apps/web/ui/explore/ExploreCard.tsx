@@ -106,23 +106,23 @@ export const ExploreCard = memo(function ExploreCard({
       <div className="mt-2.5 flex items-center gap-2">
         <h3
           id={titleId}
-          className="text-on-surface group-hover:text-primary line-clamp-1 text-sm font-semibold transition-colors"
+          className="text-foreground group-hover:text-primary line-clamp-1 text-sm font-semibold transition-colors"
         >
           {template.title}
         </h3>
         <span
           id={durationId}
-          className="shrink-0 rounded-md border border-[color:var(--color-border-subtle)] px-1.5 py-0.5 font-mono text-[10px] font-medium text-[color:var(--color-content-subtle)] tabular-nums"
+          className="border-border text-muted-foreground shrink-0 rounded-md border px-1.5 py-0.5 font-mono text-[10px] font-medium tabular-nums"
         >
           <span className="sr-only">Duration </span>
           {formatDuration(template.durationSeconds)}
         </span>
       </div>
-      <p id={themeId} className="text-on-surface-variant mt-0.5 line-clamp-1 text-xs">
+      <p id={themeId} className="text-muted-foreground mt-0.5 line-clamp-1 text-xs">
         {template.theme}
       </p>
 
-      <div id={statsId} className="text-on-surface-variant mt-1.5 flex items-center gap-3 text-xs">
+      <div id={statsId} className="text-muted-foreground mt-1.5 flex items-center gap-3 text-xs">
         <span className="inline-flex items-center gap-1">
           <Heart aria-hidden="true" size={12} />
           <span aria-hidden="true" className="tabular-nums">

@@ -33,7 +33,7 @@ const PLANNING_FLOW = [
 
 export function Testimonials() {
   return (
-    <section className="bg-muted border-outline-variant/60 relative overflow-hidden border-t py-20">
+    <section className="bg-muted border-border/60 relative overflow-hidden border-t py-20">
       <Doodle
         name="willow"
         width={120}
@@ -43,10 +43,10 @@ export function Testimonials() {
       <Container>
         <Reveal className="mb-8 max-w-[640px]">
           <Eyebrow>Designed for first-time planners</Eyebrow>
-          <h2 className="text-on-surface mt-2.5 text-[clamp(28px,4vw,42px)] leading-[1.05] font-extrabold tracking-[-0.03em] text-balance">
+          <h2 className="text-foreground mt-2.5 text-[clamp(28px,4vw,42px)] leading-[1.05] font-extrabold tracking-[-0.03em] text-balance">
             A clear path from an idea to a show plan.
           </h2>
-          <p className="text-on-surface-variant mt-4 text-base leading-relaxed">
+          <p className="text-muted-foreground mt-4 text-base leading-relaxed">
             ShowCrafter keeps the main decisions visible so people without choreography experience
             can understand what they are building.
           </p>
@@ -58,18 +58,18 @@ export function Testimonials() {
             return (
               <Reveal key={item.title} delay={index * 0.08}>
                 <article
-                  className={`${styles.hoverLift} bg-card border-outline-variant/60 h-full rounded-2xl border px-[22px] pt-[22px] pb-6 shadow-[var(--shadow-card)]`}
+                  className={`${styles.hoverLift} bg-card border-border/60 h-full rounded-2xl border px-[22px] pt-[22px] pb-6 shadow-[var(--shadow-card)]`}
                 >
                   <div className="bg-primary/15 text-primary inline-flex h-10 w-10 items-center justify-center rounded-full">
                     <Icon aria-hidden="true" size={19} strokeWidth={1.75} />
                   </div>
-                  <div className="text-on-surface-variant mt-5 text-[11px] font-semibold tracking-[0.12em] uppercase">
+                  <div className="text-muted-foreground mt-5 text-[11px] font-semibold tracking-[0.12em] uppercase">
                     {item.eyebrow}
                   </div>
-                  <h3 className="text-on-surface mt-2 text-lg font-bold tracking-tight">
+                  <h3 className="text-foreground mt-2 text-lg font-bold tracking-tight">
                     {item.title}
                   </h3>
-                  <p className="text-on-surface-variant mt-3 text-sm leading-relaxed">
+                  <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
                     {item.description}
                   </p>
                 </article>

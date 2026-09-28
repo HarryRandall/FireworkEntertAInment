@@ -46,13 +46,10 @@ export function LibraryControls({ sort, sorts }: LibraryControlsProps) {
             className="h-9 max-w-full justify-start gap-2 rounded-md px-3"
             aria-label="Sort show library"
           >
-            <ListFilter size={15} className="shrink-0 text-[color:var(--color-content-subtle)]" />
-            <span className="shrink-0 text-[color:var(--color-content-subtle)]">Sort:</span>
+            <ListFilter size={15} className="text-muted-foreground shrink-0" />
+            <span className="text-muted-foreground shrink-0">Sort:</span>
             <span className="min-w-0 truncate">{selectedSort?.label ?? 'Most popular'}</span>
-            <ChevronDown
-              size={15}
-              className="ml-1 shrink-0 text-[color:var(--color-content-subtle)]"
-            />
+            <ChevronDown size={15} className="text-muted-foreground ml-1 shrink-0" />
           </Button>
         </PopoverTrigger>
         <PopoverContent align="end" className="w-52 p-1">

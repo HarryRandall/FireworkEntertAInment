@@ -36,7 +36,7 @@ export function renderLiftVelocityControl(context: RendererControlsContext, hint
         <div
           role="radiogroup"
           aria-label="Lift velocity"
-          className="grid w-full grid-cols-4 gap-1 rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-subtle)]/50 p-1"
+          className="border-input bg-secondary/50 grid w-full grid-cols-4 gap-1 rounded-lg border p-1"
         >
           {LIFT_VELOCITY_OPTIONS.map((option) => {
             const active = selectedMode === option.value;
@@ -52,8 +52,8 @@ export function renderLiftVelocityControl(context: RendererControlsContext, hint
                 className={cn(
                   'focus-visible:ring-ring/50 flex h-8 min-w-0 items-center justify-center rounded-md px-1 text-xs font-medium transition-colors outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-50',
                   active
-                    ? 'bg-[color:var(--color-bg-default)] text-[color:var(--color-content-emphasis)] shadow-xs'
-                    : 'text-[color:var(--color-content-subtle)] hover:text-[color:var(--color-content-emphasis)]',
+                    ? 'bg-card text-foreground shadow-xs'
+                    : 'text-muted-foreground hover:text-foreground',
                 )}
               >
                 {option.label}

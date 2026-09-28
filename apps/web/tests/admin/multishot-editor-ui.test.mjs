@@ -16,7 +16,7 @@ test('solid brand badges pair a tinted primary surface with readable text', () =
 
   assert.doesNotMatch(badge, /bg-accent\s+text-accent-foreground/);
   assert.match(badge, /var\(--primary\)_14%,transparent/);
-  assert.match(badge, /var\(--color-content-emphasis\)/);
+  assert.match(badge, /text-foreground/);
 });
 
 test('shared brand controls do not use neutral accent foregrounds', () => {
@@ -220,7 +220,7 @@ test('multishot preview uses shared admin transport fullscreen and loading chrom
   assert.match(editor, /'grid shrink-0 items-stretch gap-5'/);
   assert.match(previewStage, /<div className=\{fullscreen \? 'contents' : 'relative'\}>/);
   assert.doesNotMatch(previewStage, /h-32 shrink-0/);
-  assert.match(editor, /className="flex flex-col gap-3 rounded-lg/);
+  assert.match(editor, /className="(?=[^"]*\bflex-col\b)(?=[^"]*\bgap-3\b)[^"]*\brounded-lg\b/);
   assert.doesNotMatch(editor, /mt-\[28rem\]|mt-40|mb-32|mb-14/);
   assert.match(
     previewStage,

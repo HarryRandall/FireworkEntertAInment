@@ -129,6 +129,8 @@ function ReplayCanvasPlaceholder() {
   return (
     <div
       className="bg-stage-night pointer-events-none absolute inset-0 z-[1] overflow-hidden"
+      role="status"
+      aria-busy="true"
       aria-label="Loading preview"
     >
       <ReplayStageBackdrop />
@@ -148,10 +150,10 @@ const LazyFireworkReplayCanvas = dynamic(
 function EmptyPreview() {
   return (
     <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-8 text-center">
-      <div className="border-outline-variant/15 bg-surface-container-low/85 max-w-md rounded-2xl border p-6 backdrop-blur">
+      <div className="border-border/15 bg-card/85 max-w-md rounded-2xl border p-6 backdrop-blur">
         <Sparkles className="text-primary mx-auto mb-4" size={28} />
-        <h2 className="text-on-surface text-xl font-bold">No typed fireworks yet</h2>
-        <p className="text-on-surface-variant mt-2 text-sm leading-relaxed">
+        <h2 className="text-foreground text-xl font-bold">No typed fireworks yet</h2>
+        <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
           Add a cue below to preview the show.
         </p>
       </div>
@@ -780,7 +782,7 @@ export function FireworkReplayViewer({
             'overflow-hidden bg-gradient-to-b p-0',
             isFullscreen
               ? 'h-0 border-0 bg-transparent p-0 shadow-none'
-              : 'from-surface-container-high via-surface-container to-surface-container-low shadow-[var(--shadow-card-hover)]',
+              : 'from-secondary via-muted to-card shadow-[var(--shadow-card-hover)]',
           )}
         >
           <div
@@ -789,7 +791,7 @@ export function FireworkReplayViewer({
             className={cn(
               'group/replay overflow-hidden rounded-[inherit]',
               isFullscreen
-                ? 'border-outline-variant/25 fixed inset-[5vmin] z-[100] overflow-hidden rounded-2xl border bg-black shadow-[var(--shadow-modal)]'
+                ? 'border-border/25 fixed inset-[5vmin] z-[100] overflow-hidden rounded-2xl border bg-black shadow-[var(--shadow-modal)]'
                 : 'relative h-[min(72vh,680px)] min-h-[520px]',
             )}
             onFocusCapture={wakePlaybackControls}
@@ -858,7 +860,7 @@ export function FireworkReplayViewer({
             <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
               <div>
                 <Eyebrow tone="muted">Cue builder</Eyebrow>
-                <h2 className="text-on-surface mt-2 text-2xl font-bold">Cues</h2>
+                <h2 className="text-foreground mt-2 text-2xl font-bold">Cues</h2>
               </div>
               <div className="flex items-center gap-3">
                 {actionResult ? (
@@ -866,7 +868,7 @@ export function FireworkReplayViewer({
                     className={
                       actionResult.ok
                         ? 'text-primary text-sm font-semibold'
-                        : 'text-error text-sm font-semibold'
+                        : 'text-status-danger text-sm font-semibold'
                     }
                   >
                     {actionResult.ok ? actionResult.message : actionResult.error}
@@ -923,7 +925,7 @@ export function FireworkReplayViewer({
                       <input type="hidden" name="showSlug" value={showSlug} />
                       <input type="hidden" name="description" value={selectedProduct?.name ?? ''} />
                       <label className="space-y-2 sm:col-span-2">
-                        <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
+                        <span className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
                           Firework
                         </span>
                         <SelectField
@@ -939,7 +941,7 @@ export function FireworkReplayViewer({
                         />
                       </label>
                       <label className="space-y-2">
-                        <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
+                        <span className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
                           Mortar
                         </span>
                         <SelectField
@@ -949,7 +951,7 @@ export function FireworkReplayViewer({
                         />
                       </label>
                       <label className="space-y-2">
-                        <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
+                        <span className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
                           Time (seconds)
                         </span>
                         <NumberInput
@@ -996,7 +998,7 @@ export function FireworkReplayViewer({
                       className="flex min-h-[18rem] flex-col gap-4"
                     >
                       <label className="block space-y-2">
-                        <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
+                        <span className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
                           Describe what you want
                         </span>
                         <Textarea
@@ -1113,8 +1115,7 @@ export function FireworkReplayViewer({
                               className={tableRowClasses(
                                 cn(
                                   'cursor-pointer',
-                                  isActive &&
-                                    'bg-[color:var(--color-bg-muted)] shadow-[inset_3px_0_0_0_var(--primary)]',
+                                  isActive && 'bg-muted shadow-[inset_3px_0_0_0_var(--primary)]',
                                 ),
                               )}
                             >
@@ -1128,7 +1129,7 @@ export function FireworkReplayViewer({
                                     setIsPlaying(false);
                                     seekTo(cue.timeSeconds, false);
                                   }}
-                                  className="text-tertiary hover:bg-muted hover:text-foreground focus-visible:ring-ring -my-2 -ml-2 inline-flex min-h-10 rounded-md px-2 font-mono text-sm font-bold tabular-nums transition-colors focus:outline-none focus-visible:ring-3"
+                                  className="text-accent hover:bg-muted hover:text-foreground focus-visible:ring-ring -my-2 -ml-2 inline-flex min-h-10 rounded-md px-2 font-mono text-sm font-bold tabular-nums transition-colors focus:outline-none focus-visible:ring-3"
                                 >
                                   {cueTimeLabel}
                                 </button>
@@ -1136,13 +1137,13 @@ export function FireworkReplayViewer({
                               <td className={tableCellClasses('h-14')}>
                                 <TruncatedCell text={fireworkName} />
                                 {shotCount > 1 && (
-                                  <div className="text-on-surface-variant mt-0.5 text-[10px] font-bold tracking-widest uppercase">
+                                  <div className="text-muted-foreground mt-0.5 text-[10px] font-bold tracking-widest uppercase">
                                     {shotCount} shots
                                   </div>
                                 )}
                               </td>
                               <td className={tableCellClasses('h-14')}>
-                                <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
+                                <span className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
                                   {mortarLabel}
                                 </span>
                               </td>
@@ -1204,7 +1205,7 @@ export function FireworkReplayViewer({
                 </div>
               ) : (
                 <DataTableShell>
-                  <div className="text-on-surface-variant px-4 py-8 text-center text-sm">
+                  <div className="text-muted-foreground px-4 py-8 text-center text-sm">
                     No cues yet. Add your first firework above to make the preview playable.
                   </div>
                 </DataTableShell>
@@ -1212,7 +1213,7 @@ export function FireworkReplayViewer({
 
               {pageCount > 1 && (
                 <div className="flex items-center justify-between gap-3 pt-1">
-                  <span className="text-on-surface-variant text-[11px] font-semibold tracking-widest uppercase tabular-nums">
+                  <span className="text-muted-foreground text-[11px] font-semibold tracking-widest uppercase tabular-nums">
                     Page {safePage + 1} of {pageCount} · {builderCues.length} cues
                   </span>
                   <div className="flex items-center gap-2">
@@ -1255,17 +1256,17 @@ export function FireworkReplayViewer({
             </div>
             <Card radius="md" className="flex flex-col gap-4 p-5 xl:min-h-0 xl:flex-1">
               <div className="flex items-start gap-3">
-                <div className="bg-surface-container-highest text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
+                <div className="bg-accent text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
                   <Sparkles size={16} strokeWidth={2} />
                 </div>
                 <div>
                   <Eyebrow tone="muted">Refine with prompt</Eyebrow>
-                  <h2 className="text-on-surface mt-1 text-lg font-bold">Adjust this show</h2>
-                  <p className="text-on-surface-variant mt-1 text-xs leading-relaxed">
+                  <h2 className="text-foreground mt-1 text-lg font-bold">Adjust this show</h2>
+                  <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
                     Say what you want next: &ldquo;add green firework at the start&rdquo; or
                     &ldquo;something gold at 1:20&rdquo;, and we&apos;ll drop a matching cue in.
                   </p>
-                  <p className="text-on-surface-variant mt-2 text-xs leading-relaxed">
+                  <p className="text-muted-foreground mt-2 text-xs leading-relaxed">
                     This will use {REFINEMENT_CREDIT_COST} AI credits.
                   </p>
                 </div>
@@ -1317,7 +1318,7 @@ function TruncatedCell({ text }: { text: string }) {
   }, [text]);
 
   const content = (
-    <div ref={ref} className="text-on-surface truncate font-semibold">
+    <div ref={ref} className="text-foreground truncate font-semibold">
       {text}
     </div>
   );
@@ -1330,7 +1331,7 @@ function TruncatedCell({ text }: { text: string }) {
       <TooltipContent
         side="top"
         sideOffset={6}
-        className="max-w-sm rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] px-3 py-2 text-xs leading-snug text-[color:var(--color-content-default)] shadow-[var(--shadow-modal)]"
+        className="border-border bg-card text-foreground max-w-sm rounded-md border px-3 py-2 text-xs leading-snug shadow-[var(--shadow-modal)]"
       >
         {text}
       </TooltipContent>
@@ -1340,11 +1341,11 @@ function TruncatedCell({ text }: { text: string }) {
 
 function StatChip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between gap-3 rounded-lg border border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] px-4 py-3">
-      <span className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
+    <div className="border-input bg-card flex items-center justify-between gap-3 rounded-lg border px-4 py-3">
+      <span className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
         {label}
       </span>
-      <span className="text-on-surface text-lg font-semibold tabular-nums">{value}</span>
+      <span className="text-foreground text-lg font-semibold tabular-nums">{value}</span>
     </div>
   );
 }

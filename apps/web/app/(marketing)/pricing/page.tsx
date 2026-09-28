@@ -88,27 +88,27 @@ export default function PricingPage() {
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <h2 className="text-on-surface text-sm font-semibold tracking-wide uppercase">
+                  <h2 className="text-foreground text-sm font-semibold tracking-wide uppercase">
                     {plan.name}
                   </h2>
                   <Badge tone={plan.available ? 'primary' : 'neutral'}>{plan.status}</Badge>
                 </div>
                 <div className="mt-4">
                   <span
-                    className={`text-on-surface block font-extrabold tracking-tight ${
+                    className={`text-foreground block font-extrabold tracking-tight ${
                       plan.available ? 'text-5xl tabular-nums' : 'text-3xl text-balance'
                     }`}
                   >
                     {plan.price}
                   </span>
-                  <span className="text-on-surface-variant mt-1 block text-sm">{plan.cadence}</span>
+                  <span className="text-muted-foreground mt-1 block text-sm">{plan.cadence}</span>
                 </div>
-                <p className="text-on-surface-variant mt-3 text-sm leading-relaxed">
+                <p className="text-muted-foreground mt-3 text-sm leading-relaxed">
                   {plan.description}
                 </p>
                 <ul className="mt-8 flex-grow space-y-3">
                   {plan.features.map((feature) => (
-                    <li key={feature} className="text-on-surface flex items-start gap-3 text-sm">
+                    <li key={feature} className="text-foreground flex items-start gap-3 text-sm">
                       <span className="bg-primary/15 text-primary mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full">
                         <Check aria-hidden size={12} strokeWidth={2.5} />
                       </span>
@@ -123,7 +123,7 @@ export default function PricingPage() {
                     </Button>
                   </div>
                 ) : (
-                  <p className="text-on-surface-variant mt-8 text-center text-sm font-medium">
+                  <p className="text-muted-foreground mt-8 text-center text-sm font-medium">
                     Not open for sign-up
                   </p>
                 )}
@@ -131,9 +131,9 @@ export default function PricingPage() {
             ))}
           </div>
 
-          <div className="border-outline-variant/15 bg-surface-container-low mx-auto mt-20 max-w-2xl rounded-2xl border p-8 text-center">
+          <div className="border-border/15 bg-card mx-auto mt-20 max-w-2xl rounded-2xl border p-8 text-center">
             <Eyebrow>Beta configuration</Eyebrow>
-            <p className="text-on-surface-variant mt-3 text-base leading-relaxed">
+            <p className="text-muted-foreground mt-3 text-base leading-relaxed">
               New AI-credit accounts currently receive a 150-credit starter grant. Generation costs
               can vary by mode or model and are shown in the creation flow before the final Generate
               action.

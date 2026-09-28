@@ -141,14 +141,14 @@ function buildKpis(analysis: AnalyserResult | null) {
 
 function KpiTile({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
-    <div className="border-outline-variant/55 bg-surface-container-low rounded-lg border p-4">
-      <div className="text-on-surface-variant text-xs font-bold tracking-widest uppercase">
+    <div className="border-border/55 bg-card rounded-lg border p-4">
+      <div className="text-muted-foreground text-xs font-bold tracking-widest uppercase">
         {label}
       </div>
-      <div className="text-on-surface mt-2 text-xl font-semibold [overflow-wrap:anywhere] break-words tabular-nums">
+      <div className="text-foreground mt-2 text-xl font-semibold [overflow-wrap:anywhere] break-words tabular-nums">
         {value}
       </div>
-      <div className="text-on-surface-variant mt-1 min-h-5 text-xs leading-relaxed [overflow-wrap:anywhere] break-words">
+      <div className="text-muted-foreground mt-1 min-h-5 text-xs leading-relaxed [overflow-wrap:anywhere] break-words">
         {detail}
       </div>
     </div>
@@ -159,17 +159,17 @@ function SoundtrackProfile({ soundtrack }: { soundtrack: SoundtrackAttribution }
   return (
     <section
       aria-labelledby="soundtrack-profile-title"
-      className="border-outline-variant/55 bg-surface-container-low flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center"
+      className="border-border/55 bg-card flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center"
     >
       <span className="bg-primary/10 text-primary flex h-12 w-12 shrink-0 items-center justify-center rounded-lg">
         <Music2 size={20} strokeWidth={1.75} aria-hidden="true" />
       </span>
 
       <div className="min-w-0 flex-1">
-        <p className="text-on-surface-variant text-[10px] font-bold tracking-widest uppercase">
+        <p className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
           Soundtrack
         </p>
-        <h2 id="soundtrack-profile-title" className="text-on-surface mt-1 text-base font-semibold">
+        <h2 id="soundtrack-profile-title" className="text-foreground mt-1 text-base font-semibold">
           <a
             href={soundtrack.sourceUrl}
             target="_blank"
@@ -177,14 +177,10 @@ function SoundtrackProfile({ soundtrack }: { soundtrack: SoundtrackAttribution }
             className="focus-visible:ring-ring inline-flex max-w-full items-center gap-1.5 rounded-sm hover:underline focus-visible:ring-3 focus-visible:outline-none"
           >
             <span className="line-clamp-2">{soundtrack.title}</span>
-            <ExternalLink
-              size={12}
-              aria-hidden="true"
-              className="text-on-surface-variant shrink-0"
-            />
+            <ExternalLink size={12} aria-hidden="true" className="text-muted-foreground shrink-0" />
           </a>
         </h2>
-        <p className="text-on-surface-variant mt-0.5 truncate text-sm">{soundtrack.artist}</p>
+        <p className="text-muted-foreground mt-0.5 truncate text-sm">{soundtrack.artist}</p>
       </div>
 
       <div className="flex shrink-0 flex-wrap items-center gap-2 text-xs">
@@ -192,7 +188,7 @@ function SoundtrackProfile({ soundtrack }: { soundtrack: SoundtrackAttribution }
           href={soundtrack.sourceUrl}
           target="_blank"
           rel="noreferrer"
-          className="border-outline-variant/60 bg-surface text-on-surface-variant hover:text-on-surface focus-visible:ring-ring inline-flex min-h-9 items-center rounded-full border px-3 py-1 font-medium transition-colors focus-visible:ring-3 focus-visible:outline-none"
+          className="border-border/60 bg-card text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex min-h-9 items-center rounded-full border px-3 py-1 font-medium transition-colors focus-visible:ring-3 focus-visible:outline-none"
         >
           Jamendo
         </a>
@@ -200,7 +196,7 @@ function SoundtrackProfile({ soundtrack }: { soundtrack: SoundtrackAttribution }
           href={soundtrack.licenceUrl}
           target="_blank"
           rel="noreferrer"
-          className="border-outline-variant/60 bg-surface text-on-surface-variant hover:text-on-surface focus-visible:ring-ring inline-flex min-h-9 items-center rounded-full border px-3 py-1 font-mono font-medium transition-colors focus-visible:ring-3 focus-visible:outline-none"
+          className="border-border/60 bg-card text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex min-h-9 items-center rounded-full border px-3 py-1 font-mono font-medium transition-colors focus-visible:ring-3 focus-visible:outline-none"
         >
           {soundtrack.licenceName}
         </a>
@@ -307,26 +303,26 @@ export function AudioAnalysisTimeline({
 
       <Card radius="md" className="relative p-6" aria-busy={analysis?.status === 'running'}>
         <div className="mb-5 space-y-2">
-          <h2 className="text-on-surface text-xl font-extrabold">Song context</h2>
+          <h2 className="text-foreground text-xl font-extrabold">Song context</h2>
           {showStatusCopy ? (
-            <p className="text-on-surface-variant max-w-2xl text-sm leading-relaxed">
+            <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
               {statusDescription(hasAudio, analysis)}
             </p>
           ) : null}
         </div>
 
         {analysis?.status === 'failed' ? (
-          <div className="border-error/35 bg-error/10 text-on-surface mb-5 flex items-start gap-3 rounded-lg border p-4 text-sm">
+          <div className="border-status-danger/35 bg-status-danger/10 text-foreground mb-5 flex items-start gap-3 rounded-lg border p-4 text-sm">
             <span>{analysis.errorMessage ?? 'Analysis failed.'}</span>
           </div>
         ) : null}
 
         {contextMarkdown ? (
-          <pre className="bg-surface-container-low text-on-surface max-w-full overflow-visible rounded-md p-4 text-xs leading-relaxed [overflow-wrap:anywhere] break-words whitespace-pre-wrap">
+          <pre className="bg-card text-foreground max-w-full overflow-visible rounded-md p-4 text-xs leading-relaxed [overflow-wrap:anywhere] break-words whitespace-pre-wrap">
             {contextMarkdown}
           </pre>
         ) : (
-          <div className="bg-surface-container-low text-on-surface-variant rounded-md p-4 text-sm">
+          <div className="bg-card text-muted-foreground rounded-md p-4 text-sm">
             {hasAudio
               ? 'Song context will appear here when the background analysis finishes.'
               : 'No song context is available without audio.'}

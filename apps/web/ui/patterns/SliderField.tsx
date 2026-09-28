@@ -114,7 +114,7 @@ export function SliderField({
       }}
     />
   ) : (
-    <span className="shrink-0 rounded-md bg-[color:var(--color-bg-subtle)] px-1.5 py-0.5 font-mono text-xs whitespace-nowrap text-[color:var(--color-content-emphasis)] tabular-nums">
+    <span className="bg-secondary text-foreground shrink-0 rounded-md px-1.5 py-0.5 font-mono text-xs whitespace-nowrap tabular-nums">
       {display}
     </span>
   );

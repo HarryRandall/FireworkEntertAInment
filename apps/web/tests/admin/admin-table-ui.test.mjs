@@ -58,7 +58,7 @@ test('shared data table uses the reference table chrome', () => {
   );
   assert.match(source, /px-4 py-3 align-middle text-sm whitespace-nowrap text-foreground/);
   assert.doesNotMatch(source, /uppercase tracking-wide/);
-  assert.doesNotMatch(source, /hover:bg-\[color:var\(--color-bg-muted\)\]/);
+  assert.doesNotMatch(source, /hover:bg-muted/);
 });
 
 test('table pagination follows the reference count and ellipsis behaviour', () => {

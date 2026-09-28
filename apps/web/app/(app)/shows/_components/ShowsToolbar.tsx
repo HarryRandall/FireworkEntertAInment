@@ -105,7 +105,7 @@ export function ShowsToolbar({ query, sort, sorts }: ShowsToolbarProps) {
           <span className="sr-only">Search shows</span>
           <Search
             size={17}
-            className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-[color:var(--color-content-muted)]"
+            className="text-muted-foreground pointer-events-none absolute top-1/2 left-4 -translate-y-1/2"
           />
           <input
             value={draftQuery}
@@ -117,7 +117,7 @@ export function ShowsToolbar({ query, sort, sorts }: ShowsToolbarProps) {
             <button
               type="button"
               onClick={clearSearch}
-              className="absolute top-1/2 right-3 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg text-[color:var(--color-content-muted)] transition-colors hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-default)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--color-border-strong)]"
+              className="text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:ring-border-emphasis absolute top-1/2 right-3 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg transition-colors focus:outline-none focus-visible:ring-2"
               aria-label="Clear search"
             >
               <X size={15} />
@@ -134,16 +134,10 @@ export function ShowsToolbar({ query, sort, sorts }: ShowsToolbarProps) {
               aria-label="Sort shows"
             >
               <span className="inline-flex min-w-0 items-center gap-2">
-                <ListFilter
-                  size={16}
-                  className="shrink-0 text-[color:var(--color-content-subtle)]"
-                />
+                <ListFilter size={16} className="text-muted-foreground shrink-0" />
                 <span className="min-w-0 truncate">{selectedSortOption.label}</span>
               </span>
-              <ChevronDown
-                size={16}
-                className="shrink-0 text-[color:var(--color-content-subtle)]"
-              />
+              <ChevronDown size={16} className="text-muted-foreground shrink-0" />
             </Button>
           </PopoverTrigger>
           <PopoverContent align="end" className="w-56 rounded-xl p-1.5">
@@ -160,7 +154,7 @@ export function ShowsToolbar({ query, sort, sorts }: ShowsToolbarProps) {
                         onSelect={() => changeSort(item.key)}
                         className={cn(
                           'rounded-xl px-3 py-2.5 text-sm',
-                          selected && 'text-[color:var(--color-content-emphasis)]',
+                          selected && 'text-foreground',
                         )}
                       >
                         <span className="flex h-4 w-4 shrink-0 items-center justify-center">

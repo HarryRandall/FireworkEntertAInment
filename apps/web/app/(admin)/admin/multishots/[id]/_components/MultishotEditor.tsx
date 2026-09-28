@@ -1069,11 +1069,11 @@ function MetaBar({
   const durationLabel = durationSeconds.trim() ? `${durationSeconds.trim()}s` : 'Auto duration';
 
   return (
-    <section className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] px-3 py-2.5 sm:px-4">
+    <section className="border-border bg-card rounded-lg border px-3 py-2.5 sm:px-4">
       <div className="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <h1 className="truncate text-sm font-semibold text-[color:var(--color-content-emphasis)]">
+            <h1 className="text-foreground truncate text-sm font-semibold">
               {name || 'Untitled multishot'}
             </h1>
             <Badge tone="neutral" solid icon={null} className="font-mono tabular-nums">
@@ -1089,9 +1089,7 @@ function MetaBar({
             ) : null}
           </div>
           {description ? (
-            <p className="mt-0.5 truncate text-xs text-[color:var(--color-content-subtle)]">
-              {description}
-            </p>
+            <p className="text-muted-foreground mt-0.5 truncate text-xs">{description}</p>
           ) : null}
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -1307,7 +1305,7 @@ function PreviewStage({
           onPointerMoveCapture={wakePreviewTransport}
           onPointerLeave={hidePreviewTransport}
           className={cn(
-            'bg-stage-night overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] text-white',
+            'bg-stage-night border-border overflow-hidden rounded-lg border text-white',
             fullscreen
               ? 'fixed inset-[5vmin] z-[100] rounded-2xl border-white/12 shadow-[0_24px_60px_-20px_rgba(0,0,0,.85)]'
               : 'relative h-[560px]',
@@ -1421,19 +1419,17 @@ function Timeline({
   }
 
   return (
-    <section className="flex flex-col gap-3 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4">
+    <section className="border-border bg-card flex flex-col gap-3 rounded-lg border p-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <Film size={16} className="text-[color:var(--color-content-subtle)]" />
-            <h2 className="text-sm font-semibold text-[color:var(--color-content-emphasis)]">
-              Timeline
-            </h2>
+            <Film size={16} className="text-muted-foreground" />
+            <h2 className="text-foreground text-sm font-semibold">Timeline</h2>
             <Badge tone="neutral" solid icon={null} className="font-mono tabular-nums">
               {trackCount} {trackCount === 1 ? 'track' : 'tracks'}
             </Badge>
           </div>
-          <p className="mt-1 text-xs text-[color:var(--color-content-subtle)]">
+          <p className="text-muted-foreground mt-1 text-xs">
             Drag clips horizontally to change firing time. Tracks only change through the shot
             inspector.
           </p>
@@ -1467,15 +1463,15 @@ function Timeline({
 
       <div
         ref={trackRef}
-        className="relative max-h-[420px] [scrollbar-gutter:stable] overflow-auto rounded-md border border-[color:var(--color-border-subtle)]"
+        className="border-border relative max-h-[420px] [scrollbar-gutter:stable] overflow-auto rounded-md border"
       >
         <div
           className="relative min-w-full"
           style={{ width: TIMELINE_TRACK_LABEL_WIDTH_PX + width }}
         >
-          <div className="sticky top-0 z-30 flex h-7 border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)]">
+          <div className="border-border bg-card sticky top-0 z-30 flex h-7 border-b">
             <div
-              className="sticky left-0 z-40 flex shrink-0 items-center border-r border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] px-3 text-[10px] font-medium text-[color:var(--color-content-subtle)] uppercase"
+              className="border-border bg-card text-muted-foreground sticky left-0 z-40 flex shrink-0 items-center border-r px-3 text-[10px] font-medium uppercase"
               style={{ width: TIMELINE_TRACK_LABEL_WIDTH_PX }}
             >
               Tracks
@@ -1490,10 +1486,10 @@ function Timeline({
                   className="absolute top-0 flex h-full flex-col justify-between"
                   style={{ left: second * PX_PER_SECOND }}
                 >
-                  <span className="pointer-events-none -translate-x-1 pl-1 font-mono text-[10px] text-[color:var(--color-content-subtle)] tabular-nums">
+                  <span className="text-muted-foreground pointer-events-none -translate-x-1 pl-1 font-mono text-[10px] tabular-nums">
                     {formatDuration(second)}
                   </span>
-                  <span className="h-1.5 w-px bg-[color:var(--color-border-strong,var(--color-border-subtle))]" />
+                  <span className="bg-border-emphasis h-1.5 w-px" />
                 </div>
               ))}
               <input
@@ -1516,7 +1512,7 @@ function Timeline({
             return (
               <div
                 key={trackIndex}
-                className="flex border-b border-[color:var(--color-border-subtle)] last:border-b-0"
+                className="border-border flex border-b last:border-b-0"
                 style={{
                   height: TIMELINE_TRACK_HEIGHT_PX,
                   contentVisibility: 'auto',
@@ -1524,10 +1520,10 @@ function Timeline({
                 }}
               >
                 <div
-                  className="sticky left-0 z-20 flex shrink-0 items-center justify-between gap-1 border-r border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] px-2"
+                  className="border-border bg-card sticky left-0 z-20 flex shrink-0 items-center justify-between gap-1 border-r px-2"
                   style={{ width: TIMELINE_TRACK_LABEL_WIDTH_PX }}
                 >
-                  <span className="min-w-0 truncate font-mono text-[11px] font-medium text-[color:var(--color-content-emphasis)] tabular-nums">
+                  <span className="text-foreground min-w-0 truncate font-mono text-[11px] font-medium tabular-nums">
                     Track {trackIndex + 1}
                   </span>
                   <button
@@ -1536,7 +1532,7 @@ function Timeline({
                     onClick={() => onAdd(trackIndex)}
                     disabled={addDisabled}
                     aria-label={`Add shot to Track ${trackIndex + 1}`}
-                    className="focus-visible:ring-ring/50 inline-flex size-10 shrink-0 items-center justify-center rounded-md text-[color:var(--color-content-subtle)] transition-colors hover:bg-[color:var(--color-bg-subtle)] hover:text-[color:var(--color-content-emphasis)] focus:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="focus-visible:ring-ring/50 text-muted-foreground hover:bg-secondary hover:text-foreground inline-flex size-10 shrink-0 items-center justify-center rounded-md transition-colors focus:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <Plus size={13} />
                   </button>
@@ -1551,7 +1547,7 @@ function Timeline({
                   }}
                 >
                   {trackShots.length === 0 ? (
-                    <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[10px] text-[color:var(--color-content-muted)]">
+                    <span className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-[10px]">
                       Empty track
                     </span>
                   ) : null}
@@ -1676,7 +1672,7 @@ function ShotClip({
         {shot.saveState === 'saving' ? (
           <Loader2 size={10} className="animate-spin" />
         ) : shot.saveState === 'error' ? (
-          <TriangleAlert size={10} className="text-[color:var(--color-content-danger,#f87171)]" />
+          <TriangleAlert size={10} className="text-status-danger" />
         ) : null}
         {formatTimelineTimestamp(shot.timeOffsetSeconds)}
       </span>
@@ -1800,32 +1796,32 @@ function FireworkDetails({ spec }: { spec: FireworkSpecification | undefined }) 
   const palette = fireworkPaletteOf(spec);
 
   return (
-    <div className="rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-subtle)] p-3">
-      <p className="line-clamp-3 text-xs leading-5 text-[color:var(--color-content-subtle)]">
+    <div className="border-border bg-secondary rounded-md border p-3">
+      <p className="text-muted-foreground line-clamp-3 text-xs leading-5">
         {spec.description || 'No description has been added for this firework.'}
       </p>
       <dl className="mt-2.5 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
         <div>
-          <dt className="text-[color:var(--color-content-muted)]">Effect</dt>
-          <dd className="truncate font-medium text-[color:var(--color-content-emphasis)]">
+          <dt className="text-muted-foreground">Effect</dt>
+          <dd className="text-foreground truncate font-medium">
             {spec.baseEffect?.name ?? 'Unknown'}
           </dd>
         </div>
         <div>
-          <dt className="text-[color:var(--color-content-muted)]">Duration</dt>
-          <dd className="font-mono font-medium text-[color:var(--color-content-emphasis)] tabular-nums">
+          <dt className="text-muted-foreground">Duration</dt>
+          <dd className="text-foreground font-mono font-medium tabular-nums">
             {formatSecondsLabel(fireworkDurationOf(spec))}
           </dd>
         </div>
         <div>
-          <dt className="text-[color:var(--color-content-muted)]">Calibre</dt>
-          <dd className="truncate font-mono font-medium text-[color:var(--color-content-emphasis)] tabular-nums">
+          <dt className="text-muted-foreground">Calibre</dt>
+          <dd className="text-foreground truncate font-mono font-medium tabular-nums">
             {spec.caliber || 'Not set'}
           </dd>
         </div>
         <div>
-          <dt className="text-[color:var(--color-content-muted)]">Height</dt>
-          <dd className="font-mono font-medium text-[color:var(--color-content-emphasis)] tabular-nums">
+          <dt className="text-muted-foreground">Height</dt>
+          <dd className="text-foreground font-mono font-medium tabular-nums">
             {spec.heightMeters == null ? 'Not set' : `${spec.heightMeters} m`}
           </dd>
         </div>
@@ -1886,7 +1882,7 @@ function Inspector({
   return (
     <aside
       data-preserve-shot-selection
-      className="flex max-h-[560px] min-h-0 flex-col overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)]"
+      className="border-border bg-card flex max-h-[560px] min-h-0 flex-col overflow-hidden rounded-lg border"
     >
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 pt-4 pb-3">
         {shot.saveState !== 'idle' ? (
@@ -1952,7 +1948,7 @@ function Inspector({
         </div>
       </div>
 
-      <div className="grid shrink-0 grid-cols-2 gap-2 border-t border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-3">
+      <div className="border-border bg-card grid shrink-0 grid-cols-2 gap-2 border-t p-3">
         <Button
           variant="secondary"
           size="sm"
@@ -2030,12 +2026,12 @@ function AnglePlaneControl({
   return (
     <div className="space-y-2.5">
       <div className="flex items-center justify-between gap-3">
-        <span className="inline-flex min-w-0 items-center gap-1.5 text-xs font-medium text-[color:var(--color-content-emphasis)]">
-          <span className="text-[color:var(--color-content-subtle)]">{icon}</span>
+        <span className="text-foreground inline-flex min-w-0 items-center gap-1.5 text-xs font-medium">
+          <span className="text-muted-foreground">{icon}</span>
           <span className="truncate">{label}</span>
           <InfoTooltip text={hint} />
         </span>
-        <span className="rounded-md bg-[color:var(--color-bg-subtle)] px-1.5 py-0.5 font-mono text-xs text-[color:var(--color-content-emphasis)] tabular-nums">
+        <span className="bg-secondary text-foreground rounded-md px-1.5 py-0.5 font-mono text-xs tabular-nums">
           {Math.round(value)}°
         </span>
       </div>
@@ -2099,7 +2095,7 @@ function AnglePlaneControl({
 function SaveIndicator({ state }: { state: SaveState }) {
   if (state === 'saving') {
     return (
-      <span className="flex items-center gap-1 text-xs text-[color:var(--color-content-subtle)]">
+      <span className="text-muted-foreground flex items-center gap-1 text-xs">
         <Loader2 size={12} className="animate-spin" />
         Saving
       </span>
@@ -2107,7 +2103,7 @@ function SaveIndicator({ state }: { state: SaveState }) {
   }
   if (state === 'saved') {
     return (
-      <span className="flex items-center gap-1 text-xs text-[color:var(--color-content-subtle)]">
+      <span className="text-muted-foreground flex items-center gap-1 text-xs">
         <Check size={12} />
         Saved
       </span>
@@ -2115,7 +2111,7 @@ function SaveIndicator({ state }: { state: SaveState }) {
   }
   if (state === 'error') {
     return (
-      <span className="flex items-center gap-1 text-xs text-[color:var(--color-content-danger,#f87171)]">
+      <span className="text-status-danger flex items-center gap-1 text-xs">
         <TriangleAlert size={12} />
         Not saved
       </span>

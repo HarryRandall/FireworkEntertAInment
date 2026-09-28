@@ -54,29 +54,23 @@ export default function ForgotPasswordPage() {
     <AuthShell>
       {sent ? (
         <div className="space-y-5 text-center" role="status" aria-live="polite">
-          <div className="mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full border border-[color:var(--color-border-subtle)] bg-[color:var(--color-status-success-subtle)] text-[color:var(--color-status-success)]">
+          <div className="border-border bg-status-success-subtle text-status-success mx-auto inline-flex h-12 w-12 items-center justify-center rounded-full border">
             <CheckCircle size={22} strokeWidth={1.8} aria-hidden="true" />
           </div>
           <div className="space-y-1">
-            <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
+            <h1 className="text-foreground text-xl font-semibold tracking-tight">
               Check your inbox
             </h1>
-            <p className="text-sm text-[color:var(--color-content-subtle)]">
-              If an account exists for{' '}
-              <span className="font-medium text-[color:var(--color-content-emphasis)]">
-                {email}
-              </span>
-              , a password reset link may arrive shortly. Follow the link to continue.
+            <p className="text-muted-foreground text-sm">
+              If an account exists for <span className="text-foreground font-medium">{email}</span>,
+              a password reset link may arrive shortly. Follow the link to continue.
             </p>
-            <p className="mt-2 text-xs text-[color:var(--color-content-muted)]">
+            <p className="text-muted-foreground mt-2 text-xs">
               The link is single-use. If it expires, request another one here.
             </p>
           </div>
-          <p className="text-sm text-[color:var(--color-content-subtle)]">
-            <Link
-              href="/login"
-              className="font-medium text-[color:var(--color-content-emphasis)] hover:underline"
-            >
+          <p className="text-muted-foreground text-sm">
+            <Link href="/login" className="text-foreground font-medium hover:underline">
               Back to sign in
             </Link>
           </p>
@@ -84,19 +78,16 @@ export default function ForgotPasswordPage() {
       ) : (
         <>
           <div className="space-y-1">
-            <h1 className="text-xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)]">
+            <h1 className="text-foreground text-xl font-semibold tracking-tight">
               Reset your password
             </h1>
-            <p className="text-sm text-[color:var(--color-content-subtle)]">
+            <p className="text-muted-foreground text-sm">
               Enter the email associated with your ShowCrafter account to request a reset link.
             </p>
           </div>
           <form onSubmit={handleSubmit} noValidate className="space-y-4">
             <div className="space-y-2">
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-[color:var(--color-content-emphasis)]"
-              >
+              <label htmlFor="email" className="text-foreground block text-sm font-medium">
                 Email address
               </label>
               <Input
@@ -127,12 +118,9 @@ export default function ForgotPasswordPage() {
               {loading ? 'Sending…' : 'Send reset link'}
             </Button>
           </form>
-          <p className="text-sm text-[color:var(--color-content-subtle)]">
+          <p className="text-muted-foreground text-sm">
             Remembered it?{' '}
-            <Link
-              href="/login"
-              className="font-medium text-[color:var(--color-content-emphasis)] hover:underline"
-            >
+            <Link href="/login" className="text-foreground font-medium hover:underline">
               Sign in
             </Link>
           </p>
@@ -144,11 +132,11 @@ export default function ForgotPasswordPage() {
 
 function AuthShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-[color:var(--color-bg-muted)] px-4 py-12">
-      <Link href="/" className="mb-8 text-[color:var(--color-content-emphasis)]">
+    <div className="bg-muted flex min-h-screen flex-col items-center justify-center px-4 py-12">
+      <Link href="/" className="text-foreground mb-8">
         <BrandLockup />
       </Link>
-      <div className="w-full max-w-sm space-y-6 rounded-xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-8 shadow-[var(--shadow-card)]">
+      <div className="border-border bg-card w-full max-w-sm space-y-6 rounded-xl border p-8 shadow-[var(--shadow-card)]">
         {children}
       </div>
     </div>

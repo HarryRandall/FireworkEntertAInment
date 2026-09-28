@@ -63,10 +63,10 @@ function StepSummary({ step }: { step: Step }) {
   const progress = (Number(step.n) / STEPS.length) * 100;
 
   return (
-    <div className="bg-card border-outline-variant/60 w-full rounded-[22px] border p-6 shadow-[var(--shadow-card)] sm:p-7">
+    <div className="bg-card border-border/60 w-full rounded-[22px] border p-6 shadow-[var(--shadow-card)] sm:p-7">
       <div className="flex items-center justify-between gap-4">
-        <span className="text-on-surface text-sm font-semibold">Show creation</span>
-        <span className="text-on-surface-variant font-mono text-xs tabular-nums">
+        <span className="text-foreground text-sm font-semibold">Show creation</span>
+        <span className="text-muted-foreground font-mono text-xs tabular-nums">
           Step {step.n} of {String(STEPS.length).padStart(2, '0')}
         </span>
       </div>
@@ -78,10 +78,10 @@ function StepSummary({ step }: { step: Step }) {
           <step.Icon aria-hidden size={20} strokeWidth={1.8} />
         </span>
         <div>
-          <div className="text-on-surface-variant text-xs font-medium tracking-wide uppercase">
+          <div className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
             {step.tag}
           </div>
-          <div className="text-on-surface mt-1 text-lg font-semibold tracking-tight">
+          <div className="text-foreground mt-1 text-lg font-semibold tracking-tight">
             {step.title}
           </div>
         </div>
@@ -90,7 +90,7 @@ function StepSummary({ step }: { step: Step }) {
         {step.details.map((detail) => (
           <li
             key={detail}
-            className="bg-surface-container-low text-on-surface flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm"
+            className="bg-card text-foreground flex items-center gap-2 rounded-xl px-3 py-2.5 text-sm"
           >
             <Check aria-hidden className="text-primary shrink-0" size={15} strokeWidth={2.2} />
             {detail}
@@ -113,22 +113,22 @@ function ZigRow({ step, flip }: { step: Step; flip: boolean }) {
               STEP {step.n}
             </span>
             <span aria-hidden className="bg-border h-px w-8" />
-            <span className="text-on-surface-variant inline-flex items-center gap-1.5 text-[13px] font-semibold">
+            <span className="text-muted-foreground inline-flex items-center gap-1.5 text-[13px] font-semibold">
               <Icon aria-hidden size={16} strokeWidth={1.8} /> {step.tag}
             </span>
           </div>
-          <h3 className="text-on-surface mt-4 text-[clamp(28px,3.4vw,40px)] leading-[1.06] font-extrabold tracking-[-0.028em] text-pretty">
+          <h3 className="text-foreground mt-4 text-[clamp(28px,3.4vw,40px)] leading-[1.06] font-extrabold tracking-[-0.028em] text-pretty">
             {step.title}
           </h3>
-          <p className="text-on-surface-variant mt-4 max-w-[450px] text-[16.5px] leading-relaxed">
+          <p className="text-muted-foreground mt-4 max-w-[450px] text-[16.5px] leading-relaxed">
             {step.body}
           </p>
         </div>
         <div className={flip ? 'md:order-1' : 'md:order-2'}>
-          <div className="bg-muted border-outline-variant/60 relative flex justify-center overflow-hidden rounded-[22px] border px-5 py-7 sm:px-8 sm:py-9">
+          <div className="bg-muted border-border/60 relative flex justify-center overflow-hidden rounded-[22px] border px-5 py-7 sm:px-8 sm:py-9">
             <span
               aria-hidden
-              className="text-on-surface pointer-events-none absolute top-2 right-[22px] text-[120px] leading-none font-bold tabular-nums opacity-[0.05]"
+              className="text-foreground pointer-events-none absolute top-2 right-[22px] text-[120px] leading-none font-bold tabular-nums opacity-[0.05]"
             >
               {step.n}
             </span>
@@ -154,10 +154,10 @@ export function Steps() {
       <Container>
         <Reveal className="mb-16 max-w-[700px]">
           <Eyebrow>How it works</Eyebrow>
-          <h2 className="text-on-surface mt-3 text-[clamp(34px,5vw,56px)] leading-[1.02] font-extrabold tracking-[-0.03em] text-balance">
+          <h2 className="text-foreground mt-3 text-[clamp(34px,5vw,56px)] leading-[1.02] font-extrabold tracking-[-0.03em] text-balance">
             From an idea to a reviewable show plan.
           </h2>
-          <p className="text-on-surface-variant mt-4 text-lg leading-relaxed">
+          <p className="text-muted-foreground mt-4 text-lg leading-relaxed">
             Five clear stages keep background music analysis separate from the explicit Generate
             action that creates the show and begins cue planning.
           </p>

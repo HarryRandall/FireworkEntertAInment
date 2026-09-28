@@ -971,7 +971,7 @@ export function StyleDefaultEditor({ styleDefault }: { styleDefault: AdminStyleD
 
       <PanelSection title="Archive">
         <div className="space-y-3">
-          <p className="text-sm leading-relaxed text-[color:var(--color-content-muted)]">
+          <p className="text-muted-foreground text-sm leading-relaxed">
             Archive this default when it should no longer be offered for new assignments.
           </p>
           <Button

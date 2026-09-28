@@ -21,16 +21,16 @@ export default function AccountUnavailablePage() {
     >
       <Container className="max-w-3xl">
         <Card radius="xl" shadow className="p-7 sm:p-10">
-          <span className="border-outline-variant bg-surface-container text-primary flex size-12 items-center justify-center rounded-2xl border">
+          <span className="border-border bg-muted text-primary flex size-12 items-center justify-center rounded-2xl border">
             <CircleSlash2 aria-hidden size={22} />
           </span>
           <h1
             id="account-unavailable-title"
-            className="text-on-surface mt-6 text-3xl font-semibold tracking-tight text-balance sm:text-4xl"
+            className="text-foreground mt-6 text-3xl font-semibold tracking-tight text-balance sm:text-4xl"
           >
             This account cannot access the workspace.
           </h1>
-          <p className="text-on-surface-variant mt-4 max-w-2xl leading-relaxed text-pretty">
+          <p className="text-muted-foreground mt-4 max-w-2xl leading-relaxed text-pretty">
             The profile may be suspended or incomplete. Sign out to use another account, or check
             the current contact information if you believe access should be restored.
           </p>

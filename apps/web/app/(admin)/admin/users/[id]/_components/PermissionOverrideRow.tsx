@@ -50,19 +50,17 @@ export function PermissionOverrideRow({ userId, permission, initialMode }: Props
   };
 
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-[color:var(--color-border-subtle)] py-3 last:border-b-0">
+    <div className="border-border flex items-start justify-between gap-4 border-b py-3 last:border-b-0">
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-medium text-[color:var(--color-content-emphasis)]">
-          {permission.name}
-        </div>
-        <div className="mt-0.5 text-xs text-[color:var(--color-content-subtle)]">
+        <div className="text-foreground text-sm font-medium">{permission.name}</div>
+        <div className="text-muted-foreground mt-0.5 text-xs">
           <span className="font-mono">{permission.key}</span>
           {permission.description ? <span className="ml-2">{permission.description}</span> : null}
         </div>
       </div>
       <div
         role="radiogroup"
-        className="inline-flex shrink-0 rounded-md border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-default)] p-0.5"
+        className="border-border bg-card inline-flex shrink-0 rounded-md border p-0.5"
       >
         {MODES.map((m) => {
           const selected = m.value === mode;
@@ -78,11 +76,11 @@ export function PermissionOverrideRow({ userId, permission, initialMode }: Props
                 'h-7 rounded px-3 text-xs font-medium transition-colors',
                 selected
                   ? m.value === 'grant'
-                    ? 'bg-[color:var(--color-status-success-subtle)] text-[color:var(--color-status-success)]'
+                    ? 'bg-status-success-subtle text-status-success'
                     : m.value === 'deny'
-                      ? 'bg-[color:var(--color-status-danger-subtle)] text-[color:var(--color-status-danger)]'
-                      : 'bg-[color:var(--color-bg-subtle)] text-[color:var(--color-content-emphasis)]'
-                  : 'text-[color:var(--color-content-subtle)] hover:text-[color:var(--color-content-emphasis)]',
+                      ? 'bg-status-danger-subtle text-status-danger'
+                      : 'bg-secondary text-foreground'
+                  : 'text-muted-foreground hover:text-foreground',
               )}
             >
               {m.label}

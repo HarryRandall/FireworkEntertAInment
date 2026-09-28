@@ -4,7 +4,12 @@ import { Skeleton } from '@/ui/patterns/Feedback';
 
 export default function RetailerAdminLoading() {
   return (
-    <div className="space-y-6" aria-label="Loading retailer admin data">
+    <div
+      className="space-y-6"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading retailer admin data"
+    >
       <div className="space-y-3">
         <Skeleton className="h-4 w-24" />
         <Skeleton className="h-9 w-72" />

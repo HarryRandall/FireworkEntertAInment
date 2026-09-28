@@ -11,7 +11,7 @@ const THEME_OPTIONS = [
 
 export default function ProfileSettingsLoading() {
   return (
-    <div className="space-y-6" aria-label="Loading personal details" aria-busy="true">
+    <div className="space-y-6" role="status" aria-label="Loading personal details" aria-busy="true">
       <Card>
         <CardHeader>
           <CardTitle>Profile</CardTitle>

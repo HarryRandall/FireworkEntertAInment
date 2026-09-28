@@ -40,10 +40,8 @@ export default async function LibraryDetailPage({ params, searchParams }: PagePr
     <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
-          <h1 className="text-on-surface text-2xl font-semibold tracking-tight md:text-3xl">
-            {template.title}
-          </h1>
-          <p className="text-on-surface-variant mt-2 max-w-3xl text-sm leading-relaxed">
+          <h1 className="text-foreground text-2xl font-bold tracking-tight">{template.title}</h1>
+          <p className="text-muted-foreground mt-2 max-w-3xl text-sm leading-relaxed">
             {template.description ?? template.theme}
           </p>
         </div>
@@ -84,7 +82,7 @@ export default async function LibraryDetailPage({ params, searchParams }: PagePr
           </Card>
 
           <Card radius="md" className="p-4">
-            <h2 className="text-on-surface text-sm font-semibold">Show details</h2>
+            <h2 className="text-foreground text-sm font-semibold">Show details</h2>
             <dl className="mt-3 space-y-2 text-[13px]">
               <DetailRow icon={<Clock size={14} />} label="Duration">
                 {formatDuration(template.durationSeconds)}
@@ -147,11 +145,11 @@ function DetailRow({
 }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <dt className="text-on-surface-variant flex items-center gap-2">
-        <span className="text-on-surface-variant/70">{icon}</span>
+      <dt className="text-muted-foreground flex items-center gap-2">
+        <span className="text-muted-foreground/70">{icon}</span>
         {label}
       </dt>
-      <dd className="text-on-surface font-medium">{children}</dd>
+      <dd className="text-foreground font-medium">{children}</dd>
     </div>
   );
 }
@@ -202,7 +200,7 @@ async function LibraryDetailCurrentFirework({
 function CurrentFireworkCardSkeleton() {
   return (
     <Card radius="md" className="p-4">
-      <h2 className="text-on-surface text-sm font-semibold">Current firework</h2>
+      <h2 className="text-foreground text-sm font-semibold">Current firework</h2>
       <div className="mt-3 space-y-4">
         <div className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-3">
           <div className="relative flex justify-center">

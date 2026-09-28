@@ -22,6 +22,8 @@ export default function LibraryDetailLoading() {
   return (
     <div
       className="mx-auto flex w-full max-w-[1600px] flex-col gap-5"
+      role="status"
+      aria-busy="true"
       aria-label="Loading template"
     >
       <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -53,7 +55,7 @@ export default function LibraryDetailLoading() {
             <button
               type="button"
               disabled
-              className="border-border/70 bg-background/70 text-on-surface-variant mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-full border px-4 text-sm font-bold"
+              className="border-border/70 bg-background/70 text-muted-foreground mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-full border px-4 text-sm font-bold"
               aria-label="Loading saved show count"
             >
               <Heart size={16} className="text-destructive" />
@@ -62,12 +64,12 @@ export default function LibraryDetailLoading() {
           </Card>
 
           <Card radius="md" className="p-4">
-            <h2 className="text-on-surface text-sm font-semibold">Show details</h2>
+            <h2 className="text-foreground text-sm font-semibold">Show details</h2>
             <div className="mt-3 space-y-2">
               {DETAIL_ROWS.map(({ label, icon: Icon, valueWidth }) => (
                 <div key={label} className="flex items-center justify-between gap-3 text-[13px]">
-                  <span className="text-on-surface-variant flex items-center gap-2">
-                    <Icon size={14} className="text-on-surface-variant/70" />
+                  <span className="text-muted-foreground flex items-center gap-2">
+                    <Icon size={14} className="text-muted-foreground/70" />
                     {label}
                   </span>
                   <Skeleton className={`h-4 ${valueWidth}`} />
@@ -77,7 +79,7 @@ export default function LibraryDetailLoading() {
           </Card>
 
           <Card radius="md" className="p-4">
-            <h2 className="text-on-surface text-sm font-semibold">Current firework</h2>
+            <h2 className="text-foreground text-sm font-semibold">Current firework</h2>
             <div className="mt-3 space-y-4">
               <div className="grid grid-cols-[1.25rem_minmax(0,1fr)] gap-3">
                 <div className="relative flex justify-center">

@@ -44,7 +44,7 @@ export function ColorField({
             aria-label={`Set ${label}`}
             onClick={() => onChange('#ffffff')}
             className={cn(
-              'focus-visible:ring-ring/50 inline-flex h-9 items-center gap-2 rounded-lg border border-dashed border-[color:var(--color-border-default)] bg-[color:var(--color-bg-default)] pr-3 pl-1.5 text-xs text-[color:var(--color-content-subtle)] shadow-xs transition-colors hover:border-[color:var(--color-border-emphasis)] hover:text-[color:var(--color-content-emphasis)] focus:outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-60',
+              'focus-visible:ring-ring/50 border-input bg-card text-muted-foreground hover:border-border-emphasis hover:text-foreground inline-flex h-9 items-center gap-2 rounded-lg border border-dashed pr-3 pl-1.5 text-xs shadow-xs transition-colors focus:outline-none focus-visible:ring-3 disabled:cursor-not-allowed disabled:opacity-60',
             )}
           >
             <span
@@ -64,7 +64,7 @@ export function ColorField({
         {allowClear && hasValue ? (
           <button
             type="button"
-            className="text-xs text-[color:var(--color-content-subtle)] underline-offset-2 hover:underline disabled:opacity-50"
+            className="text-muted-foreground text-xs underline-offset-2 hover:underline disabled:opacity-50"
             disabled={disabled}
             onClick={() => onChange(null)}
           >

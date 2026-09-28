@@ -31,7 +31,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.className} ${geistSans.variable} ${geistMono.variable} bg-background text-on-surface`}
+        className={`${geistSans.className} ${geistSans.variable} ${geistMono.variable} bg-background text-foreground`}
         style={{ fontFamily: geistSans.style.fontFamily }}
       >
         <ThemeProvider>

@@ -61,7 +61,7 @@ export function CardGridSkeleton({
   className?: string;
 }) {
   return (
-    <div className={className} aria-label="Loading cards">
+    <div className={className} role="status" aria-busy="true" aria-label="Loading cards">
       {Array.from({ length: count }).map((_, index) => (
         <Skeleton key={index} className="h-64 rounded-xl" />
       ))}
@@ -110,14 +110,19 @@ export function FilterSkeleton({
 /** Skeleton for the `/library` template grid. */
 export function LibraryCardsSkeleton() {
   return (
-    <div className="space-y-8" aria-label="Loading library templates">
+    <div
+      className="space-y-8"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading library templates"
+    >
       {EXPLORE_SKELETON_SHELVES.map((shelf) => (
         <section key={shelf.sort}>
           <div className="mb-3 flex items-center justify-between gap-3">
-            <h2 className="text-on-surface text-lg font-semibold tracking-tight">{shelf.title}</h2>
+            <h2 className="text-foreground text-lg font-semibold tracking-tight">{shelf.title}</h2>
             <Link
               href={`/library?sort=${shelf.sort}`}
-              className="text-on-surface-variant hover:text-on-surface inline-flex items-center gap-1 rounded-full border border-[color:var(--color-border-subtle)] px-3 py-1 text-xs font-medium transition-colors"
+              className="text-muted-foreground hover:text-foreground border-border inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors"
             >
               See all
               <ChevronRight size={14} />
@@ -138,15 +143,20 @@ export function LibraryCardsSkeleton() {
 /** Skeleton for a `/library?sort=...` see-all grid; keeps the shelf title chrome. */
 export function LibraryGridSkeleton({ title }: { title: string }) {
   return (
-    <section className="space-y-4" aria-label="Loading library templates">
+    <section
+      className="space-y-4"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading library templates"
+    >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-on-surface text-xl font-semibold tracking-tight">{title}</h2>
+          <h2 className="text-foreground text-xl font-semibold tracking-tight">{title}</h2>
           <Skeleton className="mt-1 h-4 w-20" />
         </div>
         <Link
           href="/library"
-          className="text-on-surface-variant hover:text-on-surface inline-flex h-10 items-center gap-2 rounded-full border border-[color:var(--color-border-subtle)] px-4 text-sm font-medium transition-colors"
+          className="text-muted-foreground hover:text-foreground border-border inline-flex h-10 items-center gap-2 rounded-full border px-4 text-sm font-medium transition-colors"
         >
           <ChevronLeft size={16} />
           Back to shelves
@@ -166,7 +176,12 @@ export function LibraryGridSkeleton({ title }: { title: string }) {
 /** Skeleton for the `/admin` overview dashboard. */
 export function AdminOverviewSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-4" aria-label="Loading admin overview">
+    <div
+      className="mx-auto w-full max-w-[1600px] space-y-4"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading admin overview"
+    >
       <AdminOverviewControlsSkeleton />
       <AdminOverviewContentSkeleton />
     </div>
@@ -204,7 +219,12 @@ function AdminOverviewControlsSkeleton() {
 
 function AdminOverviewDashboardContentSkeleton() {
   return (
-    <div className="space-y-4" aria-label="Loading admin overview content">
+    <div
+      className="space-y-4"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading admin overview content"
+    >
       <div className="bg-card ring-foreground/10 overflow-hidden rounded-xl shadow-xs ring-1">
         <div className="grid divide-y md:grid-cols-2 md:divide-x md:divide-y-0 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
@@ -238,7 +258,12 @@ function AdminOverviewDashboardContentSkeleton() {
 
 function AdminOverviewCatalogueContentSkeleton() {
   return (
-    <div className="flex-1 text-sm outline-none" aria-label="Loading catalogue overview">
+    <div
+      className="flex-1 text-sm outline-none"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading catalogue overview"
+    >
       <div className="bg-card ring-foreground/10 rounded-xl py-6 shadow-xs ring-1">
         <div className="mb-5 px-6">
           <Skeleton className="h-5 w-32" />
@@ -266,7 +291,12 @@ function AdminOverviewCatalogueContentSkeleton() {
 
 function AdminOverviewImportsContentSkeleton() {
   return (
-    <div className="flex-1 text-sm outline-none" aria-label="Loading import pipeline">
+    <div
+      className="flex-1 text-sm outline-none"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading import pipeline"
+    >
       <div className="bg-card ring-foreground/10 rounded-xl py-6 shadow-xs ring-1">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3 px-6">
           <Skeleton className="h-5 w-32" />
@@ -298,6 +328,8 @@ function AdminOverviewGenerationContentSkeleton() {
   return (
     <div
       className="flex flex-1 flex-col gap-4 text-sm outline-none"
+      role="status"
+      aria-busy="true"
       aria-label="Loading generation overview"
     >
       <div className="bg-card ring-foreground/10 rounded-xl p-5 shadow-xs ring-1">
@@ -395,7 +427,12 @@ export function AdminUserHeaderSkeleton() {
 export function AdminUserActivitySkeleton() {
   return (
     <>
-      <section className="grid grid-cols-2 gap-3 md:grid-cols-4" aria-label="Loading user stats">
+      <section
+        className="grid grid-cols-2 gap-3 md:grid-cols-4"
+        role="status"
+        aria-busy="true"
+        aria-label="Loading user stats"
+      >
         {Array.from({ length: 4 }).map((_, index) => (
           <div key={index} className="border-border bg-card rounded-lg border px-4 py-3">
             <Skeleton className="mb-2 h-3 w-24" />
@@ -405,6 +442,8 @@ export function AdminUserActivitySkeleton() {
       </section>
       <div
         className="border-border bg-card rounded-xl border p-5"
+        role="status"
+        aria-busy="true"
         aria-label="Loading activity chart"
       >
         <div className="mb-3 flex items-center justify-between gap-3">
@@ -424,7 +463,12 @@ function ActivityChartSkeleton() {
 /** AI credit KPI and ledger skeleton for the admin user detail page. */
 function AdminUserAiCreditsSkeleton() {
   return (
-    <div className="border-border bg-card rounded-xl border p-5" aria-label="Loading AI credits">
+    <div
+      className="border-border bg-card rounded-xl border p-5"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading AI credits"
+    >
       <div className="mb-4 flex items-center gap-2">
         <Skeleton className="h-8 w-8 rounded-lg" />
         <div className="space-y-2">
@@ -461,7 +505,12 @@ function AdminUserAiCreditsSkeleton() {
 /** Role card skeleton for the admin user detail page. */
 export function AdminUserRoleSkeleton() {
   return (
-    <div className="border-border bg-card rounded-xl border p-5" aria-label="Loading user role">
+    <div
+      className="border-border bg-card rounded-xl border p-5"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading user role"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-2">
           <Skeleton className="h-4 w-10" />
@@ -478,6 +527,8 @@ export function AdminUserPermissionsSkeleton() {
   return (
     <div
       className="border-border bg-card rounded-xl border p-5"
+      role="status"
+      aria-busy="true"
       aria-label="Loading permission exceptions"
     >
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
@@ -512,7 +563,12 @@ export function AdminUserPermissionsSkeleton() {
 /** Skeleton for the admin user detail route. */
 export function AdminUserDetailSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-[1200px] space-y-8" aria-label="Loading user detail">
+    <div
+      className="mx-auto w-full max-w-[1200px] space-y-8"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading user detail"
+    >
       <AdminUserHeaderSkeleton />
       <AdminUserRoleSkeleton />
       <AdminUserActivitySkeleton />
@@ -528,6 +584,8 @@ export function AdminRolesSkeleton() {
   return (
     <div
       className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-8"
+      role="status"
+      aria-busy="true"
       aria-label="Loading roles"
     >
       <AdminFilterControlsSkeleton searchPlaceholder="Search permissions by name or area..." />
@@ -597,7 +655,12 @@ export function AdminRolesSkeleton() {
 /** Skeleton for the admin prompt control route. */
 export function AdminPromptsSkeleton() {
   return (
-    <div className="mx-auto flex w-full max-w-[1200px] flex-col gap-5" aria-label="Loading prompts">
+    <div
+      className="mx-auto flex w-full max-w-[1200px] flex-col gap-5"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading prompts"
+    >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <nav
           aria-label="Prompt settings"
@@ -697,7 +760,12 @@ export function AdminTableRouteSkeleton({
 /** Skeleton for the admin imports list route. */
 export function AdminImportsSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-[1400px] space-y-6" aria-label="Loading imports">
+    <div
+      className="mx-auto w-full max-w-[1400px] space-y-6"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading imports"
+    >
       <div className="border-border bg-card rounded-lg border p-5">
         <h2 className="text-foreground text-lg font-bold">Upload firework video</h2>
         <p className="text-muted-foreground mt-1 text-sm">
@@ -739,7 +807,12 @@ export function AdminImportsSkeleton() {
 /** Skeleton for the admin import review route. */
 export function AdminImportDetailSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-[1600px] space-y-6" aria-label="Loading import detail">
+    <div
+      className="mx-auto w-full max-w-[1600px] space-y-6"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading import detail"
+    >
       <div className="flex flex-col gap-4">
         <Skeleton className="h-5 w-32" />
         <div className="flex flex-wrap items-center gap-3">
@@ -785,14 +858,16 @@ export function AdminMultishotEditorSkeleton() {
   return (
     <div
       className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-5"
+      role="status"
+      aria-busy="true"
       aria-label="Loading multishot editor"
     >
       <div className="grid shrink-0 items-stretch gap-5 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <section className="bg-stage-night relative h-[560px] overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] text-white">
+        <section className="bg-stage-night border-border relative h-[560px] overflow-hidden rounded-lg border text-white">
           <ReplayPanelLoadingStage />
         </section>
 
-        <aside className="flex max-h-[560px] min-h-0 flex-col gap-3 overflow-hidden rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4">
+        <aside className="border-border bg-card flex max-h-[560px] min-h-0 flex-col gap-3 overflow-hidden rounded-lg border p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="space-y-2">
               <Skeleton className="h-4 w-24" />
@@ -800,19 +875,19 @@ export function AdminMultishotEditorSkeleton() {
             </div>
             <Skeleton className="h-8 w-8 rounded-md" />
           </div>
-          <div className="space-y-3 border-t border-[color:var(--color-border-subtle)] pt-3">
+          <div className="border-border space-y-3 border-t pt-3">
             <Skeleton className="h-10 rounded-md" />
             <Skeleton className="h-10 rounded-md" />
             <Skeleton className="h-10 rounded-md" />
           </div>
-          <div className="mt-auto grid grid-cols-2 gap-2 border-t border-[color:var(--color-border-subtle)] pt-3">
+          <div className="border-border mt-auto grid grid-cols-2 gap-2 border-t pt-3">
             <Skeleton className="h-9 rounded-md" />
             <Skeleton className="h-9 rounded-md" />
           </div>
         </aside>
       </div>
 
-      <section className="flex flex-col gap-3 rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] p-4">
+      <section className="border-border bg-card flex flex-col gap-3 rounded-lg border p-4">
         <div className="flex items-center justify-between gap-3">
           <div className="space-y-2">
             <Skeleton className="h-4 w-24" />
@@ -820,8 +895,8 @@ export function AdminMultishotEditorSkeleton() {
           </div>
           <Skeleton className="h-9 w-24 rounded-md" />
         </div>
-        <div className="overflow-hidden rounded-md border border-[color:var(--color-border-subtle)]">
-          <div className="h-6 border-b border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-muted)]" />
+        <div className="border-border overflow-hidden rounded-md border">
+          <div className="border-border bg-muted h-6 border-b" />
           <div className="space-y-2 p-3">
             {Array.from({ length: 4 }).map((_, index) => (
               <Skeleton key={index} className="h-7 rounded-md" />
@@ -830,7 +905,7 @@ export function AdminMultishotEditorSkeleton() {
         </div>
       </section>
 
-      <section className="rounded-lg border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-surface)] px-3 py-2.5 sm:px-4">
+      <section className="border-border bg-card rounded-lg border px-3 py-2.5 sm:px-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div className="space-y-2">
             <Skeleton className="h-4 w-48 max-w-full" />
@@ -1069,6 +1144,8 @@ export function TemplateReplaySkeleton() {
   return (
     <div
       className="border-border bg-stage-night relative h-[min(72vh,680px)] min-h-[520px] overflow-hidden rounded-2xl border shadow-[var(--shadow-card-hover)]"
+      role="status"
+      aria-busy="true"
       aria-label="Loading show replay"
     >
       <ReplayPanelLoadingStage />
@@ -1079,7 +1156,7 @@ export function TemplateReplaySkeleton() {
 /** Skeleton for the replay panel on the show detail route. */
 export function ReplayPanelSkeleton() {
   return (
-    <div className="space-y-6" aria-label="Loading replay">
+    <div className="space-y-6" role="status" aria-busy="true" aria-label="Loading replay">
       <div className="border-border bg-card overflow-hidden rounded-xl border shadow-xs">
         <div className="bg-stage-night relative h-[min(72vh,680px)] min-h-[520px] overflow-hidden rounded-[inherit]">
           <ReplayPanelLoadingStage />
@@ -1169,8 +1246,8 @@ export function ReplayPanelSkeleton() {
 /** Skeleton matching the song-context tab on the show detail route. */
 export function SongContextSkeleton() {
   return (
-    <div className="space-y-5" aria-label="Loading song context">
-      <div className="border-outline-variant/55 bg-surface-container-low flex items-center gap-4 rounded-lg border p-4">
+    <div className="space-y-5" role="status" aria-busy="true" aria-label="Loading song context">
+      <div className="border-border/55 bg-card flex items-center gap-4 rounded-lg border p-4">
         <Skeleton className="h-12 w-12 shrink-0 rounded-lg" />
         <div className="min-w-0 flex-1 space-y-2">
           <Skeleton className="h-2.5 w-20" />
@@ -1185,10 +1262,7 @@ export function SongContextSkeleton() {
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {Array.from({ length: 6 }).map((_, index) => (
-          <div
-            key={index}
-            className="border-outline-variant/55 bg-surface-container-low rounded-lg border p-4"
-          >
+          <div key={index} className="border-border/55 bg-card rounded-lg border p-4">
             <Skeleton className="h-3 w-24" />
             <Skeleton className="mt-3 h-7 w-28" />
             <Skeleton className="mt-2 h-3 w-36 max-w-full" />
@@ -1202,7 +1276,7 @@ export function SongContextSkeleton() {
           <Skeleton className="h-4 w-96 max-w-full" />
         </div>
 
-        <div className="bg-surface-container-low rounded-md p-4">
+        <div className="bg-card rounded-md p-4">
           <div className="space-y-3">
             {Array.from({ length: 14 }).map((_, index) => (
               <Skeleton key={index} className={index % 4 === 0 ? 'h-3 w-3/5' : 'h-3 w-full'} />
@@ -1217,7 +1291,12 @@ export function SongContextSkeleton() {
 /** Skeleton matching the shopping-list card on the show detail route. */
 export function ShoppingListSkeleton() {
   return (
-    <div className="w-full max-w-5xl" aria-label="Loading shopping list">
+    <div
+      className="w-full max-w-5xl"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading shopping list"
+    >
       <div className="border-border bg-card rounded-lg border p-8">
         <header className="flex items-start justify-between gap-4">
           <div className="space-y-3">
@@ -1238,7 +1317,7 @@ export function ShoppingListSkeleton() {
           {Array.from({ length: 6 }).map((_, index) => (
             <div
               key={index}
-              className="border-outline-variant/10 bg-surface-container-highest/40 flex items-center justify-between gap-4 rounded-xl border p-4"
+              className="border-border/10 bg-accent/40 flex items-center justify-between gap-4 rounded-xl border p-4"
             >
               <div className="flex min-w-0 flex-1 items-center gap-4">
                 <Skeleton className="h-10 w-10 shrink-0 rounded-lg" />
@@ -1252,7 +1331,7 @@ export function ShoppingListSkeleton() {
           ))}
         </div>
 
-        <div className="border-outline-variant/10 mt-6 flex items-center justify-between border-t pt-6">
+        <div className="border-border/10 mt-6 flex items-center justify-between border-t pt-6">
           <Skeleton className="h-4 w-36" />
           <Skeleton className="h-8 w-28" />
         </div>
@@ -1264,7 +1343,7 @@ export function ShoppingListSkeleton() {
 /** Generic vertical list skeleton with `rows` placeholder rows. */
 export function ListSkeleton({ rows = 8 }: { rows?: number }) {
   return (
-    <div className="space-y-3" aria-label="Loading list">
+    <div className="space-y-3" role="status" aria-busy="true" aria-label="Loading list">
       {Array.from({ length: rows }).map((_, index) => (
         <Skeleton key={index} className="h-16 rounded-lg" />
       ))}

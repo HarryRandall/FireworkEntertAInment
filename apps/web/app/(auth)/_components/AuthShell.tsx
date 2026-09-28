@@ -8,10 +8,10 @@ import styles from '@/app/(auth)/_components/AuthShell.module.css';
 
 export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen bg-[color:var(--color-bg-default)]">
+    <div className="bg-card flex min-h-screen">
       <SkipLink />
       <div className="flex w-full flex-col px-6 py-10 sm:px-10 lg:w-[480px] lg:shrink-0 lg:px-14">
-        <Link href="/" className="text-[color:var(--color-content-emphasis)]">
+        <Link href="/" className="text-foreground">
           <BrandLockup />
         </Link>
 
@@ -25,7 +25,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
       </div>
 
       <div
-        className={`${styles.artPanel} relative isolate hidden flex-1 overflow-hidden border-l border-[color:var(--color-border-subtle)] lg:sticky lg:top-0 lg:block lg:h-screen`}
+        className={`${styles.artPanel} border-border relative isolate hidden flex-1 overflow-hidden border-l lg:sticky lg:top-0 lg:block lg:h-screen`}
       >
         <div
           className={styles.artwork}

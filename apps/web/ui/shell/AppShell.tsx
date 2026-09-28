@@ -250,7 +250,7 @@ function SidebarAiUsageMeter({
         <>
           <div className="bg-sidebar-foreground/20 h-1.5 overflow-hidden rounded-full" aria-hidden>
             <span
-              className="block h-full rounded-full bg-[color:var(--hl)]"
+              className="bg-hl block h-full rounded-full"
               style={{ width: `${balancePercentage}%` }}
             />
           </div>
@@ -301,14 +301,15 @@ function PendingHomeSkeleton() {
   return (
     <div
       className="mx-auto flex w-full max-w-[1400px] flex-col gap-7 pt-10 sm:pt-14 lg:pt-20"
+      role="status"
       aria-label="Loading home"
       aria-busy="true"
     >
       <section className="mx-auto w-full max-w-3xl py-10">
-        <h1 className="mb-6 text-center text-2xl font-semibold tracking-tight text-[color:var(--color-content-emphasis)] sm:text-3xl">
+        <h1 className="text-foreground mb-6 text-center text-2xl font-semibold tracking-tight sm:text-3xl">
           Create any firework show you can imagine
         </h1>
-        <div className="overflow-hidden rounded-2xl border border-[color:var(--color-border-subtle)] bg-[color:var(--color-bg-elevated)]/55 shadow-xs">
+        <div className="border-border bg-popover/55 overflow-hidden rounded-2xl border shadow-xs">
           <Skeleton className="h-28 w-full rounded-none" />
           <div className="flex items-center justify-between gap-3 px-4 pt-2 pb-3">
             <Skeleton className="h-9 w-36 rounded-full" />
@@ -320,8 +321,13 @@ function PendingHomeSkeleton() {
         </div>
       </section>
 
-      <section className="space-y-3" aria-label="Loading featured shows">
-        <h2 className="text-on-surface text-lg font-semibold tracking-tight">Watch real shows</h2>
+      <section
+        className="space-y-3"
+        role="status"
+        aria-busy="true"
+        aria-label="Loading featured shows"
+      >
+        <h2 className="text-foreground text-lg font-semibold tracking-tight">Watch real shows</h2>
         <div className="grid gap-4 lg:grid-cols-2">
           {Array.from({ length: 2 }).map((_, index) => (
             <Skeleton key={index} className="min-h-56 rounded-2xl" />
@@ -329,8 +335,13 @@ function PendingHomeSkeleton() {
         </div>
       </section>
 
-      <section className="space-y-3" aria-label="Loading Explore shows">
-        <h2 className="text-on-surface text-lg font-semibold tracking-tight">Explore</h2>
+      <section
+        className="space-y-3"
+        role="status"
+        aria-busy="true"
+        aria-label="Loading Explore shows"
+      >
+        <h2 className="text-foreground text-lg font-semibold tracking-tight">Explore</h2>
         <div className="flex gap-4 overflow-hidden pb-2">
           {Array.from({ length: 6 }).map((_, index) => (
             <div key={index} className="w-44 shrink-0 sm:w-48" aria-hidden="true">
@@ -357,6 +368,7 @@ function PendingLibrarySkeleton() {
   return (
     <div
       className="mx-auto w-full max-w-[1600px] space-y-4"
+      role="status"
       aria-label="Loading show library"
       aria-busy="true"
     >
@@ -371,7 +383,7 @@ function PendingLibrarySkeleton() {
         {shelves.map((title) => (
           <section key={title}>
             <div className="mb-3 flex items-center justify-between gap-3">
-              <h2 className="text-on-surface text-lg font-semibold tracking-tight">{title}</h2>
+              <h2 className="text-foreground text-lg font-semibold tracking-tight">{title}</h2>
               <Skeleton className="h-7 w-20 rounded-full" />
             </div>
 

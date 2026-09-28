@@ -24,7 +24,12 @@ const PLAN_NAMES = ['Free', 'Pro', 'Ultra'] as const;
 
 export default function BillingSettingsLoading() {
   return (
-    <div className="flex flex-col gap-4" aria-label="Loading billing">
+    <div
+      className="flex flex-col gap-4"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading billing"
+    >
       <div className="bg-card ring-foreground/10 overflow-hidden rounded-xl ring-1">
         <div className="grid grid-cols-1 lg:grid-cols-12">
           <Card className="border-border gap-5 rounded-none border-0 border-b ring-0 lg:col-span-6 lg:border-r lg:border-b-0">

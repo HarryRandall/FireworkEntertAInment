@@ -50,8 +50,8 @@ export function ShowTabs({ id, prefetch = true }: Props) {
             className={cn(
               'focus-visible:ring-ring/50 inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium transition-[color,background-color,box-shadow,transform] focus:outline-none focus-visible:ring-3 focus-visible:ring-offset-2 active:scale-[0.98]',
               active || pending
-                ? 'text-foreground bg-[color:var(--accent)] font-semibold shadow-sm ring-1 ring-[color:var(--color-border-subtle)] ring-inset'
-                : 'text-on-surface-variant hover:text-on-surface hover:bg-[color:color-mix(in_srgb,var(--accent)_55%,transparent)]',
+                ? 'text-foreground bg-accent ring-border font-semibold shadow-sm ring-1 ring-inset'
+                : 'text-muted-foreground hover:text-foreground hover:bg-[color:color-mix(in_srgb,var(--accent)_55%,transparent)]',
             )}
           >
             {section.label}

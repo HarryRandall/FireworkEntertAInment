@@ -294,7 +294,7 @@ export function EffectsBrowser({ effects, styleDefaults, initialView }: Props) {
           <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
             Effects
           </p>
-          <h1 className="text-foreground mt-1 text-2xl font-semibold tracking-tight">
+          <h1 className="text-foreground mt-1 text-2xl font-bold tracking-tight">
             {adminEffectsViewLabel(initialView)}
           </h1>
           <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
