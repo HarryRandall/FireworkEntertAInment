@@ -41,9 +41,9 @@ test('cue runner replaces show_timeline_items transactionally with emphasis', ()
     runner,
     /launch_position_index: cue\.tube,[\s\S]*?emphasis: cue\.emphasis,[\s\S]*?\}\)\);/,
   );
-  assert.match(runner, /rpc\(\s*'replace_show_timeline_items'/);
+  assert.match(runner, /rpc\(\s*'replace_generated_show_timeline_items'/);
   assert.doesNotMatch(runner, /\.from\('show_timeline_items'\)[\s\S]*?\.delete\(\)/);
-  assert.match(types, /replace_show_timeline_items: \{/);
+  assert.match(types, /replace_generated_show_timeline_items: \{/);
 });
 
 test('show cue projection, select and mapper thread emphasis through to replay', () => {
