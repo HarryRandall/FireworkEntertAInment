@@ -92,7 +92,7 @@ test('timeline persistence retries thrown network and timeout failures', () => {
   assert.match(runner, /abort\|network\|timeout\|timed out\|fetch failed/);
   assert.match(
     runner,
-    /try \{[\s\S]*?supabase\.rpc\('replace_show_timeline_items'[\s\S]*?catch \(error\)/,
+    /try \{[\s\S]*?supabase\.rpc\(\s*'replace_generated_show_timeline_items'[\s\S]*?catch \(error\)/,
   );
   assert.match(runner, /finishFailure\(message, isRetryableDatabaseError\(error\)\)/);
 });

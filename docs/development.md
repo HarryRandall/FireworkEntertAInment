@@ -97,3 +97,35 @@ Use focused `feat:`, `fix:` or `refactor:` commits. Explain the changed behaviou
 validation and any unresolved limitation. [Architecture](architecture.md) owns
 placement and UI conventions. Agent workflows live in `.agents/skills`; the root
 `AGENTS.md` supplies only routing and rules that apply to every task.
+
+## Music-analysis recovery
+
+Upload and Jamendo routes allow 300 seconds. Synchronous analyser requests stop
+at 240 seconds, leaving time to persist failure or retry state. In production,
+set `ANALYSER_DISPATCH_URL` to the lightweight Modal API URL plus `/runs` and
+configure the trusted `APP_ORIGIN`. The dispatch acknowledges within 30 seconds;
+Modal completes the leased job and POSTs validated output independently to
+`/api/internal/music-analysis/callback`. The existing analysis credit reservation
+is settled only by the guarded completion RPC. Stale or duplicate callbacks
+cannot replace a newer attempt or charge another credit.
+
+Deploy the analyser from its own service directory:
+
+```bash
+cd services/music-analyser
+SHOWCRAFTER_APP_ORIGIN=https://your-production-domain.example modal deploy modal_app.py
+```
+
+The deployment origin is the only permitted callback destination. Both Modal
+and Vercel continue to use the existing `ANALYSER_SHARED_SECRET`; no database
+credential is sent to Modal. Keep `ANALYSER_URL` pointed at the synchronous
+`SongAnalyser.analyse` endpoint for warm-up and legacy show analysis.
+
+Modal's `reconcile_analysis_work` runs every minute, calling the authenticated
+`/api/internal/music-analysis/reconcile` route. It recovers one claimable analysis
+and one ready cue job per run, expires exhausted attempts through the existing
+RPCs, and preserves reservations during retries. This works on Vercel Hobby
+without a frequent Vercel cron. It does not purge stored audio. Existing admin
+retention reconciliation remains a separate operation authorised by `CRON_SECRET`.
+Deploy the callback routes before enabling `ANALYSER_DISPATCH_URL`. The scheduler
+returns an error until both the web routes and dispatch configuration are ready.
