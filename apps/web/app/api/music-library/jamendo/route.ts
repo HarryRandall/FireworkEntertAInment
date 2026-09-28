@@ -19,7 +19,7 @@ import { consumeFixedWindowRateLimits } from '@/lib/server-cache';
 import { startMusicAnalysisForStoredAudio } from '@/lib/start-music-analysis.server';
 import { createClient } from '@/lib/supabase/server';
 
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const SearchSchema = z.string().trim().min(2).max(80);
 const ImportSchema = z.object({
