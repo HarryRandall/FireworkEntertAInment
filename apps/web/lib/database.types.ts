@@ -6511,6 +6511,15 @@ export type Database = {
         Args: { p_version_id: string }
         Returns: undefined
       }
+      publish_measured_effect_version: {
+        Args: {
+          p_design: Json
+          p_peak: number
+          p_peak_time_s: number
+          p_version_id: string
+        }
+        Returns: undefined
+      }
       publish_pack: { Args: { p_pack_id: string }; Returns: undefined }
       publish_product_version: {
         Args: { p_version_id: string }

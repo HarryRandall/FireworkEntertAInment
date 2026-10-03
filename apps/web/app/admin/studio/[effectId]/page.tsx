@@ -36,6 +36,7 @@ export default async function Page({ params }: { params: Promise<{ effectId: str
         item.effect.status !== 'archived' &&
         ['super_admin', 'catalogue_editor'].includes(identity.access.staffRole ?? '')
       }
+      published={item.published}
       libraryParts={await loadLibraryParts()}
       identity={identity.workspace}
     />

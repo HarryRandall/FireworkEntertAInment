@@ -9,10 +9,12 @@ export function useStudioViewer(
   document: Design,
   hidden: boolean,
   listenerDistanceM: number | null,
+  autoplay = true,
 ) {
   const container = useRef<HTMLDivElement>(null);
   const viewer = useRef<Viewer | null>(null);
   const initial = useRef(document);
+  const initialAutoplay = useRef(autoplay);
   const [failure, setFailure] = useState('');
   const [clock, setClock] = useState({ time: 0, duration: 0, playing: false });
   useEffect(() => {
@@ -22,6 +24,7 @@ export function useStudioViewer(
       active = new Viewer(container.current, {
         design: initial.current,
         ui: false,
+        autoplay: initialAutoplay.current,
         clickToPause: false,
       });
     } catch {

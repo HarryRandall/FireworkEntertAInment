@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useReducer, useState } from 'react';
 import type { Design } from '@showcrafter/fireworks';
 import type { ShellIdentity } from '@/ui/shell/config/types';
-import { WorkspaceShell } from '@/ui/shell/workspace-shell';
+import { StudioFrame } from './studio-frame';
 import type { SavedPart } from '@/lib/studio/library';
+import { StudioChecks } from './studio-checks';
 import { StudioSidebar } from './studio-sidebar';
 import { StudioVariations } from './studio-variations';
 import { useHistoryShortcuts } from './use-history-shortcuts';
@@ -17,6 +18,7 @@ import { useDraftSave } from './use-draft-save';
 import './studio.css';
 
 interface StudioEditorProps {
+  published: { document: Design; number: number } | null;
   effectId: string;
   title: string;
   initialDocument: Design;
@@ -30,6 +32,7 @@ interface StudioEditorProps {
 /** Opens a validated v1 document; preview visibility and selection stay outside authored history. */
 export function StudioEditor({
   effectId,
+  published,
   title,
   initialDocument,
   versionId,
@@ -64,18 +67,14 @@ export function StudioEditor({
     () => previewDocument(history.document, hidden),
     [history.document, hidden],
   );
-  const resetVisibility = () => {
-    setHidden(new Set());
-  };
   return (
-    <WorkspaceShell
-      area="admin"
+    <StudioFrame
+      title={title}
       identity={identity}
-      editorFrame={{
-        title,
-        onSave: save,
-        saving: !editable || status.label === 'Saving...' || history.gesture !== null,
-        actions: [{ label: 'Reset preview visibility', onSelect: resetVisibility }],
+      save={save}
+      saving={!editable || status.label === 'Saving...' || history.gesture !== null}
+      onResetVisibility={() => {
+        setHidden(new Set());
       }}
     >
       <div
@@ -109,6 +108,7 @@ export function StudioEditor({
             }}
           />
           <StudioStage
+            published={published}
             document={preview}
             hidden={hidden.has('ground')}
             listenerDistanceM={listenerDistanceM}
@@ -122,9 +122,10 @@ export function StudioEditor({
             dispatch={dispatch}
           />
         </div>
+        <StudioChecks document={history.document} title={title} />
         <StudioVariations document={history.document} editable={editable} dispatch={dispatch} />
       </div>
-    </WorkspaceShell>
+    </StudioFrame>
   );
 }
 function toggleSet(current: ReadonlySet<string>, id: string, enabled: boolean): Set<string> {
