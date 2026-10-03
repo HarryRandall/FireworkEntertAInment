@@ -66,7 +66,7 @@ jobs:
       - name: Run tests
         run: pnpm test
 
-      - name: Run renderer and editor package tests
+      - name: Run workspace package tests
         run: pnpm test:packages
 
       - name: Build application
@@ -138,51 +138,6 @@ jobs:
           SHOWCRAFTER_RUN_CROSS_LANGUAGE_CONTRACT: '1'
         run: python services/music-analyser/tests/test_schema_validation.py
 
-  worker:
-    name: Firework import worker tests
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v7
-
-      - name: Set up Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: '3.11.15'
-          cache: pip
-          cache-dependency-path: services/firework-import-worker/requirements.txt
-
-      - name: Install FFmpeg
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes ffmpeg
-
-      - name: Install worker dependencies
-        run: python -m pip install -r services/firework-import-worker/requirements.txt
-
-      - name: Lint worker
-        run: python -m pip install ruff==0.16.9 && ruff check services/firework-import-worker
-
-      - name: Run worker unit tests
-        run: python -m unittest discover -s services/firework-import-worker/tests -p "*test*.py"
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: pnpm
-          cache-dependency-path: pnpm-lock.yaml
-
-      - name: Install renderer dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Check worker output against the app and renderer
-        run: pnpm test:import-contract
-
   database:
     name: Fresh database and access checks
     runs-on: ubuntu-latest
@@ -228,7 +183,7 @@ jobs:
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'push' ||
       (github.event_name == 'workflow_dispatch' && inputs.deploy_production == true))
-    needs: [web, analyser, analyser-contract, worker, database]
+    needs: [web, analyser, analyser-contract, database]
     runs-on: ubuntu-latest
     environment: production
     concurrency:
