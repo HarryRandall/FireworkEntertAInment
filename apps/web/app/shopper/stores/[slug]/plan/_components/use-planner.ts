@@ -2,6 +2,7 @@
 'use client';
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { requestSoundtrack } from '@/lib/shopper/music/client';
 import { startPlanning, differentPlan } from '@/lib/shopper/planner/actions';
 import { editPlan } from '@/lib/shopper/planner/edit-actions';
 import type { SavedPlan, PlannerActionResult } from '@/lib/shopper/planner/contracts';
@@ -31,7 +32,7 @@ export function usePlanner({
   function receive(result: PlannerActionResult) {
     if (result.status !== 'ok') {
       setMessage(result.message);
-      setUnavailable(result.status === 'unavailable');
+      setUnavailable(result.status === 'unavailable' && plan === null);
       return;
     }
     setPlan(result.plan);
@@ -61,7 +62,28 @@ export function usePlanner({
     );
   }
   const edit = usePlanEdit(plan, pending, run);
-  return { plan, message, unavailable, pending, generate, alternative, edit };
+  const music = usePlanMusic(plan, pending, run);
+  return { plan, message, unavailable, pending, generate, alternative, edit, music };
+}
+
+function usePlanMusic(
+  plan: SavedPlan | null,
+  pending: boolean,
+  run: (action: () => Promise<PlannerActionResult>) => void,
+) {
+  return function music(track: string | null, refresh = false) {
+    if (!plan || pending) return;
+    const candidate = currentCandidate(plan.plan_candidates);
+    run(() =>
+      requestSoundtrack({
+        session: plan.id,
+        candidate: candidate.id,
+        revision: candidate.revision,
+        track,
+        refresh,
+      }),
+    );
+  };
 }
 
 function usePlanEdit(

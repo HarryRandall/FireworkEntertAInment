@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import type { StorePage } from '@/lib/shopper/contracts';
 import type { SavedPlan } from '@/lib/shopper/planner/contracts';
 import { showName } from '@/lib/shopper/planner/names';
+import { MusicPicker } from './music-picker';
 import { PlanEdits } from './plan-edits';
 import { currentCandidate } from '@/lib/shopper/planner/progress';
 import { showShots } from '@/lib/shopper/playback';
@@ -21,11 +22,13 @@ export function PlanView({
   pending,
   onDifferent,
   onEdit,
+  onMusic,
 }: {
   store: StorePage;
   plan: SavedPlan;
   pending: boolean;
   onDifferent: () => void;
+  onMusic: (track: string | null, refresh?: boolean) => void;
   onEdit: (source: 'chip' | 'rule', message: string, product?: string) => void;
 }) {
   const candidate = currentCandidate(plan.plan_candidates);
@@ -61,7 +64,11 @@ export function PlanView({
   return (
     <div className="grid gap-6">
       {complete ? (
-        <Preview title={title} shots={shots} />
+        <Preview
+          title={title}
+          shots={shots}
+          soundtrackUrl={plan.soundtrack?.playback_url ?? undefined}
+        />
       ) : (
         <Callout title="Preview unavailable">
           Some products are no longer visible at this shop. Your saved plan and total remain
@@ -96,6 +103,7 @@ export function PlanView({
           box's instructions.
         </p>
       </section>
+      <MusicPicker plan={plan} pending={pending} onMusic={onMusic} />
       <PlanEdits plan={plan} names={names} pending={pending} onEdit={onEdit} />
       <section data-section="plan-actions" className="grid gap-3 px-4 pb-6">
         <Button disabled={pending} onClick={onDifferent}>
@@ -107,21 +115,16 @@ export function PlanView({
     </div>
   );
 }
-/** Clearly names unavailable music and list actions without pretending to save anything. */
+/** Keeps the unavailable list action visible without pretending to save. */
 function PlanActionPlaceholders() {
   return (
     <div className="grid gap-2">
       <div className="flex flex-wrap gap-2">
         <Button variant="outline" disabled>
-          Pick music
-        </Button>
-        <Button variant="outline" disabled>
           Save to list
         </Button>
       </div>
-      <p className="text-muted-foreground text-xs">
-        Music and saving to a list are not available yet.
-      </p>
+      <p className="text-muted-foreground text-xs">Saving to a list is not available yet.</p>
     </div>
   );
 }
