@@ -1,5 +1,6 @@
 /** Paired renderer and local video previews follow the draft's shared transport. */
 'use client';
+import { Pause, Play, RotateCcw } from 'lucide-react';
 import { ComparePreview } from './compare-preview';
 import { ReferenceVideo } from './reference-video';
 import type { Design } from '@showcrafter/fireworks';
@@ -57,23 +58,27 @@ export function StudioStage({
       >
         <Button
           variant="ghost"
+          size="icon-sm"
+          aria-label={clock.playing ? 'Pause' : 'Play'}
           className="hover:bg-stage-foreground/15 hover:text-stage-foreground dark:hover:bg-stage-foreground/15"
           disabled={failure !== ''}
           onClick={() => {
             viewer.current?.toggle();
           }}
         >
-          {clock.playing ? 'Pause' : 'Play'}
+          {clock.playing ? <Pause aria-hidden="true" /> : <Play aria-hidden="true" />}
         </Button>
         <Button
           variant="ghost"
+          size="icon-sm"
+          aria-label="Restart"
           className="hover:bg-stage-foreground/15 hover:text-stage-foreground dark:hover:bg-stage-foreground/15"
           disabled={failure !== ''}
           onClick={() => {
             viewer.current?.seek(0);
           }}
         >
-          Restart
+          <RotateCcw aria-hidden="true" />
         </Button>
         <input
           type="range"

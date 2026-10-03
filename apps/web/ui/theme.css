@@ -50,6 +50,7 @@
   --color-label-accent: var(--label-accent);
   --color-stage: var(--stage);
   --color-stage-foreground: var(--stage-foreground);
+  --color-stage-muted-foreground: var(--stage-muted-foreground);
   --shadow-card: var(--surface-shadow);
   --radius-sm: var(--radius-small);
   --radius-md: var(--radius-small);
@@ -104,6 +105,8 @@
   --stage: #05070d;
   /* Overlay text borrows the prototype dark foreground for stage contrast. */
   --stage-foreground: #f7f7f8;
+  /* Secondary stage text uses the dark palette in both page themes. */
+  --stage-muted-foreground: #a1a1aa;
   --surface-shadow: 0 1px 2px rgba(20, 20, 30, 0.06), 0 8px 24px -12px rgba(20, 20, 30, 0.18);
   /* Prototype corner radii, in CSS pixels: cards 12, compact controls 8. */
   --radius: 12px;

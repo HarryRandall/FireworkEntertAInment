@@ -352,7 +352,8 @@
   box-shadow: var(--surface-shadow);
 }
 .sc-studio-variations {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
@@ -361,7 +362,6 @@
 }
 .sc-studio-variations > div:first-child {
   width: var(--studio-variation-label-width);
-  flex: none;
   font-size: 12px;
 }
 .sc-studio-variations > div:first-child p {
@@ -372,9 +372,10 @@
   grid-auto-flow: column;
   grid-auto-columns: clamp(56px, 6vw, var(--studio-thumbnail-width));
   gap: 8px;
-  flex: 1;
   min-width: 0;
   overflow: auto;
+  /* Keep scrolling thumbnails inside their column, clear of the Roll action. */
+  contain: inline-size;
   padding: 3px;
 }
 .sc-studio-variation {

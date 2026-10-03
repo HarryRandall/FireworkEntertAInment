@@ -29,7 +29,9 @@ export function StudioVariations({
     >
       <div>
         <h2 className="font-semibold">Variations</h2>
-        <p className="text-muted-foreground text-xs">Lock the ones you like, then roll again</p>
+        <p className="text-stage-muted-foreground text-xs">
+          Lock the ones you like, then roll again
+        </p>
       </div>
       <div className="sc-studio-variation-grid">
         {candidates.map((candidate, index) => (
@@ -72,6 +74,7 @@ export function StudioVariations({
         ))}
       </div>
       <Button
+        className="text-foreground"
         aria-label="Roll again"
         variant="outline"
         onClick={() => {

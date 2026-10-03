@@ -52,7 +52,7 @@ export function LayerList({
               {item.expanded === true ? <ChevronDown /> : <ChevronRight />}
             </Button>
           ) : (
-            <span className="w-(--layer-control-size)" />
+            <span className="w-(--layer-control-size) shrink-0" />
           )}
           <button
             type="button"
@@ -70,8 +70,8 @@ export function LayerList({
                 className="size-3 shrink-0 rounded-sm"
               />
             )}
-            <span className="truncate">{item.name}</span>
-            <span className="text-muted-foreground group-hover/layer:text-foreground group-aria-pressed:text-highlight-foreground ml-auto font-mono text-xs">
+            <span className="min-w-0 flex-1 truncate">{item.name}</span>
+            <span className="text-muted-foreground group-hover/layer:text-foreground group-aria-pressed:text-highlight-foreground ml-auto shrink-0 font-mono text-xs whitespace-nowrap">
               {item.badge}
             </span>
           </button>
