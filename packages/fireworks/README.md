@@ -2,8 +2,8 @@
 
 `@showcrafter/fireworks` owns the stored design format. PR 2.1 provides the v1
 JSON Schema, generated Zod validators and TypeScript types, version constants and
-`upgradeDesign(doc, fromVersion)`. Simulation, WebGL, sound playback, posters and
-catalogue templates arrive in later renderer PRs.
+`upgradeDesign(doc, fromVersion)`. PR 2.2 adds the DOM-free shell core. Other kinds, modifiers, sprays, WebGL, sound
+playback, posters and catalogue templates arrive in later renderer PRs.
 
 ```ts
 import { upgradeDesign, type Design, DESIGN_SCHEMA_VERSION } from '@showcrafter/fireworks';
@@ -11,9 +11,8 @@ import { upgradeDesign, type Design, DESIGN_SCHEMA_VERSION } from '@showcrafter/
 const design: Design = upgradeDesign(storedDocument, DESIGN_SCHEMA_VERSION);
 ```
 
-The package root and `./schema` expose the contract; `./schema/design.v1.json`
-exposes the database schema. `./sim` and `./view` exports will be introduced with
-those implementations, rather than pointing at absent files.
+The package root and `./schema` expose the contract; `./sim` exposes the simulation; `./schema/design.v1.json`
+exposes the database schema. `./view` will be introduced with its implementation.
 
 ## Validation and generation
 
@@ -27,7 +26,7 @@ reignition is optional and applies only to colour changes.
 same values. It does not mutate the document or apply defaults. Invalid documents
 throw a Zod error containing property paths; unknown versions throw a range error.
 The version is stored externally as `design_schema`, not inside the document.
-`RENDERER_VERSION` starts at `0.1.0`; no renderer output exists in this PR.
+`RENDERER_VERSION` starts at `0.1.0` for this initial renderer port.
 
 Zod is generated with
 [json-schema-to-zod](https://github.com/StefanTerdell/json-schema-to-zod), pinned in
@@ -157,3 +156,73 @@ The schema includes the plan's future `split`, `glitter`, `whistle` modifiers an
 pattern names alongside the actual prototype cases. This PR validates their shape;
 it does not implement them. It neither converts all presets (PR 2.10) nor claims
 rendered parity (PRs 2.2 onwards). Database checks using `pg_jsonschema` begin in 3.3.
+
+## Core simulation (PR 2.2)
+
+```ts
+import { simulate, shotDuration, ParticleKind } from '@showcrafter/fireworks/sim';
+
+const particles = simulate(design, 3.0, { seed: 11 });
+const duration_s = shotDuration(design);
+```
+
+Pass a validated v1 `Design` directly. `simulate(design, time_s, options?)` returns
+fresh, tightly sized `Float32Array`s for `positions` and linear RGB `colours`
+(three components per particle), `sizes`, `alphas`, and a `Uint8Array` of `kinds`.
+Kinds are `ParticleKind.Spark`, `Head`, `Halo` and `Flash`. Sizes retain the
+prototype's shader inputs. Heads already expand into a head quad and optional halo;
+a future view must not expand them again. Sparks come first, followed by quads,
+with the prototype's independent 140,000 point and 24,000 quad caps and 0.004 alpha
+cut-off. Returned arrays share no mutable storage with later calls.
+
+Time is seconds from firing. Negative times are empty; non-finite times throw.
+Options are an optional `seed` override, horizontal `position: [x, z]` in metres,
+and `muzzle_m` (default 1.8). A zero seed retains the prototype's fallback to 1.
+The launch reaches `launch.height_m` at the stored `launch.time_s`; there is no
+implicit height scaling. Breaks start at apex plus `break.at_s`, with additional
+`layer.delay_s`. Layer offsets are relative to the break centre. Flattened layer
+indices, including hidden and not-yet-started layers, preserve the prototype seeds
+across breaks. IDs remain authoring identifiers. Each break uses its own core/fade.
+
+This PR renders **shells with sphere or random directions**. It includes launch
+head paths (all 14 styles, including jitter, wobble, spin and strobing climbs),
+core flashes, core sparks/ring, star motion, colour/brightness curves, reignition
+and burn fades. Layer modifiers are deliberately ignored in this core frame,
+including those in the multi-break fixture. Other kinds and special patterns throw
+a clear error until PR 2.3. Launch embellishment particles (rocket flame, rising
+blossoms and crackle pellets), trails and smoke are deferred with the later kinds,
+modifiers and spray work. No complete visual parity is claimed at this stage.
+
+`shotDuration` already handles all stored kinds and includes break/layer delays,
+varied star lifetimes, trail tails and modifier tail allowances. For multiple
+modifiers it takes the longest allowance, rather than adding unrelated tails.
+The pure helpers `hash`, `rgb`, `colourAt`, `brightnessAt`, `unit`, `directions`,
+`launchPos` and `starPos` are available without a browser. `starPos` is the base
+closed-form drag/gravity motion; it does not apply modifiers.
+
+### Capturing golden numbers
+
+The capture script executes the reference JavaScript in a Node VM with browser
+stubs, removes unused browser imports, disables sprays/smoke and removes layer
+modifiers after capturing duration. Its one-off v1-to-prototype field mapping is
+only for the reference harness, never part of the runtime. The prototype's maths
+is unchanged; per-break core/fade values replace its global lookups. Launch
+embellishment particles are disabled for the launch-head cases.
+
+Run from the repository root with Node 24:
+
+```sh
+node packages/fireworks/scripts/capture-core-goldens.mjs /Users/harry/projects/FireworkEntertAInment-reference/docs/design/redesign-2026-09/prototype/fireworks3d.js
+pnpm exec prettier --write packages/fireworks/tests/fixtures/core-goldens.json
+pnpm --filter @showcrafter/fireworks check
+```
+
+Commit the script and `tests/fixtures/core-goldens.json` together. Capturing is a
+manual operation that reads the reference checkout; CI only reads the committed
+numbers. The fixture records the reference SHA-256 for provenance, not as a
+renderer version or runtime contract. Shell samples check counts and sampled
+positions, colours, sizes, alphas and kinds at launch, flash, developed burst,
+late burn and end. Tests also cover all launch-head styles and core rings.
+Comet positions are captured for PR 2.3; PR 2.2 asserts its duration only.
+Float32 comparisons use an absolute tolerance of 0.000001; analytical motion
+checks use 0.000000000001. Scrub determinism compares arrays exactly.
