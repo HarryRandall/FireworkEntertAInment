@@ -16,6 +16,7 @@ const files = [
   '20_people.sql',
   '30_fireworks.sql',
   '31_catalogue.sql',
+  '32_imports.sql',
 ];
 const schemaSources = {
   design: 'packages/fireworks/schema/design.v1.json',
