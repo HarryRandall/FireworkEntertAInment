@@ -1,5 +1,6 @@
 import Link from 'next/link';
 
+/** Shows the missing-route state with navigation back to the app. */
 export default function NotFound() {
   return (
     <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-4 px-6">
