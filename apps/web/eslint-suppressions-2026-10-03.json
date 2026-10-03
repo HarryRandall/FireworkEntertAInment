@@ -1,0 +1,340 @@
+{
+  "app/api/health/route.ts": {
+    "readability/export-doc": {
+      "count": 1
+    }
+  },
+  "app/dev/fireworks/page.tsx": {
+    "@typescript-eslint/no-confusing-void-expression": {
+      "count": 5
+    },
+    "@typescript-eslint/no-floating-promises": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 5
+    },
+    "@typescript-eslint/strict-boolean-expressions": {
+      "count": 6
+    },
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "no-nested-ternary": {
+      "count": 1
+    },
+    "one-var": {
+      "count": 2
+    }
+  },
+  "app/global-error.tsx": {
+    "readability/export-doc": {
+      "count": 1
+    }
+  },
+  "app/layout.tsx": {
+    "readability/export-doc": {
+      "count": 1
+    }
+  },
+  "app/not-found.tsx": {
+    "readability/export-doc": {
+      "count": 1
+    }
+  },
+  "app/page.tsx": {
+    "readability/export-doc": {
+      "count": 1
+    }
+  },
+  "hooks/use-mobile.ts": {
+    "@typescript-eslint/no-confusing-void-expression": {
+      "count": 1
+    },
+    "@typescript-eslint/restrict-template-expressions": {
+      "count": 1
+    },
+    "@typescript-eslint/strict-boolean-expressions": {
+      "count": 1
+    },
+    "readability/export-doc": {
+      "count": 1
+    }
+  },
+  "hooks/use-prefers-reduced-motion.ts": {
+    "@typescript-eslint/no-confusing-void-expression": {
+      "count": 1
+    },
+    "readability/export-doc": {
+      "count": 1
+    }
+  },
+  "lib/supabase/client.ts": {
+    "readability/export-doc": {
+      "count": 1
+    }
+  },
+  "lib/supabase/env.ts": {
+    "@typescript-eslint/strict-boolean-expressions": {
+      "count": 17
+    },
+    "complexity": {
+      "count": 2
+    }
+  },
+  "lib/supabase/errors.ts": {
+    "@typescript-eslint/strict-boolean-expressions": {
+      "count": 2
+    },
+    "readability/export-doc": {
+      "count": 1
+    }
+  },
+  "lib/supabase/fetch.ts": {
+    "@typescript-eslint/no-magic-numbers": {
+      "count": 4
+    }
+  },
+  "lib/supabase/server.ts": {
+    "@typescript-eslint/consistent-type-imports": {
+      "count": 1
+    },
+    "readability/export-doc": {
+      "count": 1
+    }
+  },
+  "lib/supabase/service-role.ts": {
+    "@typescript-eslint/strict-boolean-expressions": {
+      "count": 4
+    }
+  },
+  "next.config.ts": {
+    "@typescript-eslint/strict-boolean-expressions": {
+      "count": 1
+    }
+  },
+  "ui/primitives/alert-dialog.tsx": {
+    "readability/export-doc": {
+      "count": 12
+    }
+  },
+  "ui/primitives/avatar.tsx": {
+    "readability/export-doc": {
+      "count": 6
+    }
+  },
+  "ui/primitives/badge.tsx": {
+    "readability/export-doc": {
+      "count": 1
+    }
+  },
+  "ui/primitives/button.tsx": {
+    "readability/export-doc": {
+      "count": 1
+    }
+  },
+  "ui/primitives/card.tsx": {
+    "readability/export-doc": {
+      "count": 7
+    }
+  },
+  "ui/primitives/chart.tsx": {
+    "@typescript-eslint/no-magic-numbers": {
+      "count": 2
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 4
+    },
+    "@typescript-eslint/no-unnecessary-type-arguments": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unsafe-argument": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unsafe-assignment": {
+      "count": 3
+    },
+    "@typescript-eslint/no-unsafe-member-access": {
+      "count": 1
+    },
+    "@typescript-eslint/restrict-template-expressions": {
+      "count": 3
+    },
+    "@typescript-eslint/strict-boolean-expressions": {
+      "count": 10
+    },
+    "complexity": {
+      "count": 3
+    },
+    "eqeqeq": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "readability/export-doc": {
+      "count": 4
+    }
+  },
+  "ui/primitives/command.tsx": {
+    "readability/export-doc": {
+      "count": 9
+    }
+  },
+  "ui/primitives/dialog.tsx": {
+    "readability/export-doc": {
+      "count": 10
+    }
+  },
+  "ui/primitives/dropdown-menu.tsx": {
+    "@typescript-eslint/no-magic-numbers": {
+      "count": 1
+    },
+    "readability/export-doc": {
+      "count": 15
+    }
+  },
+  "ui/primitives/input-group.tsx": {
+    "readability/export-doc": {
+      "count": 6
+    }
+  },
+  "ui/primitives/input.tsx": {
+    "readability/export-doc": {
+      "count": 1
+    }
+  },
+  "ui/primitives/label.tsx": {
+    "readability/export-doc": {
+      "count": 1
+    }
+  },
+  "ui/primitives/popover.tsx": {
+    "@typescript-eslint/no-magic-numbers": {
+      "count": 1
+    },
+    "readability/export-doc": {
+      "count": 7
+    }
+  },
+  "ui/primitives/progress.tsx": {
+    "@typescript-eslint/no-magic-numbers": {
+      "count": 1
+    },
+    "@typescript-eslint/restrict-template-expressions": {
+      "count": 1
+    },
+    "@typescript-eslint/strict-boolean-expressions": {
+      "count": 1
+    },
+    "readability/export-doc": {
+      "count": 1
+    }
+  },
+  "ui/primitives/select.tsx": {
+    "readability/export-doc": {
+      "count": 10
+    }
+  },
+  "ui/primitives/separator.tsx": {
+    "readability/export-doc": {
+      "count": 1
+    }
+  },
+  "ui/primitives/sheet.tsx": {
+    "readability/export-doc": {
+      "count": 8
+    }
+  },
+  "ui/primitives/sidebar.tsx": {
+    "@typescript-eslint/no-confusing-void-expression": {
+      "count": 3
+    },
+    "@typescript-eslint/no-magic-numbers": {
+      "count": 2
+    },
+    "@typescript-eslint/restrict-template-expressions": {
+      "count": 1
+    },
+    "@typescript-eslint/strict-boolean-expressions": {
+      "count": 1
+    },
+    "complexity": {
+      "count": 1
+    },
+    "max-lines": {
+      "count": 1
+    },
+    "readability/export-doc": {
+      "count": 24
+    }
+  },
+  "ui/primitives/skeleton.tsx": {
+    "readability/export-doc": {
+      "count": 1
+    }
+  },
+  "ui/primitives/slider.tsx": {
+    "@typescript-eslint/no-magic-numbers": {
+      "count": 1
+    },
+    "no-nested-ternary": {
+      "count": 1
+    },
+    "readability/export-doc": {
+      "count": 1
+    }
+  },
+  "ui/primitives/sonner.tsx": {
+    "@typescript-eslint/no-confusing-void-expression": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unnecessary-condition": {
+      "count": 1
+    },
+    "readability/export-doc": {
+      "count": 1
+    }
+  },
+  "ui/primitives/switch.tsx": {
+    "readability/export-doc": {
+      "count": 1
+    }
+  },
+  "ui/primitives/table.tsx": {
+    "readability/export-doc": {
+      "count": 8
+    }
+  },
+  "ui/primitives/tabs.tsx": {
+    "readability/export-doc": {
+      "count": 4
+    }
+  },
+  "ui/primitives/textarea.tsx": {
+    "readability/export-doc": {
+      "count": 1
+    }
+  },
+  "ui/primitives/tooltip.tsx": {
+    "readability/export-doc": {
+      "count": 4
+    }
+  },
+  "ui/theme/ThemePreferenceSync.tsx": {
+    "@typescript-eslint/strict-boolean-expressions": {
+      "count": 2
+    },
+    "readability/export-doc": {
+      "count": 1
+    }
+  },
+  "ui/theme/ThemeProvider.tsx": {
+    "readability/export-doc": {
+      "count": 1
+    }
+  }
+}
