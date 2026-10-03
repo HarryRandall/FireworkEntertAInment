@@ -124,7 +124,7 @@ for (const [viewportName, viewport] of Object.entries(viewports)) {
       await capture(page, info, `${viewportName}-${theme}-show`);
       await expect(page.getByRole('button', { name: 'Change it', exact: true })).toBeEnabled();
       await expect(page.getByRole('button', { name: 'Pick music' })).toBeEnabled();
-      await expect(page.getByRole('button', { name: 'Save to list' })).toBeDisabled();
+      await expect(page.getByRole('button', { name: 'Save to list' })).toBeEnabled();
     });
   }
 }
