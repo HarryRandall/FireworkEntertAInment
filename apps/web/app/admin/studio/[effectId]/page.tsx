@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { z } from 'zod';
 import { requireArea } from '@/lib/auth/server';
 import { loadLibraryParts } from '@/lib/studio/library-load';
+import { loadStudioHistory } from '@/lib/studio/history-load';
 import { loadStudio } from '@/lib/studio/load';
 import { WorkspaceShell } from '@/ui/shell/workspace-shell';
 import { EmptyState } from '@/ui/kit/feedback';
@@ -28,12 +29,15 @@ export default async function Page({ params }: { params: Promise<{ effectId: str
     <StudioEditor
       key={effectId}
       effectId={effectId}
+      versionNumber={item.versionNumber}
+      historyData={await loadStudioHistory(effectId)}
       title={item.effect.name}
       initialDocument={item.document}
       versionId={item.versionId}
       sourceVersionId={item.sourceVersionId}
       editable={
         item.effect.status !== 'archived' &&
+        ['draft', 'published'].includes(item.versionStatus) &&
         ['super_admin', 'catalogue_editor'].includes(identity.access.staffRole ?? '')
       }
       published={item.published}
