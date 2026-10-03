@@ -5,12 +5,25 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../../', import.meta.url));
 const command = process.argv[2];
+// Lint only schemas this repository owns; extension schemas ship third-party PL/pgSQL.
+const OWNED_SCHEMAS = 'public,private';
+
 const commands = {
   start: ['start'],
   stop: ['stop'],
   status: ['status'],
   reset: ['db', 'reset', '--local'],
-  lint: ['db', 'lint', '--local', '--level', 'warning', '--fail-on', 'error'],
+  lint: [
+    'db',
+    'lint',
+    '--local',
+    '--schema',
+    OWNED_SCHEMAS,
+    '--level',
+    'warning',
+    '--fail-on',
+    'error',
+  ],
 };
 
 function run(args, capture = false) {
