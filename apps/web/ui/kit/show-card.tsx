@@ -39,7 +39,7 @@ export function PlannedShowCard({
     >
       <PosterImage url={poster} error={posterError} />
       <span className="grid gap-2 p-4">
-        <b className="text-base font-semibold">{title}</b>
+        <b className="text-lg font-semibold">{title}</b>
         <span className="text-muted-foreground text-xs">{description}</span>
         <span aria-hidden="true" className="flex h-7 items-end gap-0.5">
           {energy.map((level, index) => (

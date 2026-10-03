@@ -18,7 +18,7 @@ export function StatCard({
   series: readonly number[];
 }) {
   return (
-    <div className="border-border bg-card grid min-w-0 gap-3 rounded-lg border p-4">
+    <div className="border-border bg-card grid min-w-0 gap-2 rounded-lg border p-(--card-padding)">
       <span className="text-muted-foreground text-xs">{title}</span>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <b className="text-2xl font-semibold tabular-nums">{value}</b>

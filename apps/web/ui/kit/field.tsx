@@ -45,10 +45,18 @@ export function InputGroup({
   ...props
 }: Omit<ComponentProps<'input'>, 'prefix'> & { prefix?: ReactNode; suffix?: ReactNode }) {
   return (
-    <div className="border-input bg-card focus-within:border-ring flex items-center overflow-hidden rounded-md border text-sm">
-      <span className="text-muted-foreground shrink-0 px-3">{prefix}</span>
-      <Input className="rounded-none border-0 bg-transparent px-0" {...props} />
-      <span className="text-muted-foreground shrink-0 px-3">{suffix}</span>
+    <div className="border-input bg-card focus-within:border-ring flex h-(--field-height) min-w-0 items-stretch overflow-hidden rounded-md border text-sm">
+      {prefix !== undefined && (
+        <span className="border-border text-muted-foreground bg-muted flex shrink-0 items-center border-r px-2.5">
+          {prefix}
+        </span>
+      )}
+      <Input className="h-full flex-1 rounded-none border-0 bg-transparent" {...props} />
+      {suffix !== undefined && (
+        <span className="border-border text-muted-foreground bg-muted flex shrink-0 items-center border-l px-2.5">
+          {suffix}
+        </span>
+      )}
     </div>
   );
 }

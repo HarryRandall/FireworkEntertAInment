@@ -11,7 +11,7 @@
   --sc-reveal-blur: 4px;
   --sc-reveal-offset: 6px;
   --sc-typing-offset: -3px;
-  --sc-beam-inset: var(--sc-beam-inset);
+  --sc-beam-inset: 1px;
   --sc-shimmer-angle: 110deg;
   --sc-shimmer-start: 30%;
   --sc-shimmer-end: 70%;
