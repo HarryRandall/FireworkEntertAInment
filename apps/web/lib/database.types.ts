@@ -468,6 +468,54 @@ export type Database = {
           },
         ]
       }
+      follows: {
+        Row: {
+          consent_text_version: string
+          consented_at: string
+          created_at: string
+          marketing_opt_in: boolean
+          organisation_id: string
+          shopper_id: string
+          updated_at: string
+          visible_to_shop: boolean
+        }
+        Insert: {
+          consent_text_version: string
+          consented_at?: string
+          created_at?: string
+          marketing_opt_in?: boolean
+          organisation_id: string
+          shopper_id: string
+          updated_at?: string
+          visible_to_shop?: boolean
+        }
+        Update: {
+          consent_text_version?: string
+          consented_at?: string
+          created_at?: string
+          marketing_opt_in?: boolean
+          organisation_id?: string
+          shopper_id?: string
+          updated_at?: string
+          visible_to_shop?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "follows_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "follows_shopper_id_fkey"
+            columns: ["shopper_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       import_lines: {
         Row: {
           confidence: number | null
@@ -727,6 +775,129 @@ export type Database = {
           },
         ]
       }
+      list_items: {
+        Row: {
+          created_at: string
+          currency: string
+          list_id: string
+          product_id: string
+          quantity: number
+          unit_price_minor: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          currency: string
+          list_id: string
+          product_id: string
+          quantity?: number
+          unit_price_minor: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          list_id?: string
+          product_id?: string
+          quantity?: number
+          unit_price_minor?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "list_items_list_id_fkey"
+            columns: ["list_id"]
+            isOneToOne: false
+            referencedRelation: "lists"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "list_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lists: {
+        Row: {
+          created_at: string
+          id: string
+          plan_candidate_id: string | null
+          redeemed_at: string | null
+          redeemed_by: string | null
+          shopper_id: string
+          status: string
+          store_id: string
+          till_code: string
+          updated_at: string
+          valid_until: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          plan_candidate_id?: string | null
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          shopper_id: string
+          status?: string
+          store_id: string
+          till_code: string
+          updated_at?: string
+          valid_until: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          plan_candidate_id?: string | null
+          redeemed_at?: string | null
+          redeemed_by?: string | null
+          shopper_id?: string
+          status?: string
+          store_id?: string
+          till_code?: string
+          updated_at?: string
+          valid_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lists_plan_candidate_id_fkey"
+            columns: ["plan_candidate_id"]
+            isOneToOne: false
+            referencedRelation: "plan_candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lists_redeemed_by_fkey"
+            columns: ["redeemed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lists_shopper_id_fkey"
+            columns: ["shopper_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lists_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "show_store_status"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "lists_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       markets: {
         Row: {
           code: string
@@ -893,6 +1064,141 @@ export type Database = {
           },
         ]
       }
+      music_analyses: {
+        Row: {
+          algorithm: string
+          analysis: Json
+          audio_sha256: string
+          created_at: string
+          id: string
+          is_current: boolean
+          reviewed_by: string | null
+          track_id: string
+          updated_at: string
+        }
+        Insert: {
+          algorithm: string
+          analysis: Json
+          audio_sha256: string
+          created_at?: string
+          id?: string
+          is_current?: boolean
+          reviewed_by?: string | null
+          track_id: string
+          updated_at?: string
+        }
+        Update: {
+          algorithm?: string
+          analysis?: Json
+          audio_sha256?: string
+          created_at?: string
+          id?: string
+          is_current?: boolean
+          reviewed_by?: string | null
+          track_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "music_analyses_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "music_analyses_track_id_fkey"
+            columns: ["track_id"]
+            isOneToOne: false
+            referencedRelation: "music_tracks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      music_tracks: {
+        Row: {
+          artist: string | null
+          attribution: string | null
+          audio_media_id: string | null
+          bpm: number | null
+          commercial_use: boolean
+          created_at: string
+          duration_ms: number
+          genres: string[]
+          id: string
+          licence_code: string
+          licence_url: string | null
+          moods: string[]
+          preview_media_id: string | null
+          provider: string
+          provider_track_id: string | null
+          public_performance: string | null
+          status: string
+          title: string
+          updated_at: string
+          waveform: Json | null
+        }
+        Insert: {
+          artist?: string | null
+          attribution?: string | null
+          audio_media_id?: string | null
+          bpm?: number | null
+          commercial_use?: boolean
+          created_at?: string
+          duration_ms: number
+          genres?: string[]
+          id?: string
+          licence_code: string
+          licence_url?: string | null
+          moods?: string[]
+          preview_media_id?: string | null
+          provider: string
+          provider_track_id?: string | null
+          public_performance?: string | null
+          status?: string
+          title: string
+          updated_at?: string
+          waveform?: Json | null
+        }
+        Update: {
+          artist?: string | null
+          attribution?: string | null
+          audio_media_id?: string | null
+          bpm?: number | null
+          commercial_use?: boolean
+          created_at?: string
+          duration_ms?: number
+          genres?: string[]
+          id?: string
+          licence_code?: string
+          licence_url?: string | null
+          moods?: string[]
+          preview_media_id?: string | null
+          provider?: string
+          provider_track_id?: string | null
+          public_performance?: string | null
+          status?: string
+          title?: string
+          updated_at?: string
+          waveform?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "music_tracks_audio_media_id_fkey"
+            columns: ["audio_media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "music_tracks_preview_media_id_fkey"
+            columns: ["preview_media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organisation_markets: {
         Row: {
           created_at: string
@@ -1024,6 +1330,205 @@ export type Database = {
           },
         ]
       }
+      plan_candidates: {
+        Row: {
+          blurb: string | null
+          created_at: string
+          cues: Json
+          currency: string
+          duration_ms: number
+          id: string
+          mood: string | null
+          name: string | null
+          picked_at: string | null
+          rank: number
+          revision: number
+          scores: Json
+          session_id: string
+          total_minor: number
+          updated_at: string
+        }
+        Insert: {
+          blurb?: string | null
+          created_at?: string
+          cues: Json
+          currency: string
+          duration_ms: number
+          id?: string
+          mood?: string | null
+          name?: string | null
+          picked_at?: string | null
+          rank: number
+          revision?: number
+          scores?: Json
+          session_id: string
+          total_minor: number
+          updated_at?: string
+        }
+        Update: {
+          blurb?: string | null
+          created_at?: string
+          cues?: Json
+          currency?: string
+          duration_ms?: number
+          id?: string
+          mood?: string | null
+          name?: string | null
+          picked_at?: string | null
+          rank?: number
+          revision?: number
+          scores?: Json
+          session_id?: string
+          total_minor?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_candidates_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "plan_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_edits: {
+        Row: {
+          candidate_id: string
+          created_at: string
+          diff: Json | null
+          id: string
+          llm_call_id: number | null
+          message: string | null
+          ops: Json
+          outcome: string
+          reply: string | null
+          seq: number
+          session_id: string
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          candidate_id: string
+          created_at?: string
+          diff?: Json | null
+          id?: string
+          llm_call_id?: number | null
+          message?: string | null
+          ops: Json
+          outcome: string
+          reply?: string | null
+          seq: number
+          session_id: string
+          source: string
+          updated_at?: string
+        }
+        Update: {
+          candidate_id?: string
+          created_at?: string
+          diff?: Json | null
+          id?: string
+          llm_call_id?: number | null
+          message?: string | null
+          ops?: Json
+          outcome?: string
+          reply?: string | null
+          seq?: number
+          session_id?: string
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_edits_session_id_candidate_id_fkey"
+            columns: ["session_id", "candidate_id"]
+            isOneToOne: false
+            referencedRelation: "plan_candidates"
+            referencedColumns: ["session_id", "id"]
+          },
+          {
+            foreignKeyName: "plan_edits_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "plan_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_sessions: {
+        Row: {
+          age_confirmed_at: string | null
+          answers: Json
+          created_at: string
+          credits_reservation_id: string | null
+          id: string
+          input_hash: string
+          qr_code_id: string | null
+          shopper_id: string
+          solver: string
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          age_confirmed_at?: string | null
+          answers: Json
+          created_at?: string
+          credits_reservation_id?: string | null
+          id?: string
+          input_hash: string
+          qr_code_id?: string | null
+          shopper_id: string
+          solver: string
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          age_confirmed_at?: string | null
+          answers?: Json
+          created_at?: string
+          credits_reservation_id?: string | null
+          id?: string
+          input_hash?: string
+          qr_code_id?: string | null
+          shopper_id?: string
+          solver?: string
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_sessions_qr_code_id_fkey"
+            columns: ["qr_code_id"]
+            isOneToOne: false
+            referencedRelation: "qr_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_sessions_shopper_id_fkey"
+            columns: ["shopper_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_sessions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "show_store_status"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "plan_sessions_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       poster_renders: {
         Row: {
           created_at: string
@@ -1080,6 +1585,51 @@ export type Database = {
             columns: ["effect_version_id"]
             isOneToOne: false
             referencedRelation: "effect_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      privacy_requests: {
+        Row: {
+          created_at: string
+          id: string
+          kind: string
+          result_media_id: string | null
+          shopper_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kind: string
+          result_media_id?: string | null
+          shopper_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kind?: string
+          result_media_id?: string | null
+          shopper_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "privacy_requests_result_media_id_fkey"
+            columns: ["result_media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "privacy_requests_shopper_id_fkey"
+            columns: ["shopper_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1905,6 +2455,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "show_versions_plan_session_fk"
+            columns: ["plan_session_id"]
+            isOneToOne: false
+            referencedRelation: "plan_sessions"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "show_versions_show_id_fkey"
             columns: ["show_id"]
             isOneToOne: false
@@ -1916,6 +2473,13 @@ export type Database = {
             columns: ["show_id"]
             isOneToOne: false
             referencedRelation: "shows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "show_versions_soundtrack_analysis_fk"
+            columns: ["soundtrack_analysis_id"]
+            isOneToOne: false
+            referencedRelation: "music_analyses"
             referencedColumns: ["id"]
           },
         ]
@@ -1986,6 +2550,13 @@ export type Database = {
             columns: ["owner_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shows_soundtrack_track_fk"
+            columns: ["soundtrack_track_id"]
+            isOneToOne: false
+            referencedRelation: "music_tracks"
             referencedColumns: ["id"]
           },
         ]
@@ -2568,6 +3139,16 @@ export type Database = {
         }
         Returns: string
       }
+      create_list: {
+        Args: {
+          p_candidate?: string
+          p_items: Json
+          p_store: string
+          p_till_code: string
+          p_valid_until: string
+        }
+        Returns: string
+      }
       create_pack: { Args: { p_name: string; p_slug: string }; Returns: string }
       create_product_draft: {
         Args: {
@@ -2621,6 +3202,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      save_music_analysis: {
+        Args: {
+          p_algorithm: string
+          p_analysis: Json
+          p_audio_sha256: string
+          p_track: string
+        }
+        Returns: string
+      }
       save_pack_items: {
         Args: { p_items: Json; p_pack_id: string }
         Returns: undefined
@@ -2655,9 +3245,21 @@ export type Database = {
         }
         Returns: string
       }
+      shop_customers: { Args: { p_organisation: string }; Returns: Json }
       show_for_store: {
         Args: { p_show: string; p_store: string }
         Returns: Json
+      }
+      start_plan_session: {
+        Args: {
+          p_age_confirmed_at?: string
+          p_answers: Json
+          p_input_hash: string
+          p_qr_code?: string
+          p_solver: string
+          p_store: string
+        }
+        Returns: string
       }
       store_page: { Args: { p_store: string }; Returns: Json }
     }
