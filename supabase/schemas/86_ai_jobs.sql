@@ -265,7 +265,7 @@ begin
     raise exception using errcode = '23514', message = 'Measurement state and extractor required';
   end if;
   -- A retry after evidence installation must not regress interpretation or reviewed results.
-  if v_analysis.status in ('interpreting','fitting','ready') then
+  if v_analysis.status in ('interpreting','fitting','ready') or v_analysis.shots is not null then
     if p_state = 'measuring' and v_analysis.extractor = p_extractor then return v_analysis; end if;
     raise exception using errcode = '23514', message = 'Installed video evidence is immutable to measurement';
   end if;
@@ -290,6 +290,10 @@ begin
     keyframes = case when p_state = 'interpreting' then p_measurements->'keyframes' else null end,
     error = case when p_state = 'failed' then p_error else null end
     where analysis.id = v_analysis.id returning analysis.* into v_analysis;
+  if p_state = 'interpreting' then
+    insert into public.jobs(kind,payload,organisation_id)
+      values ('video_fit',jsonb_build_object('analysis_id',v_analysis.id,'media_id',v_analysis.media_id),v_job.organisation_id);
+  end if;
   return v_analysis;
 end;
 $$;
@@ -302,3 +306,131 @@ begin
 end;
 $$;
 comment on function public.save_video_measurement(uuid,text,smallint,text,text,jsonb,text) is 'Backend-only status and result write for one video measurement attempt; returns durable evidence for interpretation without completing the queue job.';
+
+-- One generation per source media, including uncertain calls: retries cannot buy another response.
+create unique index video_interpret_once_idx on public.llm_calls(ref_id)
+  where purpose = 'video.interpret';
+create unique index video_fit_active_analysis_idx on public.jobs (((payload->>'analysis_id')::uuid))
+  where kind = 'video_fit' and status in ('queued','running','failed');
+
+-- Queue and analysis locks serialize reservations, usage and immutable candidate installation.
+create function private.video_fit_step(p_job uuid,p_worker text,p_attempt smallint,p_action text,p_record jsonb default '{}')
+returns jsonb language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  -- Owner's per-video interpretation ceiling in USD, independent of changing model tariffs.
+  v_cap_usd constant numeric := 0.10;
+  v_job public.jobs;
+  v_analysis public.video_analyses;
+  v_call public.llm_calls;
+  v_parent uuid;
+  v_candidate public.design_candidates;
+  v_source text;
+  v_effect record;
+  v_design jsonb;
+begin
+  select job.* into v_job from public.jobs as job where job.id = p_job for update;
+  if v_job.id is null or v_job.kind <> 'video_fit' or v_job.status <> 'running'
+    or v_job.worker is distinct from p_worker or v_job.attempts is distinct from p_attempt
+    or v_job.lease_until <= clock_timestamp() then
+    raise exception using errcode = '23514', message = 'Current fitting worker lease required';
+  end if;
+  select analysis.* into v_analysis from public.video_analyses as analysis
+    where analysis.id = (v_job.payload->>'analysis_id')::uuid
+      and analysis.media_id = (v_job.payload->>'media_id')::uuid for update;
+  if v_analysis.id is null or v_analysis.shots is null or v_analysis.features is null then
+    raise exception using errcode = '23514', message = 'Complete measured video required';
+  end if;
+  if v_job.lease_until <= clock_timestamp() then
+    raise exception using errcode = '23514', message = 'Current fitting worker lease required';
+  end if;
+  select call.* into v_call from public.llm_calls as call
+    where call.purpose = 'video.interpret' and call.ref_id = v_analysis.media_id;
+  if p_action = 'read' then
+    return jsonb_build_object('analysis',to_jsonb(v_analysis),'call',case when v_call.id is null then null else to_jsonb(v_call) end,
+      'candidates',coalesce((select jsonb_agg(to_jsonb(candidate) order by candidate.source)
+        from public.design_candidates as candidate where candidate.analysis_id = v_analysis.id and candidate.source in ('llm','fit') and candidate.model = v_call.model),'[]'::jsonb));
+  elsif p_action = 'reserve' then
+    if v_analysis.status not in ('interpreting','failed') or v_call.id is not null
+      or (p_record->>'cost_usd')::numeric not between 0 and v_cap_usd
+      or p_record->>'cost_usd' is null or nullif(p_record->>'model','') is null then
+      raise exception using errcode = '23514', message = 'Unused interpretation budget required';
+    end if;
+    -- A pending row retains the whole estimate if a response or usage write is lost.
+    insert into public.llm_calls(purpose,model,provider,ref_id,cost_usd,ok,error)
+      values ('video.interpret',p_record->>'model','google',v_analysis.media_id,(p_record->>'cost_usd')::numeric,false,'reserved')
+      returning * into v_call;
+    return to_jsonb(v_call);
+  elsif p_action = 'usage' then
+    if v_call.id is null or v_call.error is distinct from 'reserved'
+      or p_record->>'tokens_in' is null or p_record->>'tokens_out' is null
+      or p_record->>'cost_usd' is null or p_record->>'latency_ms' is null then
+      raise exception using errcode = '23514', message = 'Pending interpretation call required';
+    end if;
+    update public.llm_calls set tokens_in = (p_record->>'tokens_in')::integer,
+      tokens_out = (p_record->>'tokens_out')::integer, cost_usd = (p_record->>'cost_usd')::numeric,
+      latency_ms = (p_record->>'latency_ms')::integer,ok = false,error = 'response_received'
+      where id = v_call.id returning * into v_call;
+    return to_jsonb(v_call);
+  elsif p_action in ('interpret','ready') then
+    v_source := case when p_action = 'interpret' then 'llm' else 'fit' end;
+    select candidate.* into v_candidate from public.design_candidates as candidate
+      where candidate.analysis_id = v_analysis.id and candidate.source = v_source and candidate.model = v_call.model;
+    if v_candidate.id is not null then return to_jsonb(v_candidate); end if;
+    if p_action = 'interpret' and (v_analysis.status not in ('interpreting','failed') or v_call.error is distinct from 'response_received'
+      or v_call.cost_usd > v_cap_usd or v_call.tokens_in is null or v_call.tokens_out is null) then
+      raise exception using errcode = '23514', message = 'Successful bounded interpretation usage required';
+    end if;
+    if p_action = 'ready' then
+      select candidate.id into v_parent from public.design_candidates as candidate
+        where candidate.analysis_id = v_analysis.id and candidate.source = 'llm' and candidate.model = v_call.model;
+      if v_analysis.status not in ('fitting','failed') or v_parent is null then
+        raise exception using errcode = '23514', message = 'Interpretation parent required';
+      end if;
+    end if;
+    perform private.check_candidate_proposal(p_record->'proposal','cake');
+    if jsonb_array_length(p_record#>'{proposal,composition,tubes}') <> jsonb_array_length(v_analysis.shots) then
+      raise exception using errcode = '23514', message = 'Candidate must cover all measured shots';
+    end if;
+    if exists (select from jsonb_array_elements(p_record#>'{proposal,composition,tubes}') with ordinality as tube(value,position)
+      where (tube.value->>'i')::integer <> tube.position - 1
+      or tube.value->'t_ms' is distinct from v_analysis.shots->(tube.position::integer - 1)->'t_ms') then
+      raise exception using errcode = '23514', message = 'Candidate sequence must preserve measured onsets';
+    end if;
+    for v_effect in select * from jsonb_each(p_record#>'{proposal,effects}') loop
+      select private.merge_design_overrides(version.design,coalesce(v_effect.value->'overrides','{}'::jsonb)) into v_design
+        from public.effects as effect join public.effect_versions as version on version.id = effect.current_version_id
+        where effect.slug = v_effect.value->>'template' and effect.is_template and effect.status = 'published'
+          and version.status = 'published' and effect.kind = coalesce(v_effect.value#>>'{overrides,kind}',effect.kind);
+      if v_design is null or not extensions.jsonb_matches_schema(private.design_schema(),v_design) then
+        raise exception using errcode = '23514', message = 'Canonical template overrides required';
+      end if;
+    end loop;
+    insert into public.design_candidates(analysis_id,source,model,parent_id,proposal,scores,overall,renderer)
+      values (v_analysis.id,v_source,v_call.model,v_parent,p_record->'proposal',p_record->'scores',
+        (p_record->>'overall')::numeric,p_record->>'renderer') returning * into v_candidate;
+    update public.video_analyses set status = case when p_action = 'interpret' then 'fitting' else 'ready' end,
+      error = null where id = v_analysis.id;
+    if p_action = 'interpret' then
+      update public.llm_calls set ok = true,error = null where id = v_call.id;
+    end if;
+    return to_jsonb(v_candidate);
+  elsif p_action = 'failure' then
+    if v_analysis.status <> 'ready' then
+      update public.video_analyses set status = 'failed',error = p_record->>'error' where id = v_analysis.id;
+      update public.llm_calls set ok = false,error = p_record->>'error'
+        where id = v_call.id and not ok;
+    end if;
+    return '{}'::jsonb;
+  end if;
+  raise exception using errcode = '23514', message = 'Known fitting action required';
+end;
+$$;
+comment on function private.video_fit_step(uuid,text,smallint,text,jsonb) is 'Fenced per-video call reservation, usage and immutable llm/fit candidate writes. Costs are USD; pending calls prevent repeat generation after uncertain failures. Returns durable state or installed rows.';
+create function public.video_fit_step(p_job uuid,p_worker text,p_attempt smallint,p_action text,p_record jsonb default '{}')
+returns jsonb language plpgsql set search_path = '' as $$
+begin
+  return private.video_fit_step(p_job,p_worker,p_attempt,p_action,p_record);
+end;
+$$;
+comment on function public.video_fit_step(uuid,text,smallint,text,jsonb) is 'Backend-only fitting lifecycle for an unexpired matching queue attempt; preserves measured evidence and ready results.';

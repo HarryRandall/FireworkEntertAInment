@@ -6614,6 +6614,16 @@ export type Database = {
         }
         Returns: number
       }
+      video_fit_step: {
+        Args: {
+          p_action: string
+          p_attempt: number
+          p_job: string
+          p_record?: Json
+          p_worker: string
+        }
+        Returns: Json
+      }
     }
     Enums: {
       [_ in never]: never

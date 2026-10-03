@@ -6,6 +6,8 @@ select is((select count(*) from public.safety_bands),12::bigint,'each market has
 select is((select count(*) from public.plans where active),3::bigint,'prototype plans are active');
 select is((select credits from public.credit_prices where action = 'plan_session'),1,'a session costs one credit');
 select is((select count(*) from public.effects where status = 'published'),99::bigint,'all canonical templates are published');
+select is((select count(*) from public.effects as effect join public.effect_versions as version on version.id = effect.current_version_id
+ where effect.is_template and effect.status = 'published' and version.status = 'published'),99::bigint,'all seeded catalogue presets are published templates');
 select is((select count(*) from public.effect_versions where status = 'published'),99::bigint,'each template has a published version');
 select ok(not exists(select from public.effects as effect join public.effect_versions as version on version.id = effect.current_version_id
  where not extensions.jsonb_matches_schema(private.design_schema(),version.design)), 'all stored templates satisfy the design contract');
