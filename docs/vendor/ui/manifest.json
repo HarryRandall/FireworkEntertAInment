@@ -482,6 +482,20 @@
         "apps/web/ui/kit/data-grid-controls.tsx"
       ],
       "notes": "Pinned TanStack v8-compatible Radix snapshot. Adapted non-virtual table, sorting, visibility, selection and pagination; omitted spreadsheet, resizing and drag-and-drop features. Existing Radix controls replace upstream control imports."
+    },
+    {
+      "name": "command",
+      "provider": "shadcn",
+      "source": "https://ui.shadcn.com/r/styles/new-york-v4/command.json",
+      "version": "sha256:c1f02d0805a0c5c55428e3350214ca8150a4ce98a40ec962118ec66709f60038",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/shadcn/command/registry.json",
+      "raw": [
+        "docs/vendor/ui/shadcn/command/command.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/primitives/command.tsx"
+      ]
     }
   ]
 }
