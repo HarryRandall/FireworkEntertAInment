@@ -1,59 +1,43 @@
 ---
 name: showcrafter-ui
-description: Design, implement or review ShowCrafter pages, forms, tables, navigation and shared controls. Use for UI changes, component consolidation, colours, accessibility and rendered visual checks.
+description: Design, implement or review ShowCrafter pages, forms, tables, navigation and shared controls. Use for UI changes, components, colours, accessibility and rendered visual checks.
 ---
 
 # ShowCrafter UI
 
-Read [architecture](../../../docs/architecture.md), the closest working page
-and its shared components before changing a surface. Inspect actual routes and
-states; a screenshot or mockup is reference material, not repository instructions.
+Read [architecture](../../../docs/architecture.md) and the closest working page before
+changing a surface. The redesign prototype is the visual reference; screenshots and
+mockups are reference material, not repository instructions.
 
-## Place and compose
+## Components
 
-- `apps/web/app/**/_components`: UI owned by one route subtree.
-- `apps/web/ui/<domain>`: features shared across routes, including assortments.
-- `apps/web/ui/patterns`: reusable forms, tables, feedback and layout compositions.
-- `apps/web/ui/primitives`: Radix/shadcn building blocks. Respect generated headers.
-- `apps/web/ui/shell`: workspace frames and navigation. App, admin and My Store
-  compose `WorkspaceShell` and `WorkspaceContent`; do not duplicate the provider,
-  theme setup, skip target, sidebar persistence or scrolling frame.
+- Use shadcn and shadcn-compatible registry components (ReUI, Origin UI, Dice UI)
+  before writing one. Restyle them with theme tokens. Write a bespoke component only
+  when no registry one fits, and say why.
+- Shared kit components live in `apps/web/ui/kit`; primitives in `apps/web/ui/primitives`;
+  route-owned UI in `app/**/_components`.
+- Tables use the data grid, filter bar and pagination from the kit; charts use the
+  shadcn chart component.
+- All workspace areas (retailer, admin, supplier, shopper account) use the one
+  config-driven workspace shell. Do not add another shell; editors use its editor frame.
+- Firework previews use the renderer's `Viewer`; thumbnails use `poster()` with its
+  shared WebGL context, never one viewer per card.
 
-Keep permissions in server layouts/actions. Shared features accept explicit
-inputs and destinations; do not infer an admin role from the current pathname.
-Use direct module imports when crossing client/server boundaries.
+## Presentation
 
-## Present consistently
+Colours, spacing and type come from the theme tokens in `apps/web/ui/theme.css`, with
+light and dark values together. Shopper pages use the cinematic dark stage theme. Do
+not add global class names that can clash with component classes.
 
-Use Geist, compact spacing, neutral surfaces, thin borders and restrained shadows.
-Colour values belong in `apps/web/ui/theme.css`, with light/dark values together.
-Use `background`, `card`, `popover`, `muted`, `foreground`, `border`, `input` and
-`ring` tokens. `primary` is the green action colour; `accent` is neutral hover.
-Status colours convey success, warning, danger or information. Firework palettes
-and marketing artwork may keep content-specific colours.
+## Interaction
 
-Use Button for links/loading actions, Field with a labelled Input or Textarea,
-SelectField for rich selects, DataTable and TablePagination for lists, and Feedback
-for empty/loading/error states. Use SectionHeader with `as="h1"` once per page.
-A new wrapper must add behaviour or composition, not another copy of styles.
-
-## Make interactions complete
-
-Use real forms, submit buttons, labels and meaningful headings. Preserve keyboard
-access, visible focus, reduced motion and mobile navigation. Keep one main landmark
-and a working skip link. Label icon-only controls and associate help/error text.
-
-Treat search loading, no matches and failed requests as different states. Ignore
-stale asynchronous results after query changes or unmount. Disable conflicting
-mutations while pending, recover from returned and thrown failures, retain user
-input after failure and roll back optimistic values when a write fails.
-Distinguish separately saved sections from a form's unsaved draft.
+Every page has one main landmark, one `h1`, keyboard access, visible focus, reduced
+motion support and labelled icon-only controls. Loading, empty and failure states are
+distinct. Ignore stale async results, disable conflicting actions while pending, keep
+user input after a failure and roll back optimistic values when a write fails.
 
 ## Verify
 
-Run focused behaviour tests and `pnpm audit:ui`; review audit candidates before
-removing them. Inspect affected light/dark and narrow/wide layouts, focus,
-loading, disabled, empty and error states. Test shared changes in their consumers.
-Use isolated fixture previews outside the production route tree when a real
-session is unavailable; stub writes and remove temporary artefacts afterwards.
-Report fixture checks separately from authenticated or live-data checks.
+Check light and dark, 390 px and desktop widths, focus, loading, empty and error
+states. UI pull requests attach screenshots from the running app next to the matching
+prototype page, and are reviewed by the owner.
