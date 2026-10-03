@@ -749,3 +749,27 @@ App upload/enqueue, reliable authenticated wake delivery, candidate review and
 Studio reference synchronisation are documented integration hooks here, with no
 routes or screens added. Owner visual review, CI and hosted verification remain
 separate from the local acceptance commands.
+
+## UI registries
+
+`apps/web/components.json` configures ReUI's public registry with the existing
+`radix-vega` style, alongside shadcn's built-in registry. See the
+[ReUI registry documentation](https://reui.io/docs/registry) for the namespace and
+style URL. Fetch only the free component a page needs. Inspect its files,
+dependencies, target paths and licence before adding it:
+
+```bash
+corepack pnpm --filter @showcrafter/web exec shadcn view @reui/data-grid
+corepack pnpm --filter @showcrafter/web exec shadcn add @reui/data-grid --dry-run
+```
+
+The installed CLI uses the workspace's locked version. Installing a registry item
+copies source into the app; keep the raw upstream files and a manifest recording
+source, version and licence alongside the adapted copy. Pin any new dependencies
+exactly. Do not bulk-install a registry, add paid items or overwrite the shared
+palette with a registry theme.
+
+The browser theme journeys in `tests/browser/theme.spec.ts` cover stored light and
+dark preferences on every current route, reloads and live system colour-scheme
+changes. Browser execution and desktop/390 px light/dark screenshots remain
+separate verification gates from the production build.
