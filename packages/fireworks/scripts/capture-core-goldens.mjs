@@ -2,6 +2,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import vm from 'node:vm';
+import { sprayCases } from '../tests/spray-cases.mjs';
 import { kindCases } from '../tests/kind-cases.mjs';
 
 // One-off capture from the owner's read-only reference, never from the port.
@@ -25,7 +26,11 @@ vm.runInContext(
   context,
 );
 const ref = context.reference;
-// Capture heads and discrete modifier events only; sprays and smoke are disabled.
+vm.runInContext(
+  'this.fullSpray = spray; this.fullStyles = JSON.parse(JSON.stringify(LAUNCH_STYLES));',
+  context,
+);
+// Isolate the existing core regressions. Capture heads and discrete modifier events only.
 vm.runInContext('spray = () => {}; SETTINGS.smoke = false;', context);
 // The prototype has one core/fade; v1 has one per break. Only the lookup changes.
 vm.runInContext(
@@ -38,6 +43,16 @@ function core(c) {
 }
 function fade(f) {
   return { whiteHot: f.white_hot, emberAt: f.ember_at, fadeAt: f.fade_at, prime: f.prime_s };
+}
+function legacyTrail(t) {
+  return {
+    ...t,
+    length: t.length_s,
+    spread: t.spread_m_s,
+    gravity: t.gravity_m_s2,
+    drag: t.drag_per_s,
+    glitterDelay: t.glitter_delay_s,
+  };
 }
 function legacyLayer(l, b) {
   const first = l.colour.stops[0][1];
@@ -70,7 +85,14 @@ function legacyLayer(l, b) {
     changeTo: target,
     changeAt: change?.at,
     head: { ...l.head, brightness: l.brightness[0][1] },
-    trail: { ...l.trail, length: l.trail.length_s },
+    trail: {
+      ...legacyTrail(l.trail),
+      glitter:
+        fx?.kind === 'glitter'
+          ? Math.max(0, Math.min(1, l.trail.glitter + fx.amount))
+          : l.trail.glitter,
+      glitterDelay: fx?.kind === 'glitter' ? fx.at * l.life_s : l.trail.glitter_delay_s,
+    },
     effect: fx
       ? {
           ...fx,
@@ -106,7 +128,7 @@ function legacy(doc) {
         split: c.split
           ? { count: c.split.count, distance: c.split.distance_m, life: c.split.life_s }
           : null,
-        trail: null,
+        trail: c.trail === 'house' ? null : c.trail,
         tailLife: c.tail_life_s,
         spin: c.spin_rad_s,
         spinR: c.spin_radius_m,
@@ -174,7 +196,27 @@ function frame(d, seed, t) {
   const indices = [
     ...new Set([0, 1, Math.floor(count / 3), Math.floor(count / 2), count - 2, count - 1]),
   ].filter((i) => i >= 0 && i < count);
-  return { time_s: t, count, samples: indices.map((index) => ({ index, values: rows[index] })) };
+  const smokeIndices = [...new Set([0, Math.floor(buffer.sm / 2), buffer.sm - 1])].filter(
+    (i) => i >= 0 && i < buffer.sm,
+  );
+  return {
+    time_s: t,
+    count,
+    samples: indices.map((index) => ({ index, values: rows[index] })),
+    smoke: {
+      count: buffer.sm,
+      samples: smokeIndices.map((index) => ({
+        index,
+        values: [
+          ...buffer.spos.slice(index * 3, index * 3 + 3),
+          ...buffer.scol.slice(index * 3, index * 3 + 3),
+          buffer.ssize[index],
+          buffer.salpha[index],
+          ...buffer.sseed.slice(index * 2, index * 2 + 2),
+        ],
+      })),
+    },
+  };
 }
 const fixtures = {};
 for (const name of ['peony', 'multi-break', 'comet']) {
@@ -269,6 +311,17 @@ const result = {
   fixtures,
   cases,
 };
+// Restore the unmodified reference maths and launch tuning for full spray and smoke frames.
+vm.runInContext(
+  'spray = this.fullSpray; SETTINGS.smoke = true; for (const key of Object.keys(LAUNCH_STYLES)) Object.assign(LAUNCH_STYLES[key], this.fullStyles[key]);',
+  context,
+);
+result.sprays = sprayCases().map((c) => ({
+  name: c.name,
+  frames: c.times.map((t) => frame(legacy(c.design), c.design.seed, t)),
+}));
+result.scope +=
+  ' Full sprays cases retain sprays, smoke and launch embellishments, with stored trail units mapped at the reference boundary.';
 writeFileSync(
   new URL('../tests/fixtures/core-goldens.json', import.meta.url),
   `${JSON.stringify(result, null, 2)}\n`,

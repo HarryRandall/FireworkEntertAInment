@@ -20,12 +20,21 @@ import {
   ParticleKind,
   type Particles,
   type SimulationOptions,
+  type SmokeParticles,
 } from '../src/sim/index';
 
 const evaluate: (design: Design, time_s: number, options?: SimulationOptions) => Particles =
   simulate;
 const duration: (design: Design) => number = shotDuration;
-const options: SimulationOptions = { seed: 0, position: [1, 2], muzzle_m: 3 };
+const options: SimulationOptions = {
+  seed: 0,
+  position: [1, 2],
+  muzzle_m: 3,
+  smoke: false,
+  sprays: true,
+  launchEffects: true,
+};
 const particleCount = (frame: Particles): number => frame.kinds.length;
+const smokeOutput = (frame: Particles): SmokeParticles => frame.smoke;
 const kind: ParticleKind = ParticleKind.Head;
-void [evaluate, duration, options, particleCount, kind];
+void [evaluate, duration, options, particleCount, smokeOutput, kind];
