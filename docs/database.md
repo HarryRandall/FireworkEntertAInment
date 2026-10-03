@@ -483,3 +483,118 @@ Evidence logs from this continuation are in `/tmp/showcrafter-imports-reset-fina
 `/tmp/showcrafter-imports-tests-final-first.log`,
 `/tmp/showcrafter-imports-tests-final-second.log`, `/tmp/showcrafter-imports-lint-final.log`
 and `/tmp/showcrafter-imports-diff.log`; diff SQL is `/tmp/showcrafter-imports-diff.sql`.
+
+## Range, stock, shows and QR routing
+
+`40_range.sql` declares organisation range prices, store overrides, movement history,
+collections and collection membership. Composite foreign keys enforce retailer
+ownership of store and collection rows. Organisation-wide writes require unrestricted
+range or price rights; store writes respect the membership's store scope.
+
+Current stock has one source: the sum of `stock_movements.delta`. `store_prices` is
+an invoker view that applies row policies and resolves the store override or range
+price. It also exposes the latest movement source and timestamp. There is no editable
+stock balance on `store_items`, and lists do not reserve stock.
+
+`record_stock(p_store, p_range_item, p_delta, p_source, p_ref)` records signed unit
+changes from `manual` or `csv`. It locks the store item, derives `qty_after` and rejects
+negative resulting stock. Stock history cannot be updated or deleted, including by
+service-role operations. The trusted backend can retain a `till` source; the retailer
+RPC cannot claim one.
+
+`50_shows_qr.sql` declares retailer or shopper-owned shows, immutable snapshots,
+derived product quantities, campaigns, QR codes and label batches. Retailer authoring
+uses `range.manage`; shopper authoring checks active ownership, including anonymous
+accounts. `save_show` locks the parent, saves validated cues, numbers the snapshot,
+creates its complete product-quantity index and changes the current pointer in the
+same transaction. Direct API writes cannot replace the pointer or history.
+
+The canonical cue schema is `supabase/documents/cues.v1.json`, embedded by
+`db:documents`. Each cue has `t_ms` measured from show start, `product_id`, horizontal
+`position` in metres, `angle_deg` from vertical and an optional non-negative beat
+index. Duration and soundtrack offset are milliseconds. Duration is the authored
+playback window, including optional silence; every launch must fall within it.
+`show_store_status` computes current totals and quantity-aware availability.
+Stock and range triggers maintain `live` or `stock_issue` status when a product is
+unavailable at every open store, and recover after replenishment.
+
+QR targets are validated by type, catalogue publication and organisation ownership.
+Codes cannot be deleted and their slugs cannot change or be reused. Label batches
+validate all code UUIDs, store print scopes and retailer-owned PDF media. Browser
+printing does not require PDF jobs.
+
+### Public RPCs
+
+Public API roles have no raw access to retailer tables or pricing views. Public
+invoker wrappers call narrowly granted private security-definer readers, with empty
+search paths and explicitly selected output fields:
+
+- `resolve_qr(p_slug)` returns a visible target for an open store. Paused, archived
+  or unavailable targets fall back to the store page. Organisation-wide codes return
+  `pick_store` and open stores, each with its applicable target or fallback.
+- `store_page(p_store)` returns store contact details, safe organisation identity,
+  visible published range, live collections and retailer show names. Catalogue
+  entries must have confirmed market listings and the market's currency. Manual
+  collection membership and smart price/noise/tag/colour filters use the current
+  visible store range.
+- `show_for_store(p_show, p_store)` returns a matching live retailer show or the active
+  caller's own saved show whose products are visible at that store. Its playback resolves current published product
+  compositions and current published effect designs, including selection packs.
+  Price and availability reflect current store facts. Shopper-owned shows require active ownership.
+
+Unavailable stores, suspended/closed retailers, unknown slugs and inaccessible shows
+return SQL null. Supplier contacts, wholesale prices, review records, history and
+private store licence/onboarding fields are excluded from public responses.
+
+### Nullable references
+
+These nullable UUID columns identify their intended targets in SQL comments:
+
+- `shows.soundtrack_track_id`: `public.music_tracks(id)`.
+- `show_versions.soundtrack_analysis_id`: `public.music_analyses(id)`.
+- `show_versions.plan_session_id`: `public.plan_sessions(id)`.
+
+The referenced tables are absent in this schema. These columns have no foreign keys;
+install the constraints when their domains are declared.
+
+### Local verification and remaining checks
+
+Verification used Node 24.18.0 and Corepack pnpm 12.3.4 in this checkout:
+
+- `corepack pnpm db:reset`: passed, including the domain baseline and explicit grants.
+- `corepack pnpm db:test`: passed twice consecutively, 15 suites and 1,327 assertions
+  on each run. Coverage includes every new policy's allowed and denied cases, another
+  organisation, store scopes, stock arithmetic, immutable snapshots, latest designs,
+  nested selection packs, smart collections and QR fallback.
+- `corepack pnpm db:lint`: exited successfully with no new function issues. The three
+  existing `private.effect_facts` warnings remain (one assignment cast and two volatility warnings).
+- `corepack pnpm exec supabase db diff --local --schema public,private`: passed, with
+  440 grant statements and no other statements. Grants remain in their separate
+  hand-written migration; do not apply that diff as a grant repair.
+- `corepack pnpm db:types`, then `corepack pnpm db:types --check`: passed and matched
+  the local schema.
+- `corepack pnpm format:check`, `corepack pnpm db:documents --check`,
+  `corepack pnpm test:database-tooling` (10 tests), `corepack pnpm lint`,
+  `corepack pnpm typecheck` and `corepack pnpm knip`: passed. Knip retains one existing
+  `.css` configuration hint.
+
+A denied direct call to `private.product_playback(uuid)` as `anon` reproducibly
+terminated the local PostgreSQL 17.6 process with signal 11, both inside pgTAP and
+from psql, including with a PL/pgSQL implementation. Those interrupted test runs are
+failed evidence. The added internal-capability assertion instead checks the live
+`has_function_privilege` result, which is false for `anon`. Its SQL comment records
+this local-image limitation. All new policy denials, public table/view denials and
+retailer RPC denials still execute as their real personas. The composer should
+investigate the local image's denied-function crash separately; no database image,
+privilege boundary or assertion threshold was changed to work around it.
+
+Logs are in `/tmp/showcrafter-range-reset.log`, `/tmp/showcrafter-range-tests.log`,
+`/tmp/showcrafter-range-tests-repeat.log`, `/tmp/showcrafter-range-lint.log`,
+`/tmp/showcrafter-range-diff.sql` and `/tmp/showcrafter-range-diff.log`. The reproducible
+crash evidence is `/tmp/showcrafter-range-denied-function-crash.log`. The declaration
+and generated baseline were refreshed through the existing `db:documents` workflow.
+The schema diff verifies their application DDL is in step.
+
+`pnpm check` and `pnpm test:browser` were intentionally not run in this lane. There
+are no screen changes or screenshots. Full repository/browser checks and CI remain
+composer gates. No hosted database, deployment or production behaviour was verified.
