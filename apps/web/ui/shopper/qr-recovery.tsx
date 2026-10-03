@@ -1,7 +1,6 @@
 /** QR recovery and organisation-wide store choices use only the resolver's public slice. */
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { ViewEvent } from './view-events';
 import { scannedDestination, storePath } from '@/lib/shopper/paths';
 import { EmptyState } from '@/ui/kit/feedback';
 import { Button } from '@/ui/primitives/button';
@@ -55,19 +54,10 @@ export function QrRecovery({ slug }: { slug?: string }) {
   );
 }
 
-/** Wraps a QR recovery result with one main landmark and scan call site. */
-export function QrLanding({
-  title,
-  target,
-  children,
-}: {
-  title: string;
-  target: string;
-  children: ReactNode;
-}) {
+/** Wraps a QR recovery result with one main landmark. */
+export function QrLanding({ title, children }: { title: string; children: ReactNode }) {
   return (
     <main className="mx-auto grid max-w-lg gap-6 px-4 py-10">
-      <ViewEvent kind="qr_scan" target={target} />
       <h1 className="text-2xl font-semibold">{title}</h1>
       {children}
     </main>

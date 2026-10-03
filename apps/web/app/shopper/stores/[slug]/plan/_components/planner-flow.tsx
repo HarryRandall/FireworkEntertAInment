@@ -1,9 +1,10 @@
 /** Mobile-first shopper flow composes the persisted questions and one saved show. */
 'use client';
-import { useEffect, useRef } from 'react';
+import { Suspense, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import type { StorePage } from '@/lib/shopper/contracts';
 import type { SavedPlan } from '@/lib/shopper/planner/contracts';
+import { ScanEvent } from '@/ui/shopper/view-events';
 import { storePath } from '@/lib/shopper/paths';
 import { StoreHeader, StoreFooter } from '@/ui/shopper/store-header';
 import { Button } from '@/ui/primitives/button';
@@ -36,13 +37,23 @@ export function PlannerFlow({
     product,
     initialPlan?.id,
   );
-  const state = usePlanner({ slug: store.store.slug, initialPlan, progress, update, qr });
+  const state = usePlanner({
+    storeId: store.store.id,
+    slug: store.store.slug,
+    initialPlan,
+    progress,
+    update,
+    qr,
+  });
   const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     heading.current?.focus();
   }, [progress?.question, progress?.started, progress?.age, state.plan, state.pending]);
   return (
     <main className="min-w-0">
+      <Suspense>
+        <ScanEvent store={store.store.id} />
+      </Suspense>
       <StoreHeader store={store} />
       <div className="border-border mx-auto grid max-w-xl gap-6 border-x pb-6">
         <header className="px-4 pt-6">

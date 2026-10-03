@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import type { StorePage } from '@/lib/shopper/contracts';
 import type { SavedPlan } from '@/lib/shopper/planner/contracts';
 import { showName } from '@/lib/shopper/planner/names';
+import { ViewEvent } from '@/ui/shopper/view-events';
 import { AddListButton } from '@/ui/shopper/add-list-button';
 import { MusicPicker } from './music-picker';
 import { PlanEdits } from './plan-edits';
@@ -36,18 +37,7 @@ export function PlanView({
   const input = plan.solver_snapshot;
   const names = new Map(store.products.map((product) => [product.product_id, product.name]));
   const title = candidate.name ?? showName(candidate, input, names);
-  const items = store.products.flatMap((product) => {
-    const quantity = candidate.cues.filter((cue) => cue.product_id === product.product_id).length;
-    const snapshot = input.products.find((item) => item.product_id === product.product_id);
-    return quantity > 0 && snapshot
-      ? [
-          {
-            product: { ...product, price_minor: snapshot.price_minor, currency: snapshot.currency },
-            quantity,
-          },
-        ]
-      : [];
-  });
+  const items = planItems(store, candidate, input);
   const complete = items.reduce((sum, item) => sum + item.quantity, 0) === candidate.cues.length;
   const shots = useMemo(
     () =>
@@ -64,9 +54,16 @@ export function PlanView({
   );
   return (
     <div className="grid gap-6">
+      <ViewEvent
+        type="plan_pick"
+        store={store.store.id}
+        target={plan.id}
+        revision={`${candidate.id}:${String(candidate.revision)}`}
+      />
       {complete ? (
         <Preview
           title={title}
+          event={{ store: store.store.id, context: { plan_session_id: plan.id } }}
           shots={shots}
           soundtrackUrl={plan.soundtrack?.playback_url ?? undefined}
         />
@@ -115,6 +112,25 @@ export function PlanView({
       </section>
     </div>
   );
+}
+
+function planItems(
+  store: StorePage,
+  candidate: SavedPlan['plan_candidates'][number],
+  input: SavedPlan['solver_snapshot'],
+) {
+  return store.products.flatMap((product) => {
+    const quantity = candidate.cues.filter((cue) => cue.product_id === product.product_id).length;
+    const snapshot = input.products.find((item) => item.product_id === product.product_id);
+    return quantity > 0 && snapshot
+      ? [
+          {
+            product: { ...product, price_minor: snapshot.price_minor, currency: snapshot.currency },
+            quantity,
+          },
+        ]
+      : [];
+  });
 }
 
 function SavePlanList({

@@ -10,7 +10,8 @@ import {
 } from '@showcrafter/fireworks/view';
 import { Button } from '@/ui/primitives/button';
 import { useSoundtrack } from './use-soundtrack';
-import { recordShopperView } from './view-events';
+import { recordShopperEvent } from '@/lib/shopper/events/client';
+import type { ShopperEvent } from '@/lib/shopper/events/contracts';
 
 // QR prototype stage height: 360 CSS px minimum, 64 viewport-height units, 760 CSS px maximum.
 const STAGE_HEIGHT_CLASS = 'h-[clamp(360px,64vh,760px)]';
@@ -72,14 +73,17 @@ export function Preview({
   prop,
   soundtrackUrl,
   soundtrackOffsetMs = 0,
+  event,
 }: {
   shots: readonly Shot[];
   title: string;
   prop?: 'cake';
   soundtrackUrl?: string;
   soundtrackOffsetMs?: number;
+  event?: Pick<ShopperEvent, 'store' | 'context'>;
 }) {
   const { container, viewer, state, error } = usePreview(shots, prop);
+  usePlaybackEvent(state.playing, event);
   const soundtrack = useSoundtrack(
     viewer,
     { url: soundtrackUrl, offsetMs: soundtrackOffsetMs },
@@ -104,7 +108,6 @@ export function Preview({
               variant="secondary"
               disabled={state.duration === 0}
               onClick={() => {
-                if (!state.playing) recordShopperView({ kind: 'show_play', target: title });
                 if (soundtrack.transport.current)
                   soundtrack.transport.current.toggle().catch(console.error);
                 else viewer.current?.toggle();
@@ -142,4 +145,13 @@ export function Preview({
       </div>
     </section>
   );
+}
+
+function usePlaybackEvent(playing: boolean, event?: Pick<ShopperEvent, 'store' | 'context'>) {
+  const previouslyPlaying = useRef(false);
+  useEffect(() => {
+    if (playing && !previouslyPlaying.current && event !== undefined)
+      recordShopperEvent({ ...event, type: 'play', props: {} });
+    previouslyPlaying.current = playing;
+  }, [playing, event]);
 }

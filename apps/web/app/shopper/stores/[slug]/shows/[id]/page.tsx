@@ -8,7 +8,8 @@ import { formatPrice, storePath } from '@/lib/shopper/paths';
 import { Preview } from '@/ui/shopper/preview';
 import { StoreHeader, StoreFooter } from '@/ui/shopper/store-header';
 import { ProductShelf } from '@/ui/shopper/shelves';
-import { ViewEvent } from '@/ui/shopper/view-events';
+import { Suspense } from 'react';
+import { ScanEvent } from '@/ui/shopper/view-events';
 import { Callout } from '@/ui/kit/feedback';
 import { jamendoTrackUrl } from '@/lib/shopper/music/attribution';
 import type { Soundtrack } from '@/lib/shopper/music/contracts';
@@ -27,10 +28,13 @@ export default async function Page({ params }: { params: Promise<{ slug: string;
   );
   return (
     <main className="min-w-0">
-      <ViewEvent kind="show_view" target={id} />
+      <Suspense>
+        <ScanEvent store={store.store.id} />
+      </Suspense>
       <StoreHeader store={store} />
       <Preview
         title={show.name}
+        event={{ store: store.store.id, context: { show_id: id } }}
         shots={showShots(show)}
         soundtrackUrl={show.soundtrack?.playback_url ?? undefined}
         soundtrackOffsetMs={show.soundtrack?.offset_ms}
