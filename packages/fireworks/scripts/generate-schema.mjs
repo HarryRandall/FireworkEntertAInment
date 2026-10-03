@@ -1,3 +1,4 @@
+/** Generates the checked-in Zod schema and TypeScript types from design.v1.json. */
 import { readFile, writeFile } from 'node:fs/promises';
 import { jsonSchemaToZod } from 'json-schema-to-zod';
 import { format } from 'prettier';
@@ -26,7 +27,9 @@ const options = {
 
 // Emit dependencies first, retaining references rather than duplicating their types.
 const emitted = new Set();
-let code = '// Generated from schema/design.v1.json. Run pnpm generate:schema; do not edit.\n';
+let code =
+  '// Generated design-schema validators and public types for renderer input validation.\n' +
+  '// Generated from schema/design.v1.json; run pnpm generate:schema rather than editing this file.\n';
 code += "import { z } from 'zod';\n";
 function emit(name) {
   if (emitted.has(name)) return;

@@ -7908,7 +7908,7 @@
     },
     "comet": {
       "duration_s": 4,
-      "simulation": "reference-only: kind deferred to PR 2.3",
+      "simulation": "reference capture for the ground-kind path",
       "frames": [
         {
           "time_s": 0.5,

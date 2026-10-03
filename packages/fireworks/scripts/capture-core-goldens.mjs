@@ -1,3 +1,4 @@
+/** Captures deterministic reference-frame fixtures from the read-only prototype renderer. */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import vm from 'node:vm';
@@ -24,7 +25,7 @@ vm.runInContext(
   context,
 );
 const ref = context.reference;
-// PR 2.4 supplies sprays/smoke. Capture heads and discrete modifier events only.
+// Capture heads and discrete modifier events only; sprays and smoke are disabled.
 vm.runInContext('spray = () => {}; SETTINGS.smoke = false;', context);
 // The prototype has one core/fade; v1 has one per break. Only the lookup changes.
 vm.runInContext(
@@ -191,7 +192,7 @@ for (const name of ['peony', 'multi-break', 'comet']) {
     duration_s,
     simulation:
       name === 'comet'
-        ? 'reference-only: kind deferred to PR 2.3'
+        ? 'reference capture for the ground-kind path'
         : 'core without modifiers, sprays or smoke',
     frames: [0.5, 1.7, T + 0.03, T + 0.3, T + 0.83, T + 2.3, duration_s].map((t) =>
       frame(d, doc.seed, t),
@@ -222,7 +223,7 @@ for (const tail of [
   doc.launch.tail = tail;
   doc.launch.tilt_deg = 14;
   const d = legacy(doc);
-  // Launch embellishment particles are deferred with sprays/modifiers, but keep the head path.
+  // Capture the launch-head path without its embellishment particles.
   const st = vm.runInContext(`LAUNCH_STYLES['${tail}']`, context);
   delete st.flame;
   delete st.blossoms;

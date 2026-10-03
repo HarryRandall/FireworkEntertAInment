@@ -1,3 +1,4 @@
+/** Shared deterministic designs that cover every runtime kind, pattern and modifier. */
 import { readFileSync } from 'node:fs';
 const read = (name) =>
   JSON.parse(readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url)));
@@ -8,7 +9,9 @@ const defaults = (name) =>
       .filter(([, p]) => 'default' in p)
       .map(([k, p]) => [k, p.default]),
   );
+/** Creates a schema-default modifier document for the requested modifier kind. */
 export const modifier = (kind) => ({ ...defaults('modifier'), kind });
+/** Returns deterministic test cases for supported kinds, looks and modifiers. */
 export function kindCases() {
   const cases = [];
   const add = (name, design, times) => cases.push({ name, design, times });

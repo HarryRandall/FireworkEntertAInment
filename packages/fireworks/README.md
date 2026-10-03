@@ -1,11 +1,10 @@
 # Fireworks design contract
 
-`@showcrafter/fireworks` owns the stored design format. PR 2.1 provides the v1
-JSON Schema, generated Zod validators and TypeScript types, version constants and
-`upgradeDesign(doc, fromVersion)`. PR 2.2 adds the DOM-free shell core. PR 2.2a adds
-stored quick adjustments and their shared resolver. PR 2.3 adds all kind heads, burst
-patterns and layer modifiers. Sprays, WebGL, sound playback, posters and catalogue
-templates arrive in later renderer PRs.
+`@showcrafter/fireworks` owns the stored design format and its deterministic,
+DOM-free particle simulation. It contains the v1 JSON Schema, generated Zod
+validators and TypeScript types, design-version validation, stored quick
+adjustments, duration calculation, and particle generation for shell and ground
+effects.
 
 ```ts
 import { upgradeDesign, type Design, DESIGN_SCHEMA_VERSION } from '@showcrafter/fireworks';
@@ -13,8 +12,8 @@ import { upgradeDesign, type Design, DESIGN_SCHEMA_VERSION } from '@showcrafter/
 const design: Design = upgradeDesign(storedDocument, DESIGN_SCHEMA_VERSION);
 ```
 
-The package root and `./schema` expose the contract; `./sim` exposes the simulation; `./schema/design.v1.json`
-exposes the database schema. `./view` will be introduced with its implementation.
+The package root and `./schema` expose the contract; `./sim` exposes the simulation;
+`./schema/design.v1.json` exposes the database schema.
 
 ## Validation and generation
 
@@ -110,13 +109,14 @@ across the burst by direction, `amount` and `gap`, and producing the dark dip.
 This is one stored format, not a separate renderer model or app converter.
 
 `brightness` is a piecewise linear multiplier curve over normalised life. The
-prototype's constant `head.brightness` is the same value at 0 and 1. The renderer
-will apply the break's `fade` separately: star-specific `white_hot`, warm shift
+prototype's constant `head.brightness` is the same value at 0 and 1. The simulation
+applies the break's `fade` separately: star-specific `white_hot`, warm shift
 from `ember_at`, linear alpha fade from `fade_at`, the final 0.92 wink-out, and
 orange ignition for `prime_s`. Keeping these tunable fade parameters preserves
 the prototype exactly, including its per-star white-hot variation and seconds-based
 ignition, which cannot be baked into one universal gradient. Modifiers then alter
-the per-star brightness and motion. Their execution order is specified in PR 2.3.
+the per-star brightness and motion. Modifiers execute in stored order within their
+defined motion and brightness phases.
 
 ## Prototype field audit
 
@@ -161,18 +161,18 @@ styles. No prototype file or converted preset was copied into this checkout.
 | Root `spinner`; `duration`, `spin`, `wander`, `count`, `sparks`, `colours`                                                 | `ground.spinner`; `duration_s`, `spin_rad_s`, `wander_m`, other names unchanged                                  |
 | Launch-style table fields                                                                                                  | Built-in style tuning selected by `launch.tail`, not a second stored design format                               |
 | `spray` options (`speedDist`, `streak`, `fork`, `glitterDelay`, `alphaAt`, `inherit`, `cluster`, `dir`, `cone`)            | Keep the prototype's internal source maths; expose the design inputs above, no stored callback or particle state |
-| `shot.seed`                                                                                                                | Root default `seed`, with future playback overrides per tube                                                     |
+| `shot.seed`                                                                                                                | Root default `seed`, with optional playback overrides per tube                                                   |
 | `shot.pos`, `t0`, `muzzle`, viewer settings, poster framing, props                                                         | Playback/composition/view inputs outside the effect design                                                       |
 | `DEFAULTS`, `WIND`, global density/lifetime factors                                                                        | Built-in renderer tuning, not authored fields                                                                    |
 | Editor spec seed, envelopes, colours, modifiers, sound                                                                     | Seed; stops and brightness curve; per-layer modifiers; required sound gain block                                 |
-| Editor spec adjectives, calibre, house-rule switches, sequence/product refs, unimplemented shapes, variation distributions | Proposed editor/catalogue features, not read by this renderer; omitted from PR 2.1                               |
+| Editor spec adjectives, calibre, house-rule switches, sequence/product refs, unimplemented shapes, variation distributions | Editor and catalogue concerns not read by this renderer                                                          |
 
-The schema includes the plan's future `split`, `glitter`, `whistle` modifiers and
-pattern names alongside the actual prototype cases. This PR validates their shape;
-it does not implement them. It neither converts all presets (PR 2.10) nor claims
-rendered parity (PRs 2.2 onwards). Database checks using `pg_jsonschema` begin in 3.3.
+The schema accepts `split`, `glitter` and `whistle` modifiers and the supported
+pattern names. The simulation evaluates split child heads and exposes glitter tail
+controls; whistle remains a stored sound cue. The schema is directly usable by
+database validation with `pg_jsonschema`.
 
-## Core simulation (PR 2.2)
+## Simulation
 
 ```ts
 import { simulate, shotDuration, ParticleKind } from '@showcrafter/fireworks/sim';
@@ -186,7 +186,7 @@ fresh, tightly sized `Float32Array`s for `positions` and linear RGB `colours`
 (three components per particle), `sizes`, `alphas`, and a `Uint8Array` of `kinds`.
 Kinds are `ParticleKind.Spark`, `Head`, `Halo` and `Flash`. Sizes retain the
 prototype's shader inputs. Heads already expand into a head quad and optional halo;
-a future view must not expand them again. Sparks come first, followed by quads,
+the consuming view must not expand them again. Sparks come first, followed by quads,
 with the prototype's independent 140,000 point and 24,000 quad caps and 0.004 alpha
 cut-off. Returned arrays share no mutable storage with later calls.
 
@@ -222,12 +222,12 @@ and may outlive the parent. Repeated modifiers compose in array order within eac
 phase. Strobes emit sharp points and glints, with a default zero halo. Crossette
 children use the combined parent path's velocity. Ghost suppresses colour reignition.
 
-Glitter contributes clamped intensity and delayed ignition through `trailControls`,
-a pure integration hook for PR 2.4. It has no independent head particle in the
-prototype. `whistle` is retained for the sound work in 2.8. Trails, sprays and smoke
-are deliberately absent. Fountains therefore show only their single-emitter muzzle
-glow; multi-emitter fountains emit no particles until 2.4. Launch flame, blossoms
-and climb crackle remain deferred. Full rendered visual parity is not claimed.
+Glitter contributes clamped intensity and delayed ignition through `trailControls`.
+It has no independent head particle in the prototype. `whistle` is a stored sound
+cue. The simulation currently outputs heads, flashes and glows rather than trail,
+spray or smoke particles. Fountains therefore output their single-emitter muzzle
+glow; multi-emitter fountains have no particle output. Launch flame, blossoms and
+climb crackle are not part of this particle output.
 
 `shotDuration` already handles all stored kinds and includes break/layer delays,
 varied star lifetimes, trail tails and modifier tail allowances. For multiple
@@ -262,7 +262,8 @@ late burn and end. Tests also cover all launch-head styles and core rings.
 The `kinds` cases cover all nine stored kinds, each modifier, the prototype burst
 patterns, continuous crackle, ground comet patterns and comet pop/split. Inputs are
 small test cases in `tests/kind-cases.mjs`, not catalogue template conversion. Glitter
-and whistle cases prove head parity only; spray/sound behaviour is deferred. Golden
+and whistle cases prove head parity only; their trail and sound outputs are outside
+the particle arrays described here. Golden
 comparisons sample particles and counts at several times, alongside exact scrub,
 placement, seed, adjustment resolution and combined-modifier behaviour tests.
 Float32 comparisons use an absolute tolerance of 0.000001; analytical motion

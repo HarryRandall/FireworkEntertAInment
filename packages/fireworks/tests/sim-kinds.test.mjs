@@ -1,3 +1,4 @@
+/** Golden and behavioural tests for ground kinds and layer modifiers. */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
@@ -95,7 +96,7 @@ test('split and pop events outlive parents and combine on one layer', () => {
   l.head.visible = false;
   assert.ok(simulate(d, time).kinds.length > 0);
 });
-test('planar shapes face the camera; palm and horsetail use the stored sphere/bottom patterns', () => {
+test('planar shapes face the camera; palm and horsetail use their stored sphere/bottom patterns', () => {
   assert.ok(directions(32, 'heart', 11).every((q) => q.z === 0));
   assert.ok(directions(32, 'random', 11).every((q) => q.y > 0));
   assert.ok(directions(32, 'bottom', 11).every((q) => q.y < 0.25));

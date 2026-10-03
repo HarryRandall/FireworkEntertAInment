@@ -1,3 +1,4 @@
+/** Golden and behavioural tests for the DOM-free core shell simulation. */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
