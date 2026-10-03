@@ -1,0 +1,5 @@
+# CPU measurements and PNG crops; FFmpeg/ffprobe are documented system dependencies.
+numpy==2.4.6
+pillow==12.3.0
+ruff==0.16.9
+setuptools==82.0.1
