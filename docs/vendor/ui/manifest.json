@@ -1,0 +1,459 @@
+{
+  "components": [
+    {
+      "provider": "magicui",
+      "name": "animated-gradient-text",
+      "source": "https://magicui.design/r/animated-gradient-text.json",
+      "version": "sha256:7ad5ffebc064485fdfec12b2fc365cfc30fce09518e52301090475c899c4b0e1",
+      "upstreamRevision": "d7207e5692d14c00dceafa8488d6d01f197fa0e4",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/magicui/animated-gradient-text/registry.json",
+      "raw": [
+        "docs/vendor/ui/magicui/animated-gradient-text/0-animated-gradient-text.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/motion.tsx",
+        "apps/web/ui/kit/kit.css"
+      ]
+    },
+    {
+      "provider": "magicui",
+      "name": "blur-fade",
+      "source": "https://magicui.design/r/blur-fade.json",
+      "version": "sha256:5161e38f05b5898ee42892daa9c133688f528b20817bb4c62ae79f68967a88ba",
+      "upstreamRevision": "d7207e5692d14c00dceafa8488d6d01f197fa0e4",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/magicui/blur-fade/registry.json",
+      "raw": [
+        "docs/vendor/ui/magicui/blur-fade/0-blur-fade.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/motion.tsx",
+        "apps/web/ui/kit/kit.css"
+      ]
+    },
+    {
+      "provider": "magicui",
+      "name": "border-beam",
+      "source": "https://magicui.design/r/border-beam.json",
+      "version": "sha256:5ed4f31cf1aa2cf44b03d57058b6bc46ae2b100fef426c9bf7f5ee9663ecf66a",
+      "upstreamRevision": "d7207e5692d14c00dceafa8488d6d01f197fa0e4",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/magicui/border-beam/registry.json",
+      "raw": [
+        "docs/vendor/ui/magicui/border-beam/0-border-beam.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/motion.tsx",
+        "apps/web/ui/kit/kit.css"
+      ]
+    },
+    {
+      "provider": "magicui",
+      "name": "marquee",
+      "source": "https://magicui.design/r/marquee.json",
+      "version": "sha256:6378d12f6ac7b383bcbe25cbfcd21ad567d4726ff9979bf07991598a7bdef1ce",
+      "upstreamRevision": "d7207e5692d14c00dceafa8488d6d01f197fa0e4",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/magicui/marquee/registry.json",
+      "raw": [
+        "docs/vendor/ui/magicui/marquee/0-marquee.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/motion.tsx",
+        "apps/web/ui/kit/kit.css"
+      ]
+    },
+    {
+      "provider": "magicui",
+      "name": "number-ticker",
+      "source": "https://magicui.design/r/number-ticker.json",
+      "version": "sha256:c4808c7218100b218df9ada8e5d1ff21ce99045b41468131534b3d8db61122a7",
+      "upstreamRevision": "d7207e5692d14c00dceafa8488d6d01f197fa0e4",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/magicui/number-ticker/registry.json",
+      "raw": [
+        "docs/vendor/ui/magicui/number-ticker/0-number-ticker.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/number-ticker.tsx"
+      ]
+    },
+    {
+      "provider": "magicui",
+      "name": "shimmer-button",
+      "source": "https://magicui.design/r/shimmer-button.json",
+      "version": "sha256:b545d291f05a00b4cffe8672f2c09d48d310876d626a3f5782085e5a727923ff",
+      "upstreamRevision": "d7207e5692d14c00dceafa8488d6d01f197fa0e4",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/magicui/shimmer-button/registry.json",
+      "raw": [
+        "docs/vendor/ui/magicui/shimmer-button/0-shimmer-button.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/motion.tsx",
+        "apps/web/ui/kit/kit.css"
+      ]
+    },
+    {
+      "provider": "reui",
+      "name": "stepper",
+      "source": "https://reui.io/r/styles/default/stepper.json",
+      "version": "sha256:839d7e7586998eef3325112ea1c30960b7998a79d0e904a21133de8845b455a9",
+      "upstreamRevision": "ef0fe1252d9b24d69bdedee48a69ec9b29d1f217",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/reui/stepper/registry.json",
+      "raw": [
+        "docs/vendor/ui/reui/stepper/0-stepper.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/steps.tsx"
+      ]
+    },
+    {
+      "provider": "reui",
+      "name": "use-file-upload",
+      "source": "https://reui.io/r/styles/default/use-file-upload.json",
+      "version": "sha256:566294f0084d2c0bd7738e868ff6034b897ba4aedbc56d0930e14f23ab4fb6d5",
+      "upstreamRevision": "ef0fe1252d9b24d69bdedee48a69ec9b29d1f217",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/reui/use-file-upload/registry.json",
+      "raw": [
+        "docs/vendor/ui/reui/use-file-upload/0-use-file-upload.ts.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/file-upload.tsx",
+        "apps/web/ui/kit/file-upload-logic.ts"
+      ]
+    },
+    {
+      "provider": "shadcn",
+      "name": "avatar",
+      "source": "https://ui.shadcn.com/r/styles/radix-vega/avatar.json",
+      "version": "sha256:e07271f32690a76c71755da291106d336325b2d7678f5b50dd7bdcfdc9e01e73",
+      "upstreamRevision": "295a1f114a138f23b5dfee0e0c6812394dfeb90c",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/shadcn/avatar/registry.json",
+      "raw": [
+        "docs/vendor/ui/shadcn/avatar/0-avatar.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/avatars.tsx"
+      ]
+    },
+    {
+      "provider": "shadcn",
+      "name": "badge",
+      "source": "https://ui.shadcn.com/r/styles/radix-vega/badge.json",
+      "version": "sha256:4913cf83e8c7a1ba89bbd636fb0730d8ec7fae703ecf0b08a5ca08502e9d63c2",
+      "upstreamRevision": "295a1f114a138f23b5dfee0e0c6812394dfeb90c",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/shadcn/badge/registry.json",
+      "raw": [
+        "docs/vendor/ui/shadcn/badge/0-badge.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/feedback.tsx"
+      ]
+    },
+    {
+      "provider": "shadcn",
+      "name": "button",
+      "source": "https://ui.shadcn.com/r/styles/radix-vega/button.json",
+      "version": "sha256:60478b560fd65cf1bc90506a5b3484142dad269a15c298d7e2c58a3bd82442bb",
+      "upstreamRevision": "295a1f114a138f23b5dfee0e0c6812394dfeb90c",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/shadcn/button/registry.json",
+      "raw": [
+        "docs/vendor/ui/shadcn/button/0-button.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/primitives/button.tsx"
+      ]
+    },
+    {
+      "provider": "shadcn",
+      "name": "checkbox",
+      "source": "https://ui.shadcn.com/r/styles/radix-vega/checkbox.json",
+      "version": "sha256:e98103a036adf511da752427af29fd2b40fe93a77bfa1b14de6d019a04e33a6d",
+      "upstreamRevision": "295a1f114a138f23b5dfee0e0c6812394dfeb90c",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/shadcn/checkbox/registry.json",
+      "raw": [
+        "docs/vendor/ui/shadcn/checkbox/0-checkbox.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/choices.tsx"
+      ]
+    },
+    {
+      "provider": "shadcn",
+      "name": "dialog",
+      "source": "https://ui.shadcn.com/r/styles/radix-vega/dialog.json",
+      "version": "sha256:b243f8fbf8f32ab619fda077086c24c08fb495380476593cf6a1e980d9a966f5",
+      "upstreamRevision": "295a1f114a138f23b5dfee0e0c6812394dfeb90c",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/shadcn/dialog/registry.json",
+      "raw": [
+        "docs/vendor/ui/shadcn/dialog/0-dialog.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/overlays.tsx"
+      ]
+    },
+    {
+      "provider": "shadcn",
+      "name": "dropdown-menu",
+      "source": "https://ui.shadcn.com/r/styles/radix-vega/dropdown-menu.json",
+      "version": "sha256:6705a26ba632f91d9dd5a1c5a07fd5569c502eab1fccb791b8d2a22d48210c57",
+      "upstreamRevision": "295a1f114a138f23b5dfee0e0c6812394dfeb90c",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/shadcn/dropdown-menu/registry.json",
+      "raw": [
+        "docs/vendor/ui/shadcn/dropdown-menu/0-dropdown-menu.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/overlays.tsx"
+      ]
+    },
+    {
+      "provider": "shadcn",
+      "name": "empty",
+      "source": "https://ui.shadcn.com/r/styles/radix-vega/empty.json",
+      "version": "sha256:0a1a9a55bde6789b4fea3493a9f4bd4b90788700361be5cee342ac97dfb6c93b",
+      "upstreamRevision": "295a1f114a138f23b5dfee0e0c6812394dfeb90c",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/shadcn/empty/registry.json",
+      "raw": [
+        "docs/vendor/ui/shadcn/empty/0-empty.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/feedback.tsx"
+      ]
+    },
+    {
+      "provider": "shadcn",
+      "name": "input",
+      "source": "https://ui.shadcn.com/r/styles/radix-vega/input.json",
+      "version": "sha256:44e054a4b0836c2f75656ebe47c3c61679176d1d716e57a3bcbf5012f4adfe63",
+      "upstreamRevision": "295a1f114a138f23b5dfee0e0c6812394dfeb90c",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/shadcn/input/registry.json",
+      "raw": [
+        "docs/vendor/ui/shadcn/input/0-input.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/primitives/input.tsx"
+      ]
+    },
+    {
+      "provider": "shadcn",
+      "name": "input-group",
+      "source": "https://ui.shadcn.com/r/styles/radix-vega/input-group.json",
+      "version": "sha256:1cb50d0c017bb14b7a1ecb9ea13574c32d74b5a734bbd279d4ac5b67a3ba1a52",
+      "upstreamRevision": "295a1f114a138f23b5dfee0e0c6812394dfeb90c",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/shadcn/input-group/registry.json",
+      "raw": [
+        "docs/vendor/ui/shadcn/input-group/0-input-group.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/field.tsx"
+      ]
+    },
+    {
+      "provider": "shadcn",
+      "name": "kbd",
+      "source": "https://ui.shadcn.com/r/styles/radix-vega/kbd.json",
+      "version": "sha256:33edc29e13dbe1214af8556a8e837561cac97698053efd56756bd20a011989bd",
+      "upstreamRevision": "295a1f114a138f23b5dfee0e0c6812394dfeb90c",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/shadcn/kbd/registry.json",
+      "raw": [
+        "docs/vendor/ui/shadcn/kbd/0-kbd.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/shortcuts.tsx"
+      ]
+    },
+    {
+      "provider": "shadcn",
+      "name": "label",
+      "source": "https://ui.shadcn.com/r/styles/radix-vega/label.json",
+      "version": "sha256:9d41facc81283ac770a3a20667bf0e63f03de57e8577653ca4a3681c30ae894a",
+      "upstreamRevision": "295a1f114a138f23b5dfee0e0c6812394dfeb90c",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/shadcn/label/registry.json",
+      "raw": [
+        "docs/vendor/ui/shadcn/label/0-label.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/field.tsx"
+      ]
+    },
+    {
+      "provider": "shadcn",
+      "name": "progress",
+      "source": "https://ui.shadcn.com/r/styles/radix-vega/progress.json",
+      "version": "sha256:70a59538bf32d5ecfa6836402a2db7d956700fedd82c05355bab301a019b1c35",
+      "upstreamRevision": "295a1f114a138f23b5dfee0e0c6812394dfeb90c",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/shadcn/progress/registry.json",
+      "raw": [
+        "docs/vendor/ui/shadcn/progress/0-progress.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/feedback.tsx"
+      ]
+    },
+    {
+      "provider": "shadcn",
+      "name": "radio-group",
+      "source": "https://ui.shadcn.com/r/styles/radix-vega/radio-group.json",
+      "version": "sha256:2e5fc340ba17e48f1fc76880d9fc3099348981ff2a6173fb870f426a4269244f",
+      "upstreamRevision": "295a1f114a138f23b5dfee0e0c6812394dfeb90c",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/shadcn/radio-group/registry.json",
+      "raw": [
+        "docs/vendor/ui/shadcn/radio-group/0-radio-group.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/choices.tsx"
+      ]
+    },
+    {
+      "provider": "shadcn",
+      "name": "native-select",
+      "source": "https://ui.shadcn.com/r/styles/radix-vega/native-select.json",
+      "version": "sha256:67014c4f9d1d7c2f99a4497f2bb60ab2e2b18ee5df2bb59145c48c45aa653a01",
+      "upstreamRevision": "295a1f114a138f23b5dfee0e0c6812394dfeb90c",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/shadcn/native-select/registry.json",
+      "raw": [
+        "docs/vendor/ui/shadcn/native-select/0-native-select.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/primitives/input.tsx"
+      ]
+    },
+    {
+      "provider": "shadcn",
+      "name": "skeleton",
+      "source": "https://ui.shadcn.com/r/styles/radix-vega/skeleton.json",
+      "version": "sha256:a014cb2e0168f8b9bbc88fdb890847029004e8a0ece985c1b7683236f5a16402",
+      "upstreamRevision": "295a1f114a138f23b5dfee0e0c6812394dfeb90c",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/shadcn/skeleton/registry.json",
+      "raw": [
+        "docs/vendor/ui/shadcn/skeleton/0-skeleton.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/feedback.tsx"
+      ]
+    },
+    {
+      "provider": "shadcn",
+      "name": "slider",
+      "source": "https://ui.shadcn.com/r/styles/radix-vega/slider.json",
+      "version": "sha256:1ce22bac3164630a7c626e577676b23a24c576baf78af7fd5c939405645585d5",
+      "upstreamRevision": "295a1f114a138f23b5dfee0e0c6812394dfeb90c",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/shadcn/slider/registry.json",
+      "raw": [
+        "docs/vendor/ui/shadcn/slider/0-slider.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/number-controls.tsx"
+      ]
+    },
+    {
+      "provider": "shadcn",
+      "name": "switch",
+      "source": "https://ui.shadcn.com/r/styles/radix-vega/switch.json",
+      "version": "sha256:8195ae216d4bdffd462d9810fd56682a2419dcdc96d112c0c933aeb6d0eb8ce2",
+      "upstreamRevision": "295a1f114a138f23b5dfee0e0c6812394dfeb90c",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/shadcn/switch/registry.json",
+      "raw": [
+        "docs/vendor/ui/shadcn/switch/0-switch.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/segmented-control.tsx"
+      ]
+    },
+    {
+      "provider": "shadcn",
+      "name": "tabs",
+      "source": "https://ui.shadcn.com/r/styles/radix-vega/tabs.json",
+      "version": "sha256:c26b1276a2c1669c690ea7d7e070e69098e60deba4df51fcd1265b154d6b2786",
+      "upstreamRevision": "295a1f114a138f23b5dfee0e0c6812394dfeb90c",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/shadcn/tabs/registry.json",
+      "raw": [
+        "docs/vendor/ui/shadcn/tabs/0-tabs.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/overlays.tsx"
+      ]
+    },
+    {
+      "provider": "shadcn",
+      "name": "textarea",
+      "source": "https://ui.shadcn.com/r/styles/radix-vega/textarea.json",
+      "version": "sha256:36e39b06b3e3554f8078a7b85cce0399142732e3a1e61e293be4d202313b4974",
+      "upstreamRevision": "295a1f114a138f23b5dfee0e0c6812394dfeb90c",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/shadcn/textarea/registry.json",
+      "raw": [
+        "docs/vendor/ui/shadcn/textarea/0-textarea.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/primitives/input.tsx"
+      ]
+    },
+    {
+      "provider": "shadcn",
+      "name": "toggle-group",
+      "source": "https://ui.shadcn.com/r/styles/radix-vega/toggle-group.json",
+      "version": "sha256:3ff702471b848c9d5f449ce3c46a8aeafb4a68974f0a99aa148b74697792635d",
+      "upstreamRevision": "295a1f114a138f23b5dfee0e0c6812394dfeb90c",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/shadcn/toggle-group/registry.json",
+      "raw": [
+        "docs/vendor/ui/shadcn/toggle-group/0-toggle-group.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/choices.tsx",
+        "apps/web/ui/kit/segmented-control.tsx"
+      ]
+    }
+  ]
+}

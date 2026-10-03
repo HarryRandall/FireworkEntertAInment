@@ -23,3 +23,6 @@ supabase/bootstrap
 # Third-party SQL and licence retain their exact upstream bytes.
 supabase/vendor/basejump/supabase_test_helpers--0.0.6.sql
 supabase/vendor/basejump/LICENSE.md
+
+# Registry evidence is kept byte-for-byte, including source text and licence notices.
+docs/vendor/ui/**

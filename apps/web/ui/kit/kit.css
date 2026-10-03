@@ -1,0 +1,172 @@
+/* Motion durations and distances are visual tuning adapted from Magic UI and the prototype. */
+/* Durations are wall-clock seconds; distances are CSS pixels, chosen for restrained decoration. */
+:root {
+  --sc-shimmer-duration: 3s;
+  --sc-beam-duration: 6s;
+  --sc-marquee-duration: 18s;
+  --sc-gradient-duration: 4s;
+  --sc-reveal-duration: 0.6s;
+  --sc-typing-duration: 1s;
+  --sc-typing-delay: 0.15s;
+  --sc-reveal-blur: 4px;
+  --sc-reveal-offset: 6px;
+  --sc-typing-offset: -3px;
+  --sc-beam-inset: var(--sc-beam-inset);
+  --sc-shimmer-angle: 110deg;
+  --sc-shimmer-start: 30%;
+  --sc-shimmer-end: 70%;
+}
+.sc-shimmer {
+  --shimmer-cycle: var(--sc-shimmer-duration);
+}
+.sc-shimmer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    var(--sc-shimmer-angle),
+    transparent var(--sc-shimmer-start),
+    var(--highlight) 50%,
+    transparent var(--sc-shimmer-end)
+  );
+  transform: translateX(-100%);
+  animation: sc-shimmer var(--shimmer-cycle) linear infinite;
+}
+@keyframes sc-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+.sc-border-beam::before {
+  content: '';
+  position: absolute;
+  inset: -100%;
+  background: conic-gradient(transparent 75%, var(--highlight));
+  animation: sc-beam var(--sc-beam-duration) linear infinite;
+  z-index: -2;
+}
+.sc-border-beam::after {
+  content: '';
+  position: absolute;
+  inset: var(--sc-beam-inset);
+  border-radius: inherit;
+  background: var(--card);
+  z-index: -1;
+}
+@keyframes sc-beam {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.sc-marquee-track {
+  animation: sc-marquee var(--sc-marquee-duration) linear infinite;
+}
+.sc-marquee:hover .sc-marquee-track,
+.sc-marquee:focus-within .sc-marquee-track {
+  animation-play-state: paused;
+}
+@keyframes sc-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+.sc-gradient-text {
+  background: linear-gradient(90deg, var(--primary), var(--info), var(--primary));
+  background-size: 200% 100%;
+  background-clip: text;
+  color: transparent;
+  animation: sc-gradient var(--sc-gradient-duration) linear infinite;
+}
+@keyframes sc-gradient {
+  to {
+    background-position: 200% 0;
+  }
+}
+.sc-blur-fade {
+  animation: sc-reveal var(--sc-reveal-duration) ease-out both;
+}
+@keyframes sc-reveal {
+  from {
+    opacity: 0;
+    filter: blur(var(--sc-reveal-blur));
+    transform: translateY(var(--sc-reveal-offset));
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+.sc-typing-dot {
+  animation: sc-typing var(--sc-typing-duration) infinite;
+}
+.sc-typing-dot:nth-child(2) {
+  animation-delay: var(--sc-typing-delay);
+}
+.sc-typing-dot:nth-child(3) {
+  animation-delay: calc(var(--sc-typing-delay) * 2);
+}
+@keyframes sc-typing {
+  30% {
+    transform: translateY(var(--sc-typing-offset));
+  }
+  0%,
+  60%,
+  100% {
+    opacity: 0.4;
+    transform: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sc-shimmer::before,
+  .sc-border-beam::before,
+  .sc-marquee-track,
+  .sc-gradient-text,
+  .sc-blur-fade,
+  .sc-typing-dot {
+    animation: none;
+  }
+  .sc-shimmer::before,
+  .sc-border-beam::before {
+    display: none;
+  }
+  .sc-marquee-track {
+    width: auto;
+    flex-wrap: wrap;
+  }
+  .sc-marquee-copy {
+    display: none;
+  }
+  .sc-gradient-text {
+    color: var(--primary);
+    background: none;
+  }
+}
+/* Physical formats are the prototype's shelf strip, A6 counter card and A4 poster. */
+@media print {
+  body:has(.sc-print-label) * {
+    visibility: hidden;
+  }
+  .sc-print-label,
+  .sc-print-label * {
+    visibility: visible !important;
+  }
+  .sc-print-label {
+    break-inside: avoid;
+    box-shadow: none;
+    color: black;
+    background: white;
+    print-color-adjust: exact;
+  }
+  .sc-print-label[data-label-size='shelf'] {
+    width: 90mm;
+  }
+  .sc-print-label[data-label-size='card'] {
+    width: 105mm;
+    min-height: 148mm;
+  }
+  .sc-print-label[data-label-size='poster'] {
+    width: 210mm;
+    min-height: 297mm;
+  }
+}

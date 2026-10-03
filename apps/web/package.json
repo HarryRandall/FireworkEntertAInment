@@ -14,15 +14,17 @@
     "lint": "eslint . --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
-    "test": "node --experimental-strip-types --test 'tests/**/*.test.mjs'",
+    "test": "node --import ../../scripts/register-typescript.mjs --test 'tests/**/*.test.mjs'",
     "audit:ui": "node scripts/audit-ui.mjs"
   },
   "dependencies": {
+    "@nivo/line": "0.99.0",
     "@showcrafter/fireworks": "workspace:*",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.57.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "lucide-react": "0.577.0",
     "next": "^16.3.3",
     "next-themes": "^0.4.6",
     "radix-ui": "^1.4.3",
