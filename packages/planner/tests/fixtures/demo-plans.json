@@ -1,0 +1,526 @@
+[
+  {
+    "name": "garden",
+    "answers": {
+      "occasion": "Bonfire Night",
+      "garden": "small",
+      "budget_minor": 15000,
+      "currency": "GBP",
+      "noise": "normal",
+      "looks": ["Gold", "Willow"],
+      "length_min": 4,
+      "soundtrack": null
+    },
+    "expected": {
+      "status": "ok",
+      "input_hash": "1d78fbeb55d2b3072f37191dab777a875ac6ee32499a4e8435b629362e900f4c",
+      "stock_snapshot_hash": "60dc572e3f6adb60136b1567b9b89cf1153014ff80f25bc58f32a31cdb751837",
+      "candidates": [
+        {
+          "rank": 1,
+          "mood": "gentle",
+          "headline_product_id": "70000000-0000-4000-8000-000000000002",
+          "cues": [
+            {
+              "t_ms": 0,
+              "product_id": "70000000-0000-4000-8000-000000000004",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 7560,
+              "product_id": "70000000-0000-4000-8000-000000000004",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 15120,
+              "product_id": "70000000-0000-4000-8000-000000000004",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 22680,
+              "product_id": "70000000-0000-4000-8000-000000000004",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 30240,
+              "product_id": "70000000-0000-4000-8000-000000000001",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 34857,
+              "product_id": "70000000-0000-4000-8000-000000000003",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 41517,
+              "product_id": "70000000-0000-4000-8000-000000000002",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            }
+          ],
+          "duration_ms": 54817,
+          "total_minor": 13997,
+          "currency": "GBP",
+          "scores": {
+            "variety": 1,
+            "pacing": 0.4506306547619047,
+            "budget_use": 0.9331333333333334,
+            "look_match": 0.35714285714285715
+          },
+          "score": 0.6657759672619048
+        },
+        {
+          "rank": 2,
+          "mood": "gentle",
+          "headline_product_id": "70000000-0000-4000-8000-000000000002",
+          "cues": [
+            {
+              "t_ms": 0,
+              "product_id": "70000000-0000-4000-8000-000000000004",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 7560,
+              "product_id": "70000000-0000-4000-8000-000000000004",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 15120,
+              "product_id": "70000000-0000-4000-8000-000000000004",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 22680,
+              "product_id": "70000000-0000-4000-8000-000000000001",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 27297,
+              "product_id": "70000000-0000-4000-8000-000000000003",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 33957,
+              "product_id": "70000000-0000-4000-8000-000000000003",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 40617,
+              "product_id": "70000000-0000-4000-8000-000000000003",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 47277,
+              "product_id": "70000000-0000-4000-8000-000000000002",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            }
+          ],
+          "duration_ms": 60577,
+          "total_minor": 14945,
+          "currency": "GBP",
+          "scores": {
+            "variety": 1,
+            "pacing": 0.46432708333333333,
+            "budget_use": 0.9963333333333333,
+            "look_match": 0.25
+          },
+          "score": 0.6617811458333334
+        },
+        {
+          "rank": 3,
+          "mood": "gentle",
+          "headline_product_id": "70000000-0000-4000-8000-000000000002",
+          "cues": [
+            {
+              "t_ms": 0,
+              "product_id": "70000000-0000-4000-8000-000000000004",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 7560,
+              "product_id": "70000000-0000-4000-8000-000000000001",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 12177,
+              "product_id": "70000000-0000-4000-8000-000000000003",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 18837,
+              "product_id": "70000000-0000-4000-8000-000000000002",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 30807,
+              "product_id": "70000000-0000-4000-8000-000000000002",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            }
+          ],
+          "duration_ms": 44107,
+          "total_minor": 14646,
+          "currency": "GBP",
+          "scores": {
+            "variety": 1,
+            "pacing": 0.4358895833333333,
+            "budget_use": 0.9764,
+            "look_match": 0.3
+          },
+          "score": 0.6578413541666666
+        }
+      ],
+      "exhausted": false
+    }
+  },
+  {
+    "name": "quiet",
+    "answers": {
+      "occasion": "Bonfire Night",
+      "garden": "small",
+      "budget_minor": 10000,
+      "currency": "GBP",
+      "noise": "quiet",
+      "looks": ["Silver"],
+      "length_min": 2,
+      "soundtrack": null
+    },
+    "expected": {
+      "status": "ok",
+      "input_hash": "b2881c194d352f20feb5e88b462575cddf28307d1f0b369fa9d9f13017575dfa",
+      "stock_snapshot_hash": "60dc572e3f6adb60136b1567b9b89cf1153014ff80f25bc58f32a31cdb751837",
+      "candidates": [
+        {
+          "rank": 1,
+          "mood": "gentle",
+          "headline_product_id": "70000000-0000-4000-8000-000000000003",
+          "cues": [
+            {
+              "t_ms": 0,
+              "product_id": "70000000-0000-4000-8000-000000000004",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 7560,
+              "product_id": "70000000-0000-4000-8000-000000000004",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 15120,
+              "product_id": "70000000-0000-4000-8000-000000000004",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 22680,
+              "product_id": "70000000-0000-4000-8000-000000000001",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 27297,
+              "product_id": "70000000-0000-4000-8000-000000000003",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 33957,
+              "product_id": "70000000-0000-4000-8000-000000000003",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 40617,
+              "product_id": "70000000-0000-4000-8000-000000000003",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            }
+          ],
+          "duration_ms": 48017,
+          "total_minor": 9946,
+          "currency": "GBP",
+          "scores": {
+            "variety": 0.75,
+            "pacing": 0.535785119047619,
+            "budget_use": 0.9946,
+            "look_match": 0.8571428571428571
+          },
+          "score": 0.7453733630952382
+        },
+        {
+          "rank": 2,
+          "mood": "gentle",
+          "headline_product_id": "70000000-0000-4000-8000-000000000003",
+          "cues": [
+            {
+              "t_ms": 0,
+              "product_id": "70000000-0000-4000-8000-000000000004",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 7560,
+              "product_id": "70000000-0000-4000-8000-000000000001",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 12177,
+              "product_id": "70000000-0000-4000-8000-000000000003",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 18837,
+              "product_id": "70000000-0000-4000-8000-000000000003",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 25497,
+              "product_id": "70000000-0000-4000-8000-000000000003",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 32157,
+              "product_id": "70000000-0000-4000-8000-000000000003",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 38817,
+              "product_id": "70000000-0000-4000-8000-000000000003",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            }
+          ],
+          "duration_ms": 46217,
+          "total_minor": 9444,
+          "currency": "GBP",
+          "scores": {
+            "variety": 0.75,
+            "pacing": 0.5311422619047619,
+            "budget_use": 0.9444,
+            "look_match": 0.8571428571428571
+          },
+          "score": 0.7337083630952381
+        },
+        {
+          "rank": 3,
+          "mood": "gentle",
+          "headline_product_id": "70000000-0000-4000-8000-000000000003",
+          "cues": [
+            {
+              "t_ms": 0,
+              "product_id": "70000000-0000-4000-8000-000000000004",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 7560,
+              "product_id": "70000000-0000-4000-8000-000000000004",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 15120,
+              "product_id": "70000000-0000-4000-8000-000000000004",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 22680,
+              "product_id": "70000000-0000-4000-8000-000000000004",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 30240,
+              "product_id": "70000000-0000-4000-8000-000000000004",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 37800,
+              "product_id": "70000000-0000-4000-8000-000000000004",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            },
+            {
+              "t_ms": 45360,
+              "product_id": "70000000-0000-4000-8000-000000000003",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            }
+          ],
+          "duration_ms": 52760,
+          "total_minor": 9899,
+          "currency": "GBP",
+          "scores": {
+            "variety": 0.5,
+            "pacing": 0.5512619047619047,
+            "budget_use": 0.9899,
+            "look_match": 1
+          },
+          "score": 0.7159216666666668
+        }
+      ],
+      "exhausted": false
+    }
+  },
+  {
+    "name": "tight_budget",
+    "answers": {
+      "occasion": "Bonfire Night",
+      "garden": "small",
+      "budget_minor": 2000,
+      "currency": "GBP",
+      "noise": "normal",
+      "looks": [],
+      "length_min": 2,
+      "soundtrack": null
+    },
+    "expected": {
+      "status": "ok",
+      "input_hash": "a73c797aee2d98aafbb7873fb4031b75f57001e8b4012d73e18609fbfc2a1d97",
+      "stock_snapshot_hash": "60dc572e3f6adb60136b1567b9b89cf1153014ff80f25bc58f32a31cdb751837",
+      "candidates": [
+        {
+          "rank": 1,
+          "mood": "gentle",
+          "headline_product_id": "70000000-0000-4000-8000-000000000001",
+          "cues": [
+            {
+              "t_ms": 0,
+              "product_id": "70000000-0000-4000-8000-000000000001",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            }
+          ],
+          "duration_ms": 5130,
+          "total_minor": 1999,
+          "currency": "GBP",
+          "scores": {
+            "variety": 0.25,
+            "pacing": 0.26137499999999997,
+            "budget_use": 0.9995,
+            "look_match": 1
+          },
+          "score": 0.5538812500000001
+        },
+        {
+          "rank": 2,
+          "mood": "gentle",
+          "headline_product_id": "70000000-0000-4000-8000-000000000004",
+          "cues": [
+            {
+              "t_ms": 0,
+              "product_id": "70000000-0000-4000-8000-000000000004",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            }
+          ],
+          "duration_ms": 8400,
+          "total_minor": 1450,
+          "currency": "GBP",
+          "scores": {
+            "variety": 0.25,
+            "pacing": 0.265,
+            "budget_use": 0.725,
+            "look_match": 1
+          },
+          "score": 0.5002500000000001
+        },
+        {
+          "rank": 3,
+          "mood": "gentle",
+          "headline_product_id": "70000000-0000-4000-8000-000000000003",
+          "cues": [
+            {
+              "t_ms": 0,
+              "product_id": "70000000-0000-4000-8000-000000000003",
+              "position": 0,
+              "angle_deg": 0,
+              "beat": null
+            }
+          ],
+          "duration_ms": 7400,
+          "total_minor": 1199,
+          "currency": "GBP",
+          "scores": {
+            "variety": 0.25,
+            "pacing": 0.2708333333333333,
+            "budget_use": 0.5995,
+            "look_match": 1
+          },
+          "score": 0.4771916666666667
+        }
+      ],
+      "exhausted": true
+    }
+  }
+]

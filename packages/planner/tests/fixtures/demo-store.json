@@ -1,0 +1,152 @@
+{
+  "answers": {
+    "occasion": "Bonfire Night",
+    "garden": "small",
+    "budget_minor": 15000,
+    "currency": "GBP",
+    "noise": "normal",
+    "looks": ["Gold", "Willow"],
+    "length_min": 4,
+    "soundtrack": null
+  },
+  "store_id": "40000000-0000-4000-8000-000000000001",
+  "market": {
+    "code": "GB",
+    "currency": "GBP",
+    "min_age": 18,
+    "enabled": true
+  },
+  "sale": {
+    "open": true,
+    "evaluated_at": "2026-11-05T12:00:00Z"
+  },
+  "age_confirmation": {
+    "confirmed_at": "2026-11-05T11:59:00Z",
+    "minimum_age": 18
+  },
+  "safety_band": {
+    "market": "GB",
+    "band": "small",
+    "max_distance_m": 8,
+    "allowed_categories": ["F2"]
+  },
+  "products": [
+    {
+      "product_id": "70000000-0000-4000-8000-000000000001",
+      "store_id": "40000000-0000-4000-8000-000000000001",
+      "current_version_id": "70000000-0000-4000-8000-000000001001",
+      "status": "published",
+      "kind": "single",
+      "price_minor": 1999,
+      "currency": "GBP",
+      "stock_qty": 22,
+      "hidden": false,
+      "min_safety_distance_m": 8,
+      "noise_level": 1,
+      "safety_confirmed": true,
+      "has_bangs": false,
+      "has_crackle": false,
+      "has_whistle": false,
+      "duration_ms": 5130,
+      "impact_delay_ms": 1830,
+      "energy": 0.03,
+      "colours": ["red"],
+      "tags": ["shell", "dark", "heart"],
+      "product_market": {
+        "market": "GB",
+        "allowed": true,
+        "legal_category": "F2",
+        "min_age": 18,
+        "confirmed": true
+      }
+    },
+    {
+      "product_id": "70000000-0000-4000-8000-000000000002",
+      "store_id": "40000000-0000-4000-8000-000000000001",
+      "current_version_id": "70000000-0000-4000-8000-000000001002",
+      "status": "published",
+      "kind": "single",
+      "price_minor": 4999,
+      "currency": "GBP",
+      "stock_qty": 6,
+      "hidden": false,
+      "min_safety_distance_m": 8,
+      "noise_level": 1,
+      "safety_confirmed": true,
+      "has_bangs": false,
+      "has_crackle": false,
+      "has_whistle": false,
+      "duration_ms": 13300,
+      "impact_delay_ms": 1800,
+      "energy": 0.06,
+      "colours": ["gold"],
+      "tags": ["shell", "dark", "waterfall"],
+      "product_market": {
+        "market": "GB",
+        "allowed": true,
+        "legal_category": "F2",
+        "min_age": 18,
+        "confirmed": true
+      }
+    },
+    {
+      "product_id": "70000000-0000-4000-8000-000000000003",
+      "store_id": "40000000-0000-4000-8000-000000000001",
+      "current_version_id": "70000000-0000-4000-8000-000000001003",
+      "status": "published",
+      "kind": "fountain",
+      "price_minor": 1199,
+      "currency": "GBP",
+      "stock_qty": 55,
+      "hidden": false,
+      "min_safety_distance_m": 8,
+      "noise_level": 1,
+      "safety_confirmed": true,
+      "has_bangs": false,
+      "has_crackle": false,
+      "has_whistle": false,
+      "duration_ms": 7400,
+      "impact_delay_ms": 0,
+      "energy": 0.03,
+      "colours": ["silver"],
+      "tags": ["fountain"],
+      "product_market": {
+        "market": "GB",
+        "allowed": true,
+        "legal_category": "F2",
+        "min_age": 18,
+        "confirmed": true
+      }
+    },
+    {
+      "product_id": "70000000-0000-4000-8000-000000000004",
+      "store_id": "40000000-0000-4000-8000-000000000001",
+      "current_version_id": "70000000-0000-4000-8000-000000001004",
+      "status": "published",
+      "kind": "wheel",
+      "price_minor": 1450,
+      "currency": "GBP",
+      "stock_qty": 18,
+      "hidden": false,
+      "min_safety_distance_m": 8,
+      "noise_level": 1,
+      "safety_confirmed": true,
+      "has_bangs": false,
+      "has_crackle": false,
+      "has_whistle": false,
+      "duration_ms": 8400,
+      "impact_delay_ms": 0,
+      "energy": 0.01,
+      "colours": ["gold", "silver"],
+      "tags": ["wheel"],
+      "product_market": {
+        "market": "GB",
+        "allowed": true,
+        "legal_category": "F2",
+        "min_age": 18,
+        "confirmed": true
+      }
+    }
+  ],
+  "music": null
+}
