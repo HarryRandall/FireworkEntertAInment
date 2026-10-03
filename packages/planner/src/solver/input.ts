@@ -98,6 +98,8 @@ export const plannerInputSchema = z
       .strict(),
     products: z.array(plannerProductSchema),
     music: musicAnalysisSchema.nullable(),
+    // An edit can require a pacing mood; omitted inputs retain the general ranked search.
+    preferred_mood: z.enum(['gentle', 'balanced', 'big_finale']).optional(),
   })
   .strict()
   .superRefine((input, context) => {

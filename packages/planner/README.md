@@ -150,6 +150,10 @@ illustrative projection facts, not queried database summaries. These tests prove
 solver behaviour against a fixed demo input, not live database adapter correctness.
 Golden cases cover a garden show, a quiet silver preference and a tight budget.
 
-No app adapter, UI, persistence, credit charging, edits or naming is implemented
-here. No browser, hosted database, deployment or physical-firework verification is
+The optional `preferred_mood` snapshot field limits the search to one requested
+pacing mood and participates in the input hash. Omitted inputs retain the general
+ranked search and existing golden results. The shopper edit boundary uses this
+for an explicit finale request.
+
+No app adapter, UI, persistence, credit charging or naming is implemented here. No browser, hosted database, deployment or physical-firework verification is
 claimed. The music producer contract is unchanged.
