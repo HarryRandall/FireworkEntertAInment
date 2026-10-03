@@ -27,7 +27,9 @@ export async function proxy(request: NextRequest) {
   } = await client.auth.getUser();
   if (error && error.name !== 'AuthSessionMissingError') throw error;
   const shopper =
-    request.nextUrl.pathname === '/shopper' || request.nextUrl.pathname.startsWith('/shopper/');
+    request.nextUrl.pathname === '/shopper' ||
+    request.nextUrl.pathname.startsWith('/shopper/') ||
+    request.nextUrl.pathname.startsWith('/q/');
   if (!user && shopper && request.method === 'GET') {
     const result = await client.auth.signInAnonymously();
     if (result.error) throw result.error;
@@ -43,5 +45,6 @@ export const config = {
     '/supplier/:path*',
     '/account/:path*',
     '/shopper/:path*',
+    '/q/:path*',
   ],
 };
