@@ -19,6 +19,8 @@ const files = [
   '32_imports.sql',
   '40_range.sql',
   '50_shows_qr.sql',
+  '60_shoppers.sql',
+  '70_music.sql',
 ];
 const schemaSources = {
   design: 'packages/fireworks/schema/design.v1.json',

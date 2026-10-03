@@ -16,7 +16,7 @@ health_timeout = "2m"
 
 [db.migrations]
 enabled = true
-schema_paths = ["./schemas/00_extensions.sql", "./schemas/01_private_helpers.sql", "./schemas/10_markets.sql", "./schemas/20_people.sql", "./schemas/30_fireworks.sql", "./schemas/31_catalogue.sql", "./schemas/32_imports.sql", "./schemas/40_range.sql", "./schemas/50_shows_qr.sql"]
+schema_paths = ["./schemas/00_extensions.sql", "./schemas/01_private_helpers.sql", "./schemas/10_markets.sql", "./schemas/20_people.sql", "./schemas/30_fireworks.sql", "./schemas/31_catalogue.sql", "./schemas/32_imports.sql", "./schemas/40_range.sql", "./schemas/50_shows_qr.sql", "./schemas/60_shoppers.sql", "./schemas/70_music.sql"]
 
 [db.seed]
 enabled = false

@@ -29,6 +29,8 @@ function fixture(t) {
     '20_people.sql',
     '32_imports.sql',
     '40_range.sql',
+    '60_shoppers.sql',
+    '70_music.sql',
   ]) {
     writeFileSync(join(root, 'supabase/schemas', file), '-- fixture domain\n');
   }
