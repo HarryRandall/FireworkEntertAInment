@@ -1,0 +1,7 @@
+{
+  "src/timing/impact-clock.ts": {
+    "@typescript-eslint/no-magic-numbers": {
+      "count": 2
+    }
+  }
+}
