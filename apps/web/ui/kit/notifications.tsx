@@ -13,17 +13,17 @@ export interface NotificationItem {
 }
 /** Lists notifications and delegates read state to the caller. */
 export function NotificationsInbox({
+  label = 'Notifications',
   items,
   onRead,
 }: {
+  /** Distinguishes this landmark when several inboxes appear on one page. */
+  label?: string;
   items: readonly NotificationItem[];
   onRead: (id: string) => void;
 }) {
   return (
-    <section
-      aria-label="Notifications"
-      className="border-border bg-card overflow-hidden rounded-lg border"
-    >
+    <section aria-label={label} className="border-border bg-card overflow-hidden rounded-lg border">
       <header className="border-border flex items-center gap-2 border-b p-4">
         <Bell className="size-4" />
         <h3 className="text-sm font-semibold">Notifications</h3>

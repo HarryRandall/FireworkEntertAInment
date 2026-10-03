@@ -89,12 +89,14 @@ export function WorkspaceExamples() {
       >
         <div className="grid gap-5 sm:grid-cols-2">
           <NotificationsInbox
+            label="Recent notifications"
             items={inbox}
             onRead={(id) => {
               setInbox(inbox.map((item) => (item.id === id ? { ...item, unread: false } : item)));
             }}
           />
           <NotificationsInbox
+            label="Empty notifications inbox"
             items={[]}
             onRead={() => {
               /* Empty state has no read actions. */
