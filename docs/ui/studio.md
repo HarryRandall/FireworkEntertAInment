@@ -21,12 +21,12 @@ the break index and layer ID. Core flashes and rising sources are also selectabl
 Collapse and preview visibility are browser state, not authored design changes.
 Reset preview visibility is available in the shell's editor actions menu.
 
-The inspector uses the existing Radix tabs in launch order: Launch, Burst, Stars,
-Trail, Effect. Fountain, tourbillon, wheel and spinner designs get one Ground panel.
-Comet, candle and rocket designs retain the airborne tabs. Settings sections are
-explicit placeholders. Star-group naming is the small authored edit supported here.
-A focus-to-blur naming gesture commits one undo step. No renderer values are converted
-into a second editor format. Numeric inspector controls are not implemented.
+The inspector uses Radix tabs in launch order: Launch, Burst, Stars, Trail, Effect.
+Fountain, tourbillon, wheel and spinner designs get one Ground panel. The selected
+layer header retains its colour swatch, name, kind and section menu. Each section
+renders the stored-document controls described in [Studio inspector](studio-inspector.md).
+Naming and numeric gestures share the same history. No renderer values are converted
+into a second editor format.
 
 All authored changes pass through one immutable document reducer. It supports bounded
 undo/redo and begin/replace/commit/cancel gestures. Undo and redo restore entire
@@ -57,8 +57,19 @@ The stage owns one renderer Viewer. Design edits update it with the current came
 retained; unmount disposes the subscription and renderer resources. The floating
 transport offers play/pause, restart and scrub. Renderer reduced-motion behaviour is
 retained. WebGL startup failures are visible and do not prevent naming or saving.
-Panels stack below the stage at the shell's 980 px breakpoint; the phone stage has a
-320 px visual minimum.
+The shell's editor header contains the Catalogue breadcrumb, draft/save status,
+change count, centred Design/Compare/Reference switch, undo/redo, Checks popover,
+Versions, Review and publish and overflow actions. Save, poster retry and preview
+visibility reset remain in the overflow. Checks use one live measurement shared
+with the pinned sidebar budget.
+
+Desktop Studio fills the remaining viewport with independently scrolling side
+panels and no page scroll. The prototype's left/right widths are 264/320 CSS px;
+they narrow to 220/280 px for smaller desktops, retaining three columns at 1000 px.
+Variations is a compact, internally scrolling thumbnail dock below the stage.
+Below 900 px the stage comes first, with an internally scrolling panel sheet below
+it. Its Layers and Library/Inspector navigation keeps both panel states mounted.
+The side panels retain their existing tabs and internally scrolling controls.
 
 Logic tests cover history, grouped gestures, immutable naming, repeated IDs across
 breaks, preview visibility, serial acknowledgements, undo during save, failures,
@@ -68,3 +79,11 @@ failed-save retry, non-admin refusal, ground playback, light/dark, desktop/390 p
 axe and overflow. They capture full-frame and per-section screenshots under
 `output/playwright/studio-*.png` for composer execution and owner review. These paths
 are planned captures, not evidence that screenshots have been taken.
+
+The layout journeys in `tests/browser/studio.spec.ts` cover 1440, 1000 and 390 CSS px
+in both themes: non-overlapping stage/sidebar/inspector bounds, horizontal overflow,
+desktop page-scroll containment and rendered controls in every inspector tab.
+Whole viewport captures are planned at
+`output/playwright/studio-layout-{1440|1000|390}-{light|dark}.png`.
+The composer must run these journeys and compare the images with the prototype;
+local code checks do not verify rendered appearance.

@@ -146,11 +146,13 @@ for (const [size, viewport] of Object.entries(viewports)) {
           }
         }, oldUrl),
       ).toBe(true);
+      await page.getByRole('button', { name: 'Checks', exact: true }).click();
       await expect(page.locator('[data-particle-check]')).toHaveAttribute(
         'data-particle-check',
         'passed',
       );
       await capture(page, info, `checks-${size}-${theme}`, '.sc-studio-checks');
+      await page.getByRole('button', { name: 'Close checks', exact: true }).click();
       await capture(page, info, `compare-layers-${size}-${theme}`, '.sc-studio-layers');
       for (const label of ['Launch', 'Burst', 'Stars', 'Trail', 'Effect']) {
         await tab(page, label);
@@ -196,6 +198,7 @@ test('unpublished comparison is empty and a stored over-budget draft cannot publ
   await page.getByRole('slider', { name: 'Length', exact: true }).press('End');
   await page.getByRole('slider', { name: 'Density', exact: true }).press('End');
   await saved(page);
+  await page.getByRole('button', { name: 'Checks', exact: true }).click();
   await expect(page.locator('[data-particle-check]')).toHaveAttribute(
     'data-particle-check',
     'blocked',

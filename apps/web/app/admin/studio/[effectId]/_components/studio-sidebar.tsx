@@ -1,6 +1,6 @@
 /** Layers and Library share the existing editor side panel. */
 'use client';
-import { useState, type Dispatch } from 'react';
+import { useState, type Dispatch, type ReactNode } from 'react';
 import { Tabs } from 'radix-ui';
 import type { Design } from '@showcrafter/fireworks';
 import type { SavedPart } from '@/lib/studio/library';
@@ -11,6 +11,7 @@ import { StudioLibrary } from './studio-library';
 
 /** Keeps preview-only layer visibility separate from the authored Library edits. */
 export function StudioSidebar({
+  footer,
   document,
   selected,
   editable,
@@ -22,6 +23,7 @@ export function StudioSidebar({
   onVisibilityChange,
   onExpandedChange,
 }: {
+  footer: ReactNode;
   document: Design;
   selected: string;
   editable: boolean;
@@ -36,7 +38,7 @@ export function StudioSidebar({
   const [parts, setParts] = useState(initialParts);
   return (
     <div className="sc-studio-layers bg-card">
-      <Tabs.Root defaultValue="layers">
+      <Tabs.Root defaultValue="layers" className="sc-studio-sidebar-tabs">
         <Tabs.List aria-label="Studio sidebar" className="mb-3 flex gap-3 border-b">
           <Tabs.Trigger
             value="layers"
@@ -79,6 +81,7 @@ export function StudioSidebar({
           />
         </Tabs.Content>
       </Tabs.Root>
+      {footer}
     </div>
   );
 }

@@ -1,6 +1,5 @@
 /** Paired renderer and local video previews follow the draft's shared transport. */
 'use client';
-import { useState } from 'react';
 import { ComparePreview } from './compare-preview';
 import { ReferenceVideo } from './reference-video';
 import type { Design } from '@showcrafter/fireworks';
@@ -15,13 +14,14 @@ export function StudioStage({
   hidden,
   listenerDistanceM,
   published,
+  mode,
 }: {
+  mode: string;
   published: { document: Design; number: number } | null;
   document: Design;
   hidden: boolean;
   listenerDistanceM: number | null;
 }) {
-  const [mode, setMode] = useState('design');
   const { container, viewer, failure, clock } = useStudioViewer(
     document,
     hidden,
@@ -29,7 +29,6 @@ export function StudioStage({
   );
   return (
     <section aria-label="Stage" className="sc-studio-stage bg-stage text-stage-foreground">
-      <StageModes mode={mode} onChange={setMode} />
       <div className={`sc-studio-previews ${mode === 'design' ? '' : 'sc-studio-previews-two'}`}>
         {mode === 'compare' &&
           (published ? (
@@ -98,7 +97,8 @@ export function StudioStage({
   );
 }
 
-function StageModes({ mode, onChange }: { mode: string; onChange: (mode: string) => void }) {
+/** Selects the shared preview mode from the editor header without changing draft history. */
+export function StageModes({ mode, onChange }: { mode: string; onChange: (mode: string) => void }) {
   return (
     <div role="group" aria-label="Stage mode" className="sc-studio-modes">
       {['design', 'compare', 'reference'].map((value) => (

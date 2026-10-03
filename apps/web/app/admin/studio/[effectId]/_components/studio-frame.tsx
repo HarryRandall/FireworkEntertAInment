@@ -13,6 +13,8 @@ export function StudioFrame({
   onResetVisibility,
   onHistory,
   historyBusy,
+  posterRetry,
+  header,
   children,
 }: {
   title: string;
@@ -23,6 +25,8 @@ export function StudioFrame({
   onResetVisibility: () => void;
   onHistory: () => void;
   historyBusy: boolean;
+  posterRetry: { onSelect: () => void; disabled: boolean } | null;
+  header: { status: ReactNode; centre: ReactNode; controls: ReactNode };
   children: ReactNode;
 }) {
   return (
@@ -31,11 +35,15 @@ export function StudioFrame({
       identity={identity}
       editorFrame={{
         title,
+        breadcrumb: { label: 'Catalogue', href: '/admin/catalogue' },
+        ...header,
         onSave: save,
         saving,
         saveDisabled,
         actions: [
+          { label: 'Save', onSelect: save, disabled: saving || saveDisabled },
           { label: 'Version history', onSelect: onHistory, disabled: historyBusy },
+          ...(posterRetry === null ? [] : [{ label: 'Retry posters', ...posterRetry }]),
           { label: 'Reset preview visibility', onSelect: onResetVisibility },
         ],
       }}

@@ -1,8 +1,12 @@
 /** Chronological inspector controls edit one validated v1 document through the shared reducer. */
 'use client';
-import type { Dispatch } from 'react';
+import { MoreHorizontal } from 'lucide-react';
+import { ActionMenu } from '@/ui/kit/overlays';
+import { Button } from '@/ui/primitives/button';
+import { gradientCss } from '@/ui/kit/editor-maths';
+import { useState, type Dispatch } from 'react';
 import type { Design } from '@showcrafter/fireworks';
-import { Tabs } from '@/ui/kit/overlays';
+import { Tabs } from 'radix-ui';
 import { Input } from '@/ui/primitives/input';
 import { isGroundEffect } from '@/lib/studio/layers';
 import { useInspector } from './use-inspector';
@@ -39,52 +43,61 @@ export function StudioInspector({
     editable,
     dispatch,
   );
+  const [section, setSection] = useState({ selection: '', value: '' });
+  const selectionKey = `${selected}:${effective.kind}`;
   const items = inspectorItems(context, layerContext);
   const defaultValue = defaultSection(effective, selected);
   return (
     <section aria-label="Inspector" className="sc-studio-inspector bg-card">
-      <h2 className="mb-3 font-semibold">Inspector</h2>
+      <h2 className="sr-only">Inspector</h2>
       <InspectorGestures dispatch={dispatch}>
-        {layerContext && (
-          <label className="mb-4 grid gap-2 text-sm">
-            Star group name
-            <Input
-              aria-label="Star group name"
-              value={layerContext.layer.name}
-              disabled={!editable}
-              maxLength={MAX_LAYER_NAME_LENGTH}
-              onChange={(event) => {
-                layerContext.changeLayer((target) => {
-                  target.name = event.target.value;
-                });
-              }}
-            />
-            <span className="text-muted-foreground">
-              Star group in Break {(selection?.breakIndex ?? 0) + 1}
-            </span>
-          </label>
-        )}
-        {selected === 'launch' && (
-          <p className="text-muted-foreground mb-4 text-sm">From the tube to the break</p>
-        )}
-        <Tabs
-          key={`${selected}:${effective.kind}`}
-          defaultValue={defaultValue}
-          items={items.map((item) => ({
-            ...item,
-            content: (
-              <div>
-                <h3 className="mb-2 font-medium">{item.label} settings</h3>
-                {item.content}
-              </div>
-            ),
+        <InspectorHeader
+          layerContext={layerContext}
+          selected={selected}
+          kind={effective.kind}
+          breakIndex={selection?.breakIndex ?? 0}
+          editable={editable}
+          actions={items.map((item) => ({
+            label: `${item.label} settings`,
+            onSelect: () => {
+              setSection({ selection: selectionKey, value: item.value });
+            },
           }))}
         />
-        <SoundInspector
-          {...context}
-          listenerDistanceM={listenerDistanceM}
-          onListenerDistanceChange={onListenerDistanceChange}
-        />
+        <div className="sc-studio-inspector-body">
+          {selected === 'launch' && (
+            <p className="text-muted-foreground mb-4 text-sm">From the tube to the break</p>
+          )}
+          <Tabs.Root
+            value={section.selection === selectionKey ? section.value : defaultValue}
+            onValueChange={(value) => {
+              setSection({ selection: selectionKey, value });
+            }}
+          >
+            <Tabs.List aria-label="Sections" className="sc-studio-inspector-tabs">
+              {items.map((item) => (
+                <Tabs.Trigger key={item.value} value={item.value} data-section={item.value}>
+                  {item.label}
+                </Tabs.Trigger>
+              ))}
+            </Tabs.List>
+            {items.map((item) => (
+              <Tabs.Content
+                key={item.value}
+                value={item.value}
+                className="sc-studio-inspector-content"
+              >
+                <h3 className="sr-only">{item.label} settings</h3>
+                {item.content}
+              </Tabs.Content>
+            ))}
+          </Tabs.Root>
+          <SoundInspector
+            {...context}
+            listenerDistanceM={listenerDistanceM}
+            onListenerDistanceChange={onListenerDistanceChange}
+          />
+        </div>
       </InspectorGestures>
       {failure !== '' && (
         <p role="alert" className="text-destructive text-sm">
@@ -115,4 +128,59 @@ function inspectorItems(context: InspectorContext, layer: LayerContext | null) {
     { value: 'Trail', label: 'Trail', content: layer ? <TrailInspector {...layer} /> : noLayer },
     { value: 'Effect', label: 'Effect', content: layer ? <EffectInspector {...layer} /> : noLayer },
   ];
+}
+
+function InspectorHeader({
+  layerContext,
+  selected,
+  kind,
+  breakIndex,
+  editable,
+  actions,
+}: {
+  layerContext: LayerContext | null;
+  selected: string;
+  kind: string;
+  breakIndex: number;
+  editable: boolean;
+  actions: Parameters<typeof ActionMenu>[0]['actions'];
+}) {
+  return (
+    <header className="sc-studio-inspector-header">
+      <span
+        aria-hidden="true"
+        className="sc-studio-layer-swatch"
+        style={layerContext ? { background: gradientCss(layerContext.layer.colour, 1) } : undefined}
+      />
+      {layerContext ? (
+        <label className="min-w-0 flex-1 text-sm">
+          <span className="sr-only">Star group name</span>
+          <Input
+            aria-label="Star group name"
+            value={layerContext.layer.name}
+            disabled={!editable}
+            maxLength={MAX_LAYER_NAME_LENGTH}
+            onChange={(event) => {
+              layerContext.changeLayer((target) => {
+                target.name = event.target.value;
+              });
+            }}
+          />
+          <span className="text-muted-foreground">Star group in Break {breakIndex + 1}</span>
+        </label>
+      ) : (
+        <span className="min-w-0 flex-1 font-semibold">
+          {selected === 'launch' ? 'Launch' : kind}
+        </span>
+      )}
+      <ActionMenu
+        trigger={
+          <Button variant="ghost" size="icon-sm" aria-label="Layer actions">
+            <MoreHorizontal />
+          </Button>
+        }
+        actions={actions}
+      />
+    </header>
+  );
 }

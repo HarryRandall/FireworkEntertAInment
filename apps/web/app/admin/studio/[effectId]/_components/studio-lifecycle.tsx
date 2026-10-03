@@ -1,4 +1,4 @@
-/** Publish actions, history preview banners and missing-poster retries sit above authored panels. */
+/** Publication and version history share the editor header. */
 import type { Design } from '@showcrafter/fireworks';
 import type { CatalogueUsage } from '@/lib/catalogue/types';
 import type { useVersionHistory } from './use-version-history';
@@ -7,7 +7,7 @@ import { PublishReview } from './publish-review';
 import { VersionHistory } from './version-history';
 import type { useStudioLifecycle } from './use-studio-lifecycle';
 
-/** Presents lifecycle failures separately from successful publication and unfinished posters. */
+/** Keeps publication failures and read-only history previews visible in the editor header. */
 export function StudioLifecycle({
   state,
   document,
@@ -15,7 +15,6 @@ export function StudioLifecycle({
   title,
   number,
   editable,
-  missingPosters,
   versions,
   usage,
   currentId,
@@ -26,13 +25,12 @@ export function StudioLifecycle({
   title: string;
   number: number;
   editable: boolean;
-  missingPosters: boolean;
   versions: ReturnType<typeof useVersionHistory>;
   usage: CatalogueUsage[];
   currentId: string;
 }) {
   return (
-    <section aria-label="Publication and history" className="border-border grid gap-3 border-b p-4">
+    <section aria-label="Publication and history" className="sc-studio-lifecycle">
       {editable && !state.preview && (
         <div className="flex flex-wrap gap-2">
           <PublishReview
@@ -50,14 +48,6 @@ export function StudioLifecycle({
       {state.message !== '' && <p role="status">{state.message}</p>}
       {versions.error !== '' && <p role="alert">{versions.error}</p>}
       {state.error !== '' && <p role="alert">{state.error}</p>}
-      {missingPosters && (
-        <div className="flex flex-wrap items-center gap-2">
-          <p>Published version posters are missing or stale.</p>
-          <Button variant="outline" disabled={!editable || state.busy} onClick={state.retry}>
-            Retry posters
-          </Button>
-        </div>
-      )}
       {state.preview && (
         <div
           className="bg-accent text-accent-foreground flex flex-wrap items-center gap-2 rounded-lg p-3"
