@@ -258,10 +258,20 @@ importers:
         version: 5.9.3
 
   packages/planner:
+    dependencies:
+      zod:
+        specifier: 3.25.76
+        version: 3.25.76
     devDependencies:
       eslint:
         specifier: 9.39.4
         version: 9.39.4
+      json-schema-to-zod:
+        specifier: 2.6.1
+        version: 2.6.1
+      prettier:
+        specifier: 3.8.3
+        version: 3.8.3
       typescript:
         specifier: 5.9.3
         version: 5.9.3

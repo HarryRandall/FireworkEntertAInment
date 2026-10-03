@@ -297,7 +297,8 @@ handler map such as `music_analyse` or `video_analyse`, add their source modules
 pinned dependencies to the supplied image, and expose the returned app from their
 own module. The shared package is added to the image automatically. The default is
 a Python 3.11 Debian image. No feature handlers are registered by this layout alone.
-The existing music analyser deployment is unchanged.
+The music analyser registers its `music_analyse` handler through this layout.
+Local changes do not replace the live deployment.
 
 The wake endpoint requires Modal proxy authentication and accepts no job kinds,
 payloads or Supabase credentials. It asynchronously spawns a drain and returns its
@@ -334,3 +335,119 @@ Deployment, live proxy-auth behaviour, container scale-to-zero, provider/compute
 billing and the complete app-to-worker loop require separate owner-run verification.
 During the rebuild use local Supabase only; do not configure a hosted secret or
 deploy this layout.
+
+## Shared music analysis
+
+The music worker claims `music_analyse` jobs using the shared runtime and writes
+results to Supabase directly. There are no per-user leases, warmth controls,
+callbacks, queued dispatch endpoint or Modal reconciliation schedule. Run it
+locally without Modal:
+
+```bash
+python3 -m venv services/music-analyser/.venv
+services/music-analyser/.venv/bin/python -m pip install -r services/music-analyser/requirements.txt -r services/workers/requirements.txt -r services/worker-common/requirements.txt -e services/worker-common
+pnpm test:analyser
+pnpm test:analyser:contract
+pnpm test:analyser:local
+```
+
+The local integration command gets credentials internally from local Supabase
+status. It inserts a uniquely identified Jamendo track and queue jobs, substitutes
+the committed CC0 click fixture for the provider download, runs real librosa and
+Storage API writes, verifies stored bytes/features and repeat-job reuse, and
+cleans up only its own rows and object. It also checks failed jobs, rejected result writes after completion, and REST
+denial for public callers and signed-in shoppers. No test contacts Jamendo or downloads real audio.
+CI runs this command in the database job. Local Python supports 3.11 or newer;
+CI and the Modal image use Python 3.11. Dependency pins shared with the Modal
+layout agree so the combined install does not replace Pydantic with another pin.
+
+The enqueue payload is exactly:
+
+```json
+{ "track_id": "<shared music_tracks UUID>", "audio_url": "<Jamendo HTTPS audio URL>" }
+```
+
+The backend must first create or reuse a `music_tracks` row by
+`(provider, provider_track_id)`, with `provider = 'jamendo'` and a positive provider
+metadata duration. Shopper identities and preferences do not belong in this job.
+The worker uses the balanced analyser output for everyone. A unique active-job
+index on the UUID in the payload permits only one queued, running or failed job
+per track. On an enqueue uniqueness conflict, read and reuse that active job;
+do not change its lease. Completed/dead jobs do not prevent an intentional new
+request. A current `librosa-1.4.0` result with installed audio and waveform peaks
+is reused without a download or second analysis. A crashed attempt before result
+installation can recompute; a retry after installation reuses the durable result.
+
+Downloads require an explicit comma-separated `ANALYSER_ALLOWED_AUDIO_HOSTS`
+allowlist, HTTPS on port 443, no URL credentials and same-host redirects. Configure
+the exact trusted Jamendo hosts supplied by the backend integration; no wildcard
+Supabase host allowance remains. Tests allow their synthetic hosts explicitly.
+The existing 50 MiB and 30-second download bounds remain. Audio is stored privately
+at `audio/<track UUID>/<audio SHA-256>`, with MIME derived from decoded container
+format. Track waveform data is up to 256 normalised absolute-amplitude peaks.
+Analysis clocks stay in seconds; database duration is rounded to milliseconds.
+
+`install_music_result` locks and checks the music job's current worker, attempt
+and unexpired lease, then atomically installs media metadata, the immutable
+analysis/current pointer and duration, BPM and waveform. Storage upload is outside
+that transaction. Failed or interrupted attempts can leave an unreferenced
+content-addressed object; automatic orphan cleanup is not installed. Repeated
+uploads use the same object path. The shared `complete_job`/`fail_job` path records
+attempt duration and provider spend (zero for this offline algorithm), with null
+compute cost until actual infrastructure billing is available. Database read,
+result-write and storage failures stay visible and are not interpreted as cache
+misses. Existing pinned show analyses are preserved.
+
+### Music contract
+
+The producer Pydantic model owns the analysis structure. To refresh the planner's
+checked-in JSON Schema and generated Zod validator after an intentional change:
+
+```bash
+services/music-analyser/.venv/bin/python services/music-analyser/export_schema.py > packages/planner/schema/music-analysis.v1.json
+pnpm exec prettier --write packages/planner/schema/music-analysis.v1.json
+pnpm --filter @showcrafter/planner generate:music-schema
+```
+
+Python tests compare the checked-in JSON Schema with the producer. Planner checks
+verify generated Zod output and test the same fixture/mutations. The dedicated
+cross-language CI job sends both the shared fixture and actual synthetic-audio
+producer output through the public `musicAnalysisSchema`, including timeline,
+section, anchor and bar-grid invariants beyond JSON Schema's structural checks.
+These checks are included in `pnpm check`; the local acceptance command requires
+a separately running local database.
+
+### Music Modal layout and app hook
+
+`services/music-analyser/modal_app.py` exposes `showcrafter-music`, a finite drain
+and a proxy-authenticated wake endpoint, using the shared scale-to-zero defaults.
+The image installs pinned analyser/worker dependencies, FFmpeg and libsndfile,
+and packages the analyser and handler sources. The `showcrafter-workers` secret
+must contain the backend Supabase settings above and
+`ANALYSER_ALLOWED_AUDIO_HOSTS`. No Jamendo API search key is required by the worker;
+the backend supplies the already selected audio URL. Retire the old callback,
+analyser-auth and warmth secrets only when the owner replaces the live deployment.
+No Modal deploy, secret creation or hosted connection is part of local setup.
+
+The app hook for PR 6.5 remains documented because that app is not built in this
+lane: enqueue or reuse the track's job, wake after the queue transaction commits,
+read `jobs` status and `music_analyses` by shared track, validate with the planner's
+music schema, then re-solve with its beat/downbeat clock and pin the selected
+analysis UUID when saving a show. Wake delivery and delayed retry/crash recovery
+need the trusted dispatcher described above. The complete shopper loop, planner
+re-solving, actual Jamendo delivery, live Modal proxy authentication, scale-to-zero
+and actual Modal cost are not verified by these local tests. The neural beat
+tracker and evaluation upgrade are outside this change.
+
+### Local database permission-call limitation
+
+The local PostgreSQL image terminated with signal 11 when a revoked
+`install_music_result` RPC was called directly as `anon`, both inside pgTAP's
+`throws_ok` and through plain `psql`. Changing the public wrapper from SQL to
+PL/pgSQL did not resolve that image behaviour. The server recovered automatically.
+The suite therefore checks the actual function grants in SQL and denial through
+the REST API for public and signed-in shoppers, while retaining SQL
+behaviour checks for valid workers, stale/expired attempts and atomic rollback.
+Direct SQL permission-error behaviour remains unverified beyond this observed
+crash. No grant was widened, no check threshold was lowered, and the local image
+was not replaced. Hosted behaviour has not been tested.

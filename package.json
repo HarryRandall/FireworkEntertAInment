@@ -18,8 +18,8 @@
     "audit:ui": "pnpm --filter @showcrafter/web audit:ui",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm format:check && pnpm db:seeds --check && pnpm db:validators --check && pnpm db:documents --check && pnpm db:duration-fixtures --check && pnpm test:workers && pnpm test:lint-rules && pnpm test:database-tooling && pnpm test:packages && pnpm knip && pnpm --filter @showcrafter/web check && pnpm test:browser",
-    "test:analyser": "services/music-analyser/.venv/bin/python -m unittest discover -s services/music-analyser/tests -p '*test*.py'",
+    "check": "pnpm format:check && pnpm db:seeds --check && pnpm db:validators --check && pnpm db:documents --check && pnpm db:duration-fixtures --check && pnpm test:workers && pnpm test:analyser && pnpm test:analyser:contract && pnpm test:lint-rules && pnpm test:database-tooling && pnpm test:packages && pnpm knip && pnpm --filter @showcrafter/web check && pnpm test:browser",
+    "test:analyser": "services/music-analyser/.venv/bin/ruff check services/music-analyser && services/music-analyser/.venv/bin/python -m unittest discover -s services/music-analyser/tests -p \"test_*.py\"",
     "db:start": "node scripts/database/local.mjs start",
     "db:stop": "node scripts/database/local.mjs stop",
     "db:status": "node scripts/database/local.mjs status",
@@ -39,7 +39,9 @@
     "db:seeds": "node --import ./scripts/register-typescript.mjs scripts/database/seeds.mjs",
     "db:validators": "node scripts/database/validators.mjs",
     "test:workers": "services/worker-common/.venv/bin/ruff check services/worker-common services/workers && services/worker-common/.venv/bin/ruff format --check services/worker-common services/workers && services/worker-common/.venv/bin/python -m unittest discover -s services/worker-common/tests -p \"test_*.py\"",
-    "test:workers:local": "node scripts/database/worker-runtime.integration.mjs"
+    "test:workers:local": "node scripts/database/worker-runtime.integration.mjs",
+    "test:analyser:contract": "SHOWCRAFTER_RUN_CROSS_LANGUAGE_CONTRACT=1 services/music-analyser/.venv/bin/python services/music-analyser/tests/test_schema_validation.py",
+    "test:analyser:local": "node scripts/database/music-analyser.integration.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.11.1",
