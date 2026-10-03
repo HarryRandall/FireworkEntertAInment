@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import {
-  simulate,
+  simulate as simulateAll,
   shotDuration,
   ParticleKind,
   launchPos,
@@ -15,10 +15,14 @@ import {
   brightnessAt,
   upgradeDesign,
 } from '../src/index.ts';
+import { fillCore } from '../src/sim/core.ts';
+import { ParticleWriter } from '../src/sim/particles.ts';
 import { fadeAlpha } from '../src/sim/fade.ts';
 
 const fixture = (name) =>
   upgradeDesign(JSON.parse(readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url))), 1);
+const simulate = (d, t, options = {}) =>
+  simulateAll(d, t, { ...options, sprays: false, smoke: false, launchEffects: false });
 const golden = JSON.parse(readFileSync(new URL('./fixtures/core-goldens.json', import.meta.url)));
 const close = (actual, expected, tolerance = 1e-6) =>
   assert.ok(Math.abs(actual - expected) <= tolerance, `${actual} != ${expected}`);
@@ -232,4 +236,32 @@ test('zero seed follows the reference fallback and override takes precedence', (
   assert.deepEqual(simulate(d, 3), simulate(d, 3, { seed: 1 }));
   d.seed = 12;
   assert.deepEqual(simulate(d, 3, { seed: 0 }), simulate(d, 3, { seed: 1 }));
+});
+
+// Sample before, at and after the 40 ms growth boundary to cover both flash envelopes.
+const CORE_FLASH_SAMPLE_TIMES_S = [0.02, 0.04, 0.1];
+// Prototype main flash size for peony: capped radius 14 times authored flash 1.
+const CORE_FLASH_BASE_SIZE = 14;
+// Prototype growth rises from 0.6 to 1.0 over 40 ms, distinct from the early glow.
+const CORE_FLASH_MIN_FACTOR = 0.6;
+const CORE_FLASH_GROWTH_FACTOR = 0.4;
+const CORE_FLASH_GROWTH_S = 0.04;
+// Float32 particle-size comparison tolerance in renderer units.
+const CORE_FLASH_SIZE_TOLERANCE = 1e-6;
+test('main core flash retains its own growth envelope beside the early glow', () => {
+  const d = fixture('peony');
+  const b = d.breaks[0];
+  for (const age of CORE_FLASH_SAMPLE_TIMES_S) {
+    const writer = new ParticleWriter(false, false, false);
+    fillCore(writer, b.core, b.layers[0], d.seed, 0, age, [0, 0, 0]);
+    const frame = writer.finish();
+    const flash = frame.kinds.findIndex((kind) => kind === ParticleKind.Flash);
+    assert.ok(flash >= 0);
+    close(
+      frame.sizes[flash],
+      CORE_FLASH_BASE_SIZE *
+        (CORE_FLASH_MIN_FACTOR + CORE_FLASH_GROWTH_FACTOR * Math.min(1, age / CORE_FLASH_GROWTH_S)),
+      CORE_FLASH_SIZE_TOLERANCE,
+    );
+  }
 });

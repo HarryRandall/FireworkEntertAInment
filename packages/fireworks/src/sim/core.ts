@@ -18,6 +18,8 @@ const FLASH_INTENSITY_MAX = 1.5;
 const FLASH_ENVELOPE_ALPHA = 0.2;
 const FLASH_SIZE_RISE_S = 0.04;
 const FLASH_SIZE_MIN = 0.6;
+// Prototype main flash growth, dimensionless size multiplier; distinct from the early glow.
+const FLASH_SIZE_RANGE = 0.4;
 const FLASH_INTENSITY_ALPHA_MAX = 2.2;
 const FLASH_EARLY_GLOW_S = 0.08;
 const FLASH_GLOW_EASE_EXPONENT = 0.65;
@@ -69,7 +71,7 @@ export function fillCore(
       rgb('#ffe2b8'),
       Math.min(R * FLASH_SIZE_RADIUS_SCALE, FLASH_SIZE_MAX_PX) *
         Math.min(FLASH_INTENSITY_MAX, core.flash) *
-        (FLASH_SIZE_MIN + FLASH_GLOW_SIZE_RANGE * Math.min(1, age / FLASH_SIZE_RISE_S)),
+        (FLASH_SIZE_MIN + FLASH_SIZE_RANGE * Math.min(1, age / FLASH_SIZE_RISE_S)),
       FLASH_ENVELOPE_ALPHA * env * Math.min(FLASH_INTENSITY_ALPHA_MAX, core.flash),
     );
     if (age < FLASH_EARLY_GLOW_S) {

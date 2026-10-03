@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import {
-  simulate,
+  simulate as simulateAll,
   upgradeDesign,
   resolveDesign,
   shotDuration,
@@ -11,6 +11,8 @@ import {
   directions,
 } from '../src/index.ts';
 import { kindCases, modifier } from './kind-cases.mjs';
+const simulate = (d, t, options = {}) =>
+  simulateAll(d, t, { ...options, sprays: false, smoke: false, launchEffects: false });
 const golden = JSON.parse(readFileSync(new URL('./fixtures/core-goldens.json', import.meta.url)));
 const row = (p, i) => [
   p.kinds[i],
