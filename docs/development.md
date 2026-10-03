@@ -436,14 +436,50 @@ the backend supplies the already selected audio URL. Retire the old callback,
 analyser-auth and warmth secrets only when the owner replaces the live deployment.
 No Modal deploy, secret creation or hosted connection is part of local setup.
 
-The app hook for PR 6.5 remains documented because that app is not built in this
-lane: enqueue or reuse the track's job, wake after the queue transaction commits,
-read `jobs` status and `music_analyses` by shared track, validate with the planner's
-music schema, then re-solve with its beat/downbeat clock and pin the selected
-analysis UUID when saving a show. Wake delivery and delayed retry/crash recovery
-need the trusted dispatcher described above. The complete shopper loop, planner
-re-solving, actual Jamendo delivery, live Modal proxy authentication, scale-to-zero
-and actual Modal cost are not verified by these local tests. The neural tracker and its independent evaluation are described below.
+### Shopper music search and playback
+
+Set `JAMENDO_CLIENT_ID` in the ignored `apps/web/.env.local` file to enable
+Jamendo search. This is a server-only credential, never a `NEXT_PUBLIC_` variable.
+Without it the planner shows "Music search is not configured" and remains usable
+without music. No shopper uploads are accepted.
+
+`/api/shopper/music` uses a provider interface with validated synthetic-response
+tests. Search and track lookups share a bounded, process-local cache: up to 100
+entries for five minutes, including requests in flight. Failed responses are evicted.
+The browser sends a provider track ID; the server fetches its metadata again before
+importing it. Only the server may call `import_shopper_track` and `persist_plan_music`.
+Imports reuse `(provider, provider_track_id)`, keep `commercial_use = false` and enqueue
+at most one active `music_analyse` job when no current analysis exists. Withdrawn
+tracks stay unavailable. The worker payload remains `track_id` plus `audio_url`.
+
+Allowed provider audio hosts are `prod-1.storage.jamendo.com`,
+`prod-2.storage.jamendo.com` and `storage.jamendo.com`. Configure those exact hosts
+in the worker's `ANALYSER_ALLOWED_AUDIO_HOSTS` before processing provider jobs.
+No search or audio download was made during implementation. Real provider delivery
+and commercial licensing remain unverified.
+
+Plans use normal pacing while analysis is pending. The page polls availability every
+five seconds, tries one automatic retime per candidate revision and offers a manual
+"Check analysis" retry. Replanning reads current stock and retains prior budget,
+noise, swap and finale constraints. It never charges another planning credit.
+Candidates pin their track and analysis UUIDs; subsequent alternatives and edits
+retain those features. The existing `save_show` boundary accepts the pinned analysis
+when saving a show version. The list/save interface remains separate work.
+
+Playback uses one audio clock for play, pause, seek, buffering and cleanup. Private
+stored audio receives a one-hour signed URL only after an owned plan or visible-show
+RPC succeeds. Pending tracks use the validated provider audio URL. Show versions
+retain their own analysis pin and audio offset, so reanalysis cannot move their cues.
+Positive offsets trim into the audio; negative offsets leave a silent introduction.
+Attribution and the Creative Commons licence link appear next to the track.
+
+The local `music` browser journeys use mocked provider routes and synthetic audio,
+including 390 px and desktop, light and dark, axe and per-section screenshots under
+`output/playwright/music-*.png`. They must be run by the composer where Chromium is
+available. Local unit and database tests do not prove browser audio synchronisation,
+actual Jamendo delivery, live Modal dispatch, scale-to-zero or actual Modal cost.
+Wake delivery and delayed retry/crash recovery still use the trusted dispatcher
+above. The neural tracker and its independent evaluation are described below.
 
 ### Local database permission-call limitation
 
