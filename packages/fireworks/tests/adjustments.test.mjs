@@ -1,11 +1,10 @@
 /** Integration checks for pure stored-design adjustment resolution. */
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { ADJUSTMENT_REGISTRY, designSchema, resolveDesign, simulate } from '../src/index.ts';
+import { reviewFixtureDesign } from '../src/fixtures/index.ts';
 
-const fixture = (name) =>
-  JSON.parse(readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url)));
+const fixture = reviewFixtureDesign;
 const shell = fixture('peony');
 
 test('quick adjustment levels are stored, bounded and reject unknown keys', () => {

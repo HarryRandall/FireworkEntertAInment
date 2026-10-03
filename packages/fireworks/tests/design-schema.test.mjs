@@ -11,12 +11,12 @@ import {
   DESIGN_SCHEMA_VERSION,
   RENDERER_VERSION,
 } from '../src/index.ts';
+import { reviewFixtureDesign } from '../src/fixtures/index.ts';
 
 const schema = JSON.parse(readFileSync(new URL('../schema/design.v1.json', import.meta.url)));
 const ajv = new Ajv({ allErrors: true, strict: true });
 const validate = ajv.compile(schema);
-const fixture = (name) =>
-  JSON.parse(readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url)));
+const fixture = reviewFixtureDesign;
 const peony = fixture('peony');
 
 for (const name of ['peony', 'comet', 'multi-break']) {

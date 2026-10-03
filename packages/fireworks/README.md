@@ -13,7 +13,9 @@ const design: Design = upgradeDesign(storedDocument, DESIGN_SCHEMA_VERSION);
 ```
 
 The package root and `./schema` expose the contract; `./sim` exposes the simulation;
-`./schema/design.v1.json` exposes the database schema.
+`./view` exposes the WebGL renderer; `./fixtures` exposes the three validated renderer
+review fixtures; `./schema/design.v1.json` exposes the database schema. Consumers must
+import fixtures through `@showcrafter/fireworks/fixtures`, never from the test tree.
 
 ## Validation and generation
 

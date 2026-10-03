@@ -1,7 +1,7 @@
 /** Shared deterministic designs that cover every runtime kind, pattern and modifier. */
 import { readFileSync } from 'node:fs';
-const read = (name) =>
-  JSON.parse(readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url)));
+import { reviewFixtureDesign } from '../src/fixtures/index.ts';
+const read = reviewFixtureDesign;
 const schema = JSON.parse(readFileSync(new URL('../schema/design.v1.json', import.meta.url)));
 const defaults = (name) =>
   Object.fromEntries(

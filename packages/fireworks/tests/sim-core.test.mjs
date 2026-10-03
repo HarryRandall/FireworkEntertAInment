@@ -13,14 +13,13 @@ import {
   rgb,
   colourAt,
   brightnessAt,
-  upgradeDesign,
 } from '../src/index.ts';
 import { fillCore } from '../src/sim/core.ts';
+import { reviewFixtureDesign } from '../src/fixtures/index.ts';
 import { ParticleWriter } from '../src/sim/particles.ts';
 import { fadeAlpha } from '../src/sim/fade.ts';
 
-const fixture = (name) =>
-  upgradeDesign(JSON.parse(readFileSync(new URL(`./fixtures/${name}.json`, import.meta.url))), 1);
+const fixture = reviewFixtureDesign;
 const simulate = (d, t, options = {}) =>
   simulateAll(d, t, { ...options, sprays: false, smoke: false, launchEffects: false });
 const golden = JSON.parse(readFileSync(new URL('./fixtures/core-goldens.json', import.meta.url)));

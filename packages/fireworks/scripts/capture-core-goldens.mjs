@@ -221,7 +221,7 @@ function frame(d, seed, t) {
 const fixtures = {};
 for (const name of ['peony', 'multi-break', 'comet']) {
   const doc = JSON.parse(
-    readFileSync(new URL(`../tests/fixtures/${name}.json`, import.meta.url), 'utf8'),
+    readFileSync(new URL(`../src/fixtures/${name}.json`, import.meta.url), 'utf8'),
   );
   const d = legacy(doc);
   const duration_s = ref.shotDuration(d);
@@ -243,7 +243,7 @@ for (const name of ['peony', 'multi-break', 'comet']) {
 }
 const cases = [];
 const peony = JSON.parse(
-  readFileSync(new URL('../tests/fixtures/peony.json', import.meta.url), 'utf8'),
+  readFileSync(new URL('../src/fixtures/peony.json', import.meta.url), 'utf8'),
 );
 for (const tail of [
   'gold',
