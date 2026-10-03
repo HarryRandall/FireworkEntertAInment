@@ -1,14 +1,9 @@
 'use client';
 
-/**
- * ThemePreferenceSync — invisible client component mounted inside
- * AppShell/AdminShell that applies the user's stored theme preference
- * (from `users.theme_preference`) on first load. Skips when a
- * local override already exists in `localStorage.theme`.
- */
 import { useEffect } from 'react';
 import { useTheme } from 'next-themes';
-import type { ThemePreference } from '@/lib/access/types';
+
+export type ThemePreference = 'light' | 'dark' | 'system';
 
 export function ThemePreferenceSync({
   themePreference,
@@ -18,8 +13,7 @@ export function ThemePreferenceSync({
   const { setTheme } = useTheme();
 
   useEffect(() => {
-    if (!themePreference) return;
-    if (window.localStorage.getItem('theme')) return;
+    if (!themePreference || window.localStorage.getItem('theme')) return;
     setTheme(themePreference);
   }, [setTheme, themePreference]);
 

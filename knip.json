@@ -5,34 +5,41 @@
       "entry": ["scripts/**/*.{js,mjs,ts}"]
     },
     "apps/web": {
-      "entry": ["tests/**/*.mjs", "scripts/**/*.mjs"],
+      "entry": ["scripts/**/*.mjs"],
       "project": ["**/*.{ts,tsx}"],
-      "ignore": [
-        "ui/primitives/**",
-        "lib/database.types.ts",
-        "lib/firework-import/reconstruction.ts",
-        "lib/firework-import/render-metrics.ts",
-        "lib/firework-import/reconstruction-shot.ts",
-        "ui/replay/FireworkReplayCanvas.tsx",
-        "app/internal/import-render/ImportRenderHarness.tsx"
-      ],
-      "ignoreDependencies": ["server-only", "tailwindcss", "tw-animate-css", "shadcn"]
+      "ignore": ["ui/primitives/**"],
+      "ignoreDependencies": [
+        "class-variance-authority",
+        "clsx",
+        "cmdk",
+        "lucide-react",
+        "radix-ui",
+        "recharts",
+        "sonner",
+        "tailwind-merge",
+        "tailwindcss",
+        "tw-animate-css",
+        "shadcn"
+      ]
     },
     "packages/*": {
       "entry": ["tests/**/*.mjs", "src/**/*.ts"],
       "project": ["src/**/*.ts"]
     }
   },
+  "ignoreUnresolved": ["../../apps/web/lib/firework-import/reconstruction.ts"],
   "ignoreIssues": {
-    "apps/web/lib/admin/editor-snapshots.ts": ["exports"],
-    "apps/web/lib/admin/prompts.server.ts": ["exports"],
-    "apps/web/lib/admin/roles.server.ts": ["exports"],
-    "apps/web/lib/ai-credits.server.ts": ["exports", "types"],
-    "apps/web/lib/cue-generation/schemas.ts": ["exports"],
-    "apps/web/lib/cue-overlap.server.ts": ["exports"],
-    "apps/web/lib/firework-preview-image.ts": ["exports", "types"],
-    "apps/web/ui/shows/ShowSummaryCards.tsx": ["exports"],
-    "apps/web/lib/admin/multishot-constraints.ts": ["duplicates"],
-    "apps/web/lib/firework-import/jobs.ts": ["exports"]
+    "apps/web/hooks/use-mobile.ts": ["files"],
+    "apps/web/hooks/use-prefers-reduced-motion.ts": ["files"],
+    "apps/web/lib/supabase/client.ts": ["files"],
+    "apps/web/lib/supabase/errors.ts": ["files"],
+    "apps/web/lib/supabase/fetch.ts": ["files"],
+    "apps/web/lib/supabase/public-server.ts": ["files"],
+    "apps/web/lib/supabase/server-client.ts": ["files"],
+    "apps/web/lib/supabase/server.ts": ["files"],
+    "apps/web/lib/supabase/service-role.ts": ["files"],
+    "apps/web/lib/utils.ts": ["files"],
+    "apps/web/lib/supabase/env.ts": ["exports"],
+    "apps/web/ui/theme/ThemePreferenceSync.tsx": ["files"]
   }
 }

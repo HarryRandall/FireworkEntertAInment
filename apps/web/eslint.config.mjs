@@ -15,14 +15,10 @@ const eslintConfig = [
   },
   {
     files: ['app/**/*.{ts,tsx}', 'ui/**/*.{ts,tsx}'],
-    // The replay canvas is fingerprinted renderer source; migrate it with the
-    // next renderer contract change.
-    ignores: ['ui/replay/FireworkReplayCanvas.tsx'],
-    rules: { 'architecture/legacy-colours': 'error' },
-  },
-  {
-    files: ['ui/patterns/**/*.{ts,tsx}', 'ui/shell/**/*.{ts,tsx}'],
-    rules: { 'architecture/semantic-colours': 'error' },
+    rules: {
+      'architecture/legacy-colours': 'error',
+      'architecture/semantic-colours': 'error',
+    },
   },
   {
     rules: {
