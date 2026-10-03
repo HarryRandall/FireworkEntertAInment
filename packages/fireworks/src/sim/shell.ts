@@ -1,4 +1,4 @@
-import type { Design } from '../schema/index';
+import { resolveDesign, type Design } from '../schema/index';
 import { brightnessAt, colourAt, mix, rgb, type Vec3 } from './colour';
 import { fillCore } from './core';
 import { directions } from './directions';
@@ -18,6 +18,7 @@ export function simulate(
   time_s: number,
   options: SimulationOptions = {},
 ): Particles {
+  design = resolveDesign(design);
   if (design.kind !== 'shell')
     throw new RangeError(`Kind ${design.kind} is not implemented in the core simulation`);
   if (!Number.isFinite(time_s)) throw new RangeError('Simulation time must be finite');

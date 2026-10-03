@@ -36,7 +36,12 @@ function emit(name) {
     for (const value of Object.values(node)) visit(value);
   }
   visit(definitions[name]);
-  code += `export const ${name}Schema = ${jsonSchemaToZod(definitions[name], options)};\n`;
+  const generated = jsonSchemaToZod(definitions[name], options);
+  const propertyNamePattern = definitions[name].propertyNames?.pattern;
+  const validator = propertyNamePattern
+    ? `(${generated}).refine((value) => Object.keys(value).every((key) => new RegExp(${JSON.stringify(propertyNamePattern)}).test(key)), { message: 'Unknown adjustment key' })`
+    : generated;
+  code += `export const ${name}Schema = ${validator};\n`;
   emitted.add(name);
 }
 for (const name of names) emit(name);

@@ -170,6 +170,17 @@ export const launchSchema = z
     smoke: z.number().gte(0).lte(4),
   })
   .strict();
+export const adjustmentsSchema = z
+  .record(z.number().int().gte(-3).lte(3))
+  .refine(
+    (value) =>
+      Object.keys(value).every((key) =>
+        new RegExp(
+          '^(launch\\.(height|tail|climb)|break\\.(flash|core_ring)|ground\\.(height|count|fan|climb|star_size|spin|duration|density|spray)|layer\\.[A-Za-z0-9][A-Za-z0-9_-]*\\.(size|stars|brightness|burn|droop|spread|star_size|trail\\.(length|density|spray|glitter)|modifier\\.(amount|timing)))$',
+        ).test(key),
+      ),
+    { message: 'Unknown adjustment key' },
+  );
 export const soundSchema = z
   .object({
     lift: z.number().gte(0).lte(1),
@@ -266,6 +277,7 @@ export const designSchema = z.discriminatedUnion('kind', [
   z
     .object({
       kind: z.literal('shell'),
+      adjustments: adjustmentsSchema.optional(),
       launch: launchSchema,
       breaks: z.array(breakSchema).min(1).max(64),
       ground: z.null(),
@@ -276,6 +288,7 @@ export const designSchema = z.discriminatedUnion('kind', [
   z
     .object({
       kind: z.literal('mine'),
+      adjustments: adjustmentsSchema.optional(),
       launch: launchSchema,
       breaks: z.array(breakSchema).min(1).max(64),
       ground: z.null(),
@@ -286,6 +299,7 @@ export const designSchema = z.discriminatedUnion('kind', [
   z
     .object({
       kind: z.literal('rocket'),
+      adjustments: adjustmentsSchema.optional(),
       launch: launchSchema,
       breaks: z.array(breakSchema).min(1).max(64),
       ground: z.null(),
@@ -296,6 +310,7 @@ export const designSchema = z.discriminatedUnion('kind', [
   z
     .object({
       kind: z.literal('comet'),
+      adjustments: adjustmentsSchema.optional(),
       launch: z.null(),
       breaks: z.array(breakSchema).min(0).max(0),
       ground: z.object({ kind: z.literal('comet'), comets: cometsSchema }).strict(),
@@ -306,6 +321,7 @@ export const designSchema = z.discriminatedUnion('kind', [
   z
     .object({
       kind: z.literal('candle'),
+      adjustments: adjustmentsSchema.optional(),
       launch: z.null(),
       breaks: z.array(breakSchema).min(0).max(0),
       ground: z.object({ kind: z.literal('candle'), comets: cometsSchema }).strict(),
@@ -316,6 +332,7 @@ export const designSchema = z.discriminatedUnion('kind', [
   z
     .object({
       kind: z.literal('fountain'),
+      adjustments: adjustmentsSchema.optional(),
       launch: z.null(),
       breaks: z.array(breakSchema).min(0).max(0),
       ground: z.object({ kind: z.literal('fountain'), fountain: fountainSchema }).strict(),
@@ -326,6 +343,7 @@ export const designSchema = z.discriminatedUnion('kind', [
   z
     .object({
       kind: z.literal('tourbillon'),
+      adjustments: adjustmentsSchema.optional(),
       launch: z.null(),
       breaks: z.array(breakSchema).min(0).max(0),
       ground: z.object({ kind: z.literal('tourbillon'), tourbillon: tourbillonSchema }).strict(),
@@ -336,6 +354,7 @@ export const designSchema = z.discriminatedUnion('kind', [
   z
     .object({
       kind: z.literal('wheel'),
+      adjustments: adjustmentsSchema.optional(),
       launch: z.null(),
       breaks: z.array(breakSchema).min(0).max(0),
       ground: z.object({ kind: z.literal('wheel'), wheel: wheelSchema }).strict(),
@@ -346,6 +365,7 @@ export const designSchema = z.discriminatedUnion('kind', [
   z
     .object({
       kind: z.literal('spinner'),
+      adjustments: adjustmentsSchema.optional(),
       launch: z.null(),
       breaks: z.array(breakSchema).min(0).max(0),
       ground: z.object({ kind: z.literal('spinner'), spinner: spinnerSchema }).strict(),
@@ -371,6 +391,7 @@ export type Core = z.infer<typeof coreSchema>;
 export type Fade = z.infer<typeof fadeSchema>;
 export type Break = z.infer<typeof breakSchema>;
 export type Launch = z.infer<typeof launchSchema>;
+export type Adjustments = z.infer<typeof adjustmentsSchema>;
 export type Sound = z.infer<typeof soundSchema>;
 export type Split = z.infer<typeof splitSchema>;
 export type Comets = z.infer<typeof cometsSchema>;
