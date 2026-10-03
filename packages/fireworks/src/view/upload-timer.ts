@@ -2,6 +2,7 @@
 /** Wraps synchronous buffer/texture upload calls only while a profiled scene draw runs. */
 export class UploadTimer {
   elapsedMs = 0;
+  allocations = 0;
   /** Receives the owned WebGL2 context; ordinary playback never installs these wrappers. */
   constructor(private readonly gl: WebGL2RenderingContext) {}
   /** Measures CPU time inside upload APIs, restoring original methods even when drawing fails. */
@@ -16,11 +17,12 @@ export class UploadTimer {
     ] as const;
     const descriptors = keys.map((key) => Object.getOwnPropertyDescriptor(gl, key));
     this.elapsedMs = 0;
-    gl.bufferData = this.wrap(gl.bufferData.bind(gl));
+    this.allocations = 0;
+    gl.bufferData = this.wrap(gl.bufferData.bind(gl), true);
     gl.bufferSubData = this.wrap(gl.bufferSubData.bind(gl));
-    gl.texImage2D = this.wrap(gl.texImage2D.bind(gl));
+    gl.texImage2D = this.wrap(gl.texImage2D.bind(gl), true);
     gl.texSubImage2D = this.wrap(gl.texSubImage2D.bind(gl));
-    gl.texStorage2D = this.wrap(gl.texStorage2D.bind(gl));
+    gl.texStorage2D = this.wrap(gl.texStorage2D.bind(gl), true);
     try {
       draw();
     } finally {
@@ -31,9 +33,10 @@ export class UploadTimer {
       });
     }
   }
-  private wrap<T extends (...args: never[]) => void>(method: T): T {
+  private wrap<T extends (...args: never[]) => void>(method: T, allocates = false): T {
     return new Proxy(method, {
       apply: (target, receiver, args): undefined => {
+        if (allocates) this.allocations++;
         const start = performance.now();
         try {
           Reflect.apply(target, receiver, args);

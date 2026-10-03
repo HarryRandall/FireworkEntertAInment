@@ -13,6 +13,7 @@ export interface FrameProfile {
   sprayMs: number;
   packingMs: number;
   uploadSubmitMs: number;
+  storageAllocations: number;
   drawSubmitMs: number;
   outputSubmitMs: number;
   drawGpuMs: number | null;
@@ -59,6 +60,7 @@ export class FrameProfiler {
       sprayMs: 0,
       packingMs: 0,
       uploadSubmitMs: 0,
+      storageAllocations: 0,
       drawSubmitMs: 0,
       outputSubmitMs: 0,
       drawGpuMs: null,
@@ -90,6 +92,7 @@ export class FrameProfiler {
       if (this.result) {
         if (phase === 'draw') {
           this.result.uploadSubmitMs = this.uploads.elapsedMs;
+          this.result.storageAllocations = this.uploads.allocations;
           this.result.drawSubmitMs = Math.max(0, elapsed - this.uploads.elapsedMs);
         } else this.result.outputSubmitMs = elapsed;
       }
