@@ -46,7 +46,9 @@ class JobTests(unittest.TestCase):
         client = Mock()
         client.request.return_value = {"status": "interpreting"}
         with patch("video_jobs.download", side_effect=AssertionError("unexpected download")):
-            self.assertTrue(VideoHandler(client)(self.job, Usage())["reused"])
+            result = VideoHandler(client)(self.job, Usage())
+            self.assertTrue(result["reused"])
+            self.assertEqual(result["next"], "video_fit")
         self.assertEqual(client.request.call_count, 1)
         self.assertEqual(client.request.call_args.args[1], "/rpc/save_video_measurement")
 

@@ -51,12 +51,15 @@ class VideoHandler:
         """
         analysis_id, media_id = payload_ids(job.payload)
         analysis = self.transition(job, "measuring")
-        if analysis["status"] in ("interpreting", "fitting", "ready"):
+        if (
+            analysis["status"] in ("interpreting", "fitting", "ready")
+            or analysis.get("shots") is not None
+        ):
             return {
                 "analysis_id": analysis_id,
                 "media_id": media_id,
                 "reused": True,
-                "next": "interpretation",
+                "next": "video_fit",
             }
         try:
             rows = self.client.request("GET", f"/media?id=eq.{media_id}")
@@ -80,7 +83,7 @@ class VideoHandler:
             "media_id": media_id,
             "reused": False,
             "shot_count": len(result["shots"]),
-            "next": "interpretation",
+            "next": "video_fit",
         }
 
     def store_keyframes(self, result: dict, output: Path, analysis_id: str):
