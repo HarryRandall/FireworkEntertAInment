@@ -101,3 +101,19 @@ test('domain fixture definitions are included before assertions in every isolate
   assert.ok(sql.indexOf(definition) < sql.indexOf('select plan(0)'));
   assert.ok(sql.endsWith('reset role;\nrollback;\n'));
 });
+
+test('domain fixtures are cleared inside rollback while seed acceptance retains installed data', (t) => {
+  const root = fixture(t);
+  mkdirSync(join(root, 'supabase/tests/fixtures'));
+  writeFileSync(join(root, 'supabase/tests/fixtures/isolation.sql'), '-- isolation helper');
+  writeFileSync(join(root, 'supabase/tests/99_seeds.sql'), 'select plan(0);');
+  const paths = prepareTestSuites(root, join(root, 'output'));
+  const domain = readFileSync(paths[0], 'utf8');
+  const seeded = readFileSync(paths[1], 'utf8');
+  assert.ok(domain.indexOf('begin;') < domain.indexOf('select tests.clear_application_data();'));
+  assert.ok(
+    domain.indexOf('select tests.clear_application_data();') < domain.indexOf('select plan(0)'),
+  );
+  assert.ok(!seeded.includes('select tests.clear_application_data();'));
+  assert.ok(domain.endsWith('rollback;\n') && seeded.endsWith('rollback;\n'));
+});

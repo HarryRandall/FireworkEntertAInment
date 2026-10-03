@@ -166,6 +166,10 @@ jobs:
           pnpm db:reset
           pnpm db:test
           pnpm db:lint
+          pnpm db:types --check
+          pnpm db:seeds --check
+          pnpm db:validators --check
+          pnpm db:documents --check
       - name: Stop the test database
         if: always()
         run: pnpm db:stop

@@ -6,6 +6,7 @@ import { useRef, useState } from 'react';
 import { effectTemplates } from '@showcrafter/fireworks';
 import { entries } from './_components/review-catalogue';
 import { ReviewStage } from './_components/review-stage';
+import { DatabaseTemplate } from './_components/database-template';
 import { TemplateLibrary } from './_components/template-library';
 import { useReviewViewer } from './_components/use-review-viewer';
 const PROTOTYPE_URL = 'http://localhost:8765/fireworks.html';
@@ -61,6 +62,7 @@ export default function FireworksPage() {
         generation={generation}
         setGeneration={setGeneration}
       />
+      <DatabaseTemplate selected={selected} ready={ready} select={select} />
       <TemplateLibrary selected={selected} ready={ready} posters={posters} select={select} />
     </main>
   );

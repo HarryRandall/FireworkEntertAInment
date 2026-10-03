@@ -782,6 +782,70 @@ and row-policy denials run normally. Direct denied-function execution needs
 reverification on an image without this engine failure; the database image and
 server settings have not been changed.
 
+### Denied-function crash investigation
+
+On the local image `public.ecr.aws/supabase/postgres:17.6.1.106` (PostgreSQL 17.6,
+aarch64), the failure is associated with the `supautils` permission-error hint hook,
+not the playback recursion. The following transaction is a minimal reproduction.
+It crashes the backend with signal 11; PostgreSQL rolls the transaction back during
+recovery. Run it only against the disposable local database, as recovery interrupts
+other connections too.
+
+```bash
+/opt/homebrew/opt/libpq/bin/psql postgresql://postgres:postgres@127.0.0.1:55422/postgres -X <<'SQL'
+begin;
+create function private.denied_probe() returns integer
+  language sql set search_path = '' as 'select 1';
+revoke all on function private.denied_probe() from public, anon, authenticated;
+set local role anon;
+select private.denied_probe();
+rollback;
+SQL
+```
+
+The Docker log reports `Failed process was running: select private.denied_probe();`
+and signal 11. A second reproduction uses the same constant-returning function in
+`public`, with `security definer`, called as `authenticated`; it also crashes.
+Neither private-schema placement, security-definer execution nor recursion is
+required. The investigation log is
+`/tmp/showcrafter-denied-function-investigation.log`.
+
+Two fresh superuser connections isolate the hook without changing server settings:
+
+```bash
+# Repeat the SQL above inside this connection: expected permission error, no crash.
+docker exec -e PGPASSWORD=postgres -e PGOPTIONS='-c session_preload_libraries=' \
+  -i supabase_db_showcrafter psql -U supabase_admin -d postgres -X
+
+# Keep supautils loaded but disable its role hints for this connection only.
+docker exec -e PGPASSWORD=postgres -e PGOPTIONS='-c supautils.hint_roles=' \
+  -i supabase_db_showcrafter psql -U supabase_admin -d postgres -X
+```
+
+Both connections return `permission denied for function` for the trivial probe
+and the real `private.product_playback(uuid)` call. The hints-only connection emits
+a startup warning that the parameter cannot be changed now, but `SHOW
+supautils.hint_roles` confirms the empty value and both denied calls complete with
+ordinary errors. Setting that parameter after connection startup is rejected;
+the restricted `postgres` role also cannot disable session preloading at startup.
+Normal connections retain `session_preload_libraries = supautils` and
+`supautils.hint_roles = anon, authenticated, service_role`.
+
+Revoking private-schema usage from `anon` within a rolled-back transaction avoids
+the function crash by returning `permission denied for schema private`. However,
+it also breaks the allowed public invoker RPC `public.resolve_qr(text)` when its
+body resolves `private.resolve_qr(text)`. Authenticated callers need private helpers
+too, and the public-schema reproduction still crashes. Therefore schema-usage
+revocation and removal of playback recursion are not suitable fixes. Keep the
+ACL assertions until the image/hook is repaired; do not widen grants or change RPC
+trust boundaries to hide the engine failure.
+
+The upstream reports [supautils issue 214](https://github.com/supabase/supautils/issues/214)
+and [Postgres image issue 2112](https://github.com/supabase/postgres/issues/2112)
+describe the same failure. The connection comparisons above independently identify
+the role-hint path locally; no native stack trace or patched-image verification was
+performed. No probe functions or configuration changes remain after investigation.
+
 ## Integrations and platform configuration
 
 `87_integrations.sql` owns `integrations`, `sync_runs`, `webhook_endpoints` and
@@ -966,3 +1030,106 @@ instructions. No UI screenshots, timed cron wake-up verification, Storage HTTP u
 or signed-URL journey, CI, deployment or hosted database verification is claimed.
 Initial test-harness failures were corrected, including the Storage deletion guard,
 existing service-role ACL expectations and a deleted Basejump identity lookup.
+
+## Local seeds and typed documents
+
+The ordered `supabase/seed/` files install unchecked example rules for GB, US, DE
+and AU, garden safety bands, prototype Starter/Store/Chain entitlements and one
+credit per planning session. Edits and naming are zero-credit reference actions.
+Video-import pricing has not been invented. Sale-period JSON is reference data;
+this does not add sale-window evaluation or a movable-feast calendar. Germany's
+fixed dates are the unchecked prototype approximation of the working-day rule.
+Non-GB safety categories are illustrative placeholders requiring market review.
+
+Local personas are synthetic Auth users with mirrored profiles and email
+identities. See [Development](development.md#seeded-local-accounts) for credentials
+and scopes. Their passwords are only provisioned through local seeding. Hartley's
+Leeds and York demo stores have prototype names and representative products,
+collection, shows and QR targets, rather than fabricated analytics or exact copies
+of every prototype stock and price total. Demo supplier and admin attribution on
+safety records is test data, not verified evidence.
+
+`db:seeds` generates all 99 canonical effect templates from the installed renderer
+library and its version. Seeding publishes them through the catalogue draft and
+publish RPCs, deriving search facts and retaining immutable history. Demo products
+also use the publication RPCs; stock uses `record_stock`, and shows use `save_show`.
+No application schema, policy or privilege change was needed. Existing forward
+reference constraints are unchanged; no new forward references were introduced.
+
+`db:validators` generates composition and cue Zod validators from the existing
+canonical JSON Schemas in `supabase/documents/`. Design Zod is already generated
+from the renderer's JSON Schema and is reused through its schema export. Generated
+validators are excluded from handwritten readability lint, while their generation,
+input-boundary tests and freshness checks remain enforced. All four Supabase
+client trust levels use `Database`; the public client carries no session cookies,
+and the service-role client remains server-only. The developer template loader
+uses the caller's ordinary RLS client and validates stored designs before rendering.
+
+### Planner answer contract
+
+`answers.v1` and its Zod validator are deferred to the planner flow (PR 6.3).
+Schema-plan section 11 lists `occasion`, `garden`, `budget_minor`, `currency`,
+`noise`, `looks`, `length_min` and `soundtrack`. The prototype planner defines the
+question choices and numeric controls, but does not specify the `soundtrack`
+value's shape. Defining a closed contract now would invent that field. The existing
+object constraint on `plan_sessions.answers` remains in force. The composer
+explicitly authorised this limited deferral while the rest of seeds/types proceeds.
+
+### Seed-aware test isolation
+
+Domain suites clear application data and local seed identities inside their own
+rollback transaction before inserting personas and fixtures. The seed acceptance
+suite retains the installed data and verifies publication, demo playback and tenant
+boundaries. Rollback restores seeded rows and identity sequences. `db:test` also
+runs the concurrent job-claim test and a local HTTP acceptance script: the real
+application loader reads all templates as public, then six email personas sign in
+and exercise RLS. No hosted target override is accepted. Existing ACL-only private
+function denials remain because of the documented supautils crash.
+
+### Local seeds and types verification
+
+Using Node 24.18.0 and Corepack pnpm 12.3.4:
+
+- `corepack pnpm db:reset` and `corepack pnpm db:setup`: passed with all four seed files.
+- `corepack pnpm db:test`: passed twice consecutively, 32 suites and 2,437 pgTAP
+  assertions per run, plus concurrent job claims, 99 public template loads and six
+  persona email sign-ins with tenant/store boundaries.
+- `corepack pnpm db:types`, then `corepack pnpm db:types --check`: passed. Generated
+  types have no diff because no application schema changed.
+- `corepack pnpm db:lint`: passed with the three existing `private.effect_facts`
+  warnings only. `corepack pnpm exec supabase db diff --local --schema public,private`
+  returned 871 grant statements and no other changes, reflecting the hand-written
+  privileges migrations. Do not apply those grant lines.
+- `corepack pnpm install --frozen-lockfile`, `corepack pnpm format:check`,
+  `corepack pnpm db:seeds --check`, `corepack pnpm db:validators --check`,
+  `corepack pnpm db:documents --check`, `corepack pnpm db:duration-fixtures --check`,
+  `corepack pnpm --filter @showcrafter/fireworks check:schema`,
+  `corepack pnpm test:database-tooling` (15 tests), `corepack pnpm test:lint-rules`,
+  `corepack pnpm lint`, `corepack pnpm typecheck`, `corepack pnpm build`,
+  `corepack pnpm knip` and `git diff --check`: passed. Knip retains its existing
+  `.css` configuration hint. Only generated types/validators receive Knip exclusions.
+
+Initial failures were corrected in the demo collection column, the seed suite's
+caller-free credit balance assertion and the loader's explicit promise/null handling.
+One database run timed out connecting; another passed pgTAP but its concurrency
+connection timed out. Two subsequent complete runs passed. No access boundary or
+lint threshold was relaxed.
+
+Evidence logs are `/tmp/showcrafter-seeds-tests.log`,
+`/tmp/showcrafter-seeds-tests-repeat.log`, `/tmp/showcrafter-seeds-db-lint.log`,
+`/tmp/showcrafter-seeds-diff.sql`, `/tmp/showcrafter-seeds-types-check.log`,
+`/tmp/showcrafter-seeds-tooling.log`, `/tmp/showcrafter-seeds-web-lint.log`,
+`/tmp/showcrafter-seeds-web-types.log` and `/tmp/showcrafter-seeds-build.log`.
+`pnpm check` and `pnpm test:browser` were deliberately not run under the database-lane
+instructions. Owner visual review, CI and hosted/production verification remain
+separate gates. No hosted database was accessed, and no commits or Git history
+changes were made.
+
+A standalone UI check was attempted on this worktree's production server at port 3301. Playwright CLI first encountered npm/cache write restrictions, then Chrome
+exited with `SIGABRT` under the sandbox after temporary cache directories were
+configured. No screenshots or browser interaction evidence were obtained. The
+preview server was stopped through its tool session after direct signal delivery
+was rejected. Port 3301 was confirmed closed. Local Supabase and the other lane's
+server were left running. The developer loader control needs owner visual review at desktop and
+390 px widths in light and dark themes. It reuses the developer page's native
+button styling without introducing a registry component or changing the shared kit.
