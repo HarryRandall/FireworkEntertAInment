@@ -24,24 +24,48 @@ for (const [name, viewport] of Object.entries(viewports)) {
       expect(animation).toBe('none');
       const accessibility = await new AxeBuilder({ page }).analyze();
       expect(accessibility.violations).toEqual([]);
-      const screenshot = await page.screenshot({
-        fullPage: true,
-        path: `output/playwright/components-${name}-${theme}.png`,
-      });
-      await testInfo.attach(`components-${name}-${theme}`, {
-        body: screenshot,
-        contentType: 'image/png',
-      });
+      // The whole gallery exceeds Chromium's capture height, so review one section at a time.
+      const sections = page.locator('section[id]:has(> h2)');
+      for (const id of await sections.evaluateAll((items) => items.map((item) => item.id))) {
+        const screenshot = await page.locator(`section#${id}`).screenshot({
+          path: `output/playwright/components-${name}-${theme}-${id}.png`,
+        });
+        await testInfo.attach(`components-${name}-${theme}-${id}`, {
+          body: screenshot,
+          contentType: 'image/png',
+        });
+      }
     });
   }
 }
+
+// Radix moves arrow-key focus on a zero-delay timer and selects only while the key is
+// held; hold arrows as briefly as a person would rather than for Playwright's ~0 ms.
+const ARROW_HOLD_MS = 30;
 
 test('keyboard choices, tags, quantities, uploads and dialog focus', async ({ page }) => {
   await page.goto('/dev/components');
   const card = page.getByRole('radio', { name: /Start with a best-seller range/ });
   await card.focus();
-  await page.keyboard.press('ArrowRight');
+  await expect(card).toBeFocused();
+  await expect(card).toHaveAttribute('tabindex', '0');
+  await page.keyboard.press('ArrowRight', { delay: ARROW_HOLD_MS });
   await expect(page.getByRole('radio', { name: /Import your stock list/ })).toBeChecked();
+  const imported = page.getByRole('radio', { name: /Import your stock list/ });
+  await expect(imported).toBeFocused();
+  // Arrows wrap past the disabled card and select in either direction.
+  await page.keyboard.press('ArrowRight', { delay: ARROW_HOLD_MS });
+  await expect(card).toBeChecked();
+  await expect(card).toBeFocused();
+  await page.keyboard.press('ArrowLeft', { delay: ARROW_HOLD_MS });
+  await expect(imported).toBeChecked();
+  await expect(imported).toBeFocused();
+  const swatches = page.getByRole('radiogroup', { name: 'Brand colour' });
+  const green = swatches.getByRole('radio', { name: 'Green', exact: true });
+  await green.focus();
+  await expect(green).toBeFocused();
+  await page.keyboard.press('ArrowRight', { delay: ARROW_HOLD_MS });
+  await expect(swatches.getByRole('radio', { name: 'Blue', exact: true })).toBeChecked();
   const tags = page.getByRole('textbox', { name: 'Add invitation emails' });
   await tags.fill('new@showcrafter.test');
   await tags.press('Enter');
