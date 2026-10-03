@@ -3,8 +3,9 @@
 `@showcrafter/fireworks` owns the stored design format. PR 2.1 provides the v1
 JSON Schema, generated Zod validators and TypeScript types, version constants and
 `upgradeDesign(doc, fromVersion)`. PR 2.2 adds the DOM-free shell core. PR 2.2a adds
-stored quick adjustments and their shared resolver. Other kinds, modifiers, sprays, WebGL, sound
-playback, posters and catalogue templates arrive in later renderer PRs.
+stored quick adjustments and their shared resolver. PR 2.3 adds all kind heads, burst
+patterns and layer modifiers. Sprays, WebGL, sound playback, posters and catalogue
+templates arrive in later renderer PRs.
 
 ```ts
 import { upgradeDesign, type Design, DESIGN_SCHEMA_VERSION } from '@showcrafter/fireworks';
@@ -27,7 +28,7 @@ reignition is optional and applies only to colour changes.
 same values. It does not mutate the document or apply defaults. Invalid documents
 throw a Zod error containing property paths; unknown versions throw a range error.
 The version is stored externally as `design_schema`, not inside the document.
-`RENDERER_VERSION` starts at `0.1.0` for this initial renderer port.
+`RENDERER_VERSION` is `0.3.0` for the kinds and modifiers port.
 
 ## Quick adjustments
 
@@ -198,14 +199,35 @@ implicit height scaling. Breaks start at apex plus `break.at_s`, with additional
 indices, including hidden and not-yet-started layers, preserve the prototype seeds
 across breaks. IDs remain authoring identifiers. Each break uses its own core/fade.
 
-This PR renders **shells with sphere or random directions**. It includes launch
-head paths (all 14 styles, including jitter, wobble, spin and strobing climbs),
-core flashes, core sparks/ring, star motion, colour/brightness curves, reignition
-and burn fades. Layer modifiers are deliberately ignored in this core frame,
-including those in the multi-break fixture. Other kinds and special patterns throw
-a clear error until PR 2.3. Launch embellishment particles (rocket flame, rising
-blossoms and crackle pellets), trails and smoke are deferred with the later kinds,
-modifiers and spray work. No complete visual parity is claimed at this stage.
+The simulation renders shell and rocket launches/breaks, mine cone bursts from the
+muzzle, comet and candle heads (straight, fan, random, sequence and sweep), wheel
+rim drivers, wandering spinners, fountain muzzle glow and tourbillon helices.
+Every kind resolves stored adjustments before evaluating physical fields. Rockets
+use the authored launch tail; candles use the authored comet pattern. The aliases
+never override saved values.
+
+Patterns preserve the prototype's ring tilt, heart outline, spiral arms, cone,
+random upward directions and bottom horsetail directions. Palm is a sparse `sphere` layer;
+horsetail is `bottom` with its authored drag/gravity. Those are looks rather than
+additional schema pattern names. The schema-only `double_ring`, `fan`, `straight` and `sequence` layer patterns retain
+the prototype's
+sphere fallback (the corresponding ground comet patterns have their own paths).
+
+Modifier composition is explicit in `sim/modifiers.ts`: twist rotations first,
+then additive fish/bees/flutter motion; ghost shifts the stored colour transition
+and dark dip; burn fade precedes strobe/twinkle/flutter brightness operations in
+stored array order. Parent termination uses the earliest non-continuous crackle or
+split trigger. Crackle, crossette/split and pop child events are emitted independently
+and may outlive the parent. Repeated modifiers compose in array order within each
+phase. Strobes emit sharp points and glints, with a default zero halo. Crossette
+children use the combined parent path's velocity. Ghost suppresses colour reignition.
+
+Glitter contributes clamped intensity and delayed ignition through `trailControls`,
+a pure integration hook for PR 2.4. It has no independent head particle in the
+prototype. `whistle` is retained for the sound work in 2.8. Trails, sprays and smoke
+are deliberately absent. Fountains therefore show only their single-emitter muzzle
+glow; multi-emitter fountains emit no particles until 2.4. Launch flame, blossoms
+and climb crackle remain deferred. Full rendered visual parity is not claimed.
 
 `shotDuration` already handles all stored kinds and includes break/layer delays,
 varied star lifetimes, trail tails and modifier tail allowances. For multiple
@@ -217,8 +239,8 @@ closed-form drag/gravity motion; it does not apply modifiers.
 ### Capturing golden numbers
 
 The capture script executes the reference JavaScript in a Node VM with browser
-stubs, removes unused browser imports, disables sprays/smoke and removes layer
-modifiers after capturing duration. Its one-off v1-to-prototype field mapping is
+stubs, removes unused browser imports, disables sprays/smoke. The original core cases remove layer
+modifiers after capturing duration; the added kind/modifier cases retain them. Its one-off v1-to-prototype field mapping is
 only for the reference harness, never part of the runtime. The prototype's maths
 is unchanged; per-break core/fade values replace its global lookups. Launch
 embellishment particles are disabled for the launch-head cases.
@@ -237,6 +259,11 @@ numbers. The fixture records the reference SHA-256 for provenance, not as a
 renderer version or runtime contract. Shell samples check counts and sampled
 positions, colours, sizes, alphas and kinds at launch, flash, developed burst,
 late burn and end. Tests also cover all launch-head styles and core rings.
-Comet positions are captured for PR 2.3; PR 2.2 asserts its duration only.
+The `kinds` cases cover all nine stored kinds, each modifier, the prototype burst
+patterns, continuous crackle, ground comet patterns and comet pop/split. Inputs are
+small test cases in `tests/kind-cases.mjs`, not catalogue template conversion. Glitter
+and whistle cases prove head parity only; spray/sound behaviour is deferred. Golden
+comparisons sample particles and counts at several times, alongside exact scrub,
+placement, seed, adjustment resolution and combined-modifier behaviour tests.
 Float32 comparisons use an absolute tolerance of 0.000001; analytical motion
 checks use 0.000000000001. Scrub determinism compares arrays exactly.
