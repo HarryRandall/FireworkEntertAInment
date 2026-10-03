@@ -36,8 +36,8 @@ relevant caller roles, including staff, organisation members, suppliers, shopper
 The declarative files enable `pgcrypto`, `citext`, `pg_jsonschema`, `postgis`,
 `pg_cron` and `supabase_vault`. `pg_partman` is enabled only when listed in
 `pg_available_extensions`; an unavailable extension produces a notice and requires
-native event partitioning. Its availability has not yet been checked on the owner's
-local image.
+native event partitioning. The current local image provides version 5.3.1, used by the event
+partition declarations.
 
 `private.uid()` reads `auth.uid()`. `private.is_anon()` reads the server-issued JWT
 flag, defaulting to false when absent. `private.set_updated_at()` is a row trigger
@@ -705,3 +705,79 @@ No screen changes or screenshots are involved. Full repository/browser checks, C
 owner review and production verification remain separate gates. No hosted database
 was accessed. Credit charging, rate limiting, event joins, privacy processing, sale
 calendar derivation and worker execution have not been verified.
+
+## Analytics, credits and background work
+
+`80_analytics.sql` declares monthly `events` partitions managed by local
+`pg_partman` 5.3.1, UTC hourly/daily metrics and saved reports. Raw retention is
+25 months; hourly heatmaps retain 90 days and daily rollups are kept. Nullable
+rollup dimensions use a `NULLS NOT DISTINCT` unique key, rather than a primary key
+that would implicitly forbid nulls. `private.rollup_events(from, until)` rebuilds
+complete UTC buckets touching the half-open interval, so retries replace totals.
+It refuses periods beyond raw retention to preserve historical daily aggregates.
+
+`track_event(type, store, context, session_key, props)` requires an active Auth
+identity, including a Supabase anonymous shopper. It derives the organisation and
+shopper, validates linked QR/show/product/plan/list ownership, timestamps on the
+server and uses a locked token bucket. Context accepts only `qr_code_id`,
+`show_id`, `product_id` and `plan_session_id`. Props accepts only `list_id` and
+snapshots its value from stored list prices. Arbitrary properties and client geo
+are not accepted; no IP address is stored. The initial event budget allows a burst
+of 60 events with one token refilled per second. This is an operational abuse
+budget, not a measured traffic requirement.
+
+Retailers read permitted-store rollups and a last-hour live feed. Column grants
+exclude shopper UUIDs, plan UUIDs, visit keys and raw properties from that feed.
+Saved reports require organisation-wide insights permission. Raw event facts are
+append-only, with foreign-key anonymisation allowed on personal record deletion.
+Direct partition access is revoked. `private.maintain_event_partitions()` creates
+future partitions and applies retention; it restores the caller's search path
+because `pg_partman` uses session-level SET internally. No cron is installed here.
+
+`85_billing.sql` declares plans, billing accounts, packs, prices, the append-only
+credit ledger and reservations. Stripe identifiers remain nullable metadata with
+empty price-map defaults; there is no Stripe mirror, webhook ingestion or payment
+integration. Only super admins and finance staff can use `grant_credits`, with
+consistent idempotent replays returning the original row. `credit_balance` exposes
+ledger totals minus unexpired held reservations only to members or platform staff.
+
+Starting a planning session settles exactly one credit in the same transaction.
+An organisation row lock serialises the balance check and spend. A unique session
+spend and immutable, matching settled reservation prevent duplicate charges and
+cross-organisation attribution. Edits and additional candidates have no charging
+path. Insufficient credits roll back the session. The action price must be installed
+as `plan_session = 1`; schema installation does not invent launch allowances or
+prices. `private.release_expired_credit_reservations()` is ready for scheduling.
+
+`86_ai_jobs.sql` owns prompt metadata, LLM usage, jobs and rate-limit buckets.
+Calls and jobs are staff-readable and system-written; counters are system-only.
+The former `plan_edits.llm_call_id` and `plan_sessions.credits_reservation_id`
+forward references now have foreign keys. There are no new deferred references.
+No shopper AI call or worker process is introduced.
+
+`claim_job(kinds, worker)` is service-role only. It uses `FOR UPDATE SKIP LOCKED`,
+priority ordering and a five-minute lease, incrementing attempts on each claim.
+`complete_job` and `fail_job` require the matching worker and attempt number.
+`renew_job_lease` extends an unexpired attempt for long-running analyses. Stale
+workers cannot finish a reclaimed attempt, even with the same worker name. Retry
+backoff starts at 30 seconds, doubles after each failure and is capped at one hour;
+the default budget is three attempts. An expired final attempt becomes `dead`.
+These are initial queue operating budgets, not worker-performance measurements.
+
+### Local verification and image limitation
+
+The database suite includes real persona policy checks across two organisations,
+atomic session charges, grant replays, nullable rollup keys, retained history,
+partition access, rate-limit refill, retry/lease fencing and terminal crashes.
+`db:test` also runs an independent two-connection claim test. Its first transaction
+holds a row lock until the second claim returns, then both roll back; committed
+synthetic jobs are removed in cleanup. It uses `psql` (Homebrew libpq on macOS,
+PATH on Linux) and a fixed local endpoint, with no destination override.
+
+This local PostgreSQL 17.6 image reproducibly terminated a backend with signal 11
+when a caller lacked function EXECUTE, including a direct `psql` invocation of
+`claim_job`. Changing the wrapper language did not cure it. Tests inspect the real
+function ACL for unavailable capabilities without widening grants. Allowed RPCs
+and row-policy denials run normally. Direct denied-function execution needs
+reverification on an image without this engine failure; the database image and
+server settings have not been changed.
