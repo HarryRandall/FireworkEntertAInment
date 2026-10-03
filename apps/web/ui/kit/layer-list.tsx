@@ -35,7 +35,7 @@ export function LayerList({
         <li
           key={item.id}
           style={{ paddingLeft: (item.depth ?? 0) * INDENT_PX }}
-          className={`flex items-center gap-1 rounded-md ${selected === item.id ? 'bg-highlight-soft' : 'hover:bg-accent'}`}
+          className={`group/layer flex items-center gap-1 rounded-md ${selected === item.id ? 'bg-highlight-soft' : 'hover:bg-accent'}`}
         >
           {item.hasChildren === true ? (
             <Button
@@ -59,7 +59,7 @@ export function LayerList({
             onClick={() => {
               onSelect(item.id);
             }}
-            className={`flex min-w-0 flex-1 items-center gap-2 py-2 text-left text-sm ${item.hidden === true ? 'opacity-50' : ''}`}
+            className={`group group-hover/layer:text-foreground aria-pressed:text-highlight-foreground flex min-w-0 flex-1 items-center gap-2 py-2 text-left text-sm ${item.hidden === true ? 'text-muted-foreground' : 'text-foreground'}`}
           >
             {item.colour === undefined ? (
               <Layers className="text-muted-foreground size-3.5 shrink-0" />
@@ -70,7 +70,9 @@ export function LayerList({
               />
             )}
             <span className="truncate">{item.name}</span>
-            <span className="text-muted-foreground ml-auto font-mono text-xs">{item.badge}</span>
+            <span className="text-muted-foreground group-hover/layer:text-foreground group-aria-pressed:text-highlight-foreground ml-auto font-mono text-xs">
+              {item.badge}
+            </span>
           </button>
           <Button
             type="button"
