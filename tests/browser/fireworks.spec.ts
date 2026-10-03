@@ -101,9 +101,11 @@ for (const [viewportName, viewport] of Object.entries({ desktop: DESKTOP, mobile
           true,
         );
       }
+      // A full-page capture of all cards at phone width exceeds Chromium's capture size,
+      // so phones capture the visible viewport only.
       await page.screenshot({
         path: `output/playwright/${viewportName}-${colourScheme}-page.png`,
-        fullPage: true,
+        fullPage: viewportName !== 'mobile',
       });
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
         true,
