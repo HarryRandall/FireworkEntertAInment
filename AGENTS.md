@@ -2,8 +2,9 @@
 
 ## Rebuild in progress
 
-The rebuild follows the build plan. Legacy rules in the skills are being replaced in
-1.4. Nothing on `rebuild/main` may be merged to `main` before the switch-over PR.
+The app is being rebuilt as a stack of pull requests on `rebuild/main` (see the
+repository skill). Nothing on `rebuild/main` may be merged to `main` before the
+switch-over PR.
 
 Use British English, straight apostrophes and no em dashes. Preserve unrelated
 work. Follow the user's requested scope and keep commits focused.
@@ -11,13 +12,14 @@ work. Follow the user's requested scope and keep commits focused.
 ## Start here
 
 - Web application: `apps/web/`.
-- Python services: `services/music-analyser/` and `services/firework-import-worker/`.
-- Database migrations, seeds and SQL tests: `supabase/`.
+- Shared packages: `packages/` (renderer and planner).
+- Python services: `services/music-analyser/` (and the video importer from stage 9).
+- Declarative database schema, baseline, seeds and pgTAP tests: `supabase/`.
 - Ownership and UI conventions: [Architecture](docs/architecture.md).
 - Setup, checks and deployment: [Development](docs/development.md).
 - Product overview and repository presentation: [README](README.md).
 
-Use Node 24 (`nvm use`) and the pinned pnpm version. From the repository root:
+Use Node 24 (`fnm use` or `nvm use`) and the pinned pnpm version. From the repository root:
 `pnpm install --frozen-lockfile`, `pnpm dev`, `pnpm check`.
 
 ## Agent workflows
