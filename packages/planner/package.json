@@ -2,5 +2,15 @@
   "name": "@showcrafter/planner",
   "version": "0.1.0",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "scripts": {
+    "lint": "eslint src --max-warnings 0 --suppressions-location eslint-suppressions-2026-10-03.json",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import ../../scripts/register-typescript.mjs --test tests/*.test.mjs",
+    "check": "pnpm lint && pnpm typecheck && pnpm test"
+  },
+  "devDependencies": {
+    "eslint": "9.39.4",
+    "typescript": "5.9.3"
+  }
 }

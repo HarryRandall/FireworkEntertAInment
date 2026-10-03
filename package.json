@@ -18,7 +18,7 @@
     "audit:ui": "pnpm --filter @showcrafter/web audit:ui",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm format:check && pnpm test:database-tooling && pnpm test:packages && pnpm knip && pnpm --filter @showcrafter/web check && pnpm test:browser",
+    "check": "pnpm format:check && pnpm test:lint-rules && pnpm test:database-tooling && pnpm test:packages && pnpm knip && pnpm --filter @showcrafter/web check && pnpm test:browser",
     "test:analyser": "services/music-analyser/.venv/bin/python -m unittest discover -s services/music-analyser/tests -p '*test*.py'",
     "db:start": "node scripts/database/local.mjs start",
     "db:stop": "node scripts/database/local.mjs stop",
@@ -27,20 +27,27 @@
     "db:lint": "node scripts/database/local.mjs lint",
     "db:env": "node scripts/database/local.mjs env",
     "test:database-tooling": "node --test scripts/database/*.test.mjs",
+    "test:lint-rules": "node --test scripts/eslint/*.test.mjs",
     "db:test": "pnpm exec supabase test db",
     "db:types": "node scripts/database/types.mjs",
     "db:setup": "pnpm db:start && pnpm db:reset",
-    "test:packages": "pnpm --filter @showcrafter/fireworks check && node --import ./scripts/register-typescript.mjs --test packages/planner/tests/*.test.mjs",
+    "test:packages": "pnpm --filter @showcrafter/fireworks check && pnpm --filter @showcrafter/planner check",
     "knip": "knip",
     "test:browser": "tsc -p tests/browser/tsconfig.json && playwright test"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.11.1",
+    "@eslint/js": "9.39.4",
     "@playwright/test": "1.58.2",
+    "eslint": "9.39.4",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-sonarjs": "4.2.2",
+    "eslint-plugin-tsdoc": "0.5.4",
     "knip": "^6.38.0",
     "prettier": "3.8.3",
     "prettier-plugin-tailwindcss": "0.8.0",
     "supabase": "2.101.0",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.71.0"
   }
 }

@@ -34,3 +34,30 @@ Code rules:
 
 Tests exercise behaviour, not source text. For interface work also read
 [the UI workflow](../showcrafter-ui/SKILL.md).
+
+## Framework evidence
+
+Check the installed framework version and its bundled docs before changing a
+framework convention. If the docs are absent, use the matching official version.
+Use Context7 only for an unresolved library question and state the library/version.
+Never include credentials, personal data or private source in documentation queries.
+Read implementation and callers; documentation examples still need adaptation.
+
+## Component readability
+
+Keep pages and layouts as server data/composition boundaries. Put interactive state
+and browser lifecycles in small client components. Route-owned components stay in
+their route's \_components folder; shared behaviour belongs to its domain.
+
+Extract a component for an interaction or visual region, not for each div. Extract
+pure domain computations from render functions. Use hooks for cohesive state or
+external-system lifecycles, not to hide arbitrary helpers. Derive values during
+render; effects synchronise with external systems and clean up their resources.
+
+Validate action input, recheck access and keep expected validation errors distinct
+from unexpected failures. Never replace failed ownership, credit or data reads with
+successful empty values. Keep loading, empty and error states explicit.
+
+Preserve the Next, React Hooks and architecture lint checks. Do not add global
+purity, immutability or effect exemptions. Explain any necessary local exception
+and include it in the commit plan for the composer.

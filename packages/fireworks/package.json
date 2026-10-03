@@ -15,7 +15,7 @@
     "generate:schema": "node scripts/generate-schema.mjs",
     "check:schema": "node scripts/generate-schema.mjs --check",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src",
+    "lint": "eslint src 'tests/**/*.ts' --max-warnings 0 --suppressions-location eslint-suppressions-2026-10-03.json",
     "test": "node --import ../../scripts/register-typescript.mjs --test tests/*.test.mjs",
     "check": "pnpm check:schema && pnpm lint && pnpm typecheck && pnpm test"
   },
@@ -26,10 +26,9 @@
   "devDependencies": {
     "@types/three": "0.184.1",
     "ajv": "8.17.1",
-    "eslint": "^9.39.4",
+    "eslint": "9.39.4",
     "json-schema-to-zod": "2.6.1",
     "prettier": "3.8.3",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "8.59.0"
+    "typescript": "5.9.3"
   }
 }

@@ -30,3 +30,11 @@ Rules:
 Every policy needs a pgTAP test with one allowed and one denied case, acting as the
 relevant personas (staff, owner, manager, another organisation, anonymous shopper,
 signed-in shopper, supplier member). Regenerate types after a schema change.
+
+## Local inspection
+
+Confirm the local project's endpoint before using MCP. Use approved inspection
+tools only; keep schema changes in supabase/schemas and the migration workflow.
+Never infer RLS correctness from an elevated MCP connection. Run pgTAP allowed
+and denied cases as the relevant personas, including another organisation.
+Report local evidence separately from hosted deployment or production evidence.
