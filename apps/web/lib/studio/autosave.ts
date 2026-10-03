@@ -14,6 +14,7 @@ export class DraftAutosave {
   private persisted: string;
   private versionId: string | null;
   private busy = false;
+  private inFlight: Promise<void> | null = null;
   private disposed = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
   constructor(
@@ -38,8 +39,30 @@ export class DraftAutosave {
   }
   /** Saves the latest snapshot now, retaining it after any refusal or unexpected failure. */
   async flush(): Promise<void> {
+    if (this.busy) return;
+    if (this.disposed || !this.dirty()) return;
+    const pending = this.persist();
+    this.inFlight = pending;
+    try {
+      await pending;
+    } finally {
+      this.inFlight = null;
+    }
+    if (this.dirty() && this.lastSaveSucceeded) await this.flush();
+  }
+  /** Waits for serial persistence and returns the acknowledged draft UUID, or null after failure. */
+  async settledVersion(): Promise<string | null> {
+    await this.waitForIdle();
+    await this.flush();
+    await this.waitForIdle();
+    return this.dirty() ? null : this.versionId;
+  }
+  private async waitForIdle(): Promise<void> {
+    while (this.inFlight !== null) await this.inFlight;
+  }
+  private lastSaveSucceeded = true;
+  private async persist(): Promise<void> {
     this.clearTimer();
-    if (this.disposed || this.busy || !this.dirty()) return;
     this.busy = true;
     const document = this.desired;
     this.publishStatus();
@@ -58,7 +81,7 @@ export class DraftAutosave {
       this.busy = false;
       if (saved) this.publishStatus();
     }
-    if (saved && !this.isDisposed() && this.dirty()) await this.flush();
+    this.lastSaveSucceeded = saved;
   }
   /** Stops pending timers and UI notifications; an already submitted write may still complete. */
   dispose(): void {
@@ -70,9 +93,6 @@ export class DraftAutosave {
     this.flush().catch(() => {
       this.fail('The draft could not be saved. Please retry.');
     });
-  }
-  private isDisposed(): boolean {
-    return this.disposed;
   }
   private currentLabel(): SaveStatus['label'] {
     if (this.busy) return 'Saving...';
