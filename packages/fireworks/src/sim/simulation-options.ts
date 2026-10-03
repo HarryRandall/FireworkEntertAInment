@@ -9,6 +9,8 @@ export interface SimulationOptions extends ShotPlacement {
   sprays?: boolean;
   /** Receives sampled births instead of evaluating the CPU spray kernel. */
   sprayBirth?: SprayBirthSink | undefined;
+  /** Optional phase boundary observer; true enters spray sampling, false leaves it. */
+  sprayPhase?: ((active: boolean) => void) | undefined;
   /** Whether to emit smoke attributes; enabled by default. */
   smoke?: boolean;
   /** Whether to emit flame, blossoms and climb crackle; enabled by default. */

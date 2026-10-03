@@ -5,6 +5,7 @@ import type { Design } from '@showcrafter/fireworks';
 import type { Viewer } from '@showcrafter/fireworks/view';
 import { Button } from '@/ui/primitives/button';
 import type { ReviewState } from './review-state';
+import { FrameProfileReadout } from './frame-profile';
 import { stressShots } from './stress-scene';
 
 /** Runs the same finale and instant through either kernel, using the existing shared context. */
@@ -58,7 +59,11 @@ export function StressControls({
             {mode.toUpperCase()} sprays
           </Button>
         ))}
+        <Button disabled={!ready} variant="outline" onClick={() => viewer.current?.profileFrame()}>
+          Profile one frame
+        </Button>
       </div>
+      <FrameProfileReadout profile={state.profile} />
       <p className="font-mono text-sm" data-testid="frame-times">
         Frame intervals: median {state.timing.medianMs.toFixed(2)} ms · 95th percentile{' '}
         {state.timing.p95Ms.toFixed(2)} ms ({state.timing.samples}/{state.timing.window} playing

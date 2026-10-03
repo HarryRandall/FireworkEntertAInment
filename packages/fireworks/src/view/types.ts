@@ -8,8 +8,14 @@ export interface Shot extends ShotPlacement {
   t0?: number;
   seed?: number;
 }
-/** Browser view construction options; playback chrome belongs to the caller. */
+/** Browser view construction options; optional native playback chrome is owned by the viewer. */
 export interface ViewerOptions {
+  /** Adds the small native player and view preferences. */
+  ui?: boolean;
+  /** Enables orbit, wheel and touch controls; defaults to true. */
+  controls?: boolean;
+  /** Toggles playback for canvas taps without movement; defaults to true. */
+  clickToPause?: boolean;
   design?: Design;
   shots?: readonly Shot[];
   prop?: 'mortar' | 'cake';

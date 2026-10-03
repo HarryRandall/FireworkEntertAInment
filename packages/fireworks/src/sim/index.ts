@@ -15,3 +15,6 @@ export {
   type SprayBirthSink,
 } from './spray';
 export { WIND } from './smoke';
+
+export { framingFor, EYE_HEIGHT_M, type Framing } from './framing';
+export { shakeAt, shakeEvents, soundLag, type ShakeEvent } from './shake';

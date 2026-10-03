@@ -61,3 +61,44 @@ test('shared hardware resources dispose once and cake tubes wrap at their own to
   assert.equal(materialDisposals, 1, 'Shared hole material is freed once');
   disposeTree(props);
 });
+
+test('direct packing retains every scalar lane and order across mixed frames and shrinking uploads', () => {
+  const layers = new ParticleLayers();
+  const frames = [simulate(peony, 0.7), simulate(peony, DEVELOPED_TIME_S), simulate(peony, 3.4)];
+  for (const input of [frames, frames.slice(1), [], frames]) {
+    layers.upload(input);
+    const [smoke, quads, points] = layers.group.children;
+    for (const [mesh, instanced] of [
+      [points, false],
+      [quads, true],
+    ]) {
+      const expected = { position: [], colour: [], size: [], alpha: [], shape: [] };
+      for (const frame of input) {
+        for (let index = 0; index < frame.kinds.length; index++) {
+          const kind = frame.kinds[index];
+          if ((kind !== 0) !== instanced) continue;
+          expected.position.push(...frame.positions.slice(index * 3, (index + 1) * 3));
+          expected.colour.push(...frame.colours.slice(index * 3, (index + 1) * 3));
+          expected.size.push(frame.sizes[index]);
+          expected.alpha.push(frame.alphas[index]);
+          expected.shape.push(kind === 3 ? 0 : kind);
+        }
+      }
+      for (const [key, attribute] of [
+        ['position', instanced ? 'iPos' : 'position'],
+        ['colour', instanced ? 'iColor' : 'color'],
+        ['size', instanced ? 'iSize' : 'size'],
+        ['alpha', instanced ? 'iAlpha' : 'alpha'],
+        ...(instanced ? [['shape', 'iShape']] : []),
+      ]) {
+        const values = mesh.geometry.getAttribute(attribute).array;
+        assert.deepEqual([...values.slice(0, expected[key].length)], expected[key], attribute);
+      }
+    }
+    assert.equal(
+      smoke.geometry.instanceCount,
+      input.reduce((sum, frame) => sum + frame.smoke.sizes.length, 0),
+    );
+  }
+  layers.dispose();
+});

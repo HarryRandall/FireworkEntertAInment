@@ -8,13 +8,15 @@ import {
   type Dispatch,
   type SetStateAction,
 } from 'react';
-import { Viewer, reviewTime } from '@showcrafter/fireworks/view';
+import { Viewer, buildPlayer, reviewTime } from '@showcrafter/fireworks/view';
 import { entries } from './review-catalogue';
 import type { ReviewState } from './review-state';
 /** Review thumbnail width, CSS pixels, matching the existing developer viewport. */
 export const THUMB_WIDTH_PX = 320;
 /** Review thumbnail height, CSS pixels, matching the existing developer viewport. */
 export const THUMB_HEIGHT_PX = 200;
+// React diagnostic readouts need ten updates per second, rather than one per GPU frame.
+const READOUT_INTERVAL_MS = 100;
 interface ReviewSetters {
   setReady: Dispatch<SetStateAction<boolean>>;
   setError: Dispatch<SetStateAction<string>>;
@@ -42,6 +44,7 @@ export function useReviewViewer(
     shotCount: 1,
     timing: { medianMs: 0, p95Ms: 0, samples: 0, window: 0 },
     frameMs: 0,
+    profile: null,
   });
   useEffect(() => {
     const element = host.current;
@@ -63,6 +66,7 @@ function mountReviewViewer(
   let cancelled = false;
   let rig: Viewer | null = null;
   let unsubscribe = () => {};
+  let removePlayer = () => {};
   setReady(false);
   setError('');
   setPosters({});
@@ -78,27 +82,18 @@ function mountReviewViewer(
       const images = await preparePosters(rig, () => cancelled);
       if (cancelled) return;
       setPosters(images);
-      setReady(true);
       rig.setDesign(entries[0].design);
       rig.seek(reviewTime(entries[0].design));
-      unsubscribe = rig.on((v) => {
-        setState({
-          t: v.t,
-          duration: v.duration,
-          playing: v.playing,
-          count: v.count,
-          hdr: v.output.hdr,
-          sprayMode: v.sprayMode,
-          shotCount: v.shots.length,
-          timing: v.frameTimes.summary(),
-          frameMs: v.frameMs,
-        });
-      });
+      unsubscribe = mirrorReadout(rig, setState);
       setSelected(entries[0]);
+      // Transport availability must mean poster preparation has stopped drawing and seeking.
+      removePlayer = buildPlayer(rig);
+      setReady(true);
     } catch (cause) {
       if (!cancelled)
         setError(cause instanceof Error ? cause.message : 'The WebGL preview could not start.');
       rig?.dispose();
+      removePlayer();
       viewer.current = null;
     }
   }
@@ -108,6 +103,7 @@ function mountReviewViewer(
   return () => {
     cancelled = true;
     unsubscribe();
+    removePlayer();
     rig?.dispose();
     viewer.current = null;
   };
@@ -130,4 +126,27 @@ async function preparePosters(
     );
   }
   return images;
+}
+
+function mirrorReadout(rig: Viewer, setState: ReviewSetters['setState']): () => void {
+  let lastReadout = 0;
+  let wasPlaying = false;
+  return rig.on((v) => {
+    const now = performance.now();
+    if (v.playing && wasPlaying && now - lastReadout < READOUT_INTERVAL_MS) return;
+    lastReadout = now;
+    wasPlaying = v.playing;
+    setState({
+      t: v.t,
+      duration: v.duration,
+      playing: v.playing,
+      count: v.count,
+      hdr: v.output.hdr,
+      sprayMode: v.sprayMode,
+      shotCount: v.shots.length,
+      timing: v.frameTimes.summary(),
+      frameMs: v.frameMs,
+      profile: v.profiler.result ? { ...v.profiler.result } : null,
+    });
+  });
 }
