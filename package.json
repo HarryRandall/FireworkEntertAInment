@@ -31,7 +31,7 @@
     "db:test": "node scripts/database/test.mjs",
     "db:types": "node scripts/database/types.mjs",
     "db:setup": "pnpm db:start && pnpm db:reset",
-    "test:packages": "pnpm --filter @showcrafter/fireworks check && pnpm --filter @showcrafter/planner check",
+    "test:packages": "pnpm --filter @showcrafter/fireworks check && pnpm --filter @showcrafter/planner check && pnpm --filter @showcrafter/video-fit check",
     "knip": "knip",
     "test:browser": "tsc -p tests/browser/tsconfig.json && playwright test",
     "db:documents": "node scripts/database/documents.mjs",
