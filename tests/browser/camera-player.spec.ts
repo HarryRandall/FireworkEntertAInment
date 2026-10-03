@@ -1,5 +1,6 @@
 /** Chromium journeys for the large stage, finale gestures and native player boundaries. */
 import { test, expect, type Locator, type Page } from '@playwright/test';
+import { waitForDrawnTime, HIDE_PLAYER_OVERLAY } from './drawn-frame';
 // Pointer travel in CSS pixels and a short stationary sample in show seconds.
 const DRAG_PX = 80;
 const SAMPLE_TIME_S = 2.2;
@@ -22,7 +23,7 @@ async function seek(page: Page, time_s: number): Promise<void> {
     element.dispatchEvent(new Event('input', { bubbles: true }));
   }, time_s);
   await expect(slider).toHaveValue(String(time_s));
-  await page.waitForTimeout(SETTLE_MS);
+  await waitForDrawnTime(page, time_s);
 }
 async function drag(page: Page, canvas: Locator, shift = false): Promise<void> {
   const bounds = await canvas.boundingBox();
@@ -38,7 +39,7 @@ async function drag(page: Page, canvas: Locator, shift = false): Promise<void> {
   await page.waitForTimeout(SETTLE_MS);
 }
 async function image(canvas: Locator): Promise<string> {
-  return (await canvas.screenshot()).toString('base64');
+  return (await canvas.screenshot({ style: HIDE_PLAYER_OVERLAY })).toString('base64');
 }
 for (const finale of [false, true]) {
   test(`${finale ? 'finale' : 'single firework'} supports paused drag, wheel zoom, free pan and resize in the large view`, async ({
