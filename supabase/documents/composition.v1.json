@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ShowCrafter product composition v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["tubes"],
+  "properties": {
+    "box": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rows", "cols", "pitch_mm"],
+      "properties": {
+        "rows": { "type": "integer", "minimum": 1 },
+        "cols": { "type": "integer", "minimum": 1 },
+        "pitch_mm": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "tubes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["i", "letter", "t_ms", "angle_deg"],
+        "properties": {
+          "i": { "type": "integer", "minimum": 0 },
+          "letter": { "type": "string", "pattern": "^[a-z]{1,2}$" },
+          "t_ms": { "type": ["integer", "null"], "minimum": 0 },
+          "angle_deg": { "type": "number", "minimum": -90, "maximum": 90 },
+          "pos": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 0 },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "seed": { "type": "integer", "minimum": 0, "maximum": 4294967295 }
+        }
+      }
+    },
+    "fuse_delay_ms": { "type": "integer", "minimum": 0 }
+  }
+}
