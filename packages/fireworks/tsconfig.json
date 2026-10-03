@@ -10,7 +10,9 @@
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true
+    "exactOptionalPropertyTypes": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true
   },
   "include": ["src/**/*.ts", "tests/**/*.ts"]
 }
