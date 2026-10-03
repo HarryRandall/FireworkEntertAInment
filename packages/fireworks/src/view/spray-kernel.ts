@@ -116,6 +116,26 @@ Spark ordinarySpark(int sampleIndex, SparkClock clock, vec4 controls, vec4 colou
   return Spark(sparkMotion(originAlpha.xyz, velocity, age, motion.y, motion.z),
     coolingColour(colourSize.xyz, progress, glint), size, alpha);
 }
+Spark evaluateSampledSpark(int sampleIndex, vec4 originAlpha, vec3 inherited, SparkClock clock,
+  vec4 colourSize, vec4 motion, vec4 controls, vec4 extra, vec4 direction) {
+  if (clock.age < 0.0 || clock.age > clock.life || originAlpha.w <= BIRTH_ALPHA_CUTOFF) return invisibleSpark();
+  int id = clock.id;
+  int seed = clock.seed;
+  // Integer shift avoids rounding a hash at a direction-table boundary in Float32.
+  int directionIndex = int(hashWord(id, seed, int(DIRECTION_STREAM)) >> DIRECTION_INDEX_SHIFT);
+  int width = textureSize(uDirections, 0).x;
+  vec3 unitDirection = texelFetch(uDirections, ivec2(directionIndex % width, directionIndex / width), 0).xyz;
+  if (extra.z != 0.0) unitDirection = unitDirection * extra.y + direction.xyz;
+  float speedRandom = sparkHash(id, seed, int(SPEED_STREAM));
+  float speed = motion.x * (controls.x != 0.0 ? GERB_SPEED_MIN + GERB_SPEED_RANGE * speedRandom
+    : SPARK_SPEED_MIN + SPARK_SPEED_RANGE * speedRandom * speedRandom);
+  vec3 velocity = unitDirection * speed + inherited;
+  if (controls.z != 0.0 && sparkHash(id, seed, int(FORK_STREAM)) < controls.z) {
+    float forkTime = clock.life * (FORK_TIME_MIN + FORK_TIME_RANGE * sparkHash(id, seed, int(FORK_TIME_STREAM)));
+    if (clock.age >= forkTime) return forkSpark(sampleIndex, clock, controls, colourSize, originAlpha, velocity, motion);
+  }
+  return ordinarySpark(sampleIndex, clock, controls, colourSize, originAlpha, velocity, motion, extra);
+}
 Spark evaluateSpark(int birth, int sampleIndex) {
   vec4 originAlpha = birthLane(birth, 0);
   vec4 inherited = birthLane(birth, 1);
@@ -128,21 +148,6 @@ Spark evaluateSpark(int birth, int sampleIndex) {
   vec4 controls = birthLane(birth, 5);
   vec4 extra = birthLane(birth, 6);
   vec4 direction = birthLane(birth, 7);
-  if (clock.age < 0.0 || clock.age > clock.life || originAlpha.w <= BIRTH_ALPHA_CUTOFF) return invisibleSpark();
-  int id = clock.id;
-  int seed = clock.seed;
-  // Integer shift avoids rounding a hash at a direction-table boundary in Float32.
-  int directionIndex = int(hashWord(id, seed, int(DIRECTION_STREAM)) >> DIRECTION_INDEX_SHIFT);
-  int width = textureSize(uDirections, 0).x;
-  vec3 unitDirection = texelFetch(uDirections, ivec2(directionIndex % width, directionIndex / width), 0).xyz;
-  if (extra.z != 0.0) unitDirection = unitDirection * extra.y + direction.xyz;
-  float speedRandom = sparkHash(id, seed, int(SPEED_STREAM));
-  float speed = motion.x * (controls.x != 0.0 ? GERB_SPEED_MIN + GERB_SPEED_RANGE * speedRandom
-    : SPARK_SPEED_MIN + SPARK_SPEED_RANGE * speedRandom * speedRandom);
-  vec3 velocity = unitDirection * speed + inherited.xyz;
-  if (controls.z != 0.0 && sparkHash(id, seed, int(FORK_STREAM)) < controls.z) {
-    float forkTime = clock.life * (FORK_TIME_MIN + FORK_TIME_RANGE * sparkHash(id, seed, int(FORK_TIME_STREAM)));
-    if (clock.age >= forkTime) return forkSpark(sampleIndex, clock, controls, colourSize, originAlpha, velocity, motion);
-  }
-  return ordinarySpark(sampleIndex, clock, controls, colourSize, originAlpha, velocity, motion, extra);
+  return evaluateSampledSpark(sampleIndex, originAlpha, inherited.xyz, clock,
+    colourSize, motion, controls, extra, direction);
 }`;

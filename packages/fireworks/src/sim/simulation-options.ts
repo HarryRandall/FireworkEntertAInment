@@ -1,6 +1,7 @@
 /** Optional source sampling and particle collection controls for stateless simulation. */
 import type { ShotPlacement } from './launch';
 import type { SprayBirthSink } from './spray';
+import type { SpraySourceSink } from './spray-source';
 /** Placement is in metres; spray births retain each source's own clock in seconds. */
 export interface SimulationOptions extends ShotPlacement {
   /** Optional deterministic seed override; zero retains the stored seed fallback. */
@@ -9,6 +10,8 @@ export interface SimulationOptions extends ShotPlacement {
   sprays?: boolean;
   /** Receives sampled births instead of evaluating the CPU spray kernel. */
   sprayBirth?: SprayBirthSink | undefined;
+  /** Receives analytic sources instead of selecting and sampling individual births. */
+  spraySource?: SpraySourceSink | undefined;
   /** Optional phase boundary observer; true enters spray sampling, false leaves it. */
   sprayPhase?: ((active: boolean) => void) | undefined;
   /** Whether to emit smoke attributes; enabled by default. */

@@ -2,7 +2,16 @@
 export interface FeedbackInput {
   vertex: string;
   directions: string;
-  frames: { births: string; indices: string; count: number }[];
+  frames: {
+    births: string;
+    indices: string;
+    count: number;
+    time?: number;
+    sourceCount?: number;
+    clocks?: string;
+  }[];
+  birthMode?: boolean;
+  sourceMode?: boolean;
   width: number;
 }
 /** Executes in page.evaluate: reads metre positions, linear colour, size and alpha from software GL.
@@ -13,7 +22,7 @@ export function readSprayFeedback(input: FeedbackInput): number[][] {
   const DIRECTION_TEXTURE_SIDE_TEXELS = 64;
   const TEXEL_COMPONENTS = 4;
   const CANDIDATE_COMPONENTS = 2;
-  const OUTPUT_STRIDE = 8;
+  const OUTPUT_STRIDE = input.birthMode ? 9 : 8;
   const canvas = document.createElement('canvas');
   const context = canvas.getContext('webgl2');
   if (!context) throw new Error('GPU parity requires WebGL2 transform feedback');
@@ -95,7 +104,9 @@ precision highp float; out vec4 colour; void main() { colour = vec4(0); }`,
     );
     gl.transformFeedbackVaryings(
       program,
-      ['tfPosition', 'tfColour', 'tfSize', 'tfAlpha'],
+      input.birthMode
+        ? ['tfPosition', 'tfColour', 'tfSize', 'tfAlpha', 'tfId']
+        : ['tfPosition', 'tfColour', 'tfSize', 'tfAlpha'],
       gl.INTERLEAVED_ATTRIBS,
     );
     gl.linkProgram(program);
@@ -109,7 +120,13 @@ precision highp float; out vec4 colour; void main() { colour = vec4(0); }`,
     gl.uniform1f(gl.getUniformLocation(program, 'uScale'), 1);
     gl.uniform1f(gl.getUniformLocation(program, 'uDpr'), 1);
     function drawFrame(frame: FeedbackInput['frames'][number]): number[] {
-      texture('uBirths', 0, frame.births, input.width);
+      texture(input.sourceMode ? 'uSources' : 'uBirths', 0, frame.births, input.width);
+      if (input.sourceMode) {
+        if (!frame.clocks) throw new Error('Source parity requires binary64 clocks');
+        texture('uSourceClocks', 2, frame.clocks, input.width);
+        gl.uniform1f(gl.getUniformLocation(program, 'uSourceTime'), frame.time ?? 0);
+        gl.uniform1i(gl.getUniformLocation(program, 'uSourceCount'), frame.sourceCount ?? 0);
+      }
       gl.bindVertexArray(vao);
       gl.bindBuffer(gl.ARRAY_BUFFER, buffer());
       gl.bufferData(gl.ARRAY_BUFFER, unpack(frame.indices), gl.STATIC_DRAW);

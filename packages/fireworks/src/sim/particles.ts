@@ -1,6 +1,7 @@
 /** Compact, deterministic particle-frame writer shared by every simulation path. */
 import type { Vec3 } from './colour';
 import type { SprayBirthSink } from './spray';
+import type { SpraySourceSink } from './spray-source';
 
 // Prototype rendering budgets and alpha cut-off; sizes are renderer-space pixels.
 // Packed RGB and XYZ vectors have three scalar components.
@@ -76,6 +77,8 @@ export class ParticleWriter {
   ) {}
   /** Optional phase boundary observer, assigned once by the simulation entry point. */
   sprayPhase: ((active: boolean) => void) | undefined;
+  /** Optional analytic source receiver, suppressing CPU birth selection and sampling. */
+  spraySource: SpraySourceSink | undefined;
   private puffs: Puff[] = [];
   /** Appends a puff at a centre in metres, with linear RGB, size in metres and age in seconds. */
   // eslint-disable-next-line max-params -- Packed scalar lanes avoid an extra options allocation per particle.

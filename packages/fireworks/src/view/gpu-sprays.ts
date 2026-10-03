@@ -2,12 +2,14 @@
 import * as THREE from 'three';
 import { sprayKernel } from './spray-kernel';
 import { pointVertex, pointFragment } from './shaders';
-import { BIRTH_TEXTURE_WIDTH, SprayBirths, sprayDirections } from './spray-births';
+import { sprayDirections } from './spray-births';
+import { SpraySources } from './spray-sources';
+import { SOURCE_TEXTURE_WIDTH } from './source-layout';
+import { sourceBirthKernel } from './source-birth-kernel';
 
 // Prototype lookup has 4096 directions arranged as a square RGBA texture.
 const DIRECTION_TEXTURE_SIDE = 64;
 const TEXEL_COMPONENTS = 4;
-const CANDIDATE_COMPONENTS = 2;
 const EMPTY_TEXTURE_HEIGHT = 1;
 /** Vertex shader uses the same point projection and shading as CPU-produced sparks. */
 export const sprayVertex = `${sprayKernel}
@@ -23,9 +25,21 @@ ${pointVertex.replace(
   float alpha = spark.alpha > BIRTH_ALPHA_CUTOFF ? spark.alpha : 0.0;`,
 )}
 `;
-/** Owns a reusable birth texture, candidate attributes and point material in one draw. */
+/** Live vertex shader selects and samples births from source controls and reduced source clocks. */
+export const sourceSprayVertex = `${sourceBirthKernel}
+${pointVertex.replace(
+  'void main() {',
+  `void main() {
+  Spark spark = evaluateSourceSpark(gl_VertexID);
+  vec3 position = spark.position;
+  vec3 color = spark.colour;
+  float size = spark.size;
+  float alpha = spark.alpha > BIRTH_ALPHA_CUTOFF ? spark.alpha : 0.0;`,
+)}
+`;
+/** Owns reusable analytic source textures and a candidate draw range in one points layer. */
 export class GpuSprays {
-  readonly births = new SprayBirths();
+  readonly sources = new SpraySources();
   private readonly directions = new THREE.DataTexture(
     sprayDirections(),
     DIRECTION_TEXTURE_SIDE,
@@ -34,8 +48,15 @@ export class GpuSprays {
     THREE.FloatType,
   );
   private texture = new THREE.DataTexture(
-    new Float32Array(BIRTH_TEXTURE_WIDTH * TEXEL_COMPONENTS),
-    BIRTH_TEXTURE_WIDTH,
+    new Float32Array(SOURCE_TEXTURE_WIDTH * TEXEL_COMPONENTS),
+    SOURCE_TEXTURE_WIDTH,
+    EMPTY_TEXTURE_HEIGHT,
+    THREE.RGBAFormat,
+    THREE.FloatType,
+  );
+  private clockTexture = new THREE.DataTexture(
+    this.sources.clocks,
+    SOURCE_TEXTURE_WIDTH,
     EMPTY_TEXTURE_HEIGHT,
     THREE.RGBAFormat,
     THREE.FloatType,
@@ -48,14 +69,17 @@ export class GpuSprays {
   constructor(projection: { uScale: { value: number }; uDpr: { value: number } }) {
     this.uniforms = {
       ...projection,
-      uBirths: { value: this.texture },
+      uSources: { value: this.texture },
+      uSourceClocks: { value: this.clockTexture },
+      uSourceTime: { value: 0 },
+      uSourceCount: { value: 0 },
       uDirections: { value: this.directions },
     };
     this.points = new THREE.Points(
       this.geometry,
       new THREE.ShaderMaterial({
         uniforms: this.uniforms,
-        vertexShader: sprayVertex,
+        vertexShader: sourceSprayVertex,
         fragmentShader: pointFragment,
         transparent: true,
         depthWrite: false,
@@ -64,9 +88,6 @@ export class GpuSprays {
         blendDst: THREE.OneFactor,
       }),
     );
-    const candidates = new THREE.BufferAttribute(this.births.indices, CANDIDATE_COMPONENTS);
-    candidates.setUsage(THREE.DynamicDrawUsage);
-    this.geometry.setAttribute('candidate', candidates);
     // Positions exist only in the shader. Explicit draw ranges supply the vertex count;
     // a zero-radius local sphere supplies three.js's transparent-object sorting centre.
     // Culling stays disabled because CPU geometry cannot bound the analytic motion.
@@ -75,37 +96,59 @@ export class GpuSprays {
     this.points.frustumCulled = false;
     this.directions.needsUpdate = true;
   }
-  /** Uploads populated births and candidate indices after source sampling; keeps capacity reusable. */
+  /** Uploads changed per-source parameters and updates sequence seconds; no per-spark CPU work. */
   upload(): void {
-    if (this.births.count === 0) {
+    if (this.sources.count === 0) {
       this.geometry.setDrawRange(0, 0);
       return;
     }
-    const height = this.births.data.length / (BIRTH_TEXTURE_WIDTH * TEXEL_COMPONENTS);
-    if (this.texture.image.data !== this.births.data) {
+    const height = this.sources.data.length / (SOURCE_TEXTURE_WIDTH * TEXEL_COMPONENTS);
+    if (this.texture.image.data !== this.sources.data) {
       this.texture.dispose();
       this.texture = new THREE.DataTexture(
-        this.births.data,
-        BIRTH_TEXTURE_WIDTH,
+        this.sources.data,
+        SOURCE_TEXTURE_WIDTH,
         height,
         THREE.RGBAFormat,
         THREE.FloatType,
       );
-      this.uniforms.uBirths.value = this.texture;
+      this.uniforms.uSources.value = this.texture;
     }
-    this.texture.needsUpdate = true;
-    const candidates = this.geometry.getAttribute('candidate');
-    if (!(candidates instanceof THREE.BufferAttribute)) throw new Error('Missing spray candidates');
-    candidates.clearUpdateRanges();
-    if (this.births.count > 0)
-      candidates.addUpdateRange(0, this.births.count * CANDIDATE_COMPONENTS);
-    candidates.needsUpdate = true;
-    this.geometry.setDrawRange(0, this.births.count);
+    this.texture.needsUpdate = this.sources.dirty;
+    // The placeholder is allocated only when capacity grows. gl_VertexID supplies candidate identity;
+    // no candidate attribute is populated or uploaded per frame.
+    const positions = this.geometry.getAttribute('position');
+    if (!this.geometry.hasAttribute('position') || positions.count < this.sources.count) {
+      this.geometry.dispose();
+      this.geometry.setAttribute(
+        'position',
+        new THREE.BufferAttribute(new Float32Array(this.sources.count * 2), 1),
+      );
+    }
+    this.uploadClocks();
+    this.uniforms.uSourceTime.value = this.sources.time;
+    this.uniforms.uSourceCount.value = this.sources.sources;
+    this.geometry.setDrawRange(0, this.sources.count);
+  }
+  private uploadClocks(): void {
+    if (this.clockTexture.image.data !== this.sources.clocks) {
+      this.clockTexture.dispose();
+      this.clockTexture = new THREE.DataTexture(
+        this.sources.clocks,
+        SOURCE_TEXTURE_WIDTH,
+        this.sources.clocks.length / (SOURCE_TEXTURE_WIDTH * TEXEL_COMPONENTS),
+        THREE.RGBAFormat,
+        THREE.FloatType,
+      );
+      this.uniforms.uSourceClocks.value = this.clockTexture;
+    }
+    this.clockTexture.needsUpdate = true;
   }
   /** Retires textures, geometry and shader material when the owning viewer is disposed. */
   dispose(): void {
     this.texture.dispose();
     this.directions.dispose();
+    this.clockTexture.dispose();
     this.geometry.dispose();
     this.points.material.dispose();
   }
