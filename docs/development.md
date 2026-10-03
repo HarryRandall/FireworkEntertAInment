@@ -353,7 +353,7 @@ pnpm test:analyser:local
 
 The local integration command gets credentials internally from local Supabase
 status. It inserts a uniquely identified Jamendo track and queue jobs, substitutes
-the committed CC0 click fixture for the provider download, runs real librosa and
+the committed CC0 click fixture for the provider download, runs the default CPU neural tracker and
 Storage API writes, verifies stored bytes/features and repeat-job reuse, and
 cleans up only its own rows and object. It also checks failed jobs, rejected result writes after completion, and REST
 denial for public callers and signed-in shoppers. No test contacts Jamendo or downloads real audio.
@@ -374,7 +374,7 @@ The worker uses the balanced analyser output for everyone. A unique active-job
 index on the UUID in the payload permits only one queued, running or failed job
 per track. On an enqueue uniqueness conflict, read and reuse that active job;
 do not change its lease. Completed/dead jobs do not prevent an intentional new
-request. A current `librosa-1.4.0` result with installed audio and waveform peaks
+request. A current `beat-this-1.1.0-fold0` result with installed audio and waveform peaks
 is reused without a download or second analysis. A crashed attempt before result
 installation can recompute; a retry after installation reuses the durable result.
 
@@ -436,8 +436,7 @@ music schema, then re-solve with its beat/downbeat clock and pin the selected
 analysis UUID when saving a show. Wake delivery and delayed retry/crash recovery
 need the trusted dispatcher described above. The complete shopper loop, planner
 re-solving, actual Jamendo delivery, live Modal proxy authentication, scale-to-zero
-and actual Modal cost are not verified by these local tests. The neural beat
-tracker and evaluation upgrade are outside this change.
+and actual Modal cost are not verified by these local tests. The neural tracker and its independent evaluation are described below.
 
 ### Local database permission-call limitation
 
@@ -451,3 +450,75 @@ behaviour checks for valid workers, stale/expired attempts and atomic rollback.
 Direct SQL permission-error behaviour remains unverified beyond this observed
 crash. No grant was widened, no check threshold was lowered, and the local image
 was not replaced. Hosted behaviour has not been tested.
+
+### Neural beat tracker and evaluation
+
+The default is Beat This! 1.1.0, checkpoint `fold0`, on CPU with two Torch threads
+and minimal postprocessing, behind the unchanged music analysis schema 1.4.0.
+Database algorithm identity is `beat-this-1.1.0-fold0`; historical librosa results
+remain immutable. Missing/corrupt weights or a mismatched package fail visibly,
+without quietly returning librosa under a neural algorithm name. Unsupported or
+missing bar evidence retains the beat clock and omits uncertain downbeats.
+
+Install the updated pinned requirements and verified weights before running the
+worker locally:
+
+```bash
+services/music-analyser/.venv/bin/python -m pip install -r services/music-analyser/requirements.txt -r services/workers/requirements.txt -e services/worker-common
+services/music-analyser/.venv/bin/python services/music-analyser/download_model.py
+pnpm test:analyser
+pnpm test:analyser:contract
+pnpm test:analyser:local
+SHOWCRAFTER_TEST_LOCAL_DATABASE=1 services/music-analyser/.venv/bin/python -m unittest discover -s services/music-analyser/tests -p test_requeue.py
+```
+
+Linux pins the CPU-only Torch/torchaudio wheels; macOS uses the matching release.
+The model download verifies SHA-256 before installation and inference verifies it
+again before loading. `BEAT_THIS_CHECKPOINT` may point to a different local path,
+but its bytes must still match the pinned model. No provider key is needed.
+The Modal image installs the same requirements and downloads verified weights at
+image build time into `/root/.cache/fold0.ckpt`, rather than on each invocation.
+The existing `showcrafter-workers` Supabase/audio-host secret and authenticated
+wake hook remain unchanged. No Modal image has been built or deployed here.
+
+See [the evaluation guide](../services/music-analyser/evals/README.md) and
+[per-track CPU report](../services/music-analyser/evals/report-local-cpu.json).
+The default switch passed the independent-label beat/downbeat and strict-tempo
+gate. This evidence is local macOS CPU, not Modal CPU/GPU runtime, cold starts,
+scale-to-zero or compute billing. GPU evaluation is not needed for these short
+local recordings; long/full-band tracks and Modal capacity remain unverified.
+
+### Local saved-show music requeue
+
+The local-only administrative script takes a JSON array of selected track UUIDs
+and fresh trusted Jamendo audio URLs. Provider URLs are not retained in music
+analysis rows, so the owner supplies them from trusted track metadata. Example:
+
+```json
+[{ "track_id": "<music track UUID>", "audio_url": "https://<allowlisted Jamendo host>/<audio>" }]
+```
+
+With `ANALYSER_ALLOWED_AUDIO_HOSTS` set to those exact hosts:
+
+```bash
+services/music-analyser/.venv/bin/python services/music-analyser/requeue_saved_music.py /private/tmp/selected-tracks.json
+services/music-analyser/.venv/bin/python services/music-analyser/requeue_saved_music.py /private/tmp/selected-tracks.json --apply
+```
+
+The first command rolls its transaction back. `--apply` commits against the fixed
+local PostgreSQL address on port 55422 only; there is no hosted target option.
+Only selected Jamendo tracks referenced by saved show versions are eligible.
+Tracks already current under the selected neural algorithm and tracks with active
+jobs are skipped. Inserted jobs and removal of their old current pointers happen
+atomically. Existing saved versions keep their analysis UUID and feature bytes.
+If an upgrade job fails, that track has no current analysis until a successful
+retry installs one; its saved snapshots still have the old pinned features.
+
+A selected-but-not-queued count can include missing, non-Jamendo, unused, upgraded
+or active tracks; inspect those selected UUIDs before assuming all were upgraded.
+The script queues work only, without draining jobs or posting a Modal wake. Use an
+explicit local drain for acceptance. The tested transaction uses rollback fixtures,
+checks repeat-run idempotence, active-job protection, unused/current exclusions and
+pin preservation. No saved-show batch has been applied outside those fixtures.
+The later app hook still needs to enqueue/wake, read the selected result, re-solve
+and pin its UUID; it has not been built in this lane.

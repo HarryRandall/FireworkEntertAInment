@@ -183,6 +183,12 @@ jobs:
         run: |
           python -m venv services/music-analyser/.venv
           services/music-analyser/.venv/bin/python -m pip install -r services/music-analyser/requirements.txt -e services/worker-common
+      - name: Install verified neural checkpoint
+        run: services/music-analyser/.venv/bin/python services/music-analyser/download_model.py
+      - name: Check saved-show music requeue transaction
+        env:
+          SHOWCRAFTER_TEST_LOCAL_DATABASE: '1'
+        run: services/music-analyser/.venv/bin/python -m unittest discover -s services/music-analyser/tests -p test_requeue.py
       - name: Exercise music jobs with offline audio against local Supabase
         run: pnpm test:analyser:local
       - name: Stop the test database

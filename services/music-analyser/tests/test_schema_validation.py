@@ -139,7 +139,7 @@ class SchemaValidationTests(unittest.TestCase):
             with self.assertRaisesRegex(
                 AudioInputError, "reliable rhythmic grid"
             ) as raised:
-                analyse_song(str(path))
+                analyse_song(str(path), beat_tracker="librosa")
 
         self.assertEqual(raised.exception.status_code, 422)
         self.assertEqual(raised.exception.error_code, "insufficient_musical_content")
@@ -153,7 +153,7 @@ class SchemaValidationTests(unittest.TestCase):
             sf.write(path, tone, sr)
 
             with self.assertRaises(AudioInputError) as raised:
-                analyse_song(str(path))
+                analyse_song(str(path), beat_tracker="librosa")
 
         self.assertEqual(raised.exception.status_code, 422)
         self.assertEqual(raised.exception.error_code, "insufficient_musical_content")
@@ -171,7 +171,7 @@ class SchemaValidationTests(unittest.TestCase):
                     path = Path(tmp) / filename
                     path.write_bytes(content)
                     with self.assertRaises(AudioInputError) as raised:
-                        analyse_song(str(path))
+                        analyse_song(str(path), beat_tracker="librosa")
                     self.assertEqual(raised.exception.status_code, 415)
                     self.assertEqual(raised.exception.error_code, "unsupported_audio")
 
@@ -233,9 +233,19 @@ class SchemaValidationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "clicks.wav"
             sf.write(path, audio, sr)
-            result = analyse_song(str(path))
+            result = analyse_song(str(path), beat_tracker="librosa")
 
         self.check_planner_contract(result)
+        # Independently exercise neural adapter output through the same public Zod consumer.
+        beats = np.arange(0.5, 10, 0.5)
+        with patch(
+            "beat_tracking.neural_model", return_value=lambda y, sr: (beats, beats[::4])
+        ):
+            neural_result = analyse_song(
+                str(Path(__file__).parent / "fixtures/clicks.wav"),
+                beat_tracker="beat-this",
+            )
+        self.check_planner_contract(neural_result)
         self.check_planner_contract(make_analysis_payload())
         for mutation in SCHEMA_MUTATIONS:
             payload = make_analysis_payload()
@@ -282,7 +292,7 @@ class SchemaValidationTests(unittest.TestCase):
             path = Path(tmp) / "clicks.mp3"
             sf.write(path, audio, sr, format="WAV")
 
-            result = analyse_song(str(path))
+            result = analyse_song(str(path), beat_tracker="librosa")
 
         self.assertEqual(len(result["sections"]), 1)
         self.assertEqual(result["sections"][0]["label"], "unknown")
