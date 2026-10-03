@@ -780,3 +780,6 @@ The browser theme journeys in `tests/browser/theme.spec.ts` cover stored light a
 dark preferences on every current route, reloads and live system colour-scheme
 changes. Browser execution and desktop/390 px light/dark screenshots remain
 separate verification gates from the production build.
+
+Shopper planning routes, trust boundaries and composer browser checks are described
+in [Shopper planner](shopper-planner.md).
