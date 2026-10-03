@@ -60,7 +60,11 @@ export function solvePlan(rawInput: unknown, rawOptions: unknown = {}): PlanResu
       reason: 'No safe in-stock product fits this budget and request',
     };
   }
-  const pool = (['gentle', 'balanced', 'big_finale'] as const)
+  const moods =
+    input.preferred_mood !== undefined
+      ? [input.preferred_mood]
+      : (['gentle', 'balanced', 'big_finale'] as const);
+  const pool = moods
     .flatMap((mood) => searchMood(products, input, mood, weights))
     .sort(compareCandidates);
   const diverse = diverseCandidates(pool);

@@ -42,7 +42,10 @@ async function enter(page: Page) {
   await page.goto('/shopper/stores/leeds/plan');
   await expect(page.getByRole('heading', { name: 'Before we plan' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Next', exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: "I'm 18 or over" }).click();
+  await expect(async () => {
+    await page.getByRole('button', { name: "I'm 18 or over" }).click();
+    await expect(page.getByRole('button', { name: "Let's plan" })).toBeVisible();
+  }).toPass();
   await page.getByRole('button', { name: "Let's plan" }).click();
 }
 async function questions(page: Page, visit?: (index: number) => Promise<void>) {
@@ -77,7 +80,9 @@ async function questions(page: Page, visit?: (index: number) => Promise<void>) {
 async function plan(page: Page) {
   await page.getByRole('button', { name: 'Plan my show' }).click();
   await expect(page).toHaveURL(/session=[a-f0-9-]+/);
-  await expect(page.getByRole('heading', { name: 'Your planned show', exact: true })).toBeVisible();
+  await expect(
+    page.locator('[data-section=plan-products]').getByRole('heading', { level: 2 }),
+  ).toBeVisible();
   await expect(page.getByRole('button', { name: 'Show me something different' })).toBeEnabled();
 }
 async function capture(page: Page, info: TestInfo, label: string) {
@@ -104,7 +109,10 @@ for (const [viewportName, viewport] of Object.entries(viewports)) {
       await expect(page.getByRole('heading', { name: 'Before we plan' })).toBeVisible();
       await expect(page.locator('html')).toHaveClass(new RegExp(theme));
       await capture(page, info, `${viewportName}-${theme}-age`);
-      await page.getByRole('button', { name: "I'm 18 or over" }).click();
+      await expect(async () => {
+        await page.getByRole('button', { name: "I'm 18 or over" }).click();
+        await expect(page.getByRole('button', { name: "Let's plan" })).toBeVisible();
+      }).toPass();
       await capture(page, info, `${viewportName}-${theme}-context`);
       await page.getByRole('button', { name: "Let's plan" }).click();
       await questions(page, async (index) =>
@@ -114,7 +122,7 @@ for (const [viewportName, viewport] of Object.entries(viewports)) {
       await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeEnabled();
       await expect(page.getByText('Preparing 3D poster', { exact: true })).toHaveCount(0);
       await capture(page, info, `${viewportName}-${theme}-show`);
-      await expect(page.getByRole('button', { name: 'Change it', exact: true })).toBeDisabled();
+      await expect(page.getByRole('button', { name: 'Change it', exact: true })).toBeEnabled();
       await expect(page.getByRole('button', { name: 'Pick music' })).toBeDisabled();
       await expect(page.getByRole('button', { name: 'Save to list' })).toBeDisabled();
     });
@@ -141,7 +149,9 @@ test('reload preserves question progress and a completed plan, alternatives add 
     `select cues from public.plan_candidates where session_id = '${session}' and rank = 1;`,
   );
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Your planned show', exact: true })).toBeVisible();
+  await expect(
+    page.locator('[data-section=plan-products]').getByRole('heading', { level: 2 }),
+  ).toBeVisible();
   await page.getByRole('button', { name: 'Show me something different' }).click();
   await expect
     .poll(() => sql(`select count(*) from public.plan_candidates where session_id = '${session}';`))
@@ -151,7 +161,9 @@ test('reload preserves question progress and a completed plan, alternatives add 
   ).not.toBe(original);
   expect(sql(`select count(*) from public.credit_ledger where ref_id = '${session}';`)).toBe('1');
   await page.reload();
-  await expect(page.getByRole('heading', { name: 'Your planned show', exact: true })).toBeVisible();
+  await expect(
+    page.locator('[data-section=plan-products]').getByRole('heading', { level: 2 }),
+  ).toBeVisible();
   expect(sql(`select max(rank) from public.plan_candidates where session_id = '${session}';`)).toBe(
     '2',
   );
@@ -190,7 +202,9 @@ test('alternative rate limit keeps the existing show and does not charge again',
   );
   await page.getByRole('button', { name: 'Show me something different' }).click();
   await expect(page.getByRole('main').getByRole('alert')).toContainText('Please try again later');
-  await expect(page.getByRole('heading', { name: 'Your planned show', exact: true })).toBeVisible();
+  await expect(
+    page.locator('[data-section=plan-products]').getByRole('heading', { level: 2 }),
+  ).toBeVisible();
   expect(sql(`select count(*) from public.credit_ledger where ref_id = '${session}';`)).toBe('1');
 });
 
@@ -221,5 +235,7 @@ test('planning shows real pending work until the server result arrives', async (
     release();
   }
   await expect(page).toHaveURL(/session=[a-f0-9-]+/);
-  await expect(page.getByRole('heading', { name: 'Your planned show', exact: true })).toBeVisible();
+  await expect(
+    page.locator('[data-section=plan-products]').getByRole('heading', { level: 2 }),
+  ).toBeVisible();
 });

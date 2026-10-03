@@ -20,7 +20,7 @@ create table public.plan_sessions (
   credits_reservation_id uuid,
   created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
-comment on column public.plan_sessions.solver_snapshot is 'Trusted immutable solver input for reproducible alternatives; contains only public stock and safety facts.';
+comment on column public.plan_sessions.solver_snapshot is 'Trusted current solver input for reproducible alternatives, revised atomically by edits; contains only public stock and safety facts.';
 comment on column public.plan_sessions.credits_reservation_id is 'Nullable UUID reference to public.credit_reservations(id).';
 create table public.plan_candidates (
   id uuid primary key default gen_random_uuid(),

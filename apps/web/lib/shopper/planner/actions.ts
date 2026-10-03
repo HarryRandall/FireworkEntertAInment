@@ -10,8 +10,9 @@ import {
 } from '@showcrafter/planner';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
-import { readStore } from '../readers';
+import { readStore, readStoreById } from '../readers';
 import { plannerInput } from './adapter';
+import { showName } from './names';
 import { readPlan, readPlannerContext } from './readers';
 import { startRequestSchema, PLANNER_LIMITS, type PlannerActionResult } from './contracts';
 
@@ -42,6 +43,7 @@ async function persist({
   hash,
   candidate,
   qr,
+  names,
 }: {
   shopper: string;
   session: string;
@@ -49,6 +51,7 @@ async function persist({
   hash: string;
   candidate: PlanCandidate;
   qr: string | null;
+  names: ReadonlyMap<string, string>;
 }): Promise<PlannerActionResult> {
   const service = createServiceRoleSupabase();
   if (!service) throw new Error('Planner service credentials missing');
@@ -59,7 +62,7 @@ async function persist({
     p_snapshot: input,
     p_hash: hash,
     p_solver: SOLVER_VERSION,
-    p_candidate: candidate,
+    p_candidate: { ...candidate, name: showName(candidate, input, names) },
     p_qr: qr ?? undefined,
   });
   if (error) return expectedFailure(error);
@@ -98,6 +101,7 @@ export async function startPlanning(raw: unknown): Promise<PlannerActionResult> 
     hash: result.input_hash,
     candidate,
     qr,
+    names: new Map(store.products.map((product) => [product.product_id, product.name])),
   });
 }
 /** Adds only the next diverse rank using the owned immutable snapshot, without a new charge. */
@@ -128,6 +132,8 @@ export async function differentPlan(raw: unknown): Promise<PlannerActionResult> 
       status: 'exhausted',
       message: 'There are no more different plans that fit. You can keep this show.',
     };
+  const store = await readStoreById(plan.store_id);
+  if (!store) return { status: 'unavailable', message: 'This shop is unavailable.' };
   return persist({
     shopper,
     session: plan.id,
@@ -135,5 +141,6 @@ export async function differentPlan(raw: unknown): Promise<PlannerActionResult> 
     hash: plan.input_hash,
     candidate,
     qr: null,
+    names: new Map(store.products.map((product) => [product.product_id, product.name])),
   });
 }

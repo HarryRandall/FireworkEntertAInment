@@ -1,5 +1,6 @@
 /** Validated planner requests and persisted snapshots across the server boundary. */
 import { z } from 'zod';
+import { savedEditSchema } from './edit-contracts';
 import {
   planAnswersSchema,
   plannerInputSchema,
@@ -58,6 +59,8 @@ export const plannerContextSchema = z.object({
 const savedCandidateSchema = z.object({
   id: z.string().uuid(),
   rank: z.number().int().positive(),
+  revision: z.number().int().nonnegative(),
+  name: z.string().nullable(),
   mood: z.string(),
   cues: z.array(
     z.object({
@@ -79,6 +82,7 @@ export const savedPlanSchema = z.object({
   input_hash: z.string(),
   solver_snapshot: plannerInputSchema,
   plan_candidates: z.array(savedCandidateSchema).min(1),
+  plan_edits: z.array(savedEditSchema),
 });
 /** Owned and validated persisted planning session. */
 export type SavedPlan = z.infer<typeof savedPlanSchema>;

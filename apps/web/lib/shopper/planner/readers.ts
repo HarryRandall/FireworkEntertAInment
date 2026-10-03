@@ -17,7 +17,7 @@ export async function readPlan(id: string) {
   const { data, error } = await client
     .from('plan_sessions')
     .select(
-      'id,store_id,solver,input_hash,solver_snapshot,plan_candidates(id,rank,mood,cues,total_minor,currency,duration_ms)',
+      'id,store_id,solver,input_hash,solver_snapshot,plan_candidates(id,rank,revision,name,mood,cues,total_minor,currency,duration_ms),plan_edits(id,candidate_id,seq,message,source,ops,diff,outcome,reply)',
     )
     .eq('id', id)
     .maybeSingle();

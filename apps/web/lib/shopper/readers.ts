@@ -32,3 +32,10 @@ export async function readQr(slug: string) {
   if (error) throw error;
   return data === null ? null : qrSchema.parse(data);
 }
+/** Reads a visible store by its owned session's UUID through the public RPC boundary. */
+export async function readStoreById(id: string) {
+  const client = createClient(await cookies());
+  const { data, error } = await client.rpc('store_page', { p_store: id });
+  if (error) throw error;
+  return data === null ? null : storePageSchema.parse(data);
+}

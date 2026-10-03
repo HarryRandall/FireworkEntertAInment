@@ -3103,7 +3103,7 @@ create table public.plan_sessions (
   credits_reservation_id uuid,
   created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
-comment on column public.plan_sessions.solver_snapshot is 'Trusted immutable solver input for reproducible alternatives; contains only public stock and safety facts.';
+comment on column public.plan_sessions.solver_snapshot is 'Trusted current solver input for reproducible alternatives, revised atomically by edits; contains only public stock and safety facts.';
 comment on column public.plan_sessions.credits_reservation_id is 'Nullable UUID reference to public.credit_reservations(id).';
 create table public.plan_candidates (
   id uuid primary key default gen_random_uuid(),
@@ -4562,8 +4562,8 @@ begin
         (p_snapshot->'age_confirmation'->>'confirmed_at')::timestamptz,p_solver,p_hash,p_snapshot);
     perform private.charge_plan_session(p_session);
   end if;
-  insert into public.plan_candidates(session_id,rank,mood,cues,total_minor,currency,duration_ms,scores,picked_at)
-    values (p_session,v_rank,p_candidate->>'mood',p_candidate->'cues',(p_candidate->>'total_minor')::bigint,
+  insert into public.plan_candidates(session_id,rank,mood,name,cues,total_minor,currency,duration_ms,scores,picked_at)
+    values (p_session,v_rank,p_candidate->>'mood',p_candidate->>'name',p_candidate->'cues',(p_candidate->>'total_minor')::bigint,
       p_candidate->>'currency',(p_candidate->>'duration_ms')::int,p_candidate->'scores',clock_timestamp()) returning id into v_candidate;
   return v_candidate;
 end;
@@ -4575,6 +4575,76 @@ returns uuid language sql set search_path = '' as $$
   select private.persist_planner_result(p_shopper,p_session,p_store,p_snapshot,p_hash,p_solver,p_candidate,p_qr);
 $$;
 comment on function public.persist_planner_result(uuid,uuid,uuid,jsonb,text,text,jsonb,uuid) is 'Service-only atomic boundary for server-verified shopper plans; browser callers cannot author candidates.';
+
+-- Trusted edits serialise with alternatives and settle history and the revised plan together.
+create function private.persist_plan_edit(p_shopper uuid,p_session uuid,p_candidate uuid,
+  p_revision int,p_seq int,p_hash text,p_edit jsonb,p_snapshot jsonb,p_result jsonb)
+returns uuid language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  -- Product abuse budget: six edits in a burst, earning one token per minute.
+  v_capacity constant int := 6;
+  v_refill_seconds constant int := 60;
+  v_session public.plan_sessions;
+  v_candidate public.plan_candidates;
+  v_id uuid := (p_edit->>'id')::uuid;
+  v_previous public.plan_edits;
+begin
+  perform pg_advisory_xact_lock(hashtextextended(p_session::text,0));
+  select session.* into v_session from public.plan_sessions as session where session.id = p_session for update;
+  if v_session.shopper_id is distinct from p_shopper or not exists (
+    select from public.profiles as profile where profile.id = p_shopper and profile.status = 'active') then
+    raise exception using errcode = '42501',message = 'Owned active planning session required';
+  end if;
+  select edit.* into v_previous from public.plan_edits as edit where edit.id = v_id;
+  if v_previous.id is not null then
+    if v_previous.session_id <> p_session or v_previous.candidate_id <> p_candidate then
+      raise exception using errcode = '42501',message = 'Edit identity mismatch';
+    end if;
+    return v_id;
+  end if;
+  select candidate.* into v_candidate from public.plan_candidates as candidate
+    where candidate.id = p_candidate and candidate.session_id = p_session for update;
+  if v_candidate.id is null or v_candidate.revision <> p_revision or v_session.input_hash <> p_hash
+    or v_candidate.rank <> (select max(candidate.rank) from public.plan_candidates as candidate where candidate.session_id = p_session)
+    or p_seq <> (select coalesce(max(edit.seq),0) + 1 from public.plan_edits as edit where edit.session_id = p_session) then
+    raise exception using errcode = '40001',message = 'Plan changed; reload before editing';
+  end if;
+  if p_edit->>'source' not in ('chip','rule') or p_edit->>'outcome' not in ('applied','clarify','infeasible')
+    or (p_edit->>'outcome' = 'applied') <> (p_result is not null)
+    or p_edit->>'source' is null or p_edit->>'outcome' is null then
+    raise exception using errcode = '23514',message = 'Structured non-AI edit required';
+  end if;
+  if not private.consume_rate_limit('planner:edit:' || p_shopper,v_capacity,1.0 / v_refill_seconds) then
+    raise exception using errcode = 'P0001',message = 'Planner rate limit reached';
+  end if;
+  if p_result is not null then
+    if p_snapshot->>'store_id' is distinct from v_session.store_id::text
+      or p_snapshot->'age_confirmation' is distinct from v_session.solver_snapshot->'age_confirmation'
+      or p_result->>'currency' is distinct from v_candidate.currency::text
+      or (p_result->>'total_minor')::bigint > (p_snapshot->'answers'->>'budget_minor')::bigint then
+      raise exception using errcode = '23514',message = 'Edit snapshot mismatch';
+    end if;
+    update public.plan_candidates set revision = revision + 1,name = p_result->>'name',
+      mood = p_result->>'mood',cues = p_result->'cues',total_minor = (p_result->>'total_minor')::bigint,
+      duration_ms = (p_result->>'duration_ms')::int,scores = p_result->'scores'
+      where id = p_candidate;
+    update public.plan_sessions set answers = p_snapshot->'answers',solver_snapshot = p_snapshot,
+      input_hash = p_edit->>'input_hash' where id = p_session;
+  end if;
+  insert into public.plan_edits(id,session_id,candidate_id,seq,message,source,ops,diff,outcome,reply)
+    values (v_id,p_session,p_candidate,p_seq,p_edit->>'message',p_edit->>'source',p_edit->'ops',
+      nullif(p_edit->'diff','null'::jsonb),p_edit->>'outcome',p_edit->>'reply');
+  return v_id;
+end;
+$$;
+comment on function private.persist_plan_edit(uuid,uuid,uuid,int,int,text,jsonb,jsonb,jsonb) is 'Service-only atomic edit history and candidate revision with ownership, stale-write, retry and rate-limit fences; never charges credits.';
+create function public.persist_plan_edit(p_shopper uuid,p_session uuid,p_candidate uuid,
+  p_revision int,p_seq int,p_hash text,p_edit jsonb,p_snapshot jsonb,p_result jsonb)
+returns uuid language sql set search_path = '' as $$
+  select private.persist_plan_edit(p_shopper,p_session,p_candidate,p_revision,p_seq,p_hash,p_edit,p_snapshot,p_result);
+$$;
+comment on function public.persist_plan_edit(uuid,uuid,uuid,int,int,text,jsonb,jsonb,jsonb) is 'Persists a server-verified chip or rule edit; shoppers cannot author results directly.';
 
 -- Retailer integration metadata; credentials live in Vault and API keys are hashes.
 create table public.integrations (

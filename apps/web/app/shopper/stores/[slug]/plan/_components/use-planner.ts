@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { startPlanning, differentPlan } from '@/lib/shopper/planner/actions';
+import { editPlan } from '@/lib/shopper/planner/edit-actions';
 import type { SavedPlan, PlannerActionResult } from '@/lib/shopper/planner/contracts';
 import { currentCandidate, type PlannerProgress } from '@/lib/shopper/planner/progress';
 import { storePath } from '@/lib/shopper/paths';
@@ -59,7 +60,38 @@ export function usePlanner({
       differentPlan({ session: current.id, rank: currentCandidate(current.plan_candidates).rank }),
     );
   }
-  return { plan, message, unavailable, pending, generate, alternative };
+  const edit = usePlanEdit(plan, pending, run);
+  return { plan, message, unavailable, pending, generate, alternative, edit };
+}
+
+function usePlanEdit(
+  plan: SavedPlan | null,
+  pending: boolean,
+  run: (action: () => Promise<PlannerActionResult>) => void,
+) {
+  const retry = useRef<Parameters<typeof editPlan>[0]>(undefined);
+  const signature = useRef('');
+  return (source: 'chip' | 'rule', text: string, product?: string) => {
+    if (!plan || pending) return;
+    const candidate = currentCandidate(plan.plan_candidates);
+    const seq = Math.max(0, ...plan.plan_edits.map((item) => item.seq)) + 1;
+    const key = JSON.stringify([candidate.id, candidate.revision, seq, source, text, product]);
+    if (signature.current !== key) {
+      signature.current = key;
+      retry.current = {
+        id: crypto.randomUUID(),
+        session: plan.id,
+        candidate: candidate.id,
+        revision: candidate.revision,
+        seq,
+        source,
+        message: text,
+        product,
+      };
+    }
+    const request = retry.current;
+    run(() => editPlan(request));
+  };
 }
 
 function usePlannerRequest(
