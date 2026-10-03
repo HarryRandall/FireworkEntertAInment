@@ -1,5 +1,7 @@
 /** Catalogue mutations validate external input and independently recheck editor authority. */
 'use server';
+import { designSchema } from '@showcrafter/fireworks';
+import { measureParticlePeak } from '@/lib/studio/checks';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { requireArea } from '@/lib/auth/server';
@@ -76,7 +78,7 @@ async function publishMutation(
     value.kind === 'effect'
       ? await client
           .from('effect_versions')
-          .select('id')
+          .select('id,design')
           .eq('id', value.versionId)
           .eq('effect_id', value.id)
           .eq('status', 'draft')
@@ -94,7 +96,30 @@ async function publishMutation(
       data: null,
       error: { code: '23514', message: 'A matching draft version is required.' },
     };
-  return value.kind === 'effect'
-    ? client.rpc('publish_effect_version', { p_version_id: value.versionId })
-    : client.rpc('publish_product_version', { p_version_id: value.versionId });
+  if (value.kind === 'effect' && 'design' in version.data)
+    return publishMeasuredEffect(client, value.versionId, version.data.design);
+  return client.rpc('publish_product_version', { p_version_id: value.versionId });
+}
+async function publishMeasuredEffect(
+  client: Awaited<ReturnType<typeof getServerClient>>,
+  versionId: string,
+  document: unknown,
+) {
+  const design = designSchema.parse(document);
+  const peak = measureParticlePeak(design);
+  if (peak.exceeded)
+    return {
+      data: null,
+      error: {
+        code: '23514',
+        message:
+          'Publishing blocked: over the particle budget. Reduce the stars, trails or effects in Studio.',
+      },
+    };
+  return client.rpc('publish_measured_effect_version', {
+    p_version_id: versionId,
+    p_design: design,
+    p_peak: peak.count,
+    p_peak_time_s: peak.timeS,
+  });
 }
