@@ -1,0 +1,5626 @@
+{
+  "source": "prototype/fireworks3d.js",
+  "source_sha256": "1a0b11a74b0efe039ceb52782d75096f6ca76bf8eeae55a8b6b28a7b4a15964c",
+  "listener": [0, 1.7, 100],
+  "templates": [
+    {
+      "key": "peony",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 28, 0],
+          "distance_m": 103.40062862478159,
+          "duration_s": 1.7389652095427326,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.7389652095427326,
+          "kind": "boom",
+          "position": [0, 56, 0],
+          "distance_m": 113.79143201489292,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "dahlia",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 33, 0],
+          "distance_m": 104.78401595663338,
+          "duration_s": 1.887855926706273,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.887855926706273,
+          "kind": "boom",
+          "position": [0, 66, 0],
+          "distance_m": 118.88856126642293,
+          "duration_s": 0,
+          "size": 1.0384615384615385,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "chrysanthemum",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 31, 0],
+          "distance_m": 104.20407861499473,
+          "duration_s": 1.8297540818372289,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8297540818372289,
+          "kind": "boom",
+          "position": [0, 62, 0],
+          "distance_m": 116.77366997743968,
+          "duration_s": 0,
+          "size": 1.0384615384615385,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "willow",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 41, 0],
+          "distance_m": 107.44528840298211,
+          "duration_s": 2.104281350010022,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.104281350010022,
+          "kind": "boom",
+          "position": [0, 82, 0],
+          "distance_m": 128.2501072124308,
+          "duration_s": 0,
+          "size": 1.1538461538461537,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "brocade",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 38, 0],
+          "distance_m": 106.38463234885009,
+          "duration_s": 2.025833161936096,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.025833161936096,
+          "kind": "boom",
+          "position": [0, 76, 0],
+          "distance_m": 124.58125862263554,
+          "duration_s": 0,
+          "size": 1.0384615384615385,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.325833161936096,
+          "kind": "hiss",
+          "position": [0, 76, 0],
+          "distance_m": 124.58125862263554,
+          "duration_s": 3.4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "kamuro",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 44, 0],
+          "distance_m": 108.57849695036306,
+          "duration_s": 2.179908254950194,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.179908254950194,
+          "kind": "boom",
+          "position": [0, 88, 0],
+          "distance_m": 132.08970436790295,
+          "duration_s": 0,
+          "size": 1.0769230769230769,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.479908254950194,
+          "kind": "hiss",
+          "position": [0, 88, 0],
+          "distance_m": 132.08970436790295,
+          "duration_s": 5,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "horsetail",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 36, 0],
+          "distance_m": 105.71891978260088,
+          "duration_s": 1.971801207018598,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.971801207018598,
+          "kind": "boom",
+          "position": [0, 72, 0],
+          "distance_m": 122.23784193121212,
+          "duration_s": 0,
+          "size": 0.9230769230769231,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "palm",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 35, 0],
+          "distance_m": 105.39871915730285,
+          "duration_s": 1.9442222095223582,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.9442222095223582,
+          "kind": "boom",
+          "position": [0, 70, 0],
+          "distance_m": 121.09867877066208,
+          "duration_s": 0,
+          "size": 0.5846153846153846,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "crossette",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 29, 0],
+          "distance_m": 103.65949064123363,
+          "duration_s": 1.769745744450315,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.769745744450315,
+          "kind": "boom",
+          "position": [0, 58, 0],
+          "distance_m": 114.75926977808808,
+          "duration_s": 0,
+          "size": 1.1538461538461537,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "ring",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 32, 0],
+          "distance_m": 104.4896645606636,
+          "duration_s": 1.85903200617956,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.85903200617956,
+          "kind": "boom",
+          "position": [0, 64, 0],
+          "distance_m": 117.81888643167528,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "strobe",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 34, 0],
+          "distance_m": 105.08705914621457,
+          "duration_s": 1.9162463307205575,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.9162463307205575,
+          "kind": "boom",
+          "position": [0, 68, 0],
+          "distance_m": 119.9820403227083,
+          "duration_s": 0,
+          "size": 0.9230769230769231,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.2162463307205575,
+          "kind": "hiss",
+          "position": [0, 68, 0],
+          "distance_m": 119.9820403227083,
+          "duration_s": 3.4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "crackle",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 26, 0],
+          "distance_m": 102.91010640359866,
+          "duration_s": 1.675708805252273,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.675708805252273,
+          "kind": "boom",
+          "position": [0, 52, 0],
+          "distance_m": 111.9378845610368,
+          "duration_s": 0,
+          "size": 0.9230769230769231,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.885708805252273,
+          "kind": "crackle",
+          "position": [0, 52, 0],
+          "distance_m": 111.9378845610368,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "pistil",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 33, 0],
+          "distance_m": 104.78401595663338,
+          "duration_s": 1.887855926706273,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.887855926706273,
+          "kind": "boom",
+          "position": [0, 66, 0],
+          "distance_m": 118.88856126642293,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "neutron",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whistle",
+          "position": [0, 30, 0],
+          "distance_m": 103.92733038041533,
+          "duration_s": 1.8,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8,
+          "kind": "boom",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "ghost",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 32, 0],
+          "distance_m": 104.4896645606636,
+          "duration_s": 1.85903200617956,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.85903200617956,
+          "kind": "boom",
+          "position": [0, 64, 0],
+          "distance_m": 117.81888643167528,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "glitter",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 30, 0],
+          "distance_m": 103.92733038041533,
+          "duration_s": 1.8,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8,
+          "kind": "boom",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.1,
+          "kind": "hiss",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 2.6,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "fallingLeaves",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 37, 0],
+          "distance_m": 106.04758365941207,
+          "duration_s": 1.9989997498749217,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.9989997498749217,
+          "kind": "boom",
+          "position": [0, 74, 0],
+          "distance_m": 123.39890599190902,
+          "duration_s": 0,
+          "size": 0.8461538461538461,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "fish",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whistle",
+          "position": [0, 27, 0],
+          "distance_m": 103.15081192118653,
+          "duration_s": 1.7076299364909249,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.7076299364909249,
+          "kind": "boom",
+          "position": [0, 54, 0],
+          "distance_m": 112.85074213313794,
+          "duration_s": 0,
+          "size": 1.0769230769230769,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "bees",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 25, 0],
+          "distance_m": 102.6785761490682,
+          "duration_s": 1.6431676725154984,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.6431676725154984,
+          "kind": "boom",
+          "position": [0, 50, 0],
+          "distance_m": 111.0535456435318,
+          "duration_s": 0,
+          "size": 0.7692307692307693,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "multiBreak",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 35, 0],
+          "distance_m": 105.39871915730285,
+          "duration_s": 1.9442222095223582,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.9442222095223582,
+          "kind": "boom",
+          "position": [0, 70, 0],
+          "distance_m": 121.09867877066208,
+          "duration_s": 0,
+          "size": 0.6923076923076923,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.4942222095223583,
+          "kind": "boom",
+          "position": [-26, 78, 0],
+          "distance_m": 128.44333380911598,
+          "duration_s": 0,
+          "size": 0.6923076923076923,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 3.044222209522358,
+          "kind": "boom",
+          "position": [24, 84, 0],
+          "distance_m": 131.71670357247785,
+          "duration_s": 0,
+          "size": 0.6153846153846154,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 4.164222209522358,
+          "kind": "crackle",
+          "position": [24, 84, 0],
+          "distance_m": 131.71670357247785,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "salute",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 23, 0],
+          "distance_m": 102.24328828827835,
+          "duration_s": 1.5760710643876437,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.5760710643876437,
+          "kind": "boom",
+          "position": [0, 46, 0],
+          "distance_m": 109.37316855609514,
+          "duration_s": 0,
+          "size": 0.45,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "comet",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 27.5, 0],
+          "distance_m": 103.27458545063253,
+          "duration_s": 1.9,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "mine",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "hiss",
+          "position": [0, 10, 0],
+          "distance_m": 100.34385880560903,
+          "duration_s": 1.2,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "fountain",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "hiss",
+          "position": [0, 3, 0],
+          "distance_m": 100.00844964301767,
+          "duration_s": 5,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": true,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "tourbillon",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "whistle",
+          "position": [0, 20, 0],
+          "distance_m": 101.66066102480349,
+          "duration_s": 2.2,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "redGold",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 36, 0],
+          "distance_m": 105.71891978260088,
+          "duration_s": 1.971801207018598,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.971801207018598,
+          "kind": "boom",
+          "position": [0, 72, 0],
+          "distance_m": 122.23784193121212,
+          "duration_s": 0,
+          "size": 1.0384615384615385,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "greenWhite",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 40, 0],
+          "distance_m": 107.0835654990998,
+          "duration_s": 2.0784609690826525,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.0784609690826525,
+          "kind": "boom",
+          "position": [0, 80, 0],
+          "distance_m": 127.00744072691175,
+          "duration_s": 0,
+          "size": 1.0769230769230769,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "redLace",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 31, 0],
+          "distance_m": 104.20407861499473,
+          "duration_s": 1.8297540818372289,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8297540818372289,
+          "kind": "boom",
+          "position": [0, 62, 0],
+          "distance_m": 116.77366997743968,
+          "duration_s": 0,
+          "size": 0.9615384615384616,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 3.6297540818372287,
+          "kind": "crackle",
+          "position": [0, 62, 0],
+          "distance_m": 116.77366997743968,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "crackleChrys",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 34, 0],
+          "distance_m": 105.08705914621457,
+          "duration_s": 1.9162463307205575,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.9162463307205575,
+          "kind": "boom",
+          "position": [0, 68, 0],
+          "distance_m": 119.9820403227083,
+          "duration_s": 0,
+          "size": 1.0769230769230769,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 3.8712463307205573,
+          "kind": "crackle",
+          "position": [0, 68, 0],
+          "distance_m": 119.9820403227083,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "whiteComet",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 30, 0],
+          "distance_m": 103.92733038041533,
+          "duration_s": 2.4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "greenComets",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 27.5, 0],
+          "distance_m": 103.27458545063253,
+          "duration_s": 2,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "goldToBlue",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 27.5, 0],
+          "distance_m": 103.27458545063253,
+          "duration_s": 2.1,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "glitterMine",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "hiss",
+          "position": [0, 10, 0],
+          "distance_m": 100.34385880560903,
+          "duration_s": 1.2,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "peonyRedGreen",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 29, 0],
+          "distance_m": 103.65949064123363,
+          "duration_s": 1.769745744450315,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.769745744450315,
+          "kind": "boom",
+          "position": [0, 58, 0],
+          "distance_m": 114.75926977808808,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "peonyChange",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 32, 0],
+          "distance_m": 104.4896645606636,
+          "duration_s": 1.85903200617956,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.85903200617956,
+          "kind": "boom",
+          "position": [0, 64, 0],
+          "distance_m": 117.81888643167528,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "rainbow",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 30, 0],
+          "distance_m": 103.92733038041533,
+          "duration_s": 1.8,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8,
+          "kind": "boom",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "silverChrys",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 33, 0],
+          "distance_m": 104.78401595663338,
+          "duration_s": 1.887855926706273,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.887855926706273,
+          "kind": "boom",
+          "position": [0, 66, 0],
+          "distance_m": 118.88856126642293,
+          "duration_s": 0,
+          "size": 1.0384615384615385,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "chrysTips",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 35, 0],
+          "distance_m": 105.39871915730285,
+          "duration_s": 1.9442222095223582,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.9442222095223582,
+          "kind": "boom",
+          "position": [0, 70, 0],
+          "distance_m": 121.09867877066208,
+          "duration_s": 0,
+          "size": 1.0769230769230769,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "greenWillow",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 40, 0],
+          "distance_m": 107.0835654990998,
+          "duration_s": 2.0784609690826525,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.0784609690826525,
+          "kind": "boom",
+          "position": [0, 80, 0],
+          "distance_m": 127.00744072691175,
+          "duration_s": 0,
+          "size": 0.9615384615384616,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "silverKamuro",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 43, 0],
+          "distance_m": 108.19283710116858,
+          "duration_s": 2.154994199528157,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.154994199528157,
+          "kind": "boom",
+          "position": [0, 86, 0],
+          "distance_m": 130.79178108734507,
+          "duration_s": 0,
+          "size": 1.0384615384615385,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.454994199528157,
+          "kind": "hiss",
+          "position": [0, 86, 0],
+          "distance_m": 130.79178108734507,
+          "duration_s": 4.6,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "timeRain",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 39, 0],
+          "distance_m": 106.72998641431563,
+          "duration_s": 2.0523157651784487,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.0523157651784487,
+          "kind": "boom",
+          "position": [0, 78, 0],
+          "distance_m": 125.78429949719481,
+          "duration_s": 0,
+          "size": 0.9230769230769231,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.3523157651784485,
+          "kind": "hiss",
+          "position": [0, 78, 0],
+          "distance_m": 125.78429949719481,
+          "duration_s": 6,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 3.8523157651784485,
+          "kind": "crackle",
+          "position": [0, 78, 0],
+          "distance_m": 125.78429949719481,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "coconut",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 36, 0],
+          "distance_m": 105.71891978260088,
+          "duration_s": 1.971801207018598,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.971801207018598,
+          "kind": "boom",
+          "position": [0, 72, 0],
+          "distance_m": 122.23784193121212,
+          "duration_s": 0,
+          "size": 0.6153846153846154,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "spider",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 32, 0],
+          "distance_m": 104.4896645606636,
+          "duration_s": 1.85903200617956,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.85903200617956,
+          "kind": "boom",
+          "position": [0, 64, 0],
+          "distance_m": 117.81888643167528,
+          "duration_s": 0,
+          "size": 1.0769230769230769,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "redCrossette",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 30, 0],
+          "distance_m": 103.92733038041533,
+          "duration_s": 1.8,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8,
+          "kind": "boom",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 0,
+          "size": 1.1538461538461537,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "saturn",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 33, 0],
+          "distance_m": 104.78401595663338,
+          "duration_s": 1.887855926706273,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.887855926706273,
+          "kind": "boom",
+          "position": [0, 66, 0],
+          "distance_m": 118.88856126642293,
+          "duration_s": 0,
+          "size": 0.5,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "doubleRing",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 34, 0],
+          "distance_m": 105.08705914621457,
+          "duration_s": 1.9162463307205575,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.9162463307205575,
+          "kind": "boom",
+          "position": [0, 68, 0],
+          "distance_m": 119.9820403227083,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "heart",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 31, 0],
+          "distance_m": 104.20407861499473,
+          "duration_s": 1.8297540818372289,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8297540818372289,
+          "kind": "boom",
+          "position": [0, 62, 0],
+          "distance_m": 116.77366997743968,
+          "duration_s": 0,
+          "size": 0.9230769230769231,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "purplePistil",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 32, 0],
+          "distance_m": 104.4896645606636,
+          "duration_s": 1.85903200617956,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.85903200617956,
+          "kind": "boom",
+          "position": [0, 64, 0],
+          "distance_m": 117.81888643167528,
+          "duration_s": 0,
+          "size": 1.0384615384615385,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "dragonEggs",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 27, 0],
+          "distance_m": 103.15081192118653,
+          "duration_s": 1.7076299364909249,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.7076299364909249,
+          "kind": "boom",
+          "position": [0, 54, 0],
+          "distance_m": 112.85074213313794,
+          "duration_s": 0,
+          "size": 0.8461538461538461,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.607629936490925,
+          "kind": "crackle",
+          "position": [0, 54, 0],
+          "distance_m": 112.85074213313794,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "greenStrobe",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 35, 0],
+          "distance_m": 105.39871915730285,
+          "duration_s": 1.9442222095223582,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.9442222095223582,
+          "kind": "boom",
+          "position": [0, 70, 0],
+          "distance_m": 121.09867877066208,
+          "duration_s": 0,
+          "size": 0.9615384615384616,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.2442222095223583,
+          "kind": "hiss",
+          "position": [0, 70, 0],
+          "distance_m": 121.09867877066208,
+          "duration_s": 3.2,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "brocadeComets",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 27.5, 0],
+          "distance_m": 103.27458545063253,
+          "duration_s": 2,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "randomComets",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 26, 0],
+          "distance_m": 102.91010640359866,
+          "duration_s": 2.1,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.1,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.2,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.30000000000000004,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.4,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.5,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "silverMine",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "hiss",
+          "position": [0, 10, 0],
+          "distance_m": 100.34385880560903,
+          "duration_s": 1.2,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "crackleMine",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "hiss",
+          "position": [0, 10, 0],
+          "distance_m": 100.34385880560903,
+          "duration_s": 1.2,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.2,
+          "kind": "crackle",
+          "position": [0, 20, 0],
+          "distance_m": 101.66066102480349,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "silverFountain",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "hiss",
+          "position": [0, 3, 0],
+          "distance_m": 100.00844964301767,
+          "duration_s": 6,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": true,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "sprayFountain",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "hiss",
+          "position": [0, 3, 0],
+          "distance_m": 100.00844964301767,
+          "duration_s": 5,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": true,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "tourbillons",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "whistle",
+          "position": [0, 20, 0],
+          "distance_m": 101.66066102480349,
+          "duration_s": 2.4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "brocadeCrown",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 30, 0],
+          "distance_m": 103.92733038041533,
+          "duration_s": 1.8,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8,
+          "kind": "boom",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 0,
+          "size": 0.34615384615384615,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.1,
+          "kind": "hiss",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 4.2,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "jellyfish",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 30, 0],
+          "distance_m": 103.92733038041533,
+          "duration_s": 1.8,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8,
+          "kind": "boom",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 0,
+          "size": 0.7692307692307693,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.1,
+          "kind": "hiss",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 3.6,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "snowflakes",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 30, 0],
+          "distance_m": 103.92733038041533,
+          "duration_s": 1.8,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8,
+          "kind": "boom",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 0,
+          "size": 1.1538461538461537,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "spiral",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 30, 0],
+          "distance_m": 103.92733038041533,
+          "duration_s": 1.8,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8,
+          "kind": "boom",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 0,
+          "size": 1.0769230769230769,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "waterfall",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 30, 0],
+          "distance_m": 103.92733038041533,
+          "duration_s": 1.8,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8,
+          "kind": "boom",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 0,
+          "size": 1.1846153846153846,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "wave",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 30, 0],
+          "distance_m": 103.92733038041533,
+          "duration_s": 1.8,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8,
+          "kind": "boom",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "whirlwind",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 30, 0],
+          "distance_m": 103.92733038041533,
+          "duration_s": 1.8,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8,
+          "kind": "boom",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 0,
+          "size": 0.9230769230769231,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "firefly",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 30, 0],
+          "distance_m": 103.92733038041533,
+          "duration_s": 1.8,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8,
+          "kind": "boom",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 0,
+          "size": 0.9230769230769231,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.1,
+          "kind": "hiss",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 5,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "flitter",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 30, 0],
+          "distance_m": 103.92733038041533,
+          "duration_s": 1.8,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8,
+          "kind": "boom",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.1,
+          "kind": "hiss",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 2.6,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "bouquet",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 30, 0],
+          "distance_m": 103.92733038041533,
+          "duration_s": 1.8,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8,
+          "kind": "boom",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 0,
+          "size": 0.4230769230769231,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "floral",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 30, 0],
+          "distance_m": 103.92733038041533,
+          "duration_s": 1.8,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8,
+          "kind": "boom",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 0,
+          "size": 1.0384615384615385,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "rings",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 30, 0],
+          "distance_m": 103.92733038041533,
+          "duration_s": 1.8,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8,
+          "kind": "boom",
+          "position": [-12, 64, 0],
+          "distance_m": 118.4284171979006,
+          "duration_s": 0,
+          "size": 0.4230769230769231,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "parachute",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 30, 0],
+          "distance_m": 103.92733038041533,
+          "duration_s": 1.8,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8,
+          "kind": "boom",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 0,
+          "size": 0.5384615384615384,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "risingTail",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 30, 0],
+          "distance_m": 103.92733038041533,
+          "duration_s": 1.8,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8,
+          "kind": "boom",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 0,
+          "size": 0.9230769230769231,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "whistleShell",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whistle",
+          "position": [0, 30, 0],
+          "distance_m": 103.92733038041533,
+          "duration_s": 1.8,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8,
+          "kind": "boom",
+          "position": [0, 60, 0],
+          "distance_m": 115.75357445884771,
+          "duration_s": 0,
+          "size": 0.7692307692307693,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "silverDragon",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whistle",
+          "position": [0, 20, 0],
+          "distance_m": 101.66066102480349,
+          "duration_s": 2.4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 20, 0],
+          "distance_m": 101.66066102480349,
+          "duration_s": 2.4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.1,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.1,
+          "kind": "whistle",
+          "position": [0, 20, 0],
+          "distance_m": 101.66066102480349,
+          "duration_s": 2.4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.2,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.2,
+          "kind": "whistle",
+          "position": [0, 20, 0],
+          "distance_m": 101.66066102480349,
+          "duration_s": 2.4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.30000000000000004,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.30000000000000004,
+          "kind": "whistle",
+          "position": [0, 20, 0],
+          "distance_m": 101.66066102480349,
+          "duration_s": 2.4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.4,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.4,
+          "kind": "whistle",
+          "position": [0, 20, 0],
+          "distance_m": 101.66066102480349,
+          "duration_s": 2.4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.5,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.5,
+          "kind": "whistle",
+          "position": [0, 20, 0],
+          "distance_m": 101.66066102480349,
+          "duration_s": 2.4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "romanCandle",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 22, 0],
+          "distance_m": 102.03964915659012,
+          "duration_s": 1.5,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.8,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.6,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.4000000000000004,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 3.2,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 4,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 4.800000000000001,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 5.6000000000000005,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "bombettes",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 24, 0],
+          "distance_m": 102.45628336027028,
+          "duration_s": 1.6,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.65,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.3,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.6,
+          "kind": "crackle",
+          "position": [0, 48, 0],
+          "distance_m": 110.19841196677926,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.9500000000000002,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.25,
+          "kind": "crackle",
+          "position": [0, 48, 0],
+          "distance_m": 110.19841196677926,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.6,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.9000000000000004,
+          "kind": "crackle",
+          "position": [0, 48, 0],
+          "distance_m": 110.19841196677926,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 3.25,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 3.5500000000000003,
+          "kind": "crackle",
+          "position": [0, 48, 0],
+          "distance_m": 110.19841196677926,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 4.2,
+          "kind": "crackle",
+          "position": [0, 48, 0],
+          "distance_m": 110.19841196677926,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 4.85,
+          "kind": "crackle",
+          "position": [0, 48, 0],
+          "distance_m": 110.19841196677926,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "skyRocket",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 32, 0],
+          "distance_m": 104.4896645606636,
+          "duration_s": 1.85903200617956,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.85903200617956,
+          "kind": "boom",
+          "position": [0, 64, 0],
+          "distance_m": 117.81888643167528,
+          "duration_s": 0,
+          "size": 0.7692307692307693,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "bottleRocket",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whistle",
+          "position": [0, 16, 0],
+          "distance_m": 101.01727575023986,
+          "duration_s": 1.3145341380123987,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.3145341380123987,
+          "kind": "boom",
+          "position": [0, 32, 0],
+          "distance_m": 104.4896645606636,
+          "duration_s": 0,
+          "size": 0.19230769230769232,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "missile",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whistle",
+          "position": [0, 23, 0],
+          "distance_m": 102.24328828827835,
+          "duration_s": 1.3,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 23, 0],
+          "distance_m": 102.24328828827835,
+          "duration_s": 1.3,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.3,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.3,
+          "kind": "whistle",
+          "position": [0, 23, 0],
+          "distance_m": 102.24328828827835,
+          "duration_s": 1.3,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.6,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.6,
+          "kind": "whistle",
+          "position": [0, 23, 0],
+          "distance_m": 102.24328828827835,
+          "duration_s": 1.3,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.8999999999999999,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.8999999999999999,
+          "kind": "whistle",
+          "position": [0, 23, 0],
+          "distance_m": 102.24328828827835,
+          "duration_s": 1.3,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.2,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.2,
+          "kind": "whistle",
+          "position": [0, 23, 0],
+          "distance_m": 102.24328828827835,
+          "duration_s": 1.3,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.3,
+          "kind": "crackle",
+          "position": [0, 46, 0],
+          "distance_m": 109.37316855609514,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.5,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.5,
+          "kind": "whistle",
+          "position": [0, 23, 0],
+          "distance_m": 102.24328828827835,
+          "duration_s": 1.3,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.6,
+          "kind": "crackle",
+          "position": [0, 46, 0],
+          "distance_m": 109.37316855609514,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.7999999999999998,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.7999999999999998,
+          "kind": "whistle",
+          "position": [0, 23, 0],
+          "distance_m": 102.24328828827835,
+          "duration_s": 1.3,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.9,
+          "kind": "crackle",
+          "position": [0, 46, 0],
+          "distance_m": 109.37316855609514,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.1,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.1,
+          "kind": "whistle",
+          "position": [0, 23, 0],
+          "distance_m": 102.24328828827835,
+          "duration_s": 1.3,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.2,
+          "kind": "crackle",
+          "position": [0, 46, 0],
+          "distance_m": 109.37316855609514,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.4,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.4,
+          "kind": "whistle",
+          "position": [0, 23, 0],
+          "distance_m": 102.24328828827835,
+          "duration_s": 1.3,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.5,
+          "kind": "crackle",
+          "position": [0, 46, 0],
+          "distance_m": 109.37316855609514,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.6999999999999997,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.6999999999999997,
+          "kind": "whistle",
+          "position": [0, 23, 0],
+          "distance_m": 102.24328828827835,
+          "duration_s": 1.3,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.8,
+          "kind": "crackle",
+          "position": [0, 46, 0],
+          "distance_m": 109.37316855609514,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 3.0999999999999996,
+          "kind": "crackle",
+          "position": [0, 46, 0],
+          "distance_m": 109.37316855609514,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 3.4000000000000004,
+          "kind": "crackle",
+          "position": [0, 46, 0],
+          "distance_m": 109.37316855609514,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 3.7,
+          "kind": "crackle",
+          "position": [0, 46, 0],
+          "distance_m": 109.37316855609514,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 4,
+          "kind": "crackle",
+          "position": [0, 46, 0],
+          "distance_m": 109.37316855609514,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "helicopter",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whistle",
+          "position": [0, 12, 0],
+          "distance_m": 100.52905052769572,
+          "duration_s": 1.391402170474087,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.391402170474087,
+          "kind": "boom",
+          "position": [0, 24, 0],
+          "distance_m": 102.45628336027028,
+          "duration_s": 0,
+          "size": 0.34615384615384615,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "wheel",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "hiss",
+          "position": [0, 2, 0],
+          "distance_m": 100.00044999898749,
+          "duration_s": 7,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": true,
+          "soft": false
+        },
+        {
+          "time_s": 0.3,
+          "kind": "whistle",
+          "position": [0, 2, 0],
+          "distance_m": 100.00044999898749,
+          "duration_s": 3,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": true
+        }
+      ]
+    },
+    {
+      "key": "spinners",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "hiss",
+          "position": [0, 2, 0],
+          "distance_m": 100.00044999898749,
+          "duration_s": 4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": true,
+          "soft": false
+        },
+        {
+          "time_s": 0.3,
+          "kind": "whistle",
+          "position": [0, 2, 0],
+          "distance_m": 100.00044999898749,
+          "duration_s": 3,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": true
+        }
+      ]
+    },
+    {
+      "key": "cone",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "hiss",
+          "position": [0, 3, 0],
+          "distance_m": 100.00844964301767,
+          "duration_s": 7,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": true,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "sparkler",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "hiss",
+          "position": [0, 3, 0],
+          "distance_m": 100.00844964301767,
+          "duration_s": 8,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": true,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "brocadeTips",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 39, 0],
+          "distance_m": 106.72998641431563,
+          "duration_s": 2.0523157651784487,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.0523157651784487,
+          "kind": "boom",
+          "position": [0, 78, 0],
+          "distance_m": 125.78429949719481,
+          "duration_s": 0,
+          "size": 1.0769230769230769,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.3523157651784485,
+          "kind": "hiss",
+          "position": [0, 78, 0],
+          "distance_m": 125.78429949719481,
+          "duration_s": 4.5,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "glitterWillow",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 42, 0],
+          "distance_m": 107.81507315769908,
+          "duration_s": 2.1297887219158618,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.1297887219158618,
+          "kind": "boom",
+          "position": [0, 84, 0],
+          "distance_m": 129.51173691986375,
+          "duration_s": 0,
+          "size": 1.1538461538461537,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.4297887219158616,
+          "kind": "hiss",
+          "position": [0, 84, 0],
+          "distance_m": 129.51173691986375,
+          "duration_s": 5.5,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "pearls",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 25, 0],
+          "distance_m": 102.6785761490682,
+          "duration_s": 1.6,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.15,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.3,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.44999999999999996,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.6,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.75,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.8999999999999999,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.05,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.2,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.3499999999999999,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "cometCrossette",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 25, 0],
+          "distance_m": 102.6785761490682,
+          "duration_s": 1.7,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.7,
+          "kind": "boom",
+          "position": [0, 50, 0],
+          "distance_m": 111.0535456435318,
+          "duration_s": 0,
+          "size": 0.35,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.7,
+          "kind": "boom",
+          "position": [0, 50, 0],
+          "distance_m": 111.0535456435318,
+          "duration_s": 0,
+          "size": 0.35,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.7,
+          "kind": "boom",
+          "position": [0, 50, 0],
+          "distance_m": 111.0535456435318,
+          "duration_s": 0,
+          "size": 0.35,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.7,
+          "kind": "boom",
+          "position": [0, 50, 0],
+          "distance_m": 111.0535456435318,
+          "duration_s": 0,
+          "size": 0.35,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.7,
+          "kind": "boom",
+          "position": [0, 50, 0],
+          "distance_m": 111.0535456435318,
+          "duration_s": 0,
+          "size": 0.35,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "tigerTail",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 37, 0],
+          "distance_m": 106.04758365941207,
+          "duration_s": 1.9989997498749217,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.9989997498749217,
+          "kind": "boom",
+          "position": [0, 74, 0],
+          "distance_m": 123.39890599190902,
+          "duration_s": 0,
+          "size": 1.0769230769230769,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "strobePistil",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 33, 0],
+          "distance_m": 104.78401595663338,
+          "duration_s": 1.887855926706273,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.887855926706273,
+          "kind": "boom",
+          "position": [0, 66, 0],
+          "distance_m": 118.88856126642293,
+          "duration_s": 0,
+          "size": 1.0384615384615385,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.187855926706273,
+          "kind": "hiss",
+          "position": [0, 66, 0],
+          "distance_m": 118.88856126642293,
+          "duration_s": 2.6,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "multiTails",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 31, 0],
+          "distance_m": 104.20407861499473,
+          "duration_s": 1.8297540818372289,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.8297540818372289,
+          "kind": "boom",
+          "position": [0, 62, 0],
+          "distance_m": 116.77366997743968,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "glitterHorsetail",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 38, 0],
+          "distance_m": 106.38463234885009,
+          "duration_s": 2.025833161936096,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.025833161936096,
+          "kind": "boom",
+          "position": [0, 76, 0],
+          "distance_m": 124.58125862263554,
+          "duration_s": 0,
+          "size": 0.9230769230769231,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.325833161936096,
+          "kind": "hiss",
+          "position": [0, 76, 0],
+          "distance_m": 124.58125862263554,
+          "duration_s": 4.6,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "whistleCake",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whistle",
+          "position": [0, 22.5, 0],
+          "distance_m": 102.14029567217828,
+          "duration_s": 1.4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whistle",
+          "position": [0, 22.5, 0],
+          "distance_m": 102.14029567217828,
+          "duration_s": 1.4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whistle",
+          "position": [0, 22.5, 0],
+          "distance_m": 102.14029567217828,
+          "duration_s": 1.4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whistle",
+          "position": [0, 22.5, 0],
+          "distance_m": 102.14029567217828,
+          "duration_s": 1.4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whistle",
+          "position": [0, 22.5, 0],
+          "distance_m": 102.14029567217828,
+          "duration_s": 1.4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whistle",
+          "position": [0, 22.5, 0],
+          "distance_m": 102.14029567217828,
+          "duration_s": 1.4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whistle",
+          "position": [0, 22.5, 0],
+          "distance_m": 102.14029567217828,
+          "duration_s": 1.4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whistle",
+          "position": [0, 22.5, 0],
+          "distance_m": 102.14029567217828,
+          "duration_s": 1.4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whistle",
+          "position": [0, 22.5, 0],
+          "distance_m": 102.14029567217828,
+          "duration_s": 1.4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 22.5, 0],
+          "distance_m": 102.14029567217828,
+          "duration_s": 1.4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "crackPalm",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 36, 0],
+          "distance_m": 105.71891978260088,
+          "duration_s": 1.971801207018598,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.971801207018598,
+          "kind": "boom",
+          "position": [0, 72, 0],
+          "distance_m": 122.23784193121212,
+          "duration_s": 0,
+          "size": 0.5846153846153846,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 4.211801207018597,
+          "kind": "crackle",
+          "position": [0, 72, 0],
+          "distance_m": 122.23784193121212,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "niagara",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "hiss",
+          "position": [0, 3, 0],
+          "distance_m": 100.00844964301767,
+          "duration_s": 12,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": true,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "zFan",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 22.5, 0],
+          "distance_m": 102.14029567217828,
+          "duration_s": 1.5,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.08,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.16,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.24,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.32,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.4,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.48,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.56,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.64,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.72,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.8,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.88,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0.96,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.04,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.12,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.2,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.28,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.36,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.44,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.52,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.6,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.68,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.76,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.84,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.92,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": true,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "dahliaStrobe",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 33, 0],
+          "distance_m": 104.78401595663338,
+          "duration_s": 1.887855926706273,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.887855926706273,
+          "kind": "boom",
+          "position": [0, 66, 0],
+          "distance_m": 118.88856126642293,
+          "duration_s": 0,
+          "size": 1.0384615384615385,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.187855926706273,
+          "kind": "hiss",
+          "position": [0, 66, 0],
+          "distance_m": 118.88856126642293,
+          "duration_s": 3.2,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "poppingFlowers",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 32, 0],
+          "distance_m": 104.4896645606636,
+          "duration_s": 1.85903200617956,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.85903200617956,
+          "kind": "boom",
+          "position": [0, 64, 0],
+          "distance_m": 117.81888643167528,
+          "duration_s": 0,
+          "size": 0.9230769230769231,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 3.45903200617956,
+          "kind": "crackle",
+          "position": [0, 64, 0],
+          "distance_m": 117.81888643167528,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "twinkleSilver",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 35, 0],
+          "distance_m": 105.39871915730285,
+          "duration_s": 1.9442222095223582,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.9442222095223582,
+          "kind": "boom",
+          "position": [0, 70, 0],
+          "distance_m": 121.09867877066208,
+          "duration_s": 0,
+          "size": 1.0769230769230769,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 2.2442222095223583,
+          "kind": "hiss",
+          "position": [0, 70, 0],
+          "distance_m": 121.09867877066208,
+          "duration_s": 3.4,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    },
+    {
+      "key": "rocketFlowers",
+      "events": [
+        {
+          "time_s": 0,
+          "kind": "lift",
+          "position": [0, 1, 0],
+          "distance_m": 100.00244996998823,
+          "duration_s": 0,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 0,
+          "kind": "whoosh",
+          "position": [0, 35, 0],
+          "distance_m": 105.39871915730285,
+          "duration_s": 1.9442222095223582,
+          "size": 1,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        },
+        {
+          "time_s": 1.9442222095223582,
+          "kind": "boom",
+          "position": [0, 70, 0],
+          "distance_m": 121.09867877066208,
+          "duration_s": 0,
+          "size": 0.9230769230769231,
+          "quiet": false,
+          "heavy": false,
+          "loud": false,
+          "soft": false
+        }
+      ]
+    }
+  ]
+}
