@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "lint": "eslint src --max-warnings 0 --suppressions-location eslint-suppressions-2026-10-03.json",
+    "lint": "eslint src --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "test": "node --import ../../scripts/register-typescript.mjs --test tests/*.test.mjs",
     "check": "pnpm lint && pnpm typecheck && pnpm test"

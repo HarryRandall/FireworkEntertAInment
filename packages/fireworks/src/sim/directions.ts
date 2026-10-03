@@ -25,7 +25,13 @@ const RING_TILT_OFFSET_RAD = 0.3;
 const HEART_X_COEFFICIENT = 16;
 const HEART_Y_PRIMARY_COEFFICIENT = 13;
 const HEART_Y_SECOND_COEFFICIENT = 5;
+// Classic heart third-harmonic weight, dimensionless amplitude.
+const HEART_Y_THIRD_COEFFICIENT = 2;
 const HEART_NORMALISER = 17;
+// Classic heart equation: cubic x term and third/fourth cosine harmonics, dimensionless.
+const HEART_CUBIC_POWER = 3;
+const HEART_THIRD_HARMONIC = 3;
+const HEART_FOURTH_HARMONIC = 4;
 // Prototype visual tuning: two spiral arms make two-and-a-half turns from centre to rim.
 const SPIRAL_TURNS = 2.5;
 const SPIRAL_INNER_RADIUS = 0.12;
@@ -58,106 +64,179 @@ export interface StarDirection {
 
 /**
  * Computes a deterministic uniformly distributed unit vector.
- * @param k Particle index, dimensionless.
- * @param seed Design random seed, dimensionless.
+ * @param index - Particle index, dimensionless.
+ * @param seed - Design random seed, dimensionless.
  * @returns Cartesian direction with unit length.
  */
-export function unit(k: number, seed: number): Vec3 {
-  const z = 2 * hash(k, seed, UNIT_Z_HASH_STREAM) - 1,
-    th = PROTOTYPE_TAU_RAD * hash(k, seed, UNIT_AZIMUTH_HASH_STREAM),
-    r = Math.sqrt(1 - z * z);
-  return [r * Math.cos(th), z, r * Math.sin(th)];
+export function unit(index: number, seed: number): Vec3 {
+  const z = 2 * hash(index, seed, UNIT_Z_HASH_STREAM) - 1;
+  const azimuthRad = PROTOTYPE_TAU_RAD * hash(index, seed, UNIT_AZIMUTH_HASH_STREAM);
+  const crossSectionRadius = Math.sqrt(1 - z * z);
+  return [crossSectionRadius * Math.cos(azimuthRad), z, crossSectionRadius * Math.sin(azimuthRad)];
 }
 
 /**
  * Computes deterministic unit directions for a burst pattern.
- * @param n Number of directions.
- * @param pattern Stored pattern name.
- * @param seed Design random seed, dimensionless.
- * @param tilt Stored ring tilt, dimensionless.
+ * @param count - Number of directions.
+ * @param pattern - Stored pattern name.
+ * @param seed - Design random seed, dimensionless.
+ * @param tilt - Stored ring tilt, dimensionless.
  * @returns Direction vectors and per-star random values.
  */
-export function directions(n: number, pattern: string, seed: number, tilt = 0): StarDirection[] {
+export function directions(
+  count: number,
+  pattern: string,
+  seed: number,
+  tilt = 0,
+): StarDirection[] {
   const out: StarDirection[] = [];
   const yaw =
     pattern === 'heart' || pattern === 'spiral'
       ? 0
       : hash(seed, PATTERN_YAW_HASH_STREAM, PATTERN_YAW_PHASE_STREAM) * Math.PI * 2;
-  for (let i = 0; i < n; i++) {
-    let x: number, y: number, z: number;
-    if (pattern === 'ring') {
-      const a = (i / n) * Math.PI * 2;
-      x = Math.cos(a);
-      const angle = (tilt * Math.PI) / 2 + RING_TILT_OFFSET_RAD;
-      y = Math.sin(a) * Math.cos(angle);
-      z = Math.sin(a) * Math.sin(angle);
-    } else if (pattern === 'heart') {
-      const a = (i / n) * Math.PI * 2;
-      // Heart curve: the classic parametric outline, scaled to the prototype's unit radius.
-      x = (HEART_X_COEFFICIENT * Math.sin(a) ** 3) / HEART_NORMALISER;
-      y =
-        (HEART_Y_PRIMARY_COEFFICIENT * Math.cos(a) -
-          HEART_Y_SECOND_COEFFICIENT * Math.cos(2 * a) -
-          2 * Math.cos(3 * a) -
-          Math.cos(4 * a)) /
-        HEART_NORMALISER;
-      z = 0;
-    } else if (pattern === 'spiral') {
-      const u = (i + 0.5) / n,
-        a = u * Math.PI * (SPIRAL_TURNS * 2) + (i % 2 ? Math.PI : 0);
-      const radius = SPIRAL_INNER_RADIUS + u * SPIRAL_OUTER_RADIUS_DELTA;
-      x = Math.cos(a) * radius;
-      y = Math.sin(a) * radius;
-      z = (hash(seed, i, SPIRAL_DEPTH_JITTER_STREAM) - 0.5) * SPIRAL_DEPTH_JITTER;
-    } else if (pattern === 'cone') {
-      const a = hash(seed, i, CONE_AZIMUTH_STREAM) * Math.PI * 2,
-        s = Math.sqrt(hash(seed, i, CONE_RADIUS_STREAM)) * Math.sin(CONE_HALF_ANGLE_RAD);
-      x = Math.cos(a) * s;
-      z = Math.sin(a) * s;
-      y = Math.sqrt(1 - s * s);
-    } else if (pattern === 'bottom') {
-      y = -1 + BOTTOM_VERTICAL_SPAN * ((i + 0.5) / n);
-      const r = Math.sqrt(Math.max(0, 1 - y * y)),
-        phi = i * GOLDEN_ANGLE_RAD;
-      x = r * Math.cos(phi);
-      z = r * Math.sin(phi);
-    } else if (pattern === 'random') {
-      z = 2 * hash(seed, i, RANDOM_LATITUDE_STREAM) - 1;
-      const th = 2 * Math.PI * hash(seed, i, RANDOM_AZIMUTH_STREAM),
-        r = Math.sqrt(1 - z * z);
-      x = r * Math.cos(th);
-      y = Math.abs(r * Math.sin(th)) * RANDOM_UPWARD_WEIGHT + RANDOM_UPWARD_BIAS;
-      const l = Math.hypot(x, y, z);
-      x /= l;
-      y /= l;
-      z /= l;
-    } else {
-      y = Math.max(
-        -1,
-        Math.min(
-          1,
-          1 -
-            (2 * (i + 0.5)) / n +
-            (hash(seed, i, SPHERE_LATITUDE_JITTER_STREAM) - 0.5) * (SPHERE_LATITUDE_JITTER / n),
-        ),
-      );
-      const r = Math.sqrt(1 - y * y),
-        phi =
-          i * GOLDEN_ANGLE_RAD +
-          (hash(seed, i, SPHERE_AZIMUTH_JITTER_STREAM) - 0.5) * SPHERE_AZIMUTH_JITTER_RAD;
-      x = r * Math.cos(phi);
-      z = r * Math.sin(phi);
-    }
-    const cy = Math.cos(yaw),
-      sy = Math.sin(yaw);
+  const scratch: DirectionScratch = { index: 0, count, seed, tilt, x: 0, y: 0, z: 0 };
+  for (let index = 0; index < count; index++) {
+    scratch.index = index;
+    patternDirection(scratch, pattern);
+    const { x, y, z } = scratch;
+    const yawCosine = Math.cos(yaw);
+    const yawSine = Math.sin(yaw);
     out.push({
-      x: x * cy + z * sy,
+      x: x * yawCosine + z * yawSine,
       y,
-      z: -x * sy + z * cy,
-      h: hash(seed, i, STAR_SPEED_VARIATION_STREAM),
-      h2: hash(seed, i, STAR_SECONDARY_VARIATION_STREAM),
-      ph: hash(seed, i, STAR_PHASE_STREAM) * PROTOTYPE_TAU_RAD,
+      z: -x * yawSine + z * yawCosine,
+      h: hash(seed, index, STAR_SPEED_VARIATION_STREAM),
+      h2: hash(seed, index, STAR_SECONDARY_VARIATION_STREAM),
+      ph: hash(seed, index, STAR_PHASE_STREAM) * PROTOTYPE_TAU_RAD,
     });
   }
   return out;
+}
+
+// One mutable workspace per direction set, reused by every pattern sample.
+interface DirectionScratch {
+  index: number;
+  count: number;
+  seed: number;
+  tilt: number;
+  x: number;
+  y: number;
+  z: number;
+}
+function patternDirection(state: DirectionScratch, pattern: string): void {
+  switch (pattern) {
+    case 'ring': {
+      ringDirection(state);
+      return;
+    }
+    case 'heart': {
+      heartDirection(state);
+      return;
+    }
+    case 'spiral': {
+      spiralDirection(state);
+      return;
+    }
+    case 'cone': {
+      coneDirection(state);
+      return;
+    }
+    case 'bottom': {
+      bottomDirection(state);
+      return;
+    }
+    case 'random': {
+      randomDirection(state);
+      return;
+    }
+    default: {
+      sphereDirection(state);
+      return;
+    }
+  }
+}
+function ringDirection(state: DirectionScratch): void {
+  const { index, count, tilt } = state;
+
+  const angleRad = (index / count) * Math.PI * 2;
+  state.x = Math.cos(angleRad);
+  const angle = (tilt * Math.PI) / 2 + RING_TILT_OFFSET_RAD;
+  state.y = Math.sin(angleRad) * Math.cos(angle);
+  state.z = Math.sin(angleRad) * Math.sin(angle);
+}
+function heartDirection(state: DirectionScratch): void {
+  const { index, count } = state;
+
+  const angleRad = (index / count) * Math.PI * 2;
+  // Heart curve: the classic parametric outline, scaled to the prototype's unit radius.
+  state.x = (HEART_X_COEFFICIENT * Math.sin(angleRad) ** HEART_CUBIC_POWER) / HEART_NORMALISER;
+  state.y =
+    (HEART_Y_PRIMARY_COEFFICIENT * Math.cos(angleRad) -
+      HEART_Y_SECOND_COEFFICIENT * Math.cos(2 * angleRad) -
+      HEART_Y_THIRD_COEFFICIENT * Math.cos(HEART_THIRD_HARMONIC * angleRad) -
+      Math.cos(HEART_FOURTH_HARMONIC * angleRad)) /
+    HEART_NORMALISER;
+  state.z = 0;
+}
+function spiralDirection(state: DirectionScratch): void {
+  const { index, count, seed } = state;
+
+  const progress = (index + 0.5) / count;
+  const angleRad = progress * Math.PI * (SPIRAL_TURNS * 2) + (index % 2 !== 0 ? Math.PI : 0);
+  const radius = SPIRAL_INNER_RADIUS + progress * SPIRAL_OUTER_RADIUS_DELTA;
+  state.x = Math.cos(angleRad) * radius;
+  state.y = Math.sin(angleRad) * radius;
+  state.z = (hash(seed, index, SPIRAL_DEPTH_JITTER_STREAM) - 0.5) * SPIRAL_DEPTH_JITTER;
+}
+function coneDirection(state: DirectionScratch): void {
+  const { index, seed } = state;
+
+  const angleRad = hash(seed, index, CONE_AZIMUTH_STREAM) * Math.PI * 2;
+  const coneRadius =
+    Math.sqrt(hash(seed, index, CONE_RADIUS_STREAM)) * Math.sin(CONE_HALF_ANGLE_RAD);
+  state.x = Math.cos(angleRad) * coneRadius;
+  state.z = Math.sin(angleRad) * coneRadius;
+  state.y = Math.sqrt(1 - coneRadius * coneRadius);
+}
+function bottomDirection(state: DirectionScratch): void {
+  const { index, count } = state;
+
+  state.y = -1 + BOTTOM_VERTICAL_SPAN * ((index + 0.5) / count);
+  const crossSectionRadius = Math.sqrt(Math.max(0, 1 - state.y * state.y));
+  const azimuthRad = index * GOLDEN_ANGLE_RAD;
+  state.x = crossSectionRadius * Math.cos(azimuthRad);
+  state.z = crossSectionRadius * Math.sin(azimuthRad);
+}
+function randomDirection(state: DirectionScratch): void {
+  const { index, seed } = state;
+
+  state.z = 2 * hash(seed, index, RANDOM_LATITUDE_STREAM) - 1;
+  const azimuthRad = 2 * Math.PI * hash(seed, index, RANDOM_AZIMUTH_STREAM);
+  const crossSectionRadius = Math.sqrt(1 - state.z * state.z);
+  state.x = crossSectionRadius * Math.cos(azimuthRad);
+  state.y =
+    Math.abs(crossSectionRadius * Math.sin(azimuthRad)) * RANDOM_UPWARD_WEIGHT + RANDOM_UPWARD_BIAS;
+  const vectorLength = Math.hypot(state.x, state.y, state.z);
+  state.x /= vectorLength;
+  state.y /= vectorLength;
+  state.z /= vectorLength;
+}
+function sphereDirection(state: DirectionScratch): void {
+  const { index, count, seed } = state;
+
+  state.y = Math.max(
+    -1,
+    Math.min(
+      1,
+      1 -
+        (2 * (index + 0.5)) / count +
+        (hash(seed, index, SPHERE_LATITUDE_JITTER_STREAM) - 0.5) * (SPHERE_LATITUDE_JITTER / count),
+    ),
+  );
+  const crossSectionRadius = Math.sqrt(1 - state.y * state.y);
+  const azimuthRad =
+    index * GOLDEN_ANGLE_RAD +
+    (hash(seed, index, SPHERE_AZIMUTH_JITTER_STREAM) - 0.5) * SPHERE_AZIMUTH_JITTER_RAD;
+  state.x = crossSectionRadius * Math.cos(azimuthRad);
+  state.z = crossSectionRadius * Math.sin(azimuthRad);
 }

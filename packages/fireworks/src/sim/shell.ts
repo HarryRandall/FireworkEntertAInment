@@ -1,13 +1,15 @@
 /** Stateless simulation entry point for launches, shell breaks and ground effects. */
-import { resolveDesign, type Design } from '../schema/index';
-import { brightnessAt, colourAt, mix, rgb, type Vec3 } from './colour';
+import { prototypeOr } from './numeric';
+import { resolveDesign, type Design, type Fade } from '../schema/index';
+import { brightnessAt, colourAt, rgb, type Vec3 } from './colour';
 import { fillCore } from './core';
 import { directions } from './directions';
 import { fadeAlpha, starAppearance } from './fade';
 import { MUZZLE_M, launchPos, type ShotPlacement } from './launch';
+import { launchTailColour } from './launch-colour';
 import { LAUNCH_STYLES } from './launch-styles';
 import { fillGround } from './kinds/ground';
-import { fillModifierEvents, parentEnd, trailControls } from './modifiers';
+import { fillModifierEvents, parentEnd, trailControls, type ModifierEventState } from './modifiers';
 import { fillLaunchSpray } from './launch-spray';
 import { burstSmoke, SMOKE_RGB } from './smoke';
 import { spray, TRAIL_DENSITY, TRAIL_LIFE } from './spray';
@@ -72,8 +74,6 @@ const TRAIL_START_S = 0.02;
 const HALF_TURN_DEG = 180;
 // Prototype deterministic seed partition: launch strobe seed phase (cycles per seed).
 const LAUNCH_STROBE_SEED_PHASE = 0.37;
-// Prototype visual tuning: star tail mix (linear RGB fraction).
-const STAR_TAIL_MIX = 0.3;
 // Prototype visual tuning: mine flash s (seconds).
 const MINE_FLASH_S = 0.2;
 
@@ -90,9 +90,9 @@ export interface SimulationOptions extends ShotPlacement {
 
 /**
  * Simulates fresh particle arrays for a design at a firing-relative time.
- * @param design Validated design with stored units.
- * @param time_s Seconds from firing.
- * @param options Optional seed, horizontal metres and muzzle height in metres.
+ * @param design - Validated design with stored units.
+ * @param time_s - Seconds from firing.
+ * @param options - Optional seed, horizontal metres and muzzle height in metres.
  * @returns Tightly sized particle attributes for the requested instant.
  */
 export function simulate(
@@ -105,158 +105,251 @@ export function simulate(
   const writer = new ParticleWriter(options.sprays, options.smoke, options.launchEffects);
   if (time_s < 0) return writer.finish();
   // Preserve the prototype's seed-zero fallback, including for a playback override.
-  const seed = (options.seed ?? design.seed) || 1;
+  const seed = prototypeOr(options.seed ?? design.seed, 1);
   if (design.launch === null) {
-    fillGround(writer, design, seed, time_s, options);
+    fillGround(writer, design, seed, { time: time_s, placement: options });
     return writer.finish();
   }
-  const launch = design.launch,
-    T = design.kind === 'mine' ? 0 : launch.time_s;
+  const launch = design.launch;
+  const apexTimeS = design.kind === 'mine' ? 0 : launch.time_s;
   const mine = design.kind === 'mine';
-  if (mine && time_s < MINE_FLASH_S) {
-    const [x, z] = options.position ?? [0, 0];
-    writer.glow(
-      [x, options.muzzle_m ?? MUZZLE_M, z],
-      rgb('#ffd9a8'),
-      MINE_FLASH_SIZE_RANGE * (1 - time_s / MINE_FLASH_S) + MINE_FLASH_SIZE_MIN,
-      MINE_FLASH_ALPHA * (1 - time_s / MINE_FLASH_S),
-    );
+  if (mine) fillMineFlash(writer, time_s, options);
+
+  if (!mine) fillLaunchSpray(writer, design, seed, { launch, local: time_s, placement: options });
+  if (time_s < apexTimeS) {
+    fillLaunchHead(writer, design, seed, { time_s, options });
+    return writer.finish();
   }
-  if (!mine) fillLaunchSpray(writer, design, launch, seed, time_s, options);
-  if (time_s < T) {
-    const st = LAUNCH_STYLES[launch.tail];
-    const first = design.breaks[0]?.layers[0];
-    const star = first ? colourAt(first.colour, 0, 0, 0) : rgb('#ffe2a8');
-    const tail = st.colour
-      ? rgb(st.colour)
-      : st.star
-        ? mix(rgb('#ffc070'), star, STAR_TAIL_MIX)
-        : rgb('#ffe2a8');
-    let alpha = st.headAlpha;
-    if (st.strobe) {
-      const x = time_s * st.strobe + seed * LAUNCH_STROBE_SEED_PHASE;
-      alpha *=
-        LAUNCH_STROBE_MIN +
-        LAUNCH_STROBE_PEAK * Math.pow(1 - (x - Math.floor(x)), LAUNCH_STROBE_POWER);
+
+  fillBreaks(writer, design, seed, { time_s, options });
+  return writer.finish();
+}
+
+interface ShellRuntime {
+  time_s: number;
+  options: SimulationOptions;
+}
+function fillLaunchHead(
+  writer: ParticleWriter,
+  design: Extract<Design, { launch: object }>,
+  seed: number,
+  runtime: ShellRuntime,
+): void {
+  const { time_s, options } = runtime;
+  const launch = design.launch;
+
+  const style = LAUNCH_STYLES[launch.tail];
+  const first = design.breaks[0]?.layers[0];
+  const star = first ? colourAt(first.colour, 0, 0, 0) : rgb('#ffe2a8');
+  const tail = launchTailColour(style, star);
+  let alpha = style.headAlpha;
+  if (style.strobe !== undefined && style.strobe !== 0) {
+    const strobePhase = time_s * style.strobe + seed * LAUNCH_STROBE_SEED_PHASE;
+    alpha *=
+      LAUNCH_STROBE_MIN +
+      LAUNCH_STROBE_PEAK *
+        Math.pow(1 - (strobePhase - Math.floor(strobePhase)), LAUNCH_STROBE_POWER);
+  }
+  const position = launchPos(launch, seed, time_s, options);
+  writer.head(
+    position,
+    style.star === true ? tail : rgb('#ffe2a8'),
+    LAUNCH_HEAD_SIZE_FACTOR * style.head,
+    alpha,
+  );
+  writer.glow(
+    position,
+    rgb('#ffb866'),
+    LAUNCH_GLOW_SIZE_FACTOR * style.head,
+    GLOW_ALPHA_FACTOR * alpha,
+  );
+}
+
+function fillBreaks(
+  writer: ParticleWriter,
+  design: Extract<Design, { launch: object }>,
+  seed: number,
+  runtime: ShellRuntime,
+): void {
+  const { time_s, options } = runtime;
+  const launch = design.launch;
+  const mine = design.kind === 'mine';
+  const apexTimeS = mine ? 0 : launch.time_s;
+  const [positionX, positionZ] = options.position ?? [0, 0];
+  const burstX =
+    positionX +
+    (mine ? 0 : Math.tan((launch.tilt_deg * Math.PI) / HALF_TURN_DEG) * launch.height_m);
+  // Random indices are global across breaks, matching the prototype's flattened layer list.
+  let layerIndex = 0;
+  for (const burst of design.breaks)
+    for (const layer of burst.layers) {
+      const index = layerIndex++;
+      const age = time_s - apexTimeS - burst.at_s - layer.delay_s;
+      if (layer.hidden || age < 0) continue;
+      const centre: Vec3 = [
+        burstX + layer.offset_m[0],
+        burstHeight(design, options) + layer.offset_m[1],
+        positionZ + layer.offset_m[2],
+      ];
+      if (!mine) {
+        burstSmoke(writer, layer, seed, index, age, centre, launch.smoke);
+        fillCore(writer, burst.core, layer, seed, index, age, centre);
+      }
+      const state: ShellLayerState = {
+        layer,
+        fade: burst.fade,
+        direction: { x: 0, y: 0, z: 0, h: 0, h2: 0, ph: 0 },
+        index: 0,
+        seed,
+        age,
+        life: 0,
+        centre,
+        appearance: {
+          base: [0, 0, 0],
+          colour: [0, 0, 0],
+          alpha: 0,
+          grow: 1,
+          flare: 1,
+          strobing: false,
+        },
+        mine,
+        layerIndex: index,
+      };
+      fillStars(writer, state);
     }
-    const position = launchPos(launch, seed, time_s, options);
-    writer.head(
+}
+
+interface ShellLayerState extends ModifierEventState {
+  fade: Fade;
+  appearance: ReturnType<typeof starAppearance>;
+  mine: boolean;
+  layerIndex: number;
+}
+function fillStars(writer: ParticleWriter, state: ShellLayerState): void {
+  const { layer, mine, seed, age, fade } = state;
+  const index = state.layerIndex;
+  const starDirections = directions(
+    layer.count,
+    mine ? 'cone' : layer.pattern,
+    seed * LAYER_DIRECTION_SEED_SCALE + index,
+    layer.tilt,
+  );
+  starDirections.forEach((direction, starIndex) => {
+    const life = layer.life_s * (1 - layer.life_var / 2 + layer.life_var * direction.h2);
+    const appearance = starAppearance(layer, fade, direction, starIndex, age, life, seed);
+    state.direction = direction;
+    state.index = starIndex;
+    state.life = life;
+    state.appearance = appearance;
+    fillStarTrail(writer, state);
+    // Events may outlive the parent and do not depend on head visibility.
+    if (age >= parentEnd(layer, life) || !layer.head.visible) {
+      fillModifierEvents(writer, state);
+      return;
+    }
+    fillStarHead(writer, state);
+    fillModifierEvents(writer, state);
+  });
+}
+function fillStarTrail(writer: ParticleWriter, state: ShellLayerState): void {
+  const { layer, direction, seed, age, centre, life, fade } = state;
+  const index = state.layerIndex;
+  const starIndex = state.index;
+  const appearance = state.appearance;
+  const controls = trailControls(layer);
+  const strobe = layer.modifiers.some((m) => m.kind === 'strobe');
+  const twinkle = layer.modifiers.some((m) => m.kind === 'twinkle');
+  const tail =
+    layer.trail.colour === 'star'
+      ? appearance.base
+      : rgb(layer.trail.colour === 'house' ? '#ffe2a8' : layer.trail.colour);
+  spray(
+    writer,
+    (t) => starPos(layer, direction, t, centre),
+    TRAIL_START_S,
+    Math.min(parentEnd(layer, life), life * TRAIL_END_LIFE),
+    age,
+    {
+      count: Math.round(layer.trail.sparks * TRAIL_DENSITY),
+      life: layer.trail.length_s * TRAIL_LIFE,
+      spread: layer.trail.spread_m_s,
+      gravity: layer.trail.gravity_m_s2,
+      drag: layer.trail.drag_per_s,
+      size: layer.trail.size,
+      flicker: layer.trail.flicker,
+      glitter: controls.glitter,
+      glitterDelay: controls.glitter_delay_s,
+      fork: layer.trail.fork,
+      colour: tail,
+      seed: seed * TRAIL_SEED_SCALE + index * TRAIL_LAYER_SEED_STEP + starIndex,
+      alphaAt: strobe || twinkle ? undefined : (t) => fadeAlpha(fade, t, life),
+      alpha: strobe ? STROBE_TRAIL_ALPHA : 1,
+      inherit: 0,
+    },
+  );
+}
+function fillStarHead(writer: ParticleWriter, state: ShellLayerState): void {
+  const { layer, direction, seed, age, life } = state;
+  const appearance = state.appearance;
+  const starIndex = state.index;
+  const centre = state.centre;
+  const progress = age / life;
+  const vary = STAR_SIZE_MIN + STAR_SIZE_RANGE * direction.h;
+  const burn = 1 - STAR_BURN_SHRINK * progress * progress;
+  const position = starPos(layer, direction, age, centre);
+  if (appearance.strobing) {
+    const alpha = appearance.alpha * brightnessAt(layer.brightness, progress) * vary;
+    writer.spark(
       position,
-      st.star ? tail : rgb('#ffe2a8'),
-      LAUNCH_HEAD_SIZE_FACTOR * st.head,
+      appearance.colour,
+      STROBE_POINT_SIZE_FACTOR * layer.head.size * appearance.flare,
       alpha,
     );
     writer.glow(
       position,
-      rgb('#ffb866'),
-      LAUNCH_GLOW_SIZE_FACTOR * st.head,
+      appearance.colour,
+      STROBE_GLOW_SIZE_FACTOR * layer.head.size * appearance.flare,
       GLOW_ALPHA_FACTOR * alpha,
     );
-    return writer.finish();
+  } else
+    writer.head(
+      position,
+      appearance.colour,
+      STAR_HEAD_SIZE_FACTOR * layer.head.size * vary * burn * appearance.grow * appearance.flare,
+      appearance.alpha * brightnessAt(layer.brightness, age / life) * vary,
+      layer.head.halo ?? (layer.modifiers.some((m) => m.kind === 'strobe') ? 0 : 1),
+    );
+  if (layer.head.size > FLARE_SIZE_THRESHOLD) {
+    writer.glow(position, appearance.colour, FLARE_GLOW_SIZE, FLARE_GLOW_ALPHA * appearance.alpha);
+    writer.smoke(
+      position[0],
+      position[1] + FLARE_SMOKE_LIFT_M,
+      position[2],
+      SMOKE_RGB,
+      1,
+      FLARE_SMOKE_ALPHA * appearance.alpha,
+      seed + starIndex * FLARE_SMOKE_SEED_STEP,
+      age,
+    );
   }
-  const [px, pz] = options.position ?? [0, 0];
-  const bx =
-    px + (mine ? 0 : Math.tan((launch.tilt_deg * Math.PI) / HALF_TURN_DEG) * launch.height_m);
-  // Random indices are global across breaks, matching the prototype's flattened layer list.
-  let li = 0;
-  for (const b of design.breaks)
-    for (const layer of b.layers) {
-      const index = li++;
-      const age = time_s - T - b.at_s - layer.delay_s;
-      if (layer.hidden || age < 0) continue;
-      const centre: Vec3 = [
-        bx + layer.offset_m[0],
-        (mine ? (options.muzzle_m ?? MUZZLE_M) : launch.height_m) + layer.offset_m[1],
-        pz + layer.offset_m[2],
-      ];
-      if (!mine) burstSmoke(writer, layer, seed, index, age, centre, launch.smoke);
-      if (!mine) fillCore(writer, b.core, layer, seed, index, age, centre);
-      const dirs = directions(
-        layer.count,
-        mine ? 'cone' : layer.pattern,
-        seed * LAYER_DIRECTION_SEED_SCALE + index,
-        layer.tilt,
-      );
-      dirs.forEach((q, i) => {
-        const life = layer.life_s * (1 - layer.life_var / 2 + layer.life_var * q.h2);
-        const a = starAppearance(layer, b.fade, q, i, age, life, seed);
-        const controls = trailControls(layer);
-        const strobe = layer.modifiers.some((m) => m.kind === 'strobe');
-        const twinkle = layer.modifiers.some((m) => m.kind === 'twinkle');
-        const tail =
-          layer.trail.colour === 'star'
-            ? a.base
-            : rgb(layer.trail.colour === 'house' ? '#ffe2a8' : layer.trail.colour);
-        spray(
-          writer,
-          (t) => starPos(layer, q, t, centre),
-          TRAIL_START_S,
-          Math.min(parentEnd(layer, life), life * TRAIL_END_LIFE),
-          age,
-          {
-            count: Math.round(layer.trail.sparks * TRAIL_DENSITY),
-            life: layer.trail.length_s * TRAIL_LIFE,
-            spread: layer.trail.spread_m_s,
-            gravity: layer.trail.gravity_m_s2,
-            drag: layer.trail.drag_per_s,
-            size: layer.trail.size,
-            flicker: layer.trail.flicker,
-            glitter: controls.glitter,
-            glitterDelay: controls.glitter_delay_s,
-            fork: layer.trail.fork,
-            colour: tail,
-            seed: seed * TRAIL_SEED_SCALE + index * TRAIL_LAYER_SEED_STEP + i,
-            alphaAt: strobe || twinkle ? undefined : (t) => fadeAlpha(b.fade, t, life),
-            alpha: strobe ? STROBE_TRAIL_ALPHA : 1,
-            inherit: 0,
-          },
-        );
-        // Events may outlive the parent and do not depend on head visibility.
-        if (age >= parentEnd(layer, life) || !layer.head.visible) {
-          fillModifierEvents(writer, layer, q, i, seed, age, life, centre, a);
-          return;
-        }
-        const progress = age / life,
-          vary = STAR_SIZE_MIN + STAR_SIZE_RANGE * q.h,
-          burn = 1 - STAR_BURN_SHRINK * progress * progress;
-        const position = starPos(layer, q, age, centre);
-        if (a.strobing) {
-          const alpha = a.alpha * brightnessAt(layer.brightness, progress) * vary;
-          writer.spark(
-            position,
-            a.colour,
-            STROBE_POINT_SIZE_FACTOR * layer.head.size * a.flare,
-            alpha,
-          );
-          writer.glow(
-            position,
-            a.colour,
-            STROBE_GLOW_SIZE_FACTOR * layer.head.size * a.flare,
-            GLOW_ALPHA_FACTOR * alpha,
-          );
-        } else
-          writer.head(
-            position,
-            a.colour,
-            STAR_HEAD_SIZE_FACTOR * layer.head.size * vary * burn * a.grow * a.flare,
-            a.alpha * brightnessAt(layer.brightness, age / life) * vary,
-            layer.head.halo ?? (layer.modifiers.some((m) => m.kind === 'strobe') ? 0 : 1),
-          );
-        if (layer.head.size > FLARE_SIZE_THRESHOLD) {
-          writer.glow(position, a.colour, FLARE_GLOW_SIZE, FLARE_GLOW_ALPHA * a.alpha);
-          writer.smoke(
-            position[0],
-            position[1] + FLARE_SMOKE_LIFT_M,
-            position[2],
-            SMOKE_RGB,
-            1,
-            FLARE_SMOKE_ALPHA * a.alpha,
-            seed + i * FLARE_SMOKE_SEED_STEP,
-            age,
-          );
-        }
-        fillModifierEvents(writer, layer, q, i, seed, age, life, centre, a);
-      });
-    }
-  return writer.finish();
+}
+
+function fillMineFlash(writer: ParticleWriter, time_s: number, options: SimulationOptions): void {
+  if (time_s >= MINE_FLASH_S) return;
+
+  const [positionX, positionZ] = options.position ?? [0, 0];
+  writer.glow(
+    [positionX, options.muzzle_m ?? MUZZLE_M, positionZ],
+    rgb('#ffd9a8'),
+    MINE_FLASH_SIZE_RANGE * (1 - time_s / MINE_FLASH_S) + MINE_FLASH_SIZE_MIN,
+    MINE_FLASH_ALPHA * (1 - time_s / MINE_FLASH_S),
+  );
+}
+
+function burstHeight(
+  design: Extract<Design, { launch: object }>,
+  options: SimulationOptions,
+): number {
+  if (design.kind === 'mine') return options.muzzle_m ?? MUZZLE_M;
+  return design.launch.height_m;
 }

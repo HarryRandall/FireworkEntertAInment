@@ -44,6 +44,11 @@ const eslintConfig = [
       'react-hooks/set-state-in-effect': 'off',
     },
   },
+  {
+    files: ['ui/primitives/**'],
+    // Registry files stay close to upstream; all other readability and safety rules still apply.
+    rules: { 'readability/export-doc': 'off' },
+  },
   prettier,
 ];
 

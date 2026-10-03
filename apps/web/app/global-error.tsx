@@ -2,6 +2,7 @@
 
 import './globals.css';
 
+/** Shows the application error boundary with an explicit retry action. */
 export default function GlobalError({
   reset,
 }: {

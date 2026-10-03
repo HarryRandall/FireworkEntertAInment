@@ -11,6 +11,7 @@ export const metadata: Metadata = {
   description: 'ShowCrafter is being rebuilt.',
 };
 
+/** Composes the document shell and shared theme provider. */
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>

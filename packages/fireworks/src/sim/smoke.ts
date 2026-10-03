@@ -21,7 +21,11 @@ const MUZZLE_HEIGHT_M = 0.6;
 // Prototype burst cloud initial radial expansion, dimensionless radius fraction.
 const BURST_EXPANSION_MIN = 0.4;
 // Prototype visual tuning: muzzle warm rgb (linear RGB).
-const MUZZLE_WARM_RGB = [0.42, 0.24, 0.1] as Vec3;
+// Prototype muzzle flash tint, linear RGB component intensities.
+const MUZZLE_WARM_RED = 0.42;
+const MUZZLE_WARM_GREEN = 0.24;
+const MUZZLE_WARM_BLUE = 0.1;
+const MUZZLE_WARM_RGB: Vec3 = [MUZZLE_WARM_RED, MUZZLE_WARM_GREEN, MUZZLE_WARM_BLUE];
 // Prototype deterministic seed partition: muzzle seed step (dimensionless seed offset).
 const MUZZLE_SEED_STEP = 0.37;
 // Prototype deterministic seed partition: muzzle seed scale (dimensionless seed multiplier).
@@ -163,77 +167,73 @@ const COMET_PUFF_COUNT = 8;
 // Prototype visual tuning: comet fade in s (seconds).
 const COMET_FADE_IN_S = 0.08;
 
+// Prototype unlit smoke intensities, linear RGB.
+const SMOKE_RED = 0.014;
+const SMOKE_GREEN = 0.015;
+const SMOKE_BLUE = 0.02;
 /** Prototype positive-x smoke drift in m/s, retained visual wind tuning. */
 export const WIND = 0.9;
 /** Prototype unlit smoke colour in linear RGB, chosen for dark smoke billboards. */
-export const SMOKE_RGB: Vec3 = [0.014, 0.015, 0.02];
+export const SMOKE_RGB: Vec3 = [SMOKE_RED, SMOKE_GREEN, SMOKE_BLUE];
 /** Appends muzzle and climb puffs at local seconds from launch firing.
- * launch and st supply authored and style opacity; seed is dimensionless,
- * px/pz are horizontal metres and path samples launch positions in metres. */
+ * launch and style supply authored and style opacity; seed is dimensionless,
+ * positionX/positionZ are horizontal metres and path samples launch positions in metres. */
+// eslint-disable-next-line max-params -- The source-clock smoke API retains scalar placement and synchronous path sampling without adding a puff context.
 export function launchSmoke(
   writer: ParticleWriter,
   launch: Launch,
-  st: LaunchStyle,
+  style: LaunchStyle,
   seed: number,
-  px: number,
-  pz: number,
+  positionX: number,
+  positionZ: number,
   local: number,
   path: (time: number) => Vec3,
 ): void {
   if (!writer.smokeEnabled) return;
-  const T = launch.time_s;
-  const sm = launch.smoke;
-  if (sm > 0) {
-    const base = SMOKE_RGB,
-      warm = MUZZLE_WARM_RGB;
-    for (let i = 0; i < MUZZLE_PUFF_COUNT; i++) {
-      const te = i * MUZZLE_INTERVAL_S;
-      if (te > local) break;
-      const age = local - te;
+  const smokeAmount = launch.smoke;
+  if (smokeAmount > 0) {
+    const base = SMOKE_RGB;
+    const warm = MUZZLE_WARM_RGB;
+    for (let puffIndex = 0; puffIndex < MUZZLE_PUFF_COUNT; puffIndex++) {
+      const emissionTimeS = puffIndex * MUZZLE_INTERVAL_S;
+      if (emissionTimeS > local) break;
+      const age = local - emissionTimeS;
       if (age > MUZZLE_LIFE_S) continue;
-      const u = age / MUZZLE_LIFE_S,
-        lit = Math.max(0, 1 - age / MUZZLE_LIGHT_S);
-      const a = hash(i, seed, MUZZLE_ANGLE_STREAM) * MUZZLE_TAU_RAD,
-        r = MUZZLE_RADIUS_MIN_M + MUZZLE_RADIUS_RANGE_M * hash(i, seed, MUZZLE_RADIUS_STREAM);
+      const progress = age / MUZZLE_LIFE_S;
+      const lit = Math.max(0, 1 - age / MUZZLE_LIGHT_S);
+      const azimuthRad = hash(puffIndex, seed, MUZZLE_ANGLE_STREAM) * MUZZLE_TAU_RAD;
+      const radiusM =
+        MUZZLE_RADIUS_MIN_M + MUZZLE_RADIUS_RANGE_M * hash(puffIndex, seed, MUZZLE_RADIUS_STREAM);
       const grow = 1 - Math.exp(-age * MUZZLE_GROWTH_PER_S);
       writer.smoke(
-        px + Math.cos(a) * r * (MUZZLE_EXPANSION_MIN + grow * MUZZLE_EXPANSION_RANGE) + WIND * age,
+        positionX +
+          Math.cos(azimuthRad) * radiusM * (MUZZLE_EXPANSION_MIN + grow * MUZZLE_EXPANSION_RANGE) +
+          WIND * age,
         MUZZLE_HEIGHT_M +
           grow *
-            (MUZZLE_HEIGHT_RANGE_M + MUZZLE_HEIGHT_JITTER_M * hash(i, seed, MUZZLE_HEIGHT_STREAM)) +
+            (MUZZLE_HEIGHT_RANGE_M +
+              MUZZLE_HEIGHT_JITTER_M * hash(puffIndex, seed, MUZZLE_HEIGHT_STREAM)) +
           age * MUZZLE_RISE_M_S,
-        pz + Math.sin(a) * r * (MUZZLE_EXPANSION_MIN + grow * MUZZLE_EXPANSION_RANGE),
+        positionZ +
+          Math.sin(azimuthRad) * radiusM * (MUZZLE_EXPANSION_MIN + grow * MUZZLE_EXPANSION_RANGE),
         mix(base, warm, lit),
         MUZZLE_SIZE_M + grow * MUZZLE_SIZE_GROWTH_M + age * MUZZLE_RISE_M_S,
-        MUZZLE_ALPHA * sm * Math.min(1, age / MUZZLE_FADE_IN_S) * (1 - u) * (1 - u),
-        seed * MUZZLE_SEED_SCALE + i * MUZZLE_SEED_STEP,
+        MUZZLE_ALPHA *
+          smokeAmount *
+          Math.min(1, age / MUZZLE_FADE_IN_S) *
+          (1 - progress) *
+          (1 - progress),
+        seed * MUZZLE_SEED_SCALE + puffIndex * MUZZLE_SEED_STEP,
         age,
       );
     }
-    for (let k = 0; k < T / CLIMB_INTERVAL_S; k++) {
-      const te = (k + hash(k, seed, CLIMB_TIME_STREAM) * CLIMB_TIME_JITTER) * CLIMB_INTERVAL_S;
-      if (te > local) break;
-      const age = local - te;
-      if (age > CLIMB_LIFE_S) continue;
-      const tA = path(te);
-      const u = age / CLIMB_LIFE_S,
-        j = hash(k, seed, CLIMB_X_STREAM) - 0.5;
-      writer.smoke(
-        tA[0] + WIND * age + j * CLIMB_JITTER_M,
-        tA[1] + age * CLIMB_RISE_M_S,
-        tA[2] + (hash(k, seed, CLIMB_Z_STREAM) - 0.5) * CLIMB_JITTER_M,
-        base,
-        CLIMB_SIZE_M + age * CLIMB_GROWTH_M_S,
-        CLIMB_ALPHA * sm * st.smoke * (1 - u) * (1 - u),
-        seed * CLIMB_SEED_SCALE + k * CLIMB_SEED_STEP,
-        age,
-      );
-    }
+    fillClimbSmoke(writer, launch, style, seed, local, path);
   }
 }
 /** Appends a flash-lit burst cloud at local seconds since layer ignition.
  * centre is metres, smoke is an opacity multiplier and seed/li partition noise
  * by design and flattened layer index; layer supplies radius and flash controls. */
+// eslint-disable-next-line max-params -- The bounded puff kernel consumes scalar source and layer clocks without an extra options allocation.
 export function burstSmoke(
   writer: ParticleWriter,
   layer: Layer,
@@ -244,63 +244,105 @@ export function burstSmoke(
   smoke: number,
 ): void {
   if (!writer.smokeEnabled || smoke <= 0 || !layer.flash) return;
-  const [cx, cy, cz] = centre,
-    R = layer.radius_m;
-  const bc = colourAt(layer.colour, 0, 0, 0);
-  for (let i = 0; i < BURST_PUFF_COUNT; i++) {
-    const age = local - i * BURST_INTERVAL_S;
+  const [cx, cy, cz] = centre;
+  const burstRadiusM = layer.radius_m;
+  const burstColour = colourAt(layer.colour, 0, 0, 0);
+  for (let puffIndex = 0; puffIndex < BURST_PUFF_COUNT; puffIndex++) {
+    const age = local - puffIndex * BURST_INTERVAL_S;
     if (age < BURST_START_S || age > BURST_LIFE_S) continue;
-    const u = age / BURST_LIFE_S,
-      lit = Math.max(0, 1 - age / BURST_LIGHT_S);
+    const progress = age / BURST_LIFE_S;
+    const lit = Math.max(0, 1 - age / BURST_LIGHT_S);
     const grow = 1 - Math.exp(-age * BURST_GROWTH_PER_S);
-    const a1 = hash(i, seed, BURST_ANGLE_STREAM) * BURST_TAU_RAD,
-      a2 = hash(i, seed, BURST_VERTICAL_STREAM) * 2 - 1,
-      rr =
-        R *
-        (BURST_RADIUS_MIN + BURST_RADIUS_RANGE * hash(i, seed, BURST_RADIUS_STREAM)) *
-        (BURST_EXPANSION_MIN + BURST_RADIUS_GROWTH * grow);
-    const q2 = Math.sqrt(1 - a2 * a2);
+    const azimuthRad = hash(puffIndex, seed, BURST_ANGLE_STREAM) * BURST_TAU_RAD;
+    const verticalUnit = hash(puffIndex, seed, BURST_VERTICAL_STREAM) * 2 - 1;
+    const radiusM =
+      burstRadiusM *
+      (BURST_RADIUS_MIN + BURST_RADIUS_RANGE * hash(puffIndex, seed, BURST_RADIUS_STREAM)) *
+      (BURST_EXPANSION_MIN + BURST_RADIUS_GROWTH * grow);
+    const horizontalUnit = Math.sqrt(1 - verticalUnit * verticalUnit);
     writer.smoke(
-      cx + Math.cos(a1) * q2 * rr + WIND * age,
-      cy + a2 * rr * BURST_VERTICAL_SCALE - age * BURST_FALL_M_S,
-      cz + Math.sin(a1) * q2 * rr,
-      mix(SMOKE_RGB, [bc[0] * 0.5, bc[1] * 0.5, bc[2] * 0.5], lit),
-      R * (BURST_SIZE_MIN + BURST_SIZE_GROWTH * grow) + age * BURST_SIZE_RATE_M_S,
+      cx + Math.cos(azimuthRad) * horizontalUnit * radiusM + WIND * age,
+      cy + verticalUnit * radiusM * BURST_VERTICAL_SCALE - age * BURST_FALL_M_S,
+      cz + Math.sin(azimuthRad) * horizontalUnit * radiusM,
+      mix(SMOKE_RGB, [burstColour[0] * 0.5, burstColour[1] * 0.5, burstColour[2] * 0.5], lit),
+      burstRadiusM * (BURST_SIZE_MIN + BURST_SIZE_GROWTH * grow) + age * BURST_SIZE_RATE_M_S,
       BURST_ALPHA *
         smoke *
         Math.min(1, (age - BURST_START_S) / BURST_FADE_IN_S) *
-        (1 - u) *
-        (1 - u),
-      seed * BURST_SEED_SCALE + li * BURST_LAYER_SEED_STEP + i * BURST_PUFF_SEED_STEP,
+        (1 - progress) *
+        (1 - progress),
+      seed * BURST_SEED_SCALE + li * BURST_LAYER_SEED_STEP + puffIndex * BURST_PUFF_SEED_STEP,
       age,
     );
   }
 }
-/** Appends a comet muzzle cloud at lt seconds since that emitter fired.
- * px/pz are horizontal metres; seed and emitter index i partition puff noise. */
+/** Appends a comet muzzle cloud at localTimeS seconds since that emitter fired.
+ * positionX/positionZ are horizontal metres; seed and emitter index partition puff noise. */
+// eslint-disable-next-line max-params -- The bounded muzzle kernel retains scalar placement and emitter identity without an extra puff context.
 export function cometSmoke(
   writer: ParticleWriter,
   seed: number,
-  i: number,
-  px: number,
-  pz: number,
-  lt: number,
+  emitterIndex: number,
+  positionX: number,
+  positionZ: number,
+  localTimeS: number,
 ): void {
   if (!writer.smokeEnabled) return;
-  for (let k = 0; k < COMET_PUFF_COUNT; k++) {
-    const age = lt - k * COMET_INTERVAL_S;
+  for (let slotIndex = 0; slotIndex < COMET_PUFF_COUNT; slotIndex++) {
+    const age = localTimeS - slotIndex * COMET_INTERVAL_S;
     if (age < 0 || age > COMET_LIFE_S) continue;
     const grow = 1 - Math.exp(-age * COMET_GROWTH_PER_S);
     writer.smoke(
-      px +
+      positionX +
         WIND * age +
-        (hash(k, i, COMET_X_STREAM) - 0.5) * COMET_JITTER_M * (COMET_EXPANSION_MIN + grow),
+        (hash(slotIndex, emitterIndex, COMET_X_STREAM) - 0.5) *
+          COMET_JITTER_M *
+          (COMET_EXPANSION_MIN + grow),
       COMET_HEIGHT_M + grow * COMET_HEIGHT_GROWTH_M + age * COMET_RISE_M_S,
-      pz + (hash(k, i, COMET_Z_STREAM) - 0.5) * COMET_JITTER_M * (COMET_EXPANSION_MIN + grow),
+      positionZ +
+        (hash(slotIndex, emitterIndex, COMET_Z_STREAM) - 0.5) *
+          COMET_JITTER_M *
+          (COMET_EXPANSION_MIN + grow),
       SMOKE_RGB,
       COMET_SIZE_M + grow * COMET_SIZE_GROWTH_M,
       COMET_ALPHA * Math.min(1, age / COMET_FADE_IN_S) * (1 - age / COMET_LIFE_S) ** 2,
-      seed * COMET_SEED_SCALE + i * COMET_EMITTER_SEED_STEP + k * COMET_PUFF_SEED_STEP,
+      seed * COMET_SEED_SCALE +
+        emitterIndex * COMET_EMITTER_SEED_STEP +
+        slotIndex * COMET_PUFF_SEED_STEP,
+      age,
+    );
+  }
+}
+
+// eslint-disable-next-line max-params -- Source-clock scalars preserve the allocation-free smoke kernel and its synchronous path sampling.
+function fillClimbSmoke(
+  writer: ParticleWriter,
+  launch: Launch,
+  style: LaunchStyle,
+  seed: number,
+  local: number,
+  path: (time: number) => Vec3,
+): void {
+  const climbTimeS = launch.time_s;
+  const smokeAmount = launch.smoke;
+  const base = SMOKE_RGB;
+  for (let slotIndex = 0; slotIndex < climbTimeS / CLIMB_INTERVAL_S; slotIndex++) {
+    const emissionTimeS =
+      (slotIndex + hash(slotIndex, seed, CLIMB_TIME_STREAM) * CLIMB_TIME_JITTER) * CLIMB_INTERVAL_S;
+    if (emissionTimeS > local) break;
+    const age = local - emissionTimeS;
+    if (age > CLIMB_LIFE_S) continue;
+    const sourcePosition = path(emissionTimeS);
+    const progress = age / CLIMB_LIFE_S;
+    const xJitter = hash(slotIndex, seed, CLIMB_X_STREAM) - 0.5;
+    writer.smoke(
+      sourcePosition[0] + WIND * age + xJitter * CLIMB_JITTER_M,
+      sourcePosition[1] + age * CLIMB_RISE_M_S,
+      sourcePosition[2] + (hash(slotIndex, seed, CLIMB_Z_STREAM) - 0.5) * CLIMB_JITTER_M,
+      base,
+      CLIMB_SIZE_M + age * CLIMB_GROWTH_M_S,
+      CLIMB_ALPHA * smokeAmount * style.smoke * (1 - progress) * (1 - progress),
+      seed * CLIMB_SEED_SCALE + slotIndex * CLIMB_SEED_STEP,
       age,
     );
   }

@@ -1,11 +1,15 @@
 /** Shared classifiers for Supabase client failures. */
 
+// Existing classifier budget: inspect the root error and two nested causes.
+const MAX_CAUSE_DEPTH = 2;
+
+/** Classifies transient network failures from an unknown Supabase error and bounded causes. */
 export function isSupabaseTransientNetworkError(error: unknown): boolean {
-  if (!error) return false;
+  if (!Boolean(error)) return false;
 
   const parts: string[] = [];
   const collect = (value: unknown, depth = 0) => {
-    if (!value || depth > 2) return;
+    if (!Boolean(value) || depth > MAX_CAUSE_DEPTH) return;
     if (typeof value === 'string') {
       parts.push(value);
       return;

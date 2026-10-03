@@ -15,7 +15,7 @@
     "generate:schema": "node scripts/generate-schema.mjs",
     "check:schema": "node scripts/generate-schema.mjs --check",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src 'tests/**/*.ts' --max-warnings 0 --suppressions-location eslint-suppressions-2026-10-03.json",
+    "lint": "eslint src 'tests/**/*.ts' --max-warnings 0",
     "test": "node --import ../../scripts/register-typescript.mjs --test tests/*.test.mjs",
     "check": "pnpm check:schema && pnpm lint && pnpm typecheck && pnpm test"
   },

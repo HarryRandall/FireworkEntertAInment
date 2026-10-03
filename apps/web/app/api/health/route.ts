@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
+/** Returns the local application health response. */
 export function GET() {
   return NextResponse.json(
     { ok: true, message: 'ShowCrafter rebuild is running.' },

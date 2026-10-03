@@ -16,7 +16,11 @@
  * `global: { fetch }`.
  */
 
-function createSupabaseFetch(timeoutMs = 8_000) {
+// Existing request budgets, milliseconds, chosen for read, catalogue and upload latency.
+const READ_TIMEOUT_MS = 8_000;
+const CATALOGUE_TIMEOUT_MS = 20_000;
+const UPLOAD_TIMEOUT_MS = 30_000;
+function createSupabaseFetch(timeoutMs = READ_TIMEOUT_MS) {
   return async function supabaseFetch(
     input: RequestInfo | URL,
     init?: RequestInit,
@@ -29,10 +33,10 @@ function createSupabaseFetch(timeoutMs = 8_000) {
 }
 
 /** Read and auth path: fail fast at 8s rather than hanging ~18s. */
-export const supabaseFetch = createSupabaseFetch(8_000);
+export const supabaseFetch = createSupabaseFetch(READ_TIMEOUT_MS);
 
 /** Nested catalogue joins can exceed the default read timeout on cold starts. */
-export const supabaseFetchCatalogue = createSupabaseFetch(20_000);
+export const supabaseFetchCatalogue = createSupabaseFetch(CATALOGUE_TIMEOUT_MS);
 
 /** Service-role uploads (PNG cover backfill, firework imports): allow 30s. */
-export const supabaseFetchLong = createSupabaseFetch(30_000);
+export const supabaseFetchLong = createSupabaseFetch(UPLOAD_TIMEOUT_MS);

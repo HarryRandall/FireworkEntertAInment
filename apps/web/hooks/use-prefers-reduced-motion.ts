@@ -7,7 +7,9 @@ const REDUCED_MOTION_QUERY = '(prefers-reduced-motion: reduce)';
 function subscribe(onPreferenceChange: () => void) {
   const mediaQuery = window.matchMedia(REDUCED_MOTION_QUERY);
   mediaQuery.addEventListener('change', onPreferenceChange);
-  return () => mediaQuery.removeEventListener('change', onPreferenceChange);
+  return () => {
+    mediaQuery.removeEventListener('change', onPreferenceChange);
+  };
 }
 
 function getSnapshot() {
@@ -20,6 +22,7 @@ function getServerSnapshot() {
   return true;
 }
 
+/** Tracks the browser motion preference, defaulting to reduced motion during hydration. */
 export function usePrefersReducedMotion() {
   return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }
