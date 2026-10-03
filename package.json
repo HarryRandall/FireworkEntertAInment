@@ -28,7 +28,7 @@
     "db:env": "node scripts/database/local.mjs env",
     "test:database-tooling": "node --test scripts/database/*.test.mjs",
     "test:lint-rules": "node --test scripts/eslint/*.test.mjs",
-    "db:test": "pnpm exec supabase test db",
+    "db:test": "node scripts/database/test.mjs",
     "db:types": "node scripts/database/types.mjs",
     "db:setup": "pnpm db:start && pnpm db:reset",
     "test:packages": "pnpm --filter @showcrafter/fireworks check && pnpm --filter @showcrafter/planner check",
