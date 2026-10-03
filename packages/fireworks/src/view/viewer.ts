@@ -2,14 +2,27 @@
 import { prototypeOr } from '../sim/numeric';
 import * as THREE from 'three';
 import type { Design } from '../schema/index';
-import { simulate, shotDuration } from '../sim/index';
+import { shotDuration } from '../sim/index';
 import { ParticleLayers } from './buffers';
 import { GpuSprays } from './gpu-sprays';
+import { FrameProfiler } from './frame-profile';
 import { FrameTimes } from './frame-times';
 import { OutputPass } from './output';
-import { CAKE_TOP_M, cakeHole, makeProps } from './props';
+import { makeProps } from './props';
 import { disposeTree, makeWorld } from './world';
-import { fitReviewCamera } from './review-framing';
+import { framingFor } from '../sim/framing';
+import { shakeEvents } from '../sim/shake';
+import type { Vec3 } from '../sim/colour';
+import { StageControls } from './stage-controls';
+import { onSettings } from './settings';
+import { viewerInput, mountViewerSurface } from './viewer-input';
+import { buildPlayer } from './player';
+import {
+  drawViewerFrame,
+  applyViewerShake,
+  applyViewerSettings,
+  resetViewerReadout,
+} from './viewer-frame';
 import type { Shot, ViewerOptions } from './types';
 
 // Prototype projection settings, in degrees and metres.
@@ -21,7 +34,6 @@ const MAX_DPR = 1.5;
 // Wall clock conversion; smoothing weights follow the prototype's performance readout.
 const MS_PER_SECOND = 1000;
 const FPS_OLD_WEIGHT = 0.92;
-const TIMING_OLD_WEIGHT = 0.9;
 const HALF_TURN_DEG = 180;
 
 /** Stateless firework playback in one owned WebGL context, with explicit resource cleanup. */
@@ -30,6 +42,13 @@ export class Viewer {
   readonly scene = new THREE.Scene();
   readonly camera = new THREE.PerspectiveCamera(FOV_DEG, 1, NEAR_M, FAR_M);
   readonly output: OutputPass;
+  readonly profiler: FrameProfiler;
+  readonly controls: StageControls;
+  private readonly cleanups: (() => void)[] = [];
+  private cameraMoving = false;
+  private shake = shakeEvents([]);
+  private readonly shakeOffset: Vec3 = [0, 0, 0];
+  private readonly cameraPosition: Vec3 = [0, 0, 0];
   readonly layers = new ParticleLayers();
   private readonly gpuSprays = new GpuSprays(this.layers.uniforms);
   sprayMode: 'cpu' | 'gpu' = 'gpu';
@@ -65,19 +84,32 @@ export class Viewer {
       antialias: false,
       powerPreference: 'high-performance',
     });
+    this.profiler = new FrameProfiler(this.renderer.getContext());
     this.renderer.setPixelRatio(Math.min(MAX_DPR, prototypeOr(window.devicePixelRatio, 1)));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.NoToneMapping;
-    this.renderer.domElement.style.cssText = 'display:block;width:100%;height:100%';
-    this.renderer.domElement.setAttribute('aria-label', 'Firework preview');
-    container.appendChild(this.renderer.domElement);
+    this.cleanups.push(mountViewerSurface(container, this.renderer.domElement));
+    this.controls = new StageControls(this.camera, this.renderer.domElement, () => {
+      this.invalidate();
+    });
+    this.controls.enabled = options.controls !== false;
+    this.cleanups.push(
+      viewerInput(this, container, this.renderer.domElement, options.clickToPause !== false),
+    );
     this.world = makeWorld(this.scene);
     this.scene.add(this.layers.group, this.gpuSprays.points);
     this.output = new OutputPass(this.renderer, options.forceLdr);
+    this.cleanups.push(
+      onSettings(() => {
+        applyViewerSettings(this, this.world);
+        this.emit();
+      }),
+    );
     this.setShots(this.shots);
     this.t = Math.max(0, Math.min(this.duration, options.startAt ?? 0));
     this.playing =
       options.autoplay !== false && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (options.ui === true) this.cleanups.push(buildPlayer(this));
     this.resizeObserver = new ResizeObserver(() => {
       this.resize();
     });
@@ -108,7 +140,7 @@ export class Viewer {
       this.raf === 0 &&
       this.onScreen &&
       !document.hidden &&
-      (this.dirty || this.playing)
+      (this.dirty || this.playing || this.profiler.waiting || this.cameraMoving)
     )
       this.raf = requestAnimationFrame(this.frame);
   }
@@ -121,8 +153,11 @@ export class Viewer {
       this.frameTimes.record(dt * MS_PER_SECOND);
       this.advancePlayback(dt);
     }
-    if (this.dirty || this.playing || dt > 0) {
-      this.draw();
+    this.cameraMoving = this.controls.update(now);
+    if (this.profiler.poll()) this.emit();
+    if (this.dirty || this.playing || this.cameraMoving) {
+      applyViewerShake(this, this.shake, this.shakeOffset, this.cameraPosition);
+      drawViewerFrame(this, this.gpuSprays);
       this.dirty = false;
       this.emit();
     }
@@ -136,36 +171,9 @@ export class Viewer {
       else {
         this.t = this.duration;
         this.playing = false;
+        this.dirty = true;
       }
     } else this.t = next;
-  }
-  private draw(): void {
-    const start = performance.now();
-    this.gpuSprays.births.reset();
-    const frames = this.shots.flatMap((shot, index) => {
-      const time = this.t - (shot.t0 ?? 0);
-      if (time < 0 || time > shotDuration(shot.design)) return [];
-      const placement =
-        this.options.prop === 'cake' ? { position: cakeHole(index), muzzle_m: CAKE_TOP_M } : {};
-      return [
-        simulate(shot.design, time, {
-          ...shot,
-          ...placement,
-          sprayBirth: this.sprayMode === 'gpu' ? this.gpuSprays.births.receive : undefined,
-        }),
-      ];
-    });
-    this.layers.upload(frames);
-    this.gpuSprays.upload();
-    this.count = frames.reduce(
-      (sum, frame) => sum + frame.kinds.length,
-      this.gpuSprays.births.count,
-    );
-    this.fillMs =
-      this.fillMs * TIMING_OLD_WEIGHT + (performance.now() - start) * (1 - TIMING_OLD_WEIGHT);
-    this.output.render(this.renderer, this.scene, this.camera);
-    this.frameMs =
-      this.frameMs * TIMING_OLD_WEIGHT + (performance.now() - start) * (1 - TIMING_OLD_WEIGHT);
   }
   private emit(): void {
     for (const listener of this.listeners) listener(this);
@@ -184,15 +192,20 @@ export class Viewer {
       (height * dpr) / (2 * Math.tan((FOV_DEG * Math.PI) / HALF_TURN_DEG / 2));
     this.layers.uniforms.uDpr.value = dpr;
     this.world.resize(height, dpr);
-    this.resetCamera();
+    if (!this.controls.touched) this.resetCamera(true);
+    else this.invalidate();
+  }
+
+  /** Captures phase timings for the next visible draw without changing show time. */
+  profileFrame(): void {
+    this.profiler.request();
+    this.invalidate();
   }
 
   /** Selects CPU reference or GPU sprays for developer comparisons and redraws the same instant. */
   setSprayMode(mode: 'cpu' | 'gpu'): void {
     this.sprayMode = mode;
-    this.frameTimes.reset();
-    this.fillMs = 0;
-    this.frameMs = 0;
+    resetViewerReadout(this);
     this.last = 0;
     this.invalidate();
   }
@@ -211,6 +224,7 @@ export class Viewer {
     if (this.disposed) return;
     this.playing = false;
     this.last = 0;
+    this.invalidate();
     this.emit();
   }
   /** Toggles the current playback state. */
@@ -221,18 +235,25 @@ export class Viewer {
   /** Seeks to a clamped sequence time in seconds and requests an exact redraw. */
   seek(time_s: number): void {
     if (this.disposed) return;
+    if (!Number.isFinite(time_s)) throw new RangeError('Seek time must be finite');
     this.t = Math.max(0, Math.min(this.duration, time_s));
     this.last = 0;
     this.invalidate();
     this.emit();
   }
-  /** Replaces the firing sequence, rebuilding and releasing launch hardware. */
-  setShots(shots: readonly Shot[]): void {
+  /** Sets a finite positive speed multiplier; one means real time. */
+  setSpeed(speed: number): void {
+    if (!Number.isFinite(speed) || speed <= 0)
+      throw new RangeError('Playback speed must be positive');
+    if (this.disposed) return;
+    this.speed = speed;
+    this.emit();
+  }
+  /** Replaces firing-relative seconds and metre placements; keepCamera retains the user pose. */
+  setShots(shots: readonly Shot[], keepCamera = false): void {
     if (this.disposed) return;
     this.shots = shots;
-    this.frameTimes.reset();
-    this.fillMs = 0;
-    this.frameMs = 0;
+    resetViewerReadout(this);
     this.last = 0;
     this.duration = Math.max(0, ...shots.map((shot) => (shot.t0 ?? 0) + shotDuration(shot.design)));
     this.t = Math.min(this.t, this.duration);
@@ -240,25 +261,19 @@ export class Viewer {
     disposeTree(this.props);
     this.props = makeProps(shots, this.options.prop ?? 'mortar');
     this.scene.add(this.props);
-    this.resetCamera();
+    this.shake = shakeEvents(shots);
+    if (!keepCamera) this.resetCamera(true);
     this.invalidate();
     this.emit();
   }
   /** Replaces the sequence with one stored design; keepCamera preserves the projection. */
   setDesign(design: Design, keepCamera = false): void {
-    const position = this.camera.position.clone();
-    const rotation = this.camera.rotation.clone();
-    this.setShots([{ design }]);
-    if (keepCamera) {
-      this.camera.position.copy(position);
-      this.camera.rotation.copy(rotation);
-    }
+    this.setShots([{ design }], keepCamera);
   }
-  /** Restores a fixed review view fitted to sampled CPU particle bounds in world metres. */
-  resetCamera(): void {
+  /** Restores prototype framing in world metres; snap skips camera easing. */
+  resetCamera(snap = false): void {
     if (this.disposed) return;
-    fitReviewCamera(this.camera, this.shots);
-    this.invalidate();
+    this.controls.frame(framingFor(this.shots, false, this.camera.aspect, this.camera.fov), snap);
   }
   /** Marks externally changed data dirty and schedules a visible redraw. */
   invalidate(): void {
@@ -280,7 +295,8 @@ export class Viewer {
     if (this.disposed) throw new Error('Viewer is disposed.');
     if (width !== undefined && height !== undefined) this.resize(width, height);
     try {
-      this.draw();
+      this.controls.update();
+      drawViewerFrame(this, this.gpuSprays);
       return this.renderer.domElement.toDataURL('image/png');
     } finally {
       if (width !== undefined && height !== undefined) this.resize();
@@ -294,12 +310,15 @@ export class Viewer {
     this.resizeObserver.disconnect();
     this.intersectionObserver.disconnect();
     document.removeEventListener('visibilitychange', this.visibilityChanged);
+    for (const cleanup of this.cleanups) cleanup();
+    this.controls.dispose();
     this.listeners.clear();
     this.scene.remove(this.layers.group);
     this.scene.remove(this.gpuSprays.points);
     this.gpuSprays.dispose();
     this.layers.dispose();
     disposeTree(this.scene);
+    this.profiler.dispose();
     this.output.dispose();
     this.renderer.dispose();
     this.renderer.forceContextLoss();
