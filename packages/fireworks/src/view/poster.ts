@@ -42,6 +42,7 @@ export class PosterRenderer {
   shots: readonly Shot[] = [];
   t = 0;
   count = 0;
+  gpuCandidateCount = 0;
   fillMs = 0;
   frameMs = 0;
 

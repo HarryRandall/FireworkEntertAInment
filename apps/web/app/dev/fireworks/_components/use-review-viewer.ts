@@ -20,6 +20,7 @@ export function useReviewViewer(
     duration: 0,
     playing: false,
     count: 0,
+    gpuCandidateCount: 0,
     hdr: false,
     sprayMode: 'gpu',
     shotCount: 1,
