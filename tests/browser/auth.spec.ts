@@ -75,50 +75,35 @@ async function userId(page: Page): Promise<string> {
     throw new Error('Invalid Auth user');
   return user.id;
 }
-function messageDate(message: unknown): string {
-  if (
-    typeof message !== 'object' ||
-    message === null ||
-    !('date' in message) ||
-    typeof message.date !== 'string'
-  )
-    return '';
-  return message.date;
+/** Reads one string field from untrusted mail-catcher JSON. */
+function stringField(value: unknown, key: string): string {
+  if (typeof value !== 'object' || value === null || !(key in value)) return '';
+  const field: unknown = (value as Record<string, unknown>)[key];
+  return typeof field === 'string' ? field : '';
 }
-async function magicLink(page: Page, mailbox: string): Promise<string> {
+/** Waits for Mailpit's newest email to an address sent after the given time; returns its Auth link. */
+async function magicLink(page: Page, address: string, sentAfter: Date): Promise<string> {
   let link = '';
   await expect
     .poll(async () => {
-      const response = await page.request.get(`${MAIL}/api/v1/mailbox/${mailbox}`);
+      const query = encodeURIComponent(`to:"${address}"`);
+      const response = await page.request.get(`${MAIL}/api/v1/search?query=${query}`);
       if (!response.ok()) return false;
-      const messages: unknown = await response.json();
-      if (!Array.isArray(messages) || messages.length === 0) return false;
-      const ordered = [...messages].sort((left: unknown, right: unknown) =>
-        messageDate(right).localeCompare(messageDate(left)),
+      const result: unknown = await response.json();
+      const messages: unknown =
+        typeof result === 'object' && result !== null && 'messages' in result
+          ? result.messages
+          : [];
+      if (!Array.isArray(messages)) return false;
+      // Mailpit lists newest first; earlier runs may have left used links for the same address.
+      const latest: unknown = messages.find(
+        (message: unknown) => new Date(stringField(message, 'Created')) >= sentAfter,
       );
-      const latest: unknown = ordered[0];
-      if (
-        typeof latest !== 'object' ||
-        latest === null ||
-        !('id' in latest) ||
-        typeof latest.id !== 'string'
-      )
-        return false;
-      const detail = await page.request.get(`${MAIL}/api/v1/mailbox/${mailbox}/${latest.id}`);
-      const message: unknown = await detail.json();
-      if (typeof message !== 'object' || message === null || !('body' in message)) return false;
-      const content = message.body;
-      if (
-        typeof content !== 'object' ||
-        content === null ||
-        !('html' in content) ||
-        typeof content.html !== 'string'
-      )
-        return false;
-      const body = content.html;
-      const match = body
-        .replaceAll('\\u0026', '&')
-        .match(/https?:[^\s"<>]+\/auth\/v1\/verify\?[^\s"<>]+/);
+      const id = stringField(latest, 'ID');
+      if (id === '') return false;
+      const detail = await page.request.get(`${MAIL}/api/v1/message/${id}`);
+      const body = stringField(await detail.json(), 'HTML');
+      const match = body.match(/https?:[^\s"<>]+\/auth\/v1\/verify\?[^\s"<>]+/);
       link = match?.[0]?.replaceAll('&amp;', '&') ?? '';
       return link.length > 0;
     })
@@ -146,11 +131,12 @@ test('anonymous shopper upgrades by email link with the same UUID and saved prof
     await expect(page).toHaveURL(/\/auth\/sign-in/);
   }
   await page.goto('/shopper');
-  const mailbox = `upgrade-${randomUUID()}`;
-  await page.getByLabel('Email', { exact: true }).fill(`${mailbox}@showcrafter.test`);
+  const address = `upgrade-${randomUUID()}@showcrafter.test`;
+  await page.getByLabel('Email', { exact: true }).fill(address);
+  const upgradeSent = new Date();
   await page.getByRole('button', { name: 'Send account link' }).click();
   await expect(page.getByRole('status')).toContainText('Check your email');
-  await page.goto(await magicLink(page, mailbox));
+  await page.goto(await magicLink(page, address, upgradeSent));
   await expect(page).toHaveURL(/\/account$/);
   expect(await userId(page)).toBe(originalId);
   const profile = await page.request.get(`${profileUrl}&select=display_name,is_anonymous`, {
@@ -174,9 +160,10 @@ test('password errors preserve the supplied email', async ({ page }) => {
 test('a permanent shopper can sign in by magic link and sign out', async ({ page }) => {
   await page.goto('/auth/sign-in');
   await page.getByLabel('Email', { exact: true }).fill('shopper@showcrafter.test');
+  const linkSent = new Date();
   await page.getByRole('button', { name: 'Send magic link' }).click();
   await expect(page.getByRole('status')).toContainText('Check your email');
-  await page.goto(await magicLink(page, 'shopper'));
+  await page.goto(await magicLink(page, 'shopper@showcrafter.test', linkSent));
   await expect(page).toHaveURL(/\/account$/);
   await page.getByRole('button', { name: 'Sign out', exact: true }).click();
   await expect(page).toHaveURL(/\/auth\/sign-in$/);
