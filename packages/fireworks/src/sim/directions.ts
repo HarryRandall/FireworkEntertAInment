@@ -14,15 +14,41 @@ export function unit(k: number, seed: number): Vec3 {
     r = Math.sqrt(1 - z * z);
   return [r * Math.cos(th), z, r * Math.sin(th)];
 }
-// Special burst shapes are added in PR 2.3; never silently substitute a sphere.
-export function directions(n: number, pattern: string, seed: number): StarDirection[] {
-  if (pattern !== 'sphere' && pattern !== 'random')
-    throw new RangeError(`Pattern ${pattern} is not implemented in the core simulation`);
+export function directions(n: number, pattern: string, seed: number, tilt = 0): StarDirection[] {
   const out: StarDirection[] = [];
-  const yaw = hash(seed, 91, 3) * Math.PI * 2;
+  const yaw = pattern === 'heart' || pattern === 'spiral' ? 0 : hash(seed, 91, 3) * Math.PI * 2;
   for (let i = 0; i < n; i++) {
     let x: number, y: number, z: number;
-    if (pattern === 'random') {
+    if (pattern === 'ring') {
+      const a = (i / n) * Math.PI * 2;
+      x = Math.cos(a);
+      const angle = (tilt * Math.PI) / 2 + 0.3;
+      y = Math.sin(a) * Math.cos(angle);
+      z = Math.sin(a) * Math.sin(angle);
+    } else if (pattern === 'heart') {
+      const a = (i / n) * Math.PI * 2;
+      x = (16 * Math.sin(a) ** 3) / 17;
+      y = (13 * Math.cos(a) - 5 * Math.cos(2 * a) - 2 * Math.cos(3 * a) - Math.cos(4 * a)) / 17;
+      z = 0;
+    } else if (pattern === 'spiral') {
+      const u = (i + 0.5) / n,
+        a = u * Math.PI * 5 + (i % 2 ? Math.PI : 0);
+      x = Math.cos(a) * (0.12 + u * 0.88);
+      y = Math.sin(a) * (0.12 + u * 0.88);
+      z = (hash(seed, i, 8) - 0.5) * 0.1;
+    } else if (pattern === 'cone') {
+      const a = hash(seed, i, 1) * Math.PI * 2,
+        s = Math.sqrt(hash(seed, i, 2)) * Math.sin(0.42);
+      x = Math.cos(a) * s;
+      z = Math.sin(a) * s;
+      y = Math.sqrt(1 - s * s);
+    } else if (pattern === 'bottom') {
+      y = -1 + 1.25 * ((i + 0.5) / n);
+      const r = Math.sqrt(Math.max(0, 1 - y * y)),
+        phi = i * 2.399963;
+      x = r * Math.cos(phi);
+      z = r * Math.sin(phi);
+    } else if (pattern === 'random') {
       z = 2 * hash(seed, i, 1) - 1;
       const th = 2 * Math.PI * hash(seed, i, 2),
         r = Math.sqrt(1 - z * z);
