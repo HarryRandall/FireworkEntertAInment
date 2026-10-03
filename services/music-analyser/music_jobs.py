@@ -23,13 +23,14 @@ from showcrafter_workers.runtime import Usage, drain
 
 from audio_download import download_audio
 from showcrafter import (
-    SCHEMA_VERSION,
     analyse_song,
     elapsed_ms,
     validate_analysis_result,
 )
 
-ALGORITHM = f"librosa-{SCHEMA_VERSION}"
+from beat_tracking import DEFAULT_TRACKER, algorithm_for
+
+ALGORITHM = algorithm_for(DEFAULT_TRACKER)
 # UI peak budget per track, chosen to bound JSON size independently of song length.
 WAVEFORM_PEAK_COUNT = 256
 # Audio upload deadline in seconds, allowing a bounded 50 MiB input on a slower link.
