@@ -3,8 +3,8 @@ import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { resolve } from 'node:path';
 
-const repository = fileURLToPath(new URL('../../', import.meta.url));
-const require = createRequire(new URL('../../apps/web/package.json', import.meta.url));
+const repository = fileURLToPath(new URL('../', import.meta.url));
+const require = createRequire(new URL('../apps/web/package.json', import.meta.url));
 const ts = require('typescript');
 
 // Run the same TypeScript sources in headless simulation tests without a build.

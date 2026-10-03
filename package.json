@@ -20,9 +20,6 @@
     "format:check": "prettier --check .",
     "check": "pnpm format:check && pnpm test:database-tooling && pnpm test:packages && pnpm --filter @showcrafter/web check",
     "test:analyser": "services/music-analyser/.venv/bin/python -m unittest discover -s services/music-analyser/tests -p '*test*.py'",
-    "test:worker": "services/firework-import-worker/.venv/bin/python -m unittest discover -s services/firework-import-worker/tests -p '*test*.py'",
-    "test:import-contract": "node --import ./scripts/renderer/register-typescript.mjs scripts/renderer/test-import-reconstruction.mjs",
-    "worker:firework-import": "./services/firework-import-worker/run-worker.sh",
     "db:start": "node scripts/database/local.mjs start",
     "db:stop": "node scripts/database/local.mjs stop",
     "db:status": "node scripts/database/local.mjs status",
@@ -39,7 +36,7 @@
     "db:setup": "pnpm db:start && pnpm db:bootstrap --local && pnpm db:fixtures",
     "db:export": "node scripts/database/export.mjs",
     "db:fixtures:check": "node scripts/database/fixtures-check.mjs",
-    "test:packages": "node --import ./scripts/renderer/register-typescript.mjs --test packages/*/tests/*.test.mjs",
+    "test:packages": "node --import ./scripts/register-typescript.mjs --test packages/*/tests/*.test.mjs",
     "knip": "knip"
   },
   "devDependencies": {
