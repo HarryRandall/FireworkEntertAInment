@@ -57,3 +57,6 @@ htmlcov/
 .pytest_cache/
 .ruff_cache/
 services/music-analyser/evaluation-report.json
+
+# Downloaded evaluation audio and pinned neural model weights
+services/music-analyser/.cache/
