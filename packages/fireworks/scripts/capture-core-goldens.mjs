@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import vm from 'node:vm';
+import { kindCases } from '../tests/kind-cases.mjs';
 
 // One-off capture from the owner's read-only reference, never from the port.
 const path = process.argv[2];
@@ -23,7 +24,7 @@ vm.runInContext(
   context,
 );
 const ref = context.reference;
-// PR 2.4 supplies sprays/smoke. PR 2.3 supplies layer modifiers. Capture the core only.
+// PR 2.4 supplies sprays/smoke. Capture heads and discrete modifier events only.
 vm.runInContext('spray = () => {}; SETTINGS.smoke = false;', context);
 // The prototype has one core/fade; v1 has one per break. Only the lookup changes.
 vm.runInContext(
@@ -40,8 +41,11 @@ function fade(f) {
 function legacyLayer(l, b) {
   const first = l.colour.stops[0][1];
   const values = typeof first === 'string' ? [first] : first;
-  const change = l.colour.reignition;
-  const target = change ? l.colour.stops.find((s) => s[0] > change.at)?.[1] : null;
+  const ghostAt = l.colour.stops.find((s, i, stops) => i > 0 && s[0] === stops[i - 1][0])?.[0];
+  const change = l.colour.reignition ?? (ghostAt !== undefined ? { at: ghostAt } : null);
+  const target = change
+    ? l.colour.stops.find((s) => s[0] >= change.at && s[1] !== first)?.[1]
+    : null;
   if (Array.isArray(target)) throw new Error('Capture expects a scalar colour change');
   const fx = l.modifiers[0];
   return {
@@ -59,20 +63,31 @@ function legacyLayer(l, b) {
     offset: l.offset_m,
     flash: l.flash,
     hidden: l.hidden,
-    twist: 0,
+    twist: fx?.kind === 'twist' ? fx.angular_speed_rad_s : 0,
     colours: values,
     colourMode: l.colour.mode,
     changeTo: target,
     changeAt: change?.at,
     head: { ...l.head, brightness: l.brightness[0][1] },
     trail: { ...l.trail, length: l.trail.length_s },
-    effect: fx ? { ...fx, rate: fx.rate_hz } : { kind: 'none' },
+    effect: fx
+      ? {
+          ...fx,
+          kind:
+            fx.kind === 'split'
+              ? 'crossette'
+              : ['twist', 'glitter', 'whistle'].includes(fx.kind)
+                ? 'none'
+                : fx.kind,
+          rate: fx.kind === 'fish' ? fx.rate_rad_s : fx.rate_hz,
+        }
+      : { kind: 'none' },
     __core: core(b.core),
     __fade: fade(b.fade),
   };
 }
 function legacy(doc) {
-  if (doc.kind === 'comet') {
+  if (doc.kind === 'comet' || doc.kind === 'candle') {
     const c = doc.ground.comets;
     const original = c.colour.stops[0][1];
     return {
@@ -83,9 +98,13 @@ function legacy(doc) {
         height: c.height_m,
         spread: c.spread_deg,
         gap: c.gap_s,
-        colour: original,
-        changeTo: '#ffffff',
-        changeAt: c.colour.reignition.at,
+        colours: Array.isArray(original) ? original : undefined,
+        colour: Array.isArray(original) ? original[0] : original,
+        changeTo: c.colour.stops.find((s) => s[1] !== original)?.[1],
+        changeAt: c.colour.reignition?.at ?? c.colour.stops[1]?.[0],
+        split: c.split
+          ? { count: c.split.count, distance: c.split.distance_m, life: c.split.life_s }
+          : null,
         trail: null,
         tailLife: c.tail_life_s,
         spin: c.spin_rad_s,
@@ -93,8 +112,31 @@ function legacy(doc) {
       },
     };
   }
+  if (doc.launch === null) {
+    const v = doc.ground[doc.kind];
+    return {
+      kind: doc.kind,
+      [doc.kind]: {
+        ...v,
+        height: v.height_m,
+        time: v.time_s,
+        duration: v.duration_s,
+        radius: v.radius_m,
+        spin: v.spin_rad_s ?? v.spin_hz,
+        wander: v.wander_m,
+        rate: v.rate_per_s,
+        speed: v.speed_m_s,
+        life: v.life_s,
+        spacing: v.spacing_m,
+        dir: v.direction,
+        gravity: v.gravity_m_s2,
+        drag: v.drag_per_s,
+        glowAlpha: v.glow_alpha,
+      },
+    };
+  }
   return {
-    kind: doc.kind,
+    kind: doc.kind === 'rocket' ? 'shell' : doc.kind,
     launch: {
       ...doc.launch,
       height: doc.launch.height_m,
@@ -210,7 +252,11 @@ const result = {
   source: 'prototype/fireworks3d.js',
   source_sha256: createHash('sha256').update(source).digest('hex'),
   scope:
-    'Core only: sprays and smoke disabled, layer modifiers removed after duration capture; per-break core/fade lookups use v1 values. Comet positions retained for PR 2.3, only duration checked in PR 2.2.',
+    'Sprays and smoke disabled; original core cases remove modifiers after duration capture, kinds cases retain modifiers. Per-break core/fade lookups use v1 values. Glitter affects sprays only, whistle affects sound only. Launch embellishments disabled.',
+  kinds: kindCases().map((c) => ({
+    name: c.name,
+    frames: c.times.map((t) => frame(legacy(c.design), c.design.seed, t)),
+  })),
   helpers: {
     hashes: [
       [0, 0, 0],
