@@ -1,10 +1,12 @@
+/** Closed-form star motion under drag, gravity and stored motion modifiers. */
 import type { Layer } from '../schema/index';
 import type { StarDirection } from './directions';
 import type { Vec3 } from './colour';
-// Closed form, evaluated from age alone. Twist precedes additive movement modifiers.
+/** Computes one star's world position in metres from its burst centre and age in seconds. */
 export function starPos(layer: Layer, direction: StarDirection, age: number, centre: Vec3): Vec3 {
   const k = layer.drag_per_s,
     sf = 1 - layer.speed_var + layer.speed_var * direction.h;
+  // Analytic exponential drag avoids integration drift during seeking.
   const e = 1 - Math.exp(-k * age),
     dist = layer.radius_m * sf * e;
   const fall = (layer.gravity_m_s2 / k) * (age - e / k);

@@ -1,7 +1,11 @@
+/** Per-star burn, colour transition and brightness modifier evaluation. */
 import type { Fade, Layer } from '../schema/index';
 import type { StarDirection } from './directions';
 import { hash } from './random';
 import { colourAt, mix, PRIME, rgb, smoothstep, WHITE } from './colour';
+/** Hash stream selecting a twinkle's independent on/off sample. */
+const TWINKLE_STATE_STREAM_OFFSET = 3;
+/** Computes the burn alpha for an age and lifetime in seconds. */
 export function fadeAlpha(fade: Fade, age: number, life: number): number {
   const p = age / life;
   let a = Math.min(1, age / 0.07);
@@ -9,6 +13,7 @@ export function fadeAlpha(fade: Fade, age: number, life: number): number {
   if (p > 0.92) a *= Math.max(0, (1 - p) / 0.08);
   return a;
 }
+/** Computes a star's current colour, scale, alpha and strobe state. */
 export function starAppearance(
   layer: Layer,
   fade: Fade,
@@ -71,7 +76,7 @@ export function starAppearance(
       colour = mix(colour, WHITE, 0.7 * b * inn);
       flare *= 1 + 0.6 * b * inn;
     } else if (m.kind === 'twinkle' && progress > m.at) {
-      const on = hash(index, Math.floor(age * m.rate_hz), seed + 3);
+      const on = hash(index, Math.floor(age * m.rate_hz), seed + TWINKLE_STATE_STREAM_OFFSET);
       alpha *= 0.25 + 1.1 * on * on;
     } else if (m.kind === 'flutter') {
       alpha *= 0.3 + 0.7 * Math.pow(Math.abs(Math.sin(age * 5 + direction.ph)), 3);

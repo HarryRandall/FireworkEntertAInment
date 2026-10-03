@@ -1,3 +1,4 @@
+/** Ordered layer-modifier composition and its independent child-particle events. */
 import type { Layer } from '../schema/index';
 import { mix, WHITE, type Vec3 } from './colour';
 import type { StarDirection } from './directions';
@@ -6,11 +7,19 @@ import { starPos } from './motion';
 import { ParticleWriter } from './particles';
 import { hash } from './random';
 
+// Prototype random streams independently sample crackle timing, direction, reach and repetition.
+const CRACKLE_TIME_STREAM = 23;
+const CRACKLE_AZIMUTH_STREAM = 21;
+const CRACKLE_VERTICAL_STREAM = 22;
+const CRACKLE_REACH_STREAM = 24;
+const CONTINUOUS_CRACKLE_JITTER_STREAM = 26;
+
 /** Composition order: twist, additive motion, ghost colour, burn fade, brightness
  * modifiers in stored order, parent termination, then independent child events.
  * Terminating effects use the earliest trigger; child events still run independently.
- * Glitter is a spray control (2.4), whistle is a sound control (2.8).
+ * Glitter adjusts tail controls and whistle is retained as a sound control.
  */
+/** Returns the parent-star end time in seconds after terminal modifiers. */
 export function parentEnd(layer: Layer, life: number): number {
   return Math.min(
     life,
@@ -24,6 +33,7 @@ export function parentEnd(layer: Layer, life: number): number {
   );
 }
 
+/** Appends short-lived crackle sparks emitted from an origin in metres. */
 export function crackle(
   writer: ParticleWriter,
   origin: Vec3,
@@ -35,13 +45,13 @@ export function crackle(
   reach: number,
 ): void {
   for (let c = 0; c < count; c++) {
-    const tp = at + 0.05 + 0.55 * Math.pow(hash(key * 31 + c, seed, 23), 1.2),
+    const tp = at + 0.05 + 0.55 * Math.pow(hash(key * 31 + c, seed, CRACKLE_TIME_STREAM), 1.2),
       age = now - tp;
     if (age < 0 || age > 0.06) continue;
-    const a = hash(key, c + seed * 37, 21) * Math.PI * 2,
-      y = hash(key, c + seed * 37, 22) * 2 - 1;
+    const a = hash(key, c + seed * 37, CRACKLE_AZIMUTH_STREAM) * Math.PI * 2,
+      y = hash(key, c + seed * 37, CRACKLE_VERTICAL_STREAM) * 2 - 1;
     const r = Math.sqrt(1 - y * y),
-      dist = reach * Math.sqrt(hash(key, c + seed * 37, 24));
+      dist = reach * Math.sqrt(hash(key, c + seed * 37, CRACKLE_REACH_STREAM));
     const p: Vec3 = [
       origin[0] + Math.cos(a) * r * dist,
       origin[1] + y * dist - 1.5 * (tp - at),
@@ -54,7 +64,8 @@ export function crackle(
   }
 }
 
-// Child paths stay independent of sprays, so 2.4 can attach tails to the same motion.
+// Child paths are independent of tail rendering, preserving deterministic head motion.
+/** Appends crossette children from a parent velocity vector in metres per second. */
 export function crossette(
   writer: ParticleWriter,
   origin: Vec3,
@@ -106,6 +117,7 @@ export function crossette(
   }
 }
 
+/** Appends child events for a layer at its age in seconds. */
 export function fillModifierEvents(
   writer: ParticleWriter,
   layer: Layer,
@@ -138,7 +150,8 @@ export function fillModifierEvents(
     } else if (m.kind === 'crackle' && age >= at) {
       if (m.spread === 'continuous') {
         for (let k = 0; k < 40; k++) {
-          const tp = at + k * 0.18 + 0.12 * hash(index * 53 + k, seed, 26);
+          const tp =
+            at + k * 0.18 + 0.12 * hash(index * 53 + k, seed, CONTINUOUS_CRACKLE_JITTER_STREAM);
           if (tp > life || tp > age) break;
           if (age - tp > 0.6) continue;
           crackle(writer, starPos(layer, q, tp, centre), tp, age, 3, index * 977 + k, seed, 1.2);
@@ -174,8 +187,7 @@ export function fillModifierEvents(
   }
 }
 
-/** Spray integration hook. Glitter has no independent head particle in the
- * prototype; it changes the tail's delayed flash envelope in PR 2.4. */
+/** Returns the layer's clamped glitter intensity and delayed tail start in seconds. */
 export function trailControls(layer: Layer): { glitter: number; glitter_delay_s: number } {
   let glitter = layer.trail.glitter;
   let glitter_delay_s = layer.trail.glitter_delay_s;
