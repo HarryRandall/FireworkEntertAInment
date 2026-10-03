@@ -1,7 +1,8 @@
+/** Version-gated schema validation for stored firework design documents. */
 import { designSchema, type Design } from './design.generated';
 import { DESIGN_SCHEMA_VERSION } from '../version';
 
-/** Validate v1 without defaulting, converting or mutating the stored document. */
+/** Validates a versioned document without defaulting, converting or mutating it. */
 export function upgradeDesign(doc: unknown, fromVersion: number): Design {
   if (fromVersion !== DESIGN_SCHEMA_VERSION) {
     throw new RangeError(`Unsupported design schema version: ${fromVersion}. Expected 1.`);
