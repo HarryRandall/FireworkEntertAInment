@@ -1,5 +1,20 @@
 /* Shared palette, typography and radii from the redesign's shared.css. */
 @theme inline {
+  /* CSS-pixel type scale from shared.css, kit.css and workspace.css. Rem stays 16 px. */
+  --text-xs: 12px;
+  --text-xs--line-height: 1.5;
+  --text-sm: 13px;
+  --text-sm--line-height: 1.5;
+  --text-base: 14px;
+  --text-base--line-height: 1.5;
+  --text-lg: 15px;
+  --text-lg--line-height: 1.5;
+  --text-xl: 20px;
+  --text-xl--line-height: 1.5;
+  --text-2xl: 22px;
+  --text-2xl--line-height: 1.5;
+  --text-3xl: 28px;
+  --text-3xl--line-height: 1.5;
   --font-sans:
     var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, 'SF Mono', Menlo, monospace;
@@ -37,13 +52,23 @@
   --color-stage-foreground: var(--stage-foreground);
   --shadow-card: var(--surface-shadow);
   --radius-sm: var(--radius-small);
-  --radius-md: calc((var(--radius-small) + var(--radius)) / 2);
+  --radius-md: var(--radius-small);
   --radius-lg: var(--radius);
-  /* Larger containers extend the prototype radius by its small-to-large step. */
-  --radius-xl: calc(var(--radius) + (var(--radius) - var(--radius-small)));
+  --radius-xl: var(--radius);
 }
 
 :root {
+  /* Shared control and card dimensions in CSS pixels, from the prototype kit. */
+  --control-height: 32px;
+  --control-large-height: 40px;
+  --field-height: 36px;
+  --field-padding: 11px;
+  --textarea-min-height: 84px;
+  --card-padding: 14px;
+  --card-gap: 10px;
+  --product-tile-min-width: 136px;
+  --layer-row-height: 30px;
+  --layer-control-size: 24px;
   /* Printed labels keep the prototype white paper and dark brand ink in both themes. */
   --label-paper: #ffffff;
   --label-ink: #111111;

@@ -17,7 +17,9 @@ body {
   min-height: 100vh;
   background-color: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: var(--text-base);
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -30,4 +32,12 @@ body {
 :focus-visible {
   outline: 2px solid var(--highlight);
   outline-offset: 2px;
+}
+
+/* Heading tracking follows shared.css; sizes come from the shared type scale. */
+h1,
+h2,
+h3 {
+  letter-spacing: -0.01em;
+  text-wrap: balance;
 }
