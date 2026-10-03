@@ -5,6 +5,10 @@ import { WorkspaceShell } from '@/ui/shell/workspace-shell';
 
 /** Checks access on the server before composing the shared chrome around nested routes. */
 export default async function Layout({ children }: { children: ReactNode }) {
-  await requireArea('retailer');
-  return <WorkspaceShell area="retailer">{children}</WorkspaceShell>;
+  const identity = await requireArea('retailer');
+  return (
+    <WorkspaceShell area="retailer" identity={identity.workspace}>
+      {children}
+    </WorkspaceShell>
+  );
 }
