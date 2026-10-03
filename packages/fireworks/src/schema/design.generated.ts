@@ -1,4 +1,5 @@
-// Generated from schema/design.v1.json. Run pnpm generate:schema; do not edit.
+// Generated design-schema validators and public types for renderer input validation.
+// Generated from schema/design.v1.json; run pnpm generate:schema rather than editing this file.
 import { z } from 'zod';
 export const hexColourSchema = z.string().regex(new RegExp('^#[0-9a-fA-F]{6}$'));
 export const vectorMSchema = z.tuple([

@@ -1,3 +1,4 @@
+/** Compile-time assertions for the renderer package's public TypeScript API. */
 import { type Design, type Layer, upgradeDesign } from '../src/index';
 
 function narrowDesign(doc: Design): number {

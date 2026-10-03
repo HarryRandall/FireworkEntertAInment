@@ -1,3 +1,4 @@
+/** Public design-schema types, validation and adjustment resolution API. */
 export * from './design.generated';
 export {
   ADJUSTMENT_REGISTRY,

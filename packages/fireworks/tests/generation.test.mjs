@@ -1,3 +1,4 @@
+/** Regression checks that the checked-in generated schema is current. */
 import assert from 'node:assert/strict';
 import {
   cpSync,

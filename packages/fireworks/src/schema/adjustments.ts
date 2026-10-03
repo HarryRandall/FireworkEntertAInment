@@ -1,11 +1,17 @@
+/** Stored quick-adjustment registry and pure design-resolution implementation. */
 import type { Design, Layer } from './design.generated';
 
+/** Stored integer strength from maximum reduction (-3) to maximum increase (3). */
 export type AdjustmentLevel = -3 | -2 | -1 | 0 | 1 | 2 | 3;
 
 export interface AdjustmentDefinition {
+  /** Persisted adjustment key, optionally with a `{id}` layer placeholder. */
   key: string;
+  /** Authored design fields changed by this adjustment. */
   targets: readonly string[];
+  /** Human-readable per-level transformation for editor presentation. */
   perLevel: string;
+  /** Optional human-readable bounds applied after the transformation. */
   clamp?: string;
 }
 
@@ -191,6 +197,7 @@ export const ADJUSTMENT_REGISTRY = {
 type AdjustmentKey = keyof typeof ADJUSTMENT_REGISTRY;
 const layerKey = /^layer\.([A-Za-z0-9][A-Za-z0-9_-]*)\.(.+)$/;
 
+/** Looks up the documented definition for a stored adjustment key. */
 export function adjustmentDefinition(
   key: string,
 ): (typeof ADJUSTMENT_REGISTRY)[AdjustmentKey] | undefined {
@@ -235,7 +242,7 @@ function adjustLayer(layer: Layer, field: string, level: number): void {
       modifier.at = clamp(modifier.at + 0.08 * level, 0.05, 0.95);
 }
 
-/** Apply stored adjustments without mutating the authored design. */
+/** Applies stored levels to a cloned design and returns resolved renderer inputs. */
 export function resolveDesign(design: Design): Design {
   const resolved = JSON.parse(JSON.stringify(design)) as Design;
   const adjustments = resolved.adjustments as Record<string, AdjustmentLevel> | undefined;

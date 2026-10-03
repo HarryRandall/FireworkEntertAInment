@@ -1,12 +1,17 @@
+/** Closed-form launch path from a tube muzzle to its authored apex. */
 import type { Launch } from '../schema/index';
 import type { Vec3 } from './colour';
 import { LAUNCH_STYLES } from './launch-styles';
 export interface ShotPlacement {
+  /** Horizontal [x, z] firing position in metres; defaults to the world origin. */
   position?: readonly [number, number];
+  /** Muzzle height in metres; defaults to the calibrated tube height. */
   muzzle_m?: number;
 }
+/** Default tube muzzle height in metres, from the prototype scene calibration. */
 export const MUZZLE_M = 1.8;
 const clear = (h: number) => Math.max(0, Math.min(1, h / 6));
+/** Computes a launch head's world position in metres at a firing-relative time in seconds. */
 export function launchPos(
   launch: Launch,
   seed: number,

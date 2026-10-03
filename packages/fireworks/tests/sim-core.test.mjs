@@ -1,3 +1,4 @@
+/** Golden and behavioural tests for the DOM-free core shell simulation. */
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
@@ -35,6 +36,11 @@ for (const name of ['peony', 'multi-break']) {
   test(`${name}: core positions, colours, sizes, alphas and kinds match the prototype`, () => {
     const d = fixture(name);
     close(shotDuration(d), golden.fixtures[name].duration_s);
+    d.breaks.forEach((b) =>
+      b.layers.forEach((l) => {
+        l.modifiers = [];
+      }),
+    );
     for (const frame of golden.fixtures[name].frames) {
       const p = simulate(d, frame.time_s);
       assert.equal(p.kinds.length, frame.count);
@@ -57,10 +63,15 @@ for (const name of ['peony', 'multi-break']) {
     assert.notDeepEqual(simulate(d, 3).positions, direct.positions);
   });
 }
-test('comet duration matches reference; simulation remains explicitly deferred', () => {
+test('comet duration and heads match reference', () => {
   const d = fixture('comet');
   close(shotDuration(d), golden.fixtures.comet.duration_s);
-  assert.throws(() => simulate(d, 1), /Kind comet is not implemented/);
+  for (const frame of golden.fixtures.comet.frames) {
+    const p = simulate(d, frame.time_s);
+    assert.equal(p.kinds.length, frame.count);
+    for (const sample of frame.samples)
+      row(p, sample.index).forEach((v, i) => close(v, sample.values[i]));
+  }
 });
 test('murmur3 and linear RGB match independently captured reference values', () => {
   for (const h of golden.helpers.hashes) assert.equal(hash(...h.args), h.value);
@@ -201,18 +212,6 @@ test('core flags, head visibility and halo shape control emitted particle kinds'
   l.head.visible = true;
   l.head.halo = 0;
   assert.ok([...simulate(d, d.launch.time_s + 0.4).kinds].every((k) => k === ParticleKind.Head));
-});
-test('core ignores layer modifiers until PR 2.3; special patterns fail explicitly', () => {
-  const d = fixture('multi-break'),
-    without = structuredClone(d);
-  without.breaks.forEach((b) =>
-    b.layers.forEach((l) => {
-      l.modifiers = [];
-    }),
-  );
-  assert.deepEqual(simulate(d, 3), simulate(without, 3));
-  d.breaks[0].layers[0].pattern = 'ring';
-  assert.throws(() => simulate(d, 3), /Pattern ring is not implemented/);
 });
 
 for (const c of golden.cases)
