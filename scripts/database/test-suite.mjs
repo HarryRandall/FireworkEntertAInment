@@ -1,6 +1,6 @@
 // Compose pgTAP suites with disposable, pinned Basejump helpers in each transaction.
 import { createHash } from 'node:crypto';
-import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 // SHA-256 of the exact upstream 0.0.6 SQL recorded in the vendor manifest.
@@ -19,6 +19,14 @@ export function prepareTestSuites(repositoryRoot, outputDirectory) {
   }
   if (!upstream.startsWith(extensionGuard)) throw new Error('Unexpected Basejump extension guard.');
   const helpers = readFileSync(join(repositoryRoot, 'supabase/tests/00_helpers.sql'), 'utf8');
+  const fixtureDirectory = join(repositoryRoot, 'supabase/tests/fixtures');
+  const fixtures = existsSync(fixtureDirectory)
+    ? readdirSync(fixtureDirectory)
+        .filter((name) => name.endsWith('.sql'))
+        .sort()
+        .map((name) => readFileSync(join(fixtureDirectory, name), 'utf8'))
+        .join('\n')
+    : '';
   const testNames = readdirSync(join(repositoryRoot, 'supabase/tests'))
     .filter((name) => name.endsWith('.sql') && name !== '00_helpers.sql')
     .sort();
@@ -32,6 +40,7 @@ export function prepareTestSuites(repositoryRoot, outputDirectory) {
         '\\set ON_ERROR_STOP on\nbegin;\nset local search_path = public, extensions;',
         upstream.slice(extensionGuard.length),
         helpers,
+        fixtures,
         suite,
         'reset role;\nrollback;\n',
       ].join('\n'),

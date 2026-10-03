@@ -89,3 +89,15 @@ test('runner uses only local CLI flags, propagates failures and cleans temporary
   assert.ok(result.sql.endsWith('rollback;\n'));
   assert.throws(() => readFileSync(result.args.at(-1)), { code: 'ENOENT' });
 });
+
+test('domain fixture definitions are included before assertions in every isolated suite', (t) => {
+  const root = fixture(t);
+  mkdirSync(join(root, 'supabase/tests/fixtures'));
+  const definition = 'create function tests.example() returns int language sql as $$ select 1; $$;';
+  writeFileSync(join(root, 'supabase/tests/fixtures/example.sql'), definition);
+  const [path] = prepareTestSuites(root, join(root, 'output'));
+  const sql = readFileSync(path, 'utf8');
+  assert.ok(sql.includes(definition));
+  assert.ok(sql.indexOf(definition) < sql.indexOf('select plan(0)'));
+  assert.ok(sql.endsWith('reset role;\nrollback;\n'));
+});
