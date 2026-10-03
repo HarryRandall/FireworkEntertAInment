@@ -48,6 +48,11 @@ menu actions. It removes the section sidebar, retains the area rail and breadcru
 and allocates the remaining height to editor-owned content. It adds no back arrow
 and implements no editing, saving or version history itself.
 
+The admin layout retains its server access guard and uses `AdminFrame` to let Studio
+routes supply their own shared shell with `editorFrame`. Ordinary admin routes remain
+inside the normal workspace frame. This prevents a second rail or main landmark.
+See [Studio](studio.md) for the document, autosave and viewer boundaries.
+
 `/dev/shell` provides synthetic contexts, every area, restricted visibility and an
 editor with library, stage and inspector placeholders. Save only reports a local
 preview action. `/dev` links to this review page.
