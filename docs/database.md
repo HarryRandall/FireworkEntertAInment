@@ -546,16 +546,17 @@ Unavailable stores, suspended/closed retailers, unknown slugs and inaccessible s
 return SQL null. Supplier contacts, wholesale prices, review records, history and
 private store licence/onboarding fields are excluded from public responses.
 
-### Nullable references
+### Show soundtrack and planning references
 
-These nullable UUID columns identify their intended targets in SQL comments:
+These nullable UUID columns have foreign keys declared with their target domains:
 
 - `shows.soundtrack_track_id`: `public.music_tracks(id)`.
 - `show_versions.soundtrack_analysis_id`: `public.music_analyses(id)`.
 - `show_versions.plan_session_id`: `public.plan_sessions(id)`.
 
-The referenced tables are absent in this schema. These columns have no foreign keys;
-install the constraints when their domains are declared.
+The shopper and music declarations install these constraints after their target tables
+exist. Snapshot validation also checks that a pinned analysis belongs to the show's
+soundtrack and that a linked planning session belongs to its shopper owner.
 
 ### Local verification and remaining checks
 
@@ -598,3 +599,109 @@ The schema diff verifies their application DDL is in step.
 `pnpm check` and `pnpm test:browser` were intentionally not run in this lane. There
 are no screen changes or screenshots. Full repository/browser checks and CI remain
 composer gates. No hosted database, deployment or production behaviour was verified.
+
+## Shopper planning, lists and consent
+
+`60_shoppers.sql` declares `plan_sessions`, `plan_candidates`, `plan_edits`, `lists`,
+`list_items`, `follows` and `privacy_requests`. Ownership is through active profiles,
+including Supabase anonymous accounts. Ownership and store identity cannot be reassigned.
+Parent keys index candidate/edit access; shopper, store and organisation lookups have
+explicit indexes. Mutable rows use the shared timestamp trigger.
+
+Shoppers read only their own plans, candidates, edits, lists, items and privacy
+requests. Retailer members may read redeemed lists and their items only at stores
+within their membership scope. Staff and supplier capabilities do not bypass
+shopper privacy. Trusted backend operations author solver snapshots, edit outcomes,
+redemption and privacy-request results; API clients have no direct table-write grants
+for those facts. The schema retains the `llm` edit source without adding an LLM writer.
+
+Public invoker wrappers delegate to narrowly granted private security-definer functions:
+
+- `start_plan_session` checks active ownership, an open store, a matching live QR code
+  when supplied and an explicit, non-future age confirmation timestamp. It stores the
+  initial answers, solver and stock/input hash and returns a new session UUID. Answers
+  currently require a JSON object; detailed solver-answer validation is not installed.
+  The transaction contains a labelled credit-settlement hook, with no charge or
+  reservation written because the ledger is absent. Session rate limiting is absent.
+- `create_list` accepts product UUIDs and positive integer quantities, a unique
+  sixteen-digit till code and the caller-supplied sale-period end date. It checks current
+  store availability and quantity, snapshots current prices and currency, and optionally
+  marks an owned candidate picked and its session listed in the same transaction.
+  Failure on any item rolls back the parent and all items. Lists do not reserve stock.
+  Sale-calendar calculation is not installed; the RPC rejects expired dates but does
+  not independently derive the current sale-period end. Till-code generation is not
+  installed. The backend owns redemption and expiry transitions.
+- `shop_customers` returns identity and list summaries only for active shoppers with
+  `follows.visible_to_shop`, requiring organisation-wide `customers.view`. Restricted
+  store memberships cannot obtain the organisation-wide result. It does not extend
+  general profile visibility. Hidden follows never expose identities through this
+  reader, and withdrawing consent removes the customer immediately. Event joins are
+  absent because events are not declared.
+
+Shoppers can insert, update and delete their own follows. Marketing consent is
+separate from shop visibility and defaults to false. Database transaction time stamps
+changes to consent choices and wording versions. Clients cannot transfer or backdate
+consent rows. Shoppers can request their own export or deletion, with only the backend
+able to set a result or terminal status. Request processing is not installed.
+
+### Nullable external references
+
+- `plan_sessions.credits_reservation_id`: nullable UUID for
+  `public.credit_reservations(id)`, documented in the declaration without a foreign key.
+- `plan_edits.llm_call_id`: nullable bigint for `public.llm_calls(id)`, matching the
+  schema plan's bigint identity, documented without a foreign key.
+
+## Shared music
+
+`70_music.sql` declares `music_tracks` and `music_analyses`. The provider and track ID
+form the shared catalogue identity; Jamendo requires a provider track ID. Track
+identity cannot be rewritten. Commercial use is constrained to false for every
+caller while licensing is unconfirmed. Only catalogue editors and super admins can
+insert or update track metadata. Shoppers cannot upload tracks.
+
+Public readers see published tracks and their current analyses. Historical analyses
+remain readable when pinned by a caller-accessible show or a live retailer show.
+Withdrawn tracks hide their analyses from public readers. Platform staff can inspect
+unpublished tracks and analyses. Storage access and signed audio URLs are separate.
+
+`save_music_analysis` is backend-only. It locks the track, reuses an existing result
+for the same algorithm and SHA-256 audio fingerprint and selects exactly one current
+analysis atomically. Invalid reanalysis rolls the pointer change back. Analysis payloads
+and fingerprints cannot be rewritten, including by the service role. Existing show
+snapshots keep their pinned analysis when a new current result is installed, and
+foreign keys prevent deletion of referenced analyses. No analyser job, download,
+Jamendo API call or worker has been introduced.
+
+### Shopper and music verification
+
+Local verification uses Node 24.18.0 and Corepack pnpm 12.3.4:
+
+- `corepack pnpm db:reset`: passed with the assembled baseline and explicit grants.
+- `corepack pnpm db:test`: passed twice consecutively, 18 suites and 1,589 assertions
+  per run. The three added suites cover allowed and denied policies with the real
+  personas, another organisation, anonymous ownership, consent withdrawal, store
+  restrictions, transaction rollback, snapshot prices, shared-track identity and
+  pinned analysis history.
+- `corepack pnpm db:lint`: passed with no new issues; the three existing
+  `private.effect_facts` warnings remain.
+- `corepack pnpm exec supabase db diff --local --schema public,private`: grant-only
+  differences; no application DDL drift. The grant differences come from the separate
+  hand-written privileges migrations and must not be applied as a grant repair.
+- `corepack pnpm db:types`, then `corepack pnpm db:types --check`: passed.
+- `corepack pnpm format:check`, `corepack pnpm db:documents --check`,
+  `corepack pnpm test:database-tooling` (10 tests), `corepack pnpm lint`,
+  `corepack pnpm typecheck`, `corepack pnpm knip` and `git diff --check`: passed.
+  Knip retains the existing `.css` configuration hint.
+
+The first expanded test run failed because a test nested a data-modifying CTE instead
+of placing it at the top level. Corrected assertions passed without changing policies.
+Database logs are `/tmp/showcrafter-shoppers-reset.log`,
+`/tmp/showcrafter-shoppers-tests.log`, `/tmp/showcrafter-shoppers-tests-repeat.log`,
+`/tmp/showcrafter-shoppers-lint.log`, `/tmp/showcrafter-shoppers-diff.sql`,
+`/tmp/showcrafter-shoppers-diff.log` and `/tmp/showcrafter-shoppers-types.log`.
+
+`pnpm check` and `pnpm test:browser` were intentionally not run in the database lane.
+No screen changes or screenshots are involved. Full repository/browser checks, CI,
+owner review and production verification remain separate gates. No hosted database
+was accessed. Credit charging, rate limiting, event joins, privacy processing, sale
+calendar derivation and worker execution have not been verified.
