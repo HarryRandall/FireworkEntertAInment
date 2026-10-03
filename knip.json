@@ -7,20 +7,7 @@
     "apps/web": {
       "entry": ["scripts/**/*.mjs"],
       "project": ["**/*.{ts,tsx}"],
-      "ignore": ["ui/primitives/**"],
-      "ignoreDependencies": [
-        "class-variance-authority",
-        "clsx",
-        "cmdk",
-        "lucide-react",
-        "radix-ui",
-        "recharts",
-        "sonner",
-        "tailwind-merge",
-        "tailwindcss",
-        "tw-animate-css",
-        "shadcn"
-      ]
+      "ignoreDependencies": ["tailwindcss", "tw-animate-css", "shadcn"]
     },
     "packages/*": {
       "entry": ["tests/**/*.mjs", "src/**/*.ts"],
