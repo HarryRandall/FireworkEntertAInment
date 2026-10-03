@@ -219,17 +219,17 @@ safety or publication change rolls back every write.
 
 ### Deferred references and boundaries
 
-- `product_versions.candidate_id`: nullable UUID, commented as a reference to
-  `public.design_candidates(id)`.
-- `supplier_products.last_import_id`: nullable UUID, commented as a reference to
-  `public.imports(id)`.
+- `product_versions.candidate_id` references `public.design_candidates(id)` and is
+  unique when present, making candidate acceptance idempotent.
+- `supplier_products.last_import_id` references `public.imports(id)`, with a composite
+  supplier/import foreign key preventing cross-supplier attribution.
 
-Both referenced domains are absent, so these columns have no foreign key yet. Media's
+Both references are installed by the imports declaration after the target tables. Media's
 supplier reference, poster renders' product-version reference and the branding logo
 reference all have real foreign keys because those tables are present.
 
-Review records, candidate acceptance, audit rows, storage buckets/policies and jobs are
-outside these domains. Publication does not enqueue poster jobs. Posters are rendered
+Review records and candidate acceptance are described below. Audit rows, storage
+buckets/policies and jobs are outside these domains. Publication does not enqueue poster jobs. Posters are rendered
 in the admin browser; this schema stores their metadata and staff write permissions.
 Launch catalogue seeds and generated application types are not fabricated here.
 
@@ -352,3 +352,134 @@ To inspect extension availability without changing schema:
 ```bash
 corepack pnpm exec supabase db query --local --sql "select name, default_version, installed_version from pg_available_extensions where name in ('pgcrypto', 'citext', 'pg_jsonschema', 'postgis', 'pg_cron', 'supabase_vault', 'pg_partman')"
 ```
+
+## Imports, video evidence and reviews
+
+`32_imports.sql` adds imports, import lines, video analyses, design candidates and
+reviews. All five tables have RLS, mutable timestamps and update triggers. Supplier,
+media, analysis, product and version lookups are indexed; import row numbers are
+unique. Confidence and overall scores are normalised between zero and one. Import
+lines retain raw objects, matching suggestions and explicit decision attribution.
+Nothing automatically accepts a match based on its score.
+
+All active platform staff can read the domain. Catalogue editors and super admins
+can change imports, lines, analyses and unaccepted candidates. Supplier members read
+only their supplier's imports and lines. They can insert an initial uploaded import
+with their own submitter UUID, empty mapping/counts and no outcome fields. The upload
+must reference that supplier's price-list media. The existing media insert policy
+already grants own-supplier uploads with the caller as uploader. Suppliers cannot
+change matching results, advance stages, read video analyses/candidates/reviews or
+edit canonical catalogue data. Retailer membership, including an owner or manager,
+grants no access to this domain.
+
+Import supplier/media/submitter identity cannot change. Matched listings must belong
+to the import supplier. Analyses require video media; supplier listing priors must
+match its media supplier and any specified canonical product. Candidate parents must
+share an analysis and cannot refer to themselves. Accepted proposals and their video
+evidence cannot be rewritten, including by the service role. Reviews target exactly
+one effect or product version. Reviewers, catalogue editors and super admins can
+insert a decision attributed to themselves. Clients cannot update or delete reviews.
+A recorded decision does not itself change a version status or publish it.
+
+### Candidate acceptance contract
+
+Call `accept_design_candidate(candidate_id, slug, name, kind)`. Existing products
+come from `video_analyses.product_id`, retaining their metadata, current published
+pointer and history; the optional metadata arguments are ignored for them. They must
+be unarchived with no open draft. If the analysis has no product, non-empty slug/name
+and a composed product kind are required to create one. Selection packs are rejected.
+
+The proposal is an object with exactly `effects` and `composition`:
+
+```json
+{
+  "effects": {
+    "a": {
+      "template": "published-template-slug",
+      "overrides": { "launch": { "height_m": 70 } }
+    }
+  },
+  "composition": {
+    "tubes": [{ "i": 0, "letter": "a", "t_ms": 0, "angle_deg": 0 }]
+  }
+}
+```
+
+Each effect refers to an active published template by slug. Optional object overrides
+merge recursively; arrays/scalars/explicit JSON null replace entire values. Overrides
+cannot change effect kind. The resulting document must pass the canonical renderer
+JSON Schema. The composition must pass its schema and kind-specific count, timing,
+unique tube/grid-position and exact letter-coverage checks. Times are milliseconds
+from first firing; angles are degrees; grid dimensions follow the composition schema.
+
+Only catalogue editors and super admins can accept a candidate, and its analysis must
+be ready. Acceptance locks the candidate, analysis and existing product, forks a draft
+effect per letter with renderer/video attribution, and creates one draft product
+version with `source = 'video_import'`, `candidate_id` and complete effect bindings.
+Any failure rolls everything back. A candidate lock and unique candidate index prevent
+duplicate acceptance; retries return the original product-version UUID. This has
+static review and sequential retry assertions, but no concurrent runtime evidence.
+
+Accepted content stays draft for inspection and QA. Acceptance neither publishes nor
+confirms safety, writes reviews, charges credits, schedules jobs or generates posters.
+No submission/review-state transition RPC is introduced. Supplier CSV matching, video
+measurement/fitting, the worker proposal producer and QA screens are outside this
+schema change. There are no new nullable references to absent tables.
+
+### Imports verification
+
+Use Node 24 and pinned pnpm through Corepack. Run against the configured local
+ShowCrafter project only. Where `fnm` cannot run in the sandbox, select the installed
+Node binary explicitly:
+
+```bash
+export PATH=/Users/harry/.local/share/fnm/node-versions/v24.18.0/installation/bin:$PATH
+corepack pnpm db:documents --check
+corepack pnpm db:reset
+corepack pnpm db:test
+corepack pnpm db:test
+corepack pnpm db:lint
+corepack pnpm exec supabase db diff --local --schema public,private,extensions,partman,vault > /tmp/showcrafter-imports-diff.sql
+corepack pnpm db:types
+corepack pnpm db:types --check
+```
+
+Local reset applied the assembled baseline, Auth profile setup and all explicit
+grants, including the imports privileges migration. The baseline is assembled from
+ordered declarations by `db:documents`; the local schema diff independently checks
+that those declarations match the migrated database.
+
+Both complete database test runs passed all 1,044 assertions with `Result: PASS`.
+The imports suites contain 112 policy assertions, 56 integrity/acceptance assertions
+and 111 failure/rollback assertions. Each suite rolls its fixtures back; the repeated
+run checks isolation. Tests cover every new policy with allowed and denied operations,
+supplier isolation, another organisation, immutable accepted evidence, candidate
+retries, invalid documents and transactional rollback. Concurrent acceptance has not
+been exercised with simultaneous connections.
+
+Database lint identified an implicit text-to-JSONB initialiser in candidate acceptance;
+it now uses an explicit JSONB cast. Three existing warnings remain in
+`private.effect_facts`: a text-to-array initialiser and two immutable/stable expression
+warnings. No new import-domain warnings or errors remain.
+
+Schema diff completed with only grant lines, reflecting the separate privileges
+migrations. It reported no application DDL drift. Do not apply those grant lines:
+that would restore the broad default access the privileges migrations deliberately
+revoke. Both carried references now have foreign keys: product versions to design
+candidates, and supplier listings to imports. A composite foreign key additionally
+keeps a listing's source import inside the same supplier. There are no new nullable
+references to absent tables.
+
+`db:types` generated `apps/web/lib/database.types.ts` from local Supabase and
+`db:types --check` confirmed equality. The generated file remains excluded from ESLint
+and listed in Knip's `ignoreIssues`. Formatting, document/baseline drift checks,
+all 10 database-tooling tests, readability-rule tests, Knip, web lint and web
+typechecking passed. The full `pnpm check` and browser suite were not run under the
+owner's database-lane restrictions. CI and the full delivery gate remain for the
+composer. No screens or service contracts changed, so screenshots and analyser tests
+are not applicable. No hosted database, deployment or production verification ran.
+
+Evidence logs from this continuation are in `/tmp/showcrafter-imports-reset-final.log`,
+`/tmp/showcrafter-imports-tests-final-first.log`,
+`/tmp/showcrafter-imports-tests-final-second.log`, `/tmp/showcrafter-imports-lint-final.log`
+and `/tmp/showcrafter-imports-diff.log`; diff SQL is `/tmp/showcrafter-imports-diff.sql`.
