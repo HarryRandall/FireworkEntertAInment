@@ -41,6 +41,10 @@ export function prepareTestSuites(repositoryRoot, outputDirectory) {
         upstream.slice(extensionGuard.length),
         helpers,
         fixtures,
+        // The seed suite inspects installed data; domain suites use disposable empty fixtures.
+        existsSync(join(fixtureDirectory, 'isolation.sql')) && name !== '99_seeds.sql'
+          ? 'select tests.clear_application_data();'
+          : '',
         suite,
         'reset role;\nrollback;\n',
       ].join('\n'),

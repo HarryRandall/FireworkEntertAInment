@@ -25,6 +25,19 @@ try {
     );
     if (concurrency.error) throw concurrency.error;
     process.exitCode = concurrency.status ?? 1;
+    if (process.exitCode === 0) {
+      const acceptance = spawnSync(
+        process.execPath,
+        [
+          '--import',
+          join(repositoryRoot, 'scripts/register-typescript.mjs'),
+          join(repositoryRoot, 'scripts/database/seed-clients.integration.mjs'),
+        ],
+        { cwd: repositoryRoot, stdio: 'inherit' },
+      );
+      if (acceptance.error) throw acceptance.error;
+      process.exitCode = acceptance.status ?? 1;
+    }
   }
 } catch (error) {
   console.error(error.message);
