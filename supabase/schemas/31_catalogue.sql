@@ -796,6 +796,8 @@ begin
     select from public.product_version_effects as binding where binding.product_version_id = product.current_version_id and binding.effect_id = effect.id)
     order by product.id for update loop
     perform private.write_product_facts(affected_product.id,private.product_facts(affected_product.current_version_id));
+    -- Compositions play current effects, so their cached stills no longer describe this publication.
+    update public.poster_renders set status = 'pending' where product_version_id = affected_product.current_version_id;
   end loop;
   perform private.refresh_pack_facts();
 end;

@@ -17,7 +17,7 @@ export async function loadStudio(effectId: string) {
   if (versionId === null) return { kind: 'empty' as const, effect: effect.data };
   const version = await client
     .from('effect_versions')
-    .select('id,status,design')
+    .select('id,number,status,design')
     .eq('id', versionId)
     .eq('effect_id', effectId)
     .single();
@@ -29,6 +29,8 @@ export async function loadStudio(effectId: string) {
     effect: effect.data,
     versionId: version.data.status === 'draft' ? version.data.id : null,
     sourceVersionId: version.data.id,
+    versionStatus: version.data.status,
+    versionNumber: version.data.number,
     document: designSchema.parse(version.data.design),
   };
 }
@@ -47,5 +49,9 @@ async function loadPublished(
     .eq('status', 'published')
     .single();
   if (result.error) throw result.error;
-  return { number: result.data.number, document: designSchema.parse(result.data.design) };
+  return {
+    id: result.data.id,
+    number: result.data.number,
+    document: designSchema.parse(result.data.design),
+  };
 }

@@ -51,6 +51,21 @@ export function useDraftSave({
   }, [document, editable, gesture]);
   const gestureChanged = gesture !== null && JSON.stringify(document) !== JSON.stringify(gesture);
   const dirty = gestureChanged || status.label !== 'Saved';
+  useUnloadProtection(dirty);
+  return {
+    settle: async () => {
+      if (!editable || gesture) return null;
+      controller.current?.update(document);
+      return controller.current?.settledVersion() ?? null;
+    },
+    status: gestureChanged ? { label: 'Unsaved' as const, message: status.message } : status,
+    save: () => {
+      if (editable && !gesture) controller.current?.requestSave();
+    },
+  };
+}
+
+function useUnloadProtection(dirty: boolean) {
   useEffect(() => {
     if (!dirty) return;
     const protect = (event: BeforeUnloadEvent) => {
@@ -61,10 +76,4 @@ export function useDraftSave({
       window.removeEventListener('beforeunload', protect);
     };
   }, [dirty]);
-  return {
-    status: gestureChanged ? { label: 'Unsaved' as const, message: status.message } : status,
-    save: () => {
-      if (editable && !gesture) controller.current?.requestSave();
-    },
-  };
 }

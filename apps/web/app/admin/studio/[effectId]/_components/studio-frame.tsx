@@ -3,20 +3,26 @@ import type { ReactNode } from 'react';
 import type { ShellIdentity } from '@/ui/shell/config/types';
 import { WorkspaceShell } from '@/ui/shell/workspace-shell';
 
-/** Keeps save and preview reset actions in the shared editor frame. */
+/** Keeps save, history and preview actions in the shared editor frame. */
 export function StudioFrame({
   title,
   identity,
   save,
   saving,
+  saveDisabled,
   onResetVisibility,
+  onHistory,
+  historyBusy,
   children,
 }: {
   title: string;
   identity: ShellIdentity;
   save: () => void;
   saving: boolean;
+  saveDisabled: boolean;
   onResetVisibility: () => void;
+  onHistory: () => void;
+  historyBusy: boolean;
   children: ReactNode;
 }) {
   return (
@@ -27,7 +33,11 @@ export function StudioFrame({
         title,
         onSave: save,
         saving,
-        actions: [{ label: 'Reset preview visibility', onSelect: onResetVisibility }],
+        saveDisabled,
+        actions: [
+          { label: 'Version history', onSelect: onHistory, disabled: historyBusy },
+          { label: 'Reset preview visibility', onSelect: onResetVisibility },
+        ],
       }}
     >
       {children}

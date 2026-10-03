@@ -45,7 +45,7 @@ test('queued edits are serial and only their exact saved snapshot receives Saved
   await autosave.flush();
   assert.equal(calls.length, 1);
   first.resolve({ kind: 'saved', versionId: 'draft' });
-  await Promise.resolve();
+  await new Promise((resolve) => setImmediate(resolve));
   assert.equal(calls.length, 2);
   assert.equal(calls[1].id, 'draft');
   assert.equal(
@@ -132,4 +132,23 @@ test('typing coalesces into one delayed save and disposal cancels its timer', as
   autosave.dispose();
   context.mock.timers.tick(600);
   assert.equal(calls.length, 1);
+});
+test('lifecycle acknowledgement waits for an in-flight write and its newer queued snapshot', async () => {
+  const pending = deferred();
+  const calls = [];
+  const { autosave } = setup((next) => {
+    calls.push(next);
+    return calls.length === 1
+      ? pending.promise
+      : Promise.resolve({ kind: 'saved', versionId: 'draft' });
+  });
+  autosave.update(changed('First'));
+  const saving = autosave.flush();
+  autosave.update(changed('Latest'));
+  const acknowledged = autosave.settledVersion();
+  pending.resolve({ kind: 'saved', versionId: 'draft' });
+  assert.equal(await acknowledged, 'draft');
+  await saving;
+  assert.deepEqual(calls.at(-1), changed('Latest'));
+  autosave.dispose();
 });

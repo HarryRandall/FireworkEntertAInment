@@ -6488,6 +6488,17 @@ export type Database = {
         }
         Returns: undefined
       }
+      finish_effect_version: {
+        Args: {
+          p_design: Json
+          p_note: string
+          p_operation: string
+          p_peak?: number
+          p_peak_time_s?: number
+          p_version_id: string
+        }
+        Returns: undefined
+      }
       flag_on: { Args: { key: string; org: string }; Returns: boolean }
       grant_credits: {
         Args: { credits: number; idempotency_key: string; organisation: string }
@@ -6540,6 +6551,16 @@ export type Database = {
         Returns: string
       }
       resolve_qr: { Args: { p_slug: string }; Returns: Json }
+      restore_effect_version: {
+        Args: {
+          p_current_version_id: string
+          p_design: Json
+          p_effect_id: string
+          p_renderer: string
+          p_version_id: string
+        }
+        Returns: string
+      }
       save_effect_details: {
         Args: {
           p_effect_id: string
@@ -6668,6 +6689,10 @@ export type Database = {
         Returns: string
       }
       store_page: { Args: { p_store: string }; Returns: Json }
+      submit_effect_version: {
+        Args: { p_design: Json; p_note: string; p_version_id: string }
+        Returns: undefined
+      }
       track_event: {
         Args: {
           context?: Json
