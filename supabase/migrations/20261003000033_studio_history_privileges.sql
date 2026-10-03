@@ -1,0 +1,5 @@
+-- Review and restore wrappers independently enforce active catalogue-editor authority.
+revoke all on function private.submit_effect_version(uuid,jsonb,text), public.submit_effect_version(uuid,jsonb,text), private.restore_effect_version(uuid,uuid,uuid,jsonb,text), public.restore_effect_version(uuid,uuid,uuid,jsonb,text) from public, anon, authenticated, service_role;
+grant execute on function private.submit_effect_version(uuid,jsonb,text), public.submit_effect_version(uuid,jsonb,text), private.restore_effect_version(uuid,uuid,uuid,jsonb,text), public.restore_effect_version(uuid,uuid,uuid,jsonb,text) to authenticated;
+revoke all on function private.finish_effect_version(uuid,jsonb,text,text,integer,numeric), public.finish_effect_version(uuid,jsonb,text,text,integer,numeric) from public, anon, authenticated, service_role;
+grant execute on function private.finish_effect_version(uuid,jsonb,text,text,integer,numeric), public.finish_effect_version(uuid,jsonb,text,text,integer,numeric) to authenticated;

@@ -1529,6 +1529,8 @@ begin
     select from public.product_version_effects as binding where binding.product_version_id = product.current_version_id and binding.effect_id = effect.id)
     order by product.id for update loop
     perform private.write_product_facts(affected_product.id,private.product_facts(affected_product.current_version_id));
+    -- Compositions play current effects, so their cached stills no longer describe this publication.
+    update public.poster_renders set status = 'pending' where product_version_id = affected_product.current_version_id;
   end loop;
   perform private.refresh_pack_facts();
 end;
@@ -2417,6 +2419,112 @@ end;
 $$;
 comment on function private.guard_accepted_candidate() is 'Preserves accepted candidate provenance against update and delete, including service-role writes.';
 create trigger guard_accepted before update or delete on public.design_candidates for each row execute function private.guard_accepted_candidate();
+
+-- Freezes the exact reviewed draft and records the author's request in one transaction.
+create or replace function private.submit_effect_version(p_version_id uuid, p_design jsonb, p_note text)
+returns void language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  version public.effect_versions;
+begin
+  perform private.require_catalogue_editor();
+  select * into version from public.effect_versions where id = p_version_id;
+  if not found then raise exception using errcode = 'P0002', message = 'Effect version not found'; end if;
+  perform 1 from public.effects where id = version.effect_id and status <> 'archived' for update;
+  if not found then raise exception using errcode = '23514', message = 'Active firework required'; end if;
+  select * into version from public.effect_versions where id = p_version_id for update;
+  if version.status <> 'draft' or version.design is distinct from p_design or not exists (
+    select from public.effects where id = version.effect_id and draft_version_id = version.id) then
+    raise exception using errcode = '23514', message = 'The reviewed draft has changed. Reload before submitting';
+  end if;
+  update public.effect_versions set status = 'in_review', submitted_at = now(), change_note = p_note where id = version.id;
+  insert into public.reviews(effect_version_id,reviewer_id,decision,note)
+    values (version.id,private.uid(),'comment',p_note);
+end;
+$$;
+comment on function private.submit_effect_version(uuid,jsonb,text) is 'Freezes an exact current draft snapshot and records a review request attributed to the active catalogue editor.';
+
+-- Caller wrapper for atomic review submission.
+create or replace function public.submit_effect_version(p_version_id uuid, p_design jsonb, p_note text)
+returns void language sql set search_path = '' as $$
+  select private.submit_effect_version(p_version_id,p_design,p_note);
+$$;
+comment on function public.submit_effect_version(uuid,jsonb,text) is 'Submits an exact current draft and records its review request.';
+
+-- Keeps the current snapshot before creating a restored draft, never rewriting saved history.
+create or replace function private.restore_effect_version(p_effect_id uuid, p_version_id uuid, p_current_version_id uuid, p_design jsonb, p_renderer text)
+returns uuid language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  effect public.effects;
+  target public.effect_versions;
+  current_version public.effect_versions;
+  restored_id uuid;
+begin
+  perform private.require_catalogue_editor();
+  select * into effect from public.effects where id = p_effect_id for update;
+  if not found then raise exception using errcode = 'P0002', message = 'Firework not found'; end if;
+  if effect.status = 'archived' then raise exception using errcode = '23514', message = 'Active firework required'; end if;
+  select * into target from public.effect_versions where id = p_version_id and effect_id = effect.id;
+  if not found then raise exception using errcode = 'P0002', message = 'Matching history version required'; end if;
+  select * into current_version from public.effect_versions where id = coalesce(effect.draft_version_id,effect.current_version_id) for update;
+  if current_version.id is distinct from p_current_version_id or current_version.design is distinct from p_design or
+     current_version.status not in ('draft','published') then
+    raise exception using errcode = '23514', message = 'The current draft has changed. Reload before restoring';
+  end if;
+  if current_version.status = 'draft' then
+    update public.effect_versions set status = 'superseded', change_note = concat_ws(E'\n',change_note,'Kept before restoring an older version') where id = current_version.id;
+  end if;
+  update public.effects set draft_version_id = null where id = effect.id;
+  restored_id := private.create_effect_draft(effect.id,effect.slug,effect.name,effect.family,target.design,p_renderer,target.id);
+  update public.effect_versions set change_note = 'Restored version ' || target.number where id = restored_id;
+  return restored_id;
+end;
+$$;
+comment on function private.restore_effect_version(uuid,uuid,uuid,jsonb,text) is 'Preserves the exact current draft as immutable history and creates a new draft from a same-effect version, checking the caller snapshot under a parent lock.';
+
+-- Caller wrapper for lossless history restoration.
+create or replace function public.restore_effect_version(p_effect_id uuid, p_version_id uuid, p_current_version_id uuid, p_design jsonb, p_renderer text)
+returns uuid language sql set search_path = '' as $$
+  select private.restore_effect_version(p_effect_id,p_version_id,p_current_version_id,p_design,p_renderer);
+$$;
+comment on function public.restore_effect_version(uuid,uuid,uuid,jsonb,text) is 'Restores a same-effect history version while retaining the current draft snapshot.';
+
+-- Locks the reviewed snapshot so note updates and lifecycle changes cannot overwrite concurrent edits.
+create or replace function private.finish_effect_version(p_version_id uuid, p_design jsonb, p_note text, p_operation text, p_peak integer default null, p_peak_time_s numeric default null)
+returns void language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  version public.effect_versions;
+begin
+  perform private.require_catalogue_editor();
+  perform pg_advisory_xact_lock(hashtextextended('catalogue.publication',0));
+  select * into version from public.effect_versions where id = p_version_id;
+  if not found then raise exception using errcode = 'P0002', message = 'Effect version not found'; end if;
+  perform 1 from public.effects where id = version.effect_id and status <> 'archived' for update;
+  if not found then raise exception using errcode = '23514', message = 'Active firework required'; end if;
+  select * into version from public.effect_versions where id = p_version_id for update;
+  if version.status <> 'draft' or version.design is distinct from p_design then
+    raise exception using errcode = '23514', message = 'The reviewed draft has changed. Reload before continuing';
+  end if;
+  update public.effect_versions set change_note = p_note where id = version.id;
+  if p_operation = 'publish' then
+    perform private.publish_measured_effect_version(version.id,p_design,p_peak,p_peak_time_s);
+  elsif p_operation = 'review' then
+    perform private.submit_effect_version(version.id,p_design,p_note);
+  else
+    raise exception using errcode = '22023', message = 'Unknown lifecycle operation';
+  end if;
+end;
+$$;
+comment on function private.finish_effect_version(uuid,jsonb,text,text,integer,numeric) is 'Atomically records the reviewed note and publishes or submits an exact draft snapshot; supplied peak time uses firing-relative seconds.';
+
+-- Thin caller wrapper for the exact-snapshot lifecycle boundary.
+create or replace function public.finish_effect_version(p_version_id uuid, p_design jsonb, p_note text, p_operation text, p_peak integer default null, p_peak_time_s numeric default null)
+returns void language sql set search_path = '' as $$
+  select private.finish_effect_version(p_version_id,p_design,p_note,p_operation,p_peak,p_peak_time_s);
+$$;
+comment on function public.finish_effect_version(uuid,jsonb,text,text,integer,numeric) is 'Records the review note and changes the exact draft lifecycle atomically.';
 
 -- Retailer pricing, curated collections and movement-derived stock. Lists do not reserve stock.
 create table public.range_items (
