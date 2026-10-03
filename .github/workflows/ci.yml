@@ -160,6 +160,15 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm test:database-tooling
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.11.15'
+      - name: Install shared worker and Modal layout dependencies
+        run: |
+          python -m venv services/worker-common/.venv
+          services/worker-common/.venv/bin/python -m pip install -r services/worker-common/requirements.txt -r services/workers/requirements.txt -e services/worker-common
+      - name: Check shared worker behaviour and Modal registration
+        run: pnpm test:workers
       - name: Verify local database foundations
         run: |
           pnpm db:start
@@ -170,6 +179,8 @@ jobs:
           pnpm db:seeds --check
           pnpm db:validators --check
           pnpm db:documents --check
+      - name: Exercise fake Python worker against local Supabase
+        run: pnpm test:workers:local
       - name: Stop the test database
         if: always()
         run: pnpm db:stop
