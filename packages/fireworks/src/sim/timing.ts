@@ -1,5 +1,6 @@
-import type { Design } from '../schema/index';
+import { resolveDesign, type Design } from '../schema/index';
 export function shotDuration(design: Design): number {
+  design = resolveDesign(design);
   if (design.kind === 'comet' || design.kind === 'candle') {
     const c = design.ground.comets;
     return (
