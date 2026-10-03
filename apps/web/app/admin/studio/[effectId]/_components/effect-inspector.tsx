@@ -13,35 +13,30 @@ import {
   type LayerContext,
 } from './inspector-controls';
 
+import { HoverPreview } from './hover-preview';
+import { layerChipPreview } from './chip-preview';
+
 const MODIFIERS = modifierSchema.shape.kind.options;
 const CRACKLE_SPREAD = ['burst', 'continuous'] as const;
 const MAX_MODIFIERS = 16; // v1 maximum authored modifier instances per star group.
 /** Toggles several modifiers and edits only each kernel's consumed settings. */
-export function EffectInspector({ layer, disabled, changeLayer }: LayerContext) {
+export function EffectInspector({
+  document,
+  layer,
+  disabled,
+  changeLayer,
+  previewAddress,
+}: LayerContext) {
   return (
     <div>
       <InspectorSection title="Modifiers">
-        <div role="group" aria-label="Modifiers" className="flex flex-wrap gap-1">
-          {MODIFIERS.map((kind) => {
-            const enabled = layer.modifiers.some((item) => item.kind === kind);
-            return (
-              <Button
-                key={kind}
-                size="sm"
-                variant={enabled ? 'secondary' : 'outline'}
-                aria-pressed={enabled}
-                disabled={disabled || (!enabled && layer.modifiers.length >= MAX_MODIFIERS)}
-                onClick={() => {
-                  changeLayer((target) => {
-                    toggleModifier(target, kind);
-                  });
-                }}
-              >
-                {humanise(kind)}
-              </Button>
-            );
-          })}
-        </div>
+        <ModifierChoices
+          document={document}
+          layer={layer}
+          disabled={disabled}
+          changeLayer={changeLayer}
+          previewAddress={previewAddress}
+        />
         <p className="text-muted-foreground text-xs">
           Combine looks. Selected modifiers run in their saved order. Whistle has no layer settings.
         </p>
@@ -110,6 +105,44 @@ export function EffectInspector({ layer, disabled, changeLayer }: LayerContext) 
           )}
         </InspectorSection>
       ))}
+    </div>
+  );
+}
+
+function ModifierChoices({
+  document,
+  layer,
+  disabled,
+  changeLayer,
+  previewAddress,
+}: Pick<LayerContext, 'document' | 'layer' | 'disabled' | 'changeLayer' | 'previewAddress'>) {
+  return (
+    <div role="group" aria-label="Modifiers" className="flex flex-wrap gap-1">
+      {MODIFIERS.map((kind) => {
+        const enabled = layer.modifiers.some((item) => item.kind === kind);
+        return (
+          <HoverPreview
+            key={kind}
+            name={humanise(kind)}
+            address={previewAddress}
+            document={layerChipPreview(document, layer, { modifier: kind })}
+          >
+            <Button
+              size="sm"
+              variant={enabled ? 'secondary' : 'outline'}
+              aria-pressed={enabled}
+              disabled={disabled || (!enabled && layer.modifiers.length >= MAX_MODIFIERS)}
+              onClick={() => {
+                changeLayer((target) => {
+                  toggleModifier(target, kind);
+                });
+              }}
+            >
+              {humanise(kind)}
+            </Button>
+          </HoverPreview>
+        );
+      })}
     </div>
   );
 }

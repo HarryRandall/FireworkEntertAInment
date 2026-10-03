@@ -14,6 +14,8 @@ import {
 
 import { QuickAdjustments, TRAIL_QUICK } from './quick-adjustments';
 
+import { libraryChipPreview } from './chip-preview';
+
 const COLOURS = ['house', 'star', 'custom'] as const;
 const CUSTOM_COLOUR = '#ffe2a8'; // Prototype pale gold sRGB, used when starting an explicit spark colour.
 const FINE_CONTROL_START = 4; // The first four prototype trail rows are primary adjustments.
@@ -43,6 +45,8 @@ export function TrailInspector(context: LayerContext) {
         />
         <InspectorChoices
           label="Trail look"
+          previewAddress={context.previewAddress}
+          preview={(key) => libraryChipPreview(context.document, layer, 'trails', key)}
           items={trailLooks.map((look) => look.key)}
           value={trailLook(layer.trail)}
           disabled={disabled || !on}

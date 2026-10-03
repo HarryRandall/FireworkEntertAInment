@@ -4,6 +4,7 @@ import { useRef, type Dispatch, type ReactNode } from 'react';
 import type { Design, Layer } from '@showcrafter/fireworks/schema';
 import type { StudioEdit } from '@/lib/studio/document';
 import type { RelativeControl } from '@/lib/studio/relative-control';
+import { HoverPreview } from './hover-preview';
 import { Slider } from '@/ui/kit/number-controls';
 import { Button } from '@/ui/primitives/button';
 
@@ -19,6 +20,7 @@ export interface InspectorContext {
 export interface LayerContext extends InspectorContext {
   layer: Layer;
   changeLayer: (change: (layer: Layer) => void) => void;
+  previewAddress: string;
 }
 /** Keeps pointer drags as one history entry; number-row typing commits when focus leaves the input. */
 export function InspectorGestures({
@@ -116,8 +118,14 @@ export function InspectorChoices<K extends string>({
   disabled,
   onChange,
   labels,
+  preview,
+  previewAddress,
+  climbPreview = false,
 }: {
   label: string;
+  preview?: (value: K) => Design | null;
+  previewAddress?: string;
+  climbPreview?: boolean;
   labels?: Partial<Record<K, string>>;
   items: readonly K[];
   value: string;
@@ -129,18 +137,25 @@ export function InspectorChoices<K extends string>({
       <span>{label}</span>
       <div role="group" aria-label={label} className="sc-inspector-chips flex flex-wrap gap-1">
         {items.map((item) => (
-          <Button
+          <HoverPreview
             key={item}
-            size="sm"
-            variant={value === item ? 'secondary' : 'outline'}
-            aria-pressed={value === item}
-            disabled={disabled}
-            onClick={() => {
-              onChange(item);
-            }}
+            name={labels?.[item] ?? humanise(item)}
+            document={preview?.(item) ?? null}
+            climb={climbPreview}
+            address={previewAddress}
           >
-            {labels?.[item] ?? humanise(item)}
-          </Button>
+            <Button
+              size="sm"
+              variant={value === item ? 'secondary' : 'outline'}
+              aria-pressed={value === item}
+              disabled={disabled}
+              onClick={() => {
+                onChange(item);
+              }}
+            >
+              {labels?.[item] ?? humanise(item)}
+            </Button>
+          </HoverPreview>
         ))}
       </div>
       <select

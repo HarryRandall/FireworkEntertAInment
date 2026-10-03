@@ -2,7 +2,7 @@
 'use client';
 import { useState, type Dispatch } from 'react';
 import { resolveDesign, type Design } from '@showcrafter/fireworks';
-import { selectedLayer } from '@/lib/studio/layers';
+import { selectedLayer, layerAddress } from '@/lib/studio/layers';
 import { editDesign, inspectorLayer, setAdjustment } from '@/lib/studio/inspector';
 import type { StudioEdit } from '@/lib/studio/document';
 import type { InspectorContext, LayerContext } from './inspector-controls';
@@ -48,6 +48,7 @@ export function useInspector(
       ? {
           ...context,
           layer,
+          previewAddress: layerAddress(selection.breakIndex, selection.layerId),
           changeLayer: (change) => {
             context.edit((draft) => {
               const target = inspectorLayer(draft, selection);

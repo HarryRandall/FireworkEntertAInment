@@ -13,6 +13,8 @@ import {
 
 import { QuickAdjustments, STAR_QUICK } from './quick-adjustments';
 
+import { layerChipPreview } from './chip-preview';
+
 const FINE_CONTROL_START = 5; // First five prototype rows are primary star adjustments.
 const SHAPES = layerSchema.shape.pattern.options;
 const COLOUR_MODES = colourSchema.shape.mode.options;
@@ -23,32 +25,7 @@ export function StarsInspector(context: LayerContext) {
   return (
     <div>
       <QuickAdjustments context={context} controls={STAR_QUICK} layerId={layer.id} />
-      <InspectorSection title="Shape">
-        <InspectorChoices
-          label="Shape"
-          items={SHAPES}
-          value={layer.pattern}
-          disabled={disabled}
-          onChange={(pattern) => {
-            changeLayer((target) => {
-              target.pattern = pattern;
-            });
-          }}
-        />
-        {STARS_CONTROLS.slice(0, FINE_CONTROL_START).map((control) => (
-          <RelativeSlider
-            key={control.key}
-            control={control}
-            value={layer[control.key]}
-            disabled={disabled}
-            onChange={(value) => {
-              changeLayer((target) => {
-                target[control.key] = value;
-              });
-            }}
-          />
-        ))}
-      </InspectorSection>
+      <ShapeControls context={context} />
       <InspectorSection title="Colour over life">
         <InspectorChoices
           label="Colour mix"
@@ -115,5 +92,39 @@ export function StarsInspector(context: LayerContext) {
         ))}
       </InspectorSection>
     </div>
+  );
+}
+
+function ShapeControls({ context }: { context: LayerContext }) {
+  const { layer, disabled, changeLayer } = context;
+  return (
+    <InspectorSection title="Shape">
+      <InspectorChoices
+        label="Shape"
+        previewAddress={context.previewAddress}
+        preview={(shape) => layerChipPreview(context.document, layer, { shape })}
+        items={SHAPES}
+        value={layer.pattern}
+        disabled={disabled}
+        onChange={(pattern) => {
+          changeLayer((target) => {
+            target.pattern = pattern;
+          });
+        }}
+      />
+      {STARS_CONTROLS.slice(0, FINE_CONTROL_START).map((control) => (
+        <RelativeSlider
+          key={control.key}
+          control={control}
+          value={layer[control.key]}
+          disabled={disabled}
+          onChange={(value) => {
+            changeLayer((target) => {
+              target[control.key] = value;
+            });
+          }}
+        />
+      ))}
+    </InspectorSection>
   );
 }
