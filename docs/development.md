@@ -522,3 +522,138 @@ checks repeat-run idempotence, active-job protection, unused/current exclusions 
 pin preservation. No saved-show batch has been applied outside those fixtures.
 The later app hook still needs to enqueue/wake, read the selected result, re-solve
 and pin its UUID; it has not been built in this lane.
+
+## Video measurement worker
+
+`services/video-importer` measures supplier MP4s deterministically using the shared
+job runtime. It calls no model. Install the pinned Python dependencies in an ignored
+worktree virtualenv, plus the documented system dependency **FFmpeg and ffprobe
+with libx264 support** (FFmpeg 6 or newer). Local evidence used FFmpeg 8.1.1.
+FFmpeg is not pinned by Python; the Modal image installs Debian's `ffmpeg` package,
+and CI installs Ubuntu's package. Cross-version codec reproducibility is not claimed.
+CI and the Modal layout use Python 3.11; local acceptance also works on Python 3.14.
+
+```bash
+python3 -m venv services/video-importer/.venv
+services/video-importer/.venv/bin/python -m pip install -r services/video-importer/requirements.txt -r services/workers/requirements.txt -e services/worker-common
+pnpm test:video
+pnpm test:video:local
+services/video-importer/.venv/bin/python services/video-importer/evaluate.py /private/tmp/video-evaluation.json
+```
+
+`test:video` runs Ruff lint/format, synthetic truth checks, exact repeatability,
+input/integrity failures, queue-handler behaviour and offline Modal registration.
+It is included in the root check. `test:video:local` uses local Supabase status
+credentials internally, uploads synthetic video to private Storage, claims jobs,
+measures, retrieves all crops, checks retry reuse and failure/cost records, and
+removes only its own UUID-scoped rows and objects. The database CI job runs both.
+The SQL suite covers backend-only access, duplicate active jobs, wrong worker,
+stale/expired attempt, media identity, atomic evidence installation and retries.
+
+For a standalone MP4 without a database:
+
+```bash
+services/video-importer/.venv/bin/python services/video-importer/measure.py /private/tmp/source.mp4 /private/tmp/video-evidence --shot-count 12
+```
+
+For a local queue drain, pass backend credentials through the same environment
+mechanism documented for the shared runtime, then run:
+
+```bash
+services/video-importer/.venv/bin/python services/video-importer/video_jobs.py --max-jobs 1
+```
+
+The CLI refuses every endpoint except `http://127.0.0.1:55421`. It exits as soon as
+the queue is empty. SQL owns claim, heartbeat, completion, retry backoff and exhaustion.
+Every completed/failed attempt records real duration, zero provider spend and
+`compute_usd: null` rather than an invented Modal charge.
+
+### Video enqueue and interpretation hooks
+
+A trusted enqueue caller creates a `video_analyses` row with the source `media_id`,
+`extractor: 'video-measure-1.0.0'`, `status: 'queued'` and supplier `priors`. Numeric
+priors are `shot_count` (positive integer, up to 200) and `duration_ms` (positive
+integer); effect-name metadata may also remain in priors but is not interpreted.
+Then enqueue a `video_analyse` job with exactly:
+
+```json
+{
+  "analysis_id": "<existing video_analyses UUID>",
+  "media_id": "<the same source media UUID>"
+}
+```
+
+Create the row and job together in the eventual trusted enqueue transaction.
+There is no browser enqueue route in this lane. The source media must identify a
+private `imports` or `catalogue-media` MP4 object with matching byte size and SHA-256.
+The handler reads only the configured Storage origin; it does not download arbitrary
+supplier URLs. Uploading from a supplier URL belongs to that enqueue/upload caller.
+
+`save_video_measurement` checks and locks the exact job/worker/attempt lease and its
+matching analysis/media identity. State moves from queued to measuring, then to
+interpreting only after all crops have been stored and each shot has features and
+keyframes. Retries may restart a failed/measuring analysis. Installed evidence is
+reused by the same extractor, including when queue completion fails afterwards;
+measurement never rewrites an interpreting, fitting or ready result. Different
+extractors need an explicit new analysis row. Failures retain a safe exception class
+on the analysis and use `fail_job` through the shared runtime. A hard process kill
+may leave status measuring until the reclaimed job retries.
+
+The measurement job finishes at interpreting and returns `next: 'interpretation'`.
+There is no automatic interpretation enqueue, model call, fitting or design
+candidate creation here. The interpretation consumer must explicitly select these
+rows and use their source video, priors, shots, features and imports keyframes.
+
+Storage and Postgres cannot share a transaction. Content-addressed crop keys under
+`video/<analysis UUID>/` make reuploads idempotent. A failure between upload and
+installation can leave an unreferenced crop; automated orphan cleanup is not added.
+
+### Measurement units and limits
+
+All times are integer milliseconds from video presentation start. Decode uses 20 Hz,
+256 x 192 letterboxed RGB with square pixels and mono 8 kHz audio. It preserves
+source aspect ratio and excludes letterbox bars from geometry. Videos with rotation,
+non-square pixels or mismatched audio/video stream presentation starts are rejected.
+Input is capped at 64 MiB, two minutes and 3840 x 2160 source pixels, with subprocess
+and transfer deadlines. Frames are disk-backed rather than retained twice in RAM.
+FFmpeg receives local files only with a file-protocol whitelist.
+
+Shot x is the first visible centroid divided by content width. Angle is early
+projected flight degrees right of vertical, or null when ascent cannot be measured.
+Audio onsets strengthen brightness rises; brightness times are backtracked to first
+visible launch frames to avoid treating the brightest climb as firing. A supplier
+shot-count prior ranks observed candidates and fails if evidence is insufficient;
+a duration prior rejects disagreement above 20% of decoded duration. Priors do not
+invent missing shots. Confidence is a weighted evidence score, not a probability.
+
+Per-shot features include dominant chromatic sRGB swatches, absolute-time colour
+samples, apex ratio (height above bottom/content height), radius ratio (half luminous
+width/content width), observed life in ms, trail presence/length, crackle and strobe
+proxies, content raster bounds and the content box. Launch/peak/fade PNGs share one
+padded crop envelope, with absolute video times and `bucket: 'imports'` paths.
+Peak is the widest observed luminous frame, not an inferred physical burst time.
+
+The camera must be static with the ground in the lower part of the image. Each
+shot's observation window ends at the next firing; a still-visible final frame is
+marked `truncated`. Overlapping effects are not independently tracked, simultaneous
+tubes closer than 300 ms cannot be separated, and projected ratios are not physical
+metres. Trail shape, high-frequency crackle energy and brightness flicker are
+heuristics. Silence produces a null crackle indicator. Model classification belongs
+to the interpretation consumer, which must not treat these flags as verified labels.
+
+See the [synthetic evidence guide](../services/video-importer/tests/fixtures/README.md)
+and [local accuracy report](../services/video-importer/tests/fixtures/evaluation-local.json).
+The set verifies shot times, positions and colours against known renderer inputs;
+it does not establish real supplier-video accuracy or crowd/overlap handling.
+
+### Video Modal layout
+
+`services/video-importer/modal_app.py` registers `showcrafter-video` through the same
+finite-drain and proxy-authenticated wake layout as the music worker, with
+`video_analyse` as its only handler. It needs only the existing `showcrafter-workers`
+secret containing `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`; no model/provider
+key is used. Trusted enqueue dispatchers use the existing `Modal-Key` and
+`Modal-Secret` headers to POST the wake hook. No periodic poller or warm container is
+added. App enqueue and wake dispatch are absent in this lane and remain explicit
+integration hooks. No Modal image build, deployment, secret creation, hosted
+Supabase access, live wake verification or actual compute billing was performed.

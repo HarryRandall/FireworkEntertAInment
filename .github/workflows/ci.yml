@@ -191,6 +191,15 @@ jobs:
         run: services/music-analyser/.venv/bin/python -m unittest discover -s services/music-analyser/tests -p test_requeue.py
       - name: Exercise music jobs with offline audio against local Supabase
         run: pnpm test:analyser:local
+      - name: Install video measurement dependencies
+        run: |
+          sudo apt-get update && sudo apt-get install -y ffmpeg
+          python -m venv services/video-importer/.venv
+          services/video-importer/.venv/bin/python -m pip install -r services/video-importer/requirements.txt -r services/workers/requirements.txt -e services/worker-common
+      - name: Check deterministic video measurements
+        run: pnpm test:video
+      - name: Exercise video jobs against local Supabase
+        run: pnpm test:video:local
       - name: Stop the test database
         if: always()
         run: pnpm db:stop
