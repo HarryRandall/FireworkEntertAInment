@@ -86,6 +86,7 @@ Each handwritten TypeScript workspace composes the shared policy in
 TSDoc syntax, complexity and size limits, numeric-literal checks, selected SonarJS
 checks and local rules for export documentation and lint exceptions.
 
-Dated `eslint-suppressions-*.json` files record violations that existed when the gate
-was introduced. Do not regenerate them during ordinary feature work. New violations
-fail lint, and resolved entries should be pruned rather than retained.
+All handwritten TypeScript packages pass these rules without a lint baseline.
+Registry primitives are exempt only from export purpose comments so they can stay
+close to upstream. Allocation-sensitive numeric kernels retain narrow, explained
+parameter-count exceptions; size, complexity and numeric checks still apply.
