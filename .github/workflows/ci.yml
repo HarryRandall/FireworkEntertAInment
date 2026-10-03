@@ -154,24 +154,12 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm test:database-tooling
-      - name: Install and verify a fresh database
+      - name: Verify an empty local database
         run: |
           pnpm db:start
-          pnpm db:bootstrap --local
-          pnpm db:verify --local
-          pnpm db:test
-          pnpm db:types --check
-          pnpm db:lint
-      - name: Prove a second clean replay and repeatable fixtures
-        run: |
           pnpm db:reset
-          pnpm db:bootstrap --local
-          pnpm db:verify --local
           pnpm db:test
-          pnpm db:fixtures
-          pnpm db:fixtures
-          pnpm db:fixtures:check
-          pnpm db:bootstrap --local
+          pnpm db:lint
       - name: Stop the test database
         if: always()
         run: pnpm db:stop

@@ -1,0 +1,1 @@
+-- The declarative rebuild schema starts in PR 3.1.
