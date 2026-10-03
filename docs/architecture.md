@@ -29,6 +29,11 @@ theme tokens in `apps/web/ui/theme.css`, exposed through Tailwind in
 surfaces use `bg-stage` and `text-stage-foreground` to retain a cinematic dark
 backdrop in either page theme.
 
+Tables use the ReUI Data Grid adaptation in `ui/kit`; charts use the Nivo wrappers
+in `ui/charts`. Pages never import Nivo directly. The dashboard filter bar owns no
+backend access: consumers control facets, date ranges, sharing and exports. See the
+[dashboard kit](ui/dashboard-kit.md) for inputs, provenance and review boundaries.
+
 The shared next-themes provider sets a `.light` or `.dark` class on the document
 root. It supports light, dark and system preferences, defaults to system and
 retains the browser's `theme` storage key. Use Tailwind's `dark:` variant for
