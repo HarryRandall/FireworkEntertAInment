@@ -5,6 +5,150 @@ vertex shader. The CPU submits one parameter record and one current clock per so
 with no loop over spark slots or births. The renderer has no bloom pass: heads supply
 their own halos, followed by one output pass.
 
+## Zoomed-out finale: counts and storage
+
+The owner observed roughly 8.5 ms median frame intervals with 212 to 290 ms tail
+stalls when zooming out with **free camera enabled** on a real Mac. The owner
+confirmed that audience-camera zoom does not reproduce them. The previous particle readout combined CPU
+particles with padded GPU candidates. Those candidates include inactive birth,
+lifetime, streak and fork lanes; they are not visible sparks. The readout now names
+the two populations separately. `Viewer.count` retains its submitted-total meaning;
+`gpuCandidateCount` exposes its GPU part.
+
+There is no camera, projected-size or level-of-detail input in source scheduling,
+simulation or candidate range construction. The live shader changes point size and
+subpixel alpha with projection, not births. At the same show time and seed, moving
+the camera cannot change either submitted population. Comparing readouts at different
+playing instants can change the number substantially.
+
+The GPU layer did allocate an unused position attribute at twice the current candidate
+count whenever that count exceeded capacity. In the whole finale this caused six
+candidate-buffer replacements and retained 7,322,048 bytes. The shader computes
+positions from `gl_VertexID`; three.js 0.184's finite draw-range path accepts geometry
+without a position attribute. The dummy buffer is removed entirely. The explicit
+sorting sphere, disabled frustum culling, shader and draw count are unchanged.
+
+Source and clock textures previously uploaded all retained storage on every dirty
+frame. Upload ranges now contain only active RGBA texels, split at row boundaries
+as required by the installed three.js texture uploader. At the peak-count instant,
+source uploads contain 1,093,440 bytes instead of 2,097,152 bytes, and clock uploads
+contain 16,320 bytes instead of 32,768 bytes. Row splitting adds driver calls; its
+hardware cost still needs measurement. Source and CPU attribute capacity already grows
+geometrically. Cold playback can grow those buffers; a warmed full replay retains them.
+
+Node 24.18.0, 3 October 2026: `profile-zoom.mjs` runs the live frame builder and
+phase profiler with stubbed WebGL submission, covering 1,499 instants at 60 Hz for
+each cold/warm run at 100 m and 1,000 m. The SHA-256 digest of every frame's submitted
+counts agrees across all four runs. The peak at 13.016667 s is 1,026,064 GPU candidates
+plus 2,703 CPU particles, with 1,020 analytic sources.
+
+| Camera distance | Warm CPU median before / after (ms) | Warm CPU p95 before / after (ms) | Warm CPU max before / after (ms) | Warm storage replacements |
+| --------------: | ----------------------------------: | -------------------------------: | -------------------------------: | ------------------------: |
+|           100 m |                       0.867 / 0.841 |                    1.877 / 1.923 |                    2.484 / 2.625 |                     0 / 0 |
+|         1,000 m |                       0.881 / 0.873 |                    1.959 / 1.921 |                    2.518 / 2.454 |                     0 / 0 |
+
+Cold storage-object replacements fall from 54 to 48 at both distances, due to removing
+the candidate buffers. These timings show similar CPU work, not a material CPU speed-up.
+They exclude driver uploads, actual shader execution, GPU completion and React. They
+cannot identify the cause of the owner's 200 ms hardware stalls or prove their removal.
+No synchronous readback was introduced. The profiler now counts
+`bufferData`, `texImage2D` and `texStorage2D` calls alongside upload time, so the owner
+can distinguish fresh storage from ordinary updates in an actual stalled frame.
+
+Reproduce the Node audit:
+
+```sh
+node --import ./scripts/register-typescript.mjs packages/fireworks/scripts/profile-zoom.mjs
+```
+
+Ignored raw evidence: `output/performance/zoom-sequence-before.jsonl` and
+`output/performance/zoom-sequence-final.jsonl`. The whole-sequence behaviour test runs
+this same audit and requires identical count digests, no candidate buffer and zero
+warm storage replacements. It imposes no machine-dependent Node timing threshold.
+
+The new `tests/browser/finale-zoom.spec.ts` explicitly enables free camera and GPU
+sprays, warms the entire close-camera sequence, pulls the camera to its free-far limit, checks exact counts at the same peak instant,
+then measures a complete far-camera replay. Every observed completed frame must stay
+within a 100 ms whole-RAF-callback CPU budget and 1.05 times the close-camera peak submitted
+count, with zero GPU storage allocation calls and zero shader links. The 5% bound
+allows RAF sampling to miss the exact peak; fixed-time counts must match exactly.
+The CPU budget includes controls, sound scheduling, drawing and viewer subscribers.
+It is a regression ceiling below the reported 200+ ms stalls, not a 60 fps guarantee. RAF cadence and asynchronous GPU time are separate measurements.
+
+Chromium is reserved for the composer. Run the new regression and all existing
+browser/parity checks without updating goldens or baselines:
+
+```sh
+corepack pnpm exec playwright test tests/browser/finale-zoom.spec.ts
+corepack pnpm check
+```
+
+Owner: rerun a warmed finale near and far on the same Mac, viewport and spray/settings
+path. Capture phase samples at 5, 11.2, 13.016667 and 14 s, including upload milliseconds,
+storage calls, CPU submission and asynchronous scene/output GPU times. Camera-dependent
+count inflation is ruled out in Node; the actual periodic-stall cause and hardware
+improvement remain unverified. Needs owner review.
+
+### Free-camera follow-up
+
+The first audit placed a camera directly at 100/1,000 m; the first browser test left
+free mode disabled. Those checks did not exercise the owner's failing control path.
+The revised audit uses `StageControls`, live finale framing and the viewer's unchanged
+45 degree field of view, 0.5 m near plane and 4,000 m far plane. It exercises near/far
+limits in audience and free modes. Free mode only widens orbit distance and permits
+pan. Camera height remains at least 1.7 m, source culling is disabled, and transparent
+sorting uses the same fixed local sphere. There is no camera-dependent CPU birth loop.
+
+Inactive analytic candidates return `invisibleSpark()`: zero position, size and alpha.
+The old live point vertex shader still projected them to the world origin and floored
+point size to one device pixel. The fragment shader discarded them only after
+rasterisation. This wastes fragment work at one pixel whenever the origin is visible.
+Free-far framing puts that origin near the middle of the viewport; free-near framing
+clips it. Audience-far framing can also expose the origin, so this is a concrete GPU
+inefficiency, **not proof of the free-only hardware stall cause**. Dense live sparks
+also occupy fewer pixels when pulled further back. Driver back-pressure from GPU
+work remains a hypothesis until the owner records phase/GPU timings.
+
+The live source shader now places zero-alpha candidates outside homogeneous clip space
+after assigning varyings. Births, positions, appearance and transform-feedback outputs
+are unchanged. `spray-inactive.spec.ts` uses the live shader and an all-inactive source
+with an in-view origin: an asynchronous occlusion query must report no fragments. Its
+positive control removes the clipping statement and must report fragments. It is
+pending composer execution, alongside existing parity and visual tests.
+
+Node 24.18.0 follow-up results (`output/performance/free-camera-sequence.jsonl`):
+1,499 instants per run, eight cold/warm runs, identical count digests and peak counts
+in every camera mode. No warm storage replacements; 48 cold replacements per run.
+A separate CPU-reference evaluation at the same 13.016667 s peak emits 55,041 sparks
+(56,474 total CPU particles); at 14 s it emits 67,732 sparks (69,193 total). These
+camera-independent simulation counts, saved in
+`output/performance/free-camera-reference-counts.jsonl`, explain why the million-scale
+candidate readout must not be labelled visible particles. No GPU readback was used.
+
+| Control pose  | Orbit distance (m) | Warm CPU median (ms) | Warm CPU p95 (ms) | Warm CPU max (ms) |
+| ------------- | -----------------: | -------------------: | ----------------: | ----------------: |
+| Audience near |              74.22 |                0.840 |             1.792 |             2.827 |
+| Audience far  |             335.36 |                0.846 |             1.900 |             2.524 |
+| Free near     |              27.95 |                0.856 |             1.794 |             2.301 |
+| Free far      |             745.25 |                0.829 |             1.817 |             2.276 |
+
+These are CPU builder timings with stubbed WebGL, not measured GPU improvements.
+The browser regression now observes a complete playback cycle, measures the whole
+viewer RAF callback, verifies the far pose changed, checks fixed-time count equality
+and requires zero storage allocations/shader links in warm far playback. The owner
+must rerun the actual free-camera case, keeping an audience-far control run, before
+calling the periodic stalls resolved. No visual baseline or parity tolerance changes.
+
+Local verification: formatting, lint-rule tests (1), database-tooling tests (4), package
+schema/lint/typechecks and tests (642 renderer, 3 planner), Knip and web checks including
+the production build all passed. The web test command contains zero tests. Browser
+TypeScript compilation passed. `corepack pnpm check` was interrupted during package
+tests to avoid reaching its Chromium launcher; all non-browser gates were then run to
+completion separately. A camera-diagnostic assumption initially broke the visibility
+test double; that dependency was removed and the unchanged suite passed. No Chromium,
+screenshots, pgTAP, service tests, CI or production verification were run. Database and
+service contracts are unchanged. No lint exception was added.
+
 ## GPU birth selection: local Node comparison
 
 Measured on 3 October 2026 using Node 24.18.0. The forty-shot recipe, fixed instants,
