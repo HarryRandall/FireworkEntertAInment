@@ -17,6 +17,15 @@ try {
   });
   if (result.error) throw result.error;
   process.exitCode = result.status ?? 1;
+  if (process.exitCode === 0) {
+    const concurrency = spawnSync(
+      process.execPath,
+      ['--test', join(repositoryRoot, 'scripts/database/job-concurrency.integration.mjs')],
+      { cwd: repositoryRoot, stdio: 'inherit' },
+    );
+    if (concurrency.error) throw concurrency.error;
+    process.exitCode = concurrency.status ?? 1;
+  }
 } catch (error) {
   console.error(error.message);
   process.exitCode = 1;
