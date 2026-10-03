@@ -100,16 +100,8 @@ export class ParticleLayers {
 
   /** Uploads CPU simulation frames, preserving spark/head/halo/flash and puff identities. */
   upload(frames: readonly Particles[]): void {
-    const points: number[] = [];
-    const quads: number[] = [];
-    const source: { frame: Particles; index: number }[] = [];
-    for (const frame of frames)
-      for (let index = 0; index < frame.kinds.length; index++) {
-        const i = source.push({ frame, index }) - 1;
-        (frame.kinds[index] === ParticleKind.Spark ? points : quads).push(i);
-      }
-    this.uploadAdditive(points, this.points.geometry, source, false);
-    this.uploadAdditive(quads, this.quads.geometry, source, true);
+    this.uploadAdditive(frames, this.points.geometry, false);
+    this.uploadAdditive(frames, this.quads.geometry, true);
 
     this.uploadSmoke(frames);
   }
@@ -144,40 +136,33 @@ export class ParticleLayers {
     this.smoke.geometry.instanceCount = count;
   }
   private uploadAdditive(
-    indices: readonly number[],
+    frames: readonly Particles[],
     geometry: THREE.BufferGeometry,
-    source: readonly { frame: Particles; index: number }[],
     instanced: boolean,
   ): void {
-    const position = new Float32Array(indices.length * VECTOR_COMPONENTS);
+    const count = frames.reduce(
+      (sum, frame) =>
+        sum +
+        frame.kinds.reduce(
+          (total, kind) => total + Number((kind !== ParticleKind.Spark) === instanced),
+          0,
+        ),
+      0,
+    );
+    const position = new Float32Array(count * VECTOR_COMPONENTS);
     const colour = new Float32Array(position.length);
-    const size = new Float32Array(indices.length);
-    const alpha = new Float32Array(indices.length);
-    const shape = new Float32Array(indices.length);
-    indices.forEach((i, dest) => {
-      const item = source[i];
-      if (!item) return;
-      const { frame, index } = item;
-      position.set(
-        frame.positions.subarray(index * VECTOR_COMPONENTS, (index + 1) * VECTOR_COMPONENTS),
-        dest * VECTOR_COMPONENTS,
-      );
-      colour.set(
-        frame.colours.subarray(index * VECTOR_COMPONENTS, (index + 1) * VECTOR_COMPONENTS),
-        dest * VECTOR_COMPONENTS,
-      );
-      size[dest] = frame.sizes[index] ?? 0;
-      alpha[dest] = frame.alphas[index] ?? 0;
-      shape[dest] = frame.kinds[index] === ParticleKind.Flash ? 0 : (frame.kinds[index] ?? 0);
-    });
+    const size = new Float32Array(count);
+    const alpha = new Float32Array(count);
+    const shape = new Float32Array(count);
+    packAdditive(frames, instanced, { position, colour, size, alpha, shape });
     this.attribute(geometry, instanced ? 'iPos' : 'position', position, VECTOR_COMPONENTS);
     this.attribute(geometry, instanced ? 'iColor' : 'color', colour, VECTOR_COMPONENTS);
     this.attribute(geometry, instanced ? 'iSize' : 'size', size, 1);
     this.attribute(geometry, instanced ? 'iAlpha' : 'alpha', alpha, 1);
     if (instanced) {
       this.attribute(geometry, 'iShape', shape, 1);
-      this.quads.geometry.instanceCount = indices.length;
-    } else geometry.setDrawRange(0, indices.length);
+      this.quads.geometry.instanceCount = count;
+    } else geometry.setDrawRange(0, count);
   }
   /** Releases every owned geometry and shader material. */
   dispose(): void {
@@ -187,4 +172,47 @@ export class ParticleLayers {
     }
     this.plane.dispose();
   }
+}
+
+interface AdditiveAttributes {
+  position: Float32Array;
+  colour: Float32Array;
+  size: Float32Array;
+  alpha: Float32Array;
+  shape: Float32Array;
+}
+function packAdditive(
+  frames: readonly Particles[],
+  instanced: boolean,
+  arrays: AdditiveAttributes,
+): void {
+  let dest = 0;
+  for (const frame of frames) {
+    for (let index = 0; index < frame.kinds.length; index++) {
+      const kind = frame.kinds[index] ?? ParticleKind.Spark;
+      if ((kind !== ParticleKind.Spark) !== instanced) continue;
+      copyParticle(frame, index, arrays, dest);
+      dest++;
+    }
+  }
+}
+
+function copyParticle(
+  frame: Particles,
+  index: number,
+  arrays: AdditiveAttributes,
+  dest: number,
+): void {
+  const { position, colour, size, alpha, shape } = arrays;
+  const kind = frame.kinds[index] ?? ParticleKind.Spark;
+  // Copy scalar lanes directly, avoiding two subarray objects and a routing object per particle.
+  for (let channel = 0; channel < VECTOR_COMPONENTS; channel++) {
+    position[dest * VECTOR_COMPONENTS + channel] =
+      frame.positions[index * VECTOR_COMPONENTS + channel] ?? 0;
+    colour[dest * VECTOR_COMPONENTS + channel] =
+      frame.colours[index * VECTOR_COMPONENTS + channel] ?? 0;
+  }
+  size[dest] = frame.sizes[index] ?? 0;
+  alpha[dest] = frame.alphas[index] ?? 0;
+  shape[dest] = kind === ParticleKind.Flash ? 0 : kind;
 }
