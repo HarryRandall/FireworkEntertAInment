@@ -5,8 +5,8 @@ import { usePathname } from 'next/navigation';
 import type { NotificationItem } from '@/ui/kit/notifications';
 import type { OrganisationOption } from './switchers';
 import { areaConfigs } from './config';
-import type { WorkspaceArea, ShellVisibility } from './config/types';
-import { shellNavigation } from './navigation';
+import type { WorkspaceArea, ShellVisibility, ShellIdentity } from './config/types';
+import { shellNavigation, identityVisibility } from './navigation';
 import { Rail } from './rail';
 import { Sidebar } from './sidebar';
 import { ShellHeader } from './shell-header';
@@ -26,7 +26,8 @@ export interface EditorFrameOptions {
 export function WorkspaceShell({
   area,
   children,
-  visibility,
+  visibility: previewVisibility,
+  identity,
   organisations = [],
   notifications = [],
   editorFrame,
@@ -35,6 +36,7 @@ export function WorkspaceShell({
   area: WorkspaceArea;
   children: ReactNode;
   visibility?: ShellVisibility;
+  identity?: ShellIdentity;
   organisations?: readonly OrganisationOption[];
   notifications?: readonly NotificationItem[];
   editorFrame?: EditorFrameOptions;
@@ -43,6 +45,7 @@ export function WorkspaceShell({
   const routePathname = usePathname();
   const ready = useShellReady();
   const config = areaConfigs[area];
+  const visibility = identityVisibility(identity, previewVisibility);
   const pathname = previewPathname ?? routePathname;
   const { sections, section, title } = shellNavigation(config, pathname, visibility);
   const [panel, setPanel] = useState<ShellPanel | null>(null);
@@ -97,6 +100,7 @@ export function WorkspaceShell({
         config={config}
         sections={sections}
         notifications={notifications}
+        identity={identity}
       />
       <MobileNavigation
         config={config}
