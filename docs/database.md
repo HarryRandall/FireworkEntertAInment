@@ -1140,3 +1140,15 @@ was rejected. Port 3301 was confirmed closed. Local Supabase and the other lane'
 server were left running. The developer loader control needs owner visual review at desktop and
 390 px widths in light and dark themes. It reuses the developer page's native
 button styling without introducing a registry component or changing the shared kit.
+
+### Atomic shopper edits
+
+`persist_plan_edit` extends trusted planner persistence with chip and rule history.
+Its private security-definer implementation and thin public wrapper are granted
+only to `service_role`. It serialises with candidate alternatives using the session
+advisory lock and rejects stale candidate revisions, history sequences and input
+hashes. Successful requests revise the candidate and solver snapshot atomically
+with their edit record; failed and clarification outcomes retain the current show.
+UUID replay is idempotent. The edit bucket permits six requests in a burst and
+refills one per minute. No credit settlement runs for edits. Shopper history reads
+continue through the existing ownership RLS, covered by the edit pgTAP suite.
