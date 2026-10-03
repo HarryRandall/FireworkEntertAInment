@@ -5,7 +5,8 @@ import { WHITE, type Vec3 } from './colour';
 
 import { type ParticleWriter } from './particles';
 
-import { spray, TRAIL_DENSITY, TRAIL_LIFE } from './spray';
+import { TRAIL_DENSITY, TRAIL_LIFE } from './spray';
+import { sourceSpray, type SprayTrajectory } from './spray-source';
 import { hash } from './random';
 
 // Prototype split-child flash opacity and head halo multiplier, dimensionless.
@@ -180,19 +181,19 @@ export function crossette /* eslint-disable-line max-params -- The bounded child
       childBasis.binormalZ * angleSine +
       childBasis.forwardZ * CHILD_FORWARD_BIAS;
     if (tail) {
-      const path = (time: number): Vec3 => {
-        const childAgeS = time - tail.at;
-        return childPosition(
-          origin,
-          childDirectionX,
-          childDirectionY,
-          childDirectionZ,
-          reach,
-          gravity,
-          childAgeS,
-        );
-      };
-      fillChildTrail(writer, tail, path, alpha, childIndex, life);
+      fillMovingChildTrail(
+        writer,
+        tail,
+        origin,
+        childDirectionX,
+        childDirectionY,
+        childDirectionZ,
+        reach,
+        gravity,
+        alpha,
+        childIndex,
+        life,
+      );
     }
     writer.head(
       childPosition(origin, childDirectionX, childDirectionY, childDirectionZ, reach, gravity, age),
@@ -231,33 +232,42 @@ function fillChildTrail /* eslint-disable-line max-params -- Scalar child lifeti
   alpha: number,
   childIndex: number,
   life: number,
+  trajectory: () => SprayTrajectory,
 ): void {
-  spray(writer, path, tail.at, tail.at + life, tail.now, {
-    count: Math.max(
-      CHILD_TRAIL_MIN_COUNT,
-      Math.round(
-        prototypeOr(tail.trail.sparks, CHILD_TRAIL_DEFAULT_COUNT) *
-          TRAIL_DENSITY *
+  sourceSpray(
+    writer,
+    path,
+    tail.at,
+    tail.at + life,
+    tail.now,
+    {
+      count: Math.max(
+        CHILD_TRAIL_MIN_COUNT,
+        Math.round(
+          prototypeOr(tail.trail.sparks, CHILD_TRAIL_DEFAULT_COUNT) *
+            TRAIL_DENSITY *
+            CHILD_TRAIL_FACTOR,
+        ),
+      ),
+      life: Math.max(
+        CHILD_TRAIL_MIN_LIFE_S,
+        prototypeOr(tail.trail.length_s, CHILD_TRAIL_DEFAULT_LIFE_S) *
+          TRAIL_LIFE *
           CHILD_TRAIL_FACTOR,
       ),
-    ),
-    life: Math.max(
-      CHILD_TRAIL_MIN_LIFE_S,
-      prototypeOr(tail.trail.length_s, CHILD_TRAIL_DEFAULT_LIFE_S) *
-        TRAIL_LIFE *
-        CHILD_TRAIL_FACTOR,
-    ),
-    spread: tail.trail.spread_m_s,
-    gravity: CHILD_TRAIL_GRAVITY_M_S2,
-    drag: CHILD_TRAIL_DRAG_PER_S,
-    size: tail.trail.size,
-    flicker: CHILD_TRAIL_FLICKER,
-    glitter: tail.trail.glitter,
-    colour: tail.colour,
-    seed: tail.seed + childIndex,
-    alpha,
-    inherit: 0,
-  });
+      spread: tail.trail.spread_m_s,
+      gravity: CHILD_TRAIL_GRAVITY_M_S2,
+      drag: CHILD_TRAIL_DRAG_PER_S,
+      size: tail.trail.size,
+      flicker: CHILD_TRAIL_FLICKER,
+      glitter: tail.trail.glitter,
+      colour: tail.colour,
+      seed: tail.seed + childIndex,
+      alpha,
+      inherit: 0,
+    },
+    trajectory,
+  );
 }
 
 // Reused synchronous cross-product workspace. Child source callbacks capture the scalar
@@ -301,4 +311,41 @@ function initialiseChildBasis(velocity: Vec3): void {
   childBasis.binormalZ =
     childBasis.forwardX * childBasis.perpendicularY -
     childBasis.forwardY * childBasis.perpendicularX;
+}
+
+// Source callback and analytic controls describe the same child path on its parent's clock.
+// eslint-disable-next-line max-params -- Scalar child geometry avoids an extra context allocation in the bounded child loop.
+function fillMovingChildTrail(
+  writer: ParticleWriter,
+  tail: ChildTrail,
+  origin: Vec3,
+  childDirectionX: number,
+  childDirectionY: number,
+  childDirectionZ: number,
+  reach: number,
+  gravity: number,
+  alpha: number,
+  childIndex: number,
+  life: number,
+): void {
+  const path = (time: number): Vec3 => {
+    const childAgeS = time - tail.at;
+    return childPosition(
+      origin,
+      childDirectionX,
+      childDirectionY,
+      childDirectionZ,
+      reach,
+      gravity,
+      childAgeS,
+    );
+  };
+  fillChildTrail(writer, tail, path, alpha, childIndex, life, () => ({
+    kind: 'child',
+    origin,
+    direction: [childDirectionX, childDirectionY, childDirectionZ],
+    reach,
+    gravity,
+    start: tail.at,
+  }));
 }
