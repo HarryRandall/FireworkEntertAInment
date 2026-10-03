@@ -98,3 +98,53 @@
     display: block;
   }
 }
+/* Prototype six-card strip; phone cards wrap rather than overflowing the editor. */
+.sc-studio-variations {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.sc-studio-variation-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.sc-studio-variation-apply {
+  width: 100%;
+  height: auto;
+  padding: 0;
+  overflow: hidden;
+}
+.sc-studio-poster {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 8 / 5;
+  overflow: hidden;
+}
+.sc-studio-poster canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.sc-studio-poster [role='status'] {
+  position: absolute;
+  inset: 0;
+  padding: 8px;
+  font-size: 12px;
+  color: var(--stage-foreground);
+  background: var(--stage);
+}
+/* Hover card width is the prototype's compact 240 CSS px preview plus its padding. */
+.sc-studio-hover {
+  width: 258px;
+  max-width: calc(100vw - 16px);
+}
+@media (max-width: 980px) {
+  .sc-studio-variation-grid {
+    flex-basis: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

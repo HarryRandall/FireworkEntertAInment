@@ -2,6 +2,7 @@
 import { notFound } from 'next/navigation';
 import { z } from 'zod';
 import { requireArea } from '@/lib/auth/server';
+import { loadLibraryParts } from '@/lib/studio/library-load';
 import { loadStudio } from '@/lib/studio/load';
 import { WorkspaceShell } from '@/ui/shell/workspace-shell';
 import { EmptyState } from '@/ui/kit/feedback';
@@ -35,6 +36,7 @@ export default async function Page({ params }: { params: Promise<{ effectId: str
         item.effect.status !== 'archived' &&
         ['super_admin', 'catalogue_editor'].includes(identity.access.staffRole ?? '')
       }
+      libraryParts={await loadLibraryParts()}
       identity={identity.workspace}
     />
   );
