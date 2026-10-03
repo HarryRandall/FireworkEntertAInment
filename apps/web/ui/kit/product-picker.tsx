@@ -26,7 +26,11 @@ export function ProductPicker({
   onChange: (ids: string[]) => void;
 }) {
   return (
-    <div role="group" aria-label={label} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div
+      role="group"
+      aria-label={label}
+      className="grid grid-cols-[repeat(auto-fill,minmax(min(var(--product-tile-min-width),100%),1fr))] gap-(--card-gap)"
+    >
       {items.map((item) => (
         <button
           key={item.id}
@@ -50,8 +54,8 @@ export function ProductPicker({
               <span className="block size-3" />
             )}
           </span>
-          <span className="grid gap-1 p-3">
-            <b className="truncate text-sm font-medium">{item.name}</b>
+          <span className="grid gap-0.5 px-2.5 pt-2 pb-2.5">
+            <b className="truncate text-sm font-semibold">{item.name}</b>
             <span className="text-muted-foreground flex flex-wrap justify-between gap-1 text-xs">
               <span>{item.metadata}</span>
               <span className="tabular-nums">{item.price}</span>

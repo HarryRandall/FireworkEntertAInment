@@ -14,8 +14,8 @@ export const metadata: Metadata = {
 /** Composes the document shell and shared theme provider. */
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="en-GB" suppressHydrationWarning>
+      <body className={`${geistSans.className} ${geistSans.variable} ${geistMono.variable}`}>
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

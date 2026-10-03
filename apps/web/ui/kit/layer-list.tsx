@@ -30,7 +30,7 @@ export function LayerList({
   onExpandedChange: (id: string, expanded: boolean) => void;
 }) {
   return (
-    <ul aria-label="Effect layers" className="grid gap-0.5">
+    <ul aria-label="Effect layers" className="grid gap-px">
       {items.map((item) => (
         <li
           key={item.id}
@@ -42,6 +42,7 @@ export function LayerList({
               type="button"
               variant="ghost"
               size="icon-sm"
+              className="size-(--layer-control-size)"
               aria-label={`${item.expanded === true ? 'Collapse' : 'Expand'} ${item.name}`}
               aria-expanded={item.expanded === true}
               onClick={() => {
@@ -51,7 +52,7 @@ export function LayerList({
               {item.expanded === true ? <ChevronDown /> : <ChevronRight />}
             </Button>
           ) : (
-            <span className="w-8" />
+            <span className="w-(--layer-control-size) shrink-0" />
           )}
           <button
             type="button"
@@ -59,7 +60,7 @@ export function LayerList({
             onClick={() => {
               onSelect(item.id);
             }}
-            className={`group group-hover/layer:text-foreground aria-pressed:text-highlight-foreground flex min-w-0 flex-1 items-center gap-2 py-2 text-left text-sm ${item.hidden === true ? 'text-muted-foreground' : 'text-foreground'}`}
+            className={`group group-hover/layer:text-foreground aria-pressed:text-highlight-foreground flex min-h-(--layer-row-height) min-w-0 flex-1 items-center gap-2 text-left text-sm ${item.hidden === true ? 'text-muted-foreground' : 'text-foreground'}`}
           >
             {item.colour === undefined ? (
               <Layers className="text-muted-foreground size-3.5 shrink-0" />
@@ -69,8 +70,8 @@ export function LayerList({
                 className="size-3 shrink-0 rounded-sm"
               />
             )}
-            <span className="truncate">{item.name}</span>
-            <span className="text-muted-foreground group-hover/layer:text-foreground group-aria-pressed:text-highlight-foreground ml-auto font-mono text-xs">
+            <span className="min-w-0 flex-1 truncate">{item.name}</span>
+            <span className="text-muted-foreground group-hover/layer:text-foreground group-aria-pressed:text-highlight-foreground ml-auto shrink-0 font-mono text-xs whitespace-nowrap">
               {item.badge}
             </span>
           </button>
@@ -78,6 +79,7 @@ export function LayerList({
             type="button"
             variant="ghost"
             size="icon-sm"
+            className="size-(--layer-control-size)"
             aria-label={`${item.hidden === true ? 'Show' : 'Hide'} ${item.name}`}
             aria-pressed={item.hidden !== true}
             onClick={() => {

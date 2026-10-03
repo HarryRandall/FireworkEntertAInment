@@ -97,17 +97,19 @@ export function RelativeSlider({
   onChange: (value: number) => void;
 }) {
   return (
-    <Slider
-      label={control.label}
-      value={value}
-      min={Math.min(control.min, value)}
-      max={Math.max(control.max, value)}
-      step={control.step}
-      disabled={disabled}
-      ticks={[control.low, control.high]}
-      format={() => ''}
-      onChange={onChange}
-    />
+    <div className="sc-inspector-relative-slider">
+      <Slider
+        label={control.label}
+        value={value}
+        min={Math.min(control.min, value)}
+        max={Math.max(control.max, value)}
+        step={control.step}
+        disabled={disabled}
+        ticks={[control.low, control.high]}
+        format={() => ''}
+        onChange={onChange}
+      />
+    </div>
   );
 }
 /** Presents compact wrapping choices with an equivalent select on narrow inspector surfaces. */

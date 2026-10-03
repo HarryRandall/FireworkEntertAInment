@@ -1,16 +1,16 @@
 /** Studio composes the existing editor frame around document history, layers and live preview. */
 'use client';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { Design } from '@showcrafter/fireworks';
 import type { ShellIdentity } from '@/ui/shell/config/types';
 import { StudioFrame } from './studio-frame';
 import type { loadStudioHistory } from '@/lib/studio/history-load';
 import { useStudioLifecycle } from './use-studio-lifecycle';
-import { StudioLifecycle } from './studio-lifecycle';
+import { StudioHeaderActions } from './studio-header-actions';
 import { StudioPanels } from './studio-panels';
 import type { SavedPart } from '@/lib/studio/library';
-import { StudioChecks } from './studio-checks';
-import { StudioVariations } from './studio-variations';
+import { useStudioChecks } from './use-studio-checks';
+import { StageModes } from './studio-stage';
 import { useHistoryShortcuts } from './use-history-shortcuts';
 import { useVersionHistory } from './use-version-history';
 import { useStudioEditing } from './use-studio-editing';
@@ -47,8 +47,10 @@ export function StudioEditor({
   identity,
   libraryParts,
 }: StudioEditorProps) {
+  const [mode, setMode] = useState('design');
   const editing = useStudioEditing(initialDocument);
-  const { history, dispatch, hydrated, hidden } = editing;
+  const checks = useStudioChecks(editing.history.document);
+  const { history, dispatch, hidden } = editing;
   const { status, save, settle } = useDraftSave({
     document: history.document,
     gesture: history.gesture,
@@ -57,16 +59,16 @@ export function StudioEditor({
     sourceVersionId,
     editable,
   });
+  const draftVersionNumber = versionId === null ? versionNumber + 1 : versionNumber;
   const lifecycle = useStudioLifecycle({
     effectId,
     title,
     document: history.document,
     sourceVersionId,
-    versionNumber: versionId === null ? versionNumber + 1 : versionNumber,
+    versionNumber: draftVersionNumber,
     settle,
     published,
   });
-  const publishedDocument = published === null ? null : published.document;
   const versions = useVersionHistory(effectId, historyData, settle);
   const historyBusy = [lifecycle.busy, versions.busy].some((pending) => pending);
   const canEdit = editable && !historyBusy && lifecycle.preview === null;
@@ -85,43 +87,44 @@ export function StudioEditor({
       saving={status.label === 'Saving...'}
       saveDisabled={!canEdit || history.gesture !== null}
       onResetVisibility={editing.resetVisibility}
+      posterRetry={
+        historyData.missingPosters
+          ? { onSelect: lifecycle.retry, disabled: !editable || historyBusy }
+          : null
+      }
+      header={{
+        status: <StudioToolbar editable={canEdit} status={status} history={history} />,
+        centre: <StageModes mode={mode} onChange={setMode} />,
+        controls: (
+          <StudioHeaderActions
+            history={{ editable: canEdit, history, dispatch }}
+            checks={{ document: history.document, title, result: checks }}
+            historyBusy={historyBusy}
+            lifecycle={{
+              state: lifecycle,
+              document: history.document,
+              published: published?.document ?? null,
+              title,
+              number: draftVersionNumber,
+              editable,
+              versions,
+              usage: historyData.usage,
+              currentId: versions.currentId ?? sourceVersionId,
+            }}
+          />
+        ),
+      }}
     >
-      <div
-        className="sc-studio"
-        data-studio
-        data-hydrated={hydrated}
-        data-design-seed={history.document.seed}
-      >
-        <StudioToolbar
-          title={title}
-          editable={canEdit}
-          status={status}
-          history={history}
-          dispatch={dispatch}
-        />
-        <StudioLifecycle
-          state={lifecycle}
-          document={history.document}
-          published={publishedDocument}
-          title={title}
-          number={versionId === null ? versionNumber + 1 : versionNumber}
-          editable={editable}
-          missingPosters={historyData.missingPosters}
-          versions={versions}
-          usage={historyData.usage}
-          currentId={versions.currentId ?? sourceVersionId}
-        />
-        <StudioPanels
-          editing={editing}
-          preview={preview}
-          published={published}
-          editable={canEdit}
-          libraryParts={libraryParts}
-          previewing={lifecycle.preview !== null}
-        />
-        <StudioChecks document={history.document} title={title} />
-        <StudioVariations document={history.document} editable={canEdit} dispatch={dispatch} />
-      </div>
+      <StudioPanels
+        mode={mode}
+        checks={checks}
+        editing={editing}
+        preview={preview}
+        published={published}
+        editable={canEdit}
+        libraryParts={libraryParts}
+        previewing={lifecycle.preview !== null}
+      />
     </StudioFrame>
   );
 }

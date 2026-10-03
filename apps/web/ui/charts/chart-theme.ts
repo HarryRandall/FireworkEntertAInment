@@ -16,7 +16,12 @@ export const CHART_RADIUS_PX = 6;
 export const LINE_WIDTH_PX = 2;
 export const AREA_OPACITY = 0.35;
 export const DONUT_INNER_RATIO = 0.68;
-export const CHART_COLOURS = ['var(--highlight)', 'var(--info)', 'var(--warn)', 'var(--danger)'];
+export const CHART_COLOURS = [
+  'var(--highlight)',
+  'var(--info)',
+  'var(--warning)',
+  'var(--destructive)',
+];
 // Four-CSS-pixel dash and gap match the prototype horizontal grid.
 const GRID_DASH = '4 4';
 export const CHART_THEME = {

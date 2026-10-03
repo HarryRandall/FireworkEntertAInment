@@ -183,7 +183,8 @@ test('poster upload failure leaves publication intact and the Posters queue retr
   });
   await review(page);
   await publish(page);
-  await expect(page.getByRole('button', { name: 'Retry posters', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Editor actions', exact: true }).click();
+  await expect(page.getByRole('menuitem', { name: 'Retry posters', exact: true })).toBeVisible();
   const effect = await studioRows(
     page,
     'effects',
@@ -198,9 +199,11 @@ test('poster upload failure leaves publication intact and the Posters queue retr
   );
   expect(failed).toHaveLength(4);
   await page.unroute('**/storage/v1/object/posters/**');
-  await page.getByRole('button', { name: 'Retry posters', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Retry posters', exact: true }).click();
   await postersReady(page, effectId);
-  await expect(page.getByRole('button', { name: 'Retry posters', exact: true })).not.toBeVisible();
+  await page.getByRole('button', { name: 'Editor actions', exact: true }).click();
+  await expect(page.getByRole('menuitem', { name: 'Retry posters', exact: true })).toHaveCount(0);
+  await page.keyboard.press('Escape');
   await page.goto('/admin/posters');
   await expect(page.getByRole('heading', { name: 'Posters', exact: true })).toBeVisible();
   const renderButton = page.locator('[data-poster-version]').first();

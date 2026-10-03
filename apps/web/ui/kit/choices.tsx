@@ -14,7 +14,7 @@ export interface Choice {
   disabled?: boolean;
 }
 const card =
-  'relative grid min-w-0 gap-1 rounded-lg border border-border bg-card p-4 text-left text-sm hover:border-border-strong data-[state=checked]:border-highlight data-[state=checked]:ring-1 data-[state=checked]:ring-highlight disabled:opacity-50';
+  'relative grid min-w-0 gap-1 rounded-lg border border-border bg-card p-(--card-padding) text-left text-sm hover:border-border-strong data-[state=checked]:border-highlight data-[state=checked]:ring-1 data-[state=checked]:ring-highlight disabled:opacity-50';
 /** Presents one keyboard-navigable choice with explanatory cards. */
 export function RadioCards({
   label,
@@ -32,7 +32,7 @@ export function RadioCards({
       aria-label={label}
       value={value}
       onValueChange={onChange}
-      className="grid gap-3 sm:grid-cols-2"
+      className="grid gap-(--card-gap) sm:grid-cols-2"
     >
       {items.map((item) => (
         <RadioGroup.Item
@@ -42,7 +42,7 @@ export function RadioCards({
           className={card}
         >
           {item.icon}
-          <b className="pr-6 font-medium">{item.title}</b>
+          <b className="pr-6 text-base font-semibold">{item.title}</b>
           <span className="text-muted-foreground text-xs">{item.description}</span>
           <RadioGroup.Indicator className="text-highlight-foreground absolute top-3 right-3">
             <Check className="size-4" />
@@ -65,7 +65,11 @@ export function CheckboxCards({
   onChange: (value: string[]) => void;
 }) {
   return (
-    <div role="group" aria-label={label} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div
+      role="group"
+      aria-label={label}
+      className="grid grid-cols-1 gap-(--card-gap) sm:grid-cols-4"
+    >
       {items.map((item) => (
         <Checkbox.Root
           key={item.value}
@@ -81,7 +85,7 @@ export function CheckboxCards({
           className={card}
         >
           {item.icon}
-          <b className="font-medium">{item.title}</b>
+          <b className="text-base font-semibold">{item.title}</b>
           <span className="text-muted-foreground text-xs">{item.description}</span>
           <Checkbox.Indicator className="text-highlight-foreground absolute top-3 right-3">
             <Check className="size-4" />
@@ -115,7 +119,7 @@ export function Chips({
         <ToggleGroup.Item
           key={item}
           value={item}
-          className="border-border bg-card data-[state=on]:border-highlight data-[state=on]:bg-highlight-soft data-[state=on]:text-highlight-foreground rounded-full border px-3 py-1.5 text-xs"
+          className="border-border bg-card data-[state=on]:border-highlight data-[state=on]:bg-highlight-soft data-[state=on]:text-highlight-foreground inline-flex min-h-(--control-height) items-center rounded-full border px-3 text-sm"
         >
           {item}
         </ToggleGroup.Item>

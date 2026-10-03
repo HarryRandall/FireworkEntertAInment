@@ -1,5 +1,6 @@
 /** Variation locks are browser choices; applying a candidate is one document edit. */
 'use client';
+import { Lock, Unlock, Sparkles } from 'lucide-react';
 import { useState, type Dispatch } from 'react';
 import type { Design } from '@showcrafter/fireworks';
 import { rollVariations } from '@/lib/studio/variations';
@@ -22,10 +23,15 @@ export function StudioVariations({
   );
   const [locked, setLocked] = useState(new Set<number>());
   return (
-    <section aria-label="Variations" className="sc-studio-variations border-border border-t p-4">
+    <section
+      aria-label="Variations"
+      className="sc-studio-variations bg-stage text-stage-foreground"
+    >
       <div>
         <h2 className="font-semibold">Variations</h2>
-        <p className="text-muted-foreground text-xs">Lock the ones you like, then roll again</p>
+        <p className="text-stage-muted-foreground text-xs">
+          Lock the ones you like, then roll again
+        </p>
       </div>
       <div className="sc-studio-variation-grid">
         {candidates.map((candidate, index) => (
@@ -33,7 +39,7 @@ export function StudioVariations({
             key={index}
             data-variation={index + 1}
             data-seed={candidate.seed}
-            className="min-w-0"
+            className="sc-studio-variation min-w-0"
           >
             <Button
               className="sc-studio-variation-apply"
@@ -48,7 +54,8 @@ export function StudioVariations({
               <StudioPoster document={candidate} />
             </Button>
             <Button
-              size="sm"
+              className="sc-studio-variation-lock"
+              size="icon-sm"
               variant="ghost"
               aria-label={`Lock variation ${String(index + 1)}`}
               aria-pressed={locked.has(index)}
@@ -61,12 +68,14 @@ export function StudioVariations({
                 });
               }}
             >
-              {locked.has(index) ? 'Locked' : 'Lock'}
+              {locked.has(index) ? <Lock /> : <Unlock />}
             </Button>
           </div>
         ))}
       </div>
       <Button
+        className="text-foreground"
+        aria-label="Roll again"
         variant="outline"
         onClick={() => {
           setCandidates(
@@ -79,7 +88,7 @@ export function StudioVariations({
           );
         }}
       >
-        Roll again
+        <Sparkles /> Roll
       </Button>
     </section>
   );

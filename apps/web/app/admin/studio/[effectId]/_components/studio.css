@@ -1,96 +1,251 @@
-/* Studio dimensions in CSS px follow the prototype's 240/300 px side panels.
-   The 980 px shell breakpoint stacks sections; 320 px is a phone-stage visual minimum. */
+/* CSS px: studio.html's 264/320 side panels, 560 player and 92 variation label.
+   Responsive tuning keeps three columns to 900 px, then docks panels below the stage. */
 .sc-studio {
-  --studio-layers-width: 240px;
-  --studio-inspector-width: 300px;
-  --studio-phone-stage-height: 320px;
-  /* Paired-preview dimensions in CSS px, visual judgement for readable transport and clip input. */
-  --studio-mode-inset: 8px;
-  --studio-mode-height: 56px;
-  --studio-player-reserve: 90px;
-  --studio-paired-phone-height: 480px;
-  display: flex;
-  flex-direction: column;
+  --studio-layers-width: 264px;
+  --studio-inspector-width: 320px;
+  --studio-player-width: 560px;
+  --studio-variation-label-width: 92px;
+  --studio-thumbnail-width: 102px;
+  --studio-control-label-width: 84px; /* CSS px, studio.html inline slider label. */
   height: 100%;
   min-width: 0;
+  min-height: 0;
+}
+.sc-shell-editor:has(.sc-studio) .sc-shell-editor-body {
+  overflow: hidden;
+}
+.sc-shell-editor-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  padding: 8px 12px;
+  gap: 8px;
+  flex: none;
+  background: var(--card);
+}
+.sc-shell-editor-header .sc-shell-header-identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.sc-shell-editor-header .sc-shell-breadcrumb {
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+.sc-shell-editor-header h1 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--foreground);
 }
 .sc-studio-toolbar {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
+}
+.sc-studio-toolbar > span {
+  white-space: nowrap;
+}
+.sc-shell-editor-header .sc-shell-editor-actions {
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.sc-studio-lifecycle {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12px;
+}
+.sc-studio-lifecycle p {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.sc-studio-lifecycle button {
+  font-size: 12px;
+}
+.sc-studio-lifecycle button:has(+ *) {
+  flex: none;
+}
+.sc-studio-checks-popover {
+  width: min(400px, calc(100vw - 24px));
+  max-height: min(600px, var(--radix-popover-content-available-height));
+  overflow: auto;
+}
+.sc-studio-checks {
+  overflow-wrap: anywhere;
 }
 .sc-studio-panels {
   display: grid;
   grid-template-columns: var(--studio-layers-width) minmax(0, 1fr) var(--studio-inspector-width);
-  flex: 1;
+  height: 100%;
   min-height: 0;
 }
-.sc-studio-layers,
-.sc-studio-inspector {
-  padding: 16px;
-  min-width: 0;
-  overflow: auto;
+.sc-studio-panel-sheet {
+  display: contents;
+}
+.sc-studio-panel-navigation {
+  display: none;
 }
 .sc-studio-layers {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
   border-right: 1px solid var(--border);
 }
+.sc-studio-sidebar-tabs {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.sc-studio-sidebar-tabs > [role='tablist'] {
+  flex: none;
+  margin: 0;
+  padding: 4px 8px 0;
+}
+.sc-studio-sidebar-tabs > [role='tabpanel'] {
+  min-height: 0;
+  overflow: auto;
+  padding: 12px;
+  flex: 1;
+}
+.sc-studio-budget {
+  flex: none;
+  border-top: 1px solid var(--border);
+  padding: 10px 12px;
+}
+.sc-studio-budget meter {
+  display: block;
+  margin-bottom: 6px;
+  accent-color: var(--highlight);
+}
+.sc-studio-centre {
+  grid-column: 2;
+  grid-row: 1;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 0;
+  background: var(--stage);
+}
 .sc-studio-inspector {
+  grid-column: 3;
+  grid-row: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
   border-left: 1px solid var(--border);
 }
-.sc-studio-stage {
-  position: relative;
-  min-width: 0;
-  min-height: var(--studio-phone-stage-height);
-  overflow: hidden;
+.sc-studio-inspector-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--card);
 }
-/* Floating player insets and pill radius are visual tuning from studio.html. */
-.sc-studio-player {
-  position: absolute;
-  bottom: 16px;
-  left: 16px;
-  right: 16px;
+.sc-studio-inspector-header input {
+  height: auto;
+  padding: 2px 4px;
+  font-weight: 600;
+  border-color: transparent;
+  box-shadow: none;
+}
+.sc-studio-inspector-header input:hover,
+.sc-studio-inspector-header input:focus {
+  background: var(--muted);
+}
+.sc-studio-inspector-header label > span:last-child {
+  display: block;
+  font-size: 11.5px;
+}
+.sc-studio-layer-swatch {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  background: var(--muted);
+  flex: none;
+}
+.sc-studio-inspector-body {
+  padding: 0 14px;
+  container-type: inline-size;
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+.sc-studio-inspector-tabs {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid var(--stage-foreground);
-  border-radius: 16px;
-  padding: 8px;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
 }
-.sc-studio-player input {
+.sc-studio-inspector-tabs button {
   flex: 1;
-  min-width: 0;
-  width: 100%;
+  padding: 8px 2px;
+  font-size: 12px;
+  border-bottom: 2px solid transparent;
+  color: var(--muted-foreground);
 }
-@media (max-width: 980px) {
-  .sc-studio {
-    height: auto;
-    min-height: 100%;
-  }
-  .sc-studio-panels {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .sc-studio-stage {
-    grid-row: 1;
-    height: var(--studio-phone-stage-height);
-  }
-  .sc-studio-layers,
-  .sc-studio-inspector {
-    border: 0;
-    border-top: 1px solid var(--border);
-    overflow: visible;
-  }
+.sc-studio-inspector-tabs button[data-state='active'] {
+  border-bottom-color: var(--foreground);
+  color: var(--foreground);
 }
-/* Inspector disclosures use the shared tokens. Container queries match the prototype's
-   chip-to-select behaviour below 260 CSS px of available control width. */
-.sc-studio-inspector {
-  container-type: inline-size;
+.sc-studio-inspector-content {
+  padding-top: 8px;
 }
 .sc-inspector-section {
   border-top: 1px solid var(--border);
+}
+/* The relative slider's kit label, track and endpoint words form one compact row. */
+.sc-inspector-relative-slider > div {
+  display: grid;
+  grid-template-columns: var(--studio-control-label-width) minmax(0, 1fr);
+  column-gap: 8px;
+  row-gap: 2px;
+}
+.sc-inspector-relative-slider > div > div:first-child {
+  display: contents;
+}
+.sc-inspector-relative-slider label {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.sc-inspector-relative-slider output {
+  display: none;
+}
+.sc-inspector-relative-slider [data-orientation='horizontal'] {
+  grid-column: 2;
+  grid-row: 1;
+}
+.sc-inspector-relative-slider > div > div:last-child {
+  grid-column: 2;
+  grid-row: 2;
+  font-size: 11px;
+}
+.sc-inspector-chips {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.sc-inspector-chips button {
+  min-width: 0;
+  padding-inline: 4px;
+  font-size: 12px;
+  white-space: normal;
 }
 .sc-inspector-select {
   display: none;
@@ -103,25 +258,147 @@
     display: block;
   }
 }
-/* Prototype six-card strip; phone cards wrap rather than overflowing the editor. */
-.sc-studio-variations {
+.sc-studio-stage {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.sc-studio-previews {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+.sc-studio-previews-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.sc-studio-pane,
+.sc-studio-reference {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+.sc-studio-previews-two > :first-child {
+  border-right: 1px solid var(--stage-foreground);
+}
+.sc-studio-pane h2,
+.sc-studio-reference h2 {
+  position: relative;
+  z-index: 10;
+  padding: 8px;
+  font-size: 12px;
+  pointer-events: none;
+}
+.sc-studio-reference {
+  overflow: auto;
+  padding-bottom: 64px; /* CSS px, transport clearance for the reference file controls. */
+}
+.sc-studio-reference input {
+  width: 100%;
+  min-width: 0;
+}
+.sc-studio-reference video {
+  display: block;
+  width: 100%;
+  max-height: 100%;
+}
+.sc-studio-reference label {
+  overflow-wrap: anywhere;
+}
+.sc-studio-player {
+  position: absolute;
+  z-index: 20;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(var(--studio-player-width), calc(100% - 24px));
   display: flex;
   align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 6px;
+}
+.sc-studio-player input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  accent-color: var(--highlight);
+}
+.sc-studio-player button {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.sc-studio-player output {
+  white-space: nowrap;
+}
+.sc-studio-modes {
+  display: flex;
+  gap: 2px;
+  justify-self: center;
+  padding: 3px;
+  border-radius: 9px;
+  background: var(--muted);
+}
+.sc-studio-modes button {
+  height: 26px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+.sc-studio-modes button[aria-pressed='true'] {
+  background: var(--card);
+  box-shadow: var(--surface-shadow);
+}
+.sc-studio-variations {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--border);
+  min-width: 0;
+}
+.sc-studio-variations > div:first-child {
+  width: var(--studio-variation-label-width);
+  font-size: 12px;
+}
+.sc-studio-variations > div:first-child p {
+  font-size: 11px;
 }
 .sc-studio-variation-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-auto-flow: column;
+  grid-auto-columns: clamp(56px, 6vw, var(--studio-thumbnail-width));
   gap: 8px;
-  flex: 1;
   min-width: 0;
+  overflow: auto;
+  /* Keep scrolling thumbnails inside their column, clear of the Roll action. */
+  contain: inline-size;
+  padding: 3px;
+}
+.sc-studio-variation {
+  position: relative;
 }
 .sc-studio-variation-apply {
   width: 100%;
   height: auto;
   padding: 0;
   overflow: hidden;
+}
+.sc-studio-variation-lock {
+  position: absolute;
+  right: 3px;
+  top: 3px;
+  background: var(--stage);
+  color: var(--stage-foreground);
+  width: 22px;
+  height: 22px;
+}
+.sc-studio-variation-lock[aria-pressed='true'] {
+  background: var(--highlight);
+  color: var(--primary-foreground);
 }
 .sc-studio-poster {
   position: relative;
@@ -142,72 +419,98 @@
   color: var(--stage-foreground);
   background: var(--stage);
 }
-/* Hover card width is the prototype's compact 240 CSS px preview plus its padding. */
 .sc-studio-hover {
-  width: 258px;
+  width: 258px; /* Prototype's 240 CSS px preview plus its padding. */
   max-width: calc(100vw - 16px);
 }
-@media (max-width: 980px) {
-  .sc-studio-variation-grid {
-    flex-basis: 100%;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+@media (max-width: 1250px) {
+  .sc-shell-editor-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .sc-shell-editor-header .sc-studio-modes {
+    grid-row: 2;
+    grid-column: 1 / -1;
+  }
+  .sc-studio {
+    --studio-layers-width: 220px;
+    --studio-inspector-width: 280px;
+  }
+  .sc-studio-change-count {
+    display: none;
   }
 }
-
-/* Paired previews share the available width; mode and player reserves are visual tuning in CSS px. */
-.sc-studio-modes {
-  position: absolute;
-  top: var(--studio-mode-inset);
-  left: var(--studio-mode-inset);
-  right: var(--studio-mode-inset);
-  z-index: 20;
-  display: flex;
-  gap: 4px;
-}
-.sc-studio-previews {
-  position: absolute;
-  inset: var(--studio-mode-height) 0 var(--studio-player-reserve);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-}
-.sc-studio-previews-two {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-.sc-studio-pane,
-.sc-studio-reference {
-  position: relative;
-  min-width: 0;
-  overflow: hidden;
-}
-.sc-studio-previews-two > :first-child {
-  border-right: 1px solid var(--stage-foreground);
-}
-.sc-studio-pane h2,
-.sc-studio-reference h2 {
-  position: relative;
-  z-index: 10;
-  padding: 8px;
-  font-size: 12px;
-  pointer-events: none;
-}
-.sc-studio-reference {
-  overflow: auto;
-}
-.sc-studio-reference input {
-  width: 100%;
-  min-width: 0;
-}
-.sc-studio-reference video {
-  display: block;
-  width: 100%;
-  max-height: 100%;
-}
-.sc-studio-reference label {
-  overflow-wrap: anywhere;
-}
-/* Paired phone previews retain a legible stage and video upload target within 390 px. */
-@media (max-width: 980px) {
-  .sc-studio-stage:has(.sc-studio-previews-two) {
-    height: var(--studio-paired-phone-height);
+@media (max-width: 899px) {
+  .sc-studio-panels {
+    display: flex;
+    flex-direction: column;
+  }
+  .sc-studio-centre {
+    flex: none;
+    height: min(40dvh, 320px); /* CSS px, mobile stage plus compact dock visual tuning. */
+  }
+  .sc-studio-panel-sheet {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
+    border-top: 1px solid var(--border);
+    border-radius: 12px 12px 0 0;
+    background: var(--card);
+  }
+  .sc-studio-panel-navigation {
+    flex: none;
+    order: 1;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+  }
+  .sc-studio-layers {
+    flex: none;
+    order: 3;
+    height: 360px; /* CSS px, internally scrolling Library above its pinned summary. */
+    border: 0;
+    scroll-margin-top: 40px;
+  }
+  .sc-studio-inspector {
+    flex: none;
+    order: 2;
+    height: 420px; /* CSS px, bounded inspector inside the mobile panel sheet. */
+    border-left: 0;
+    border-top: 1px solid var(--border);
+    scroll-margin-top: 40px;
+  }
+  .sc-shell-editor-header .sc-shell-mobile-menu {
+    grid-row: 1;
+  }
+  .sc-shell-editor-header {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .sc-shell-editor-header .sc-shell-editor-actions {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    justify-content: center;
+  }
+  .sc-shell-editor-header .sc-shell-header-identity {
+    flex-wrap: wrap;
+  }
+  .sc-studio-toolbar {
+    gap: 4px;
+  }
+  .sc-studio-variations > div:first-child p {
+    display: none;
+  }
+  .sc-studio-variations > div:first-child {
+    width: auto;
+  }
+  .sc-studio-variations {
+    padding: 6px;
+  }
+  .sc-studio-variation-grid {
+    grid-auto-columns: 64px;
   }
 }

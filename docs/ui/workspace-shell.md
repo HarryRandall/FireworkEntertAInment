@@ -44,7 +44,9 @@ the first panel does not also create its root. Dismissal restores focus to the o
 ## Editor frame and review
 
 The optional `editorFrame` input supplies a title, Save callback, pending state and
-menu actions. It removes the section sidebar, retains the area rail and breadcrumb,
+menu actions. Optional breadcrumb, status, centre and controls slots let an editor
+compose one header with its domain actions while ordinary editors retain Save.
+It removes the section sidebar, retains the area rail and breadcrumb,
 and allocates the remaining height to editor-owned content. It adds no back arrow
 and implements no editing, saving or version history itself.
 

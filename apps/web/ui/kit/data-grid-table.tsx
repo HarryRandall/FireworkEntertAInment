@@ -90,7 +90,7 @@ export function DataGridTable<T>({
                 <td
                   key={cell.id}
                   className={cn(
-                    'border-border border-b px-3 py-3',
+                    'border-border border-b px-3 py-2.5',
                     numericColumns.includes(cell.column.id) && 'text-right tabular-nums',
                     cell.column.id === 'actions' && 'bg-card sticky right-0 w-12 text-right',
                   )}

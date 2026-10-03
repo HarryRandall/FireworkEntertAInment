@@ -49,18 +49,20 @@ export function QuickAdjustments({
   controls,
   layerId,
   disabled = false,
+  open = true,
 }: {
   context: InspectorContext;
   controls: readonly QuickControl[];
   layerId?: string;
   disabled?: boolean;
+  open?: boolean;
 }) {
   const repeatedId =
     layerId !== undefined &&
     context.document.breaks.flatMap((burst) => burst.layers).filter((layer) => layer.id === layerId)
       .length > 1;
   return (
-    <InspectorSection title="Quick adjustments">
+    <InspectorSection title="Quick adjustments" open={open}>
       {controls.map((control) => {
         const key = layerId === undefined ? control.key : `layer.${layerId}.${control.key}`;
         return (

@@ -16,12 +16,12 @@ export function ListRows({ items }: { items: readonly ListItem[] }) {
   return (
     <ul className="divide-border border-border bg-card divide-y overflow-hidden rounded-lg border">
       {items.map((item) => (
-        <li key={item.id} className="flex items-center gap-3 p-3">
-          <span className="bg-muted grid size-9 shrink-0 place-items-center rounded-md">
+        <li key={item.id} className="flex items-center gap-3 px-(--card-padding) py-3">
+          <span className="bg-muted grid size-[34px] shrink-0 place-items-center rounded-md">
             {item.icon}
           </span>
           <div className="min-w-0 flex-1">
-            <b className="block text-sm font-medium">{item.title}</b>
+            <b className="block text-[13.5px] font-semibold">{item.title}</b>
             <span className="text-muted-foreground text-xs">{item.description}</span>
           </div>
           <div className="flex shrink-0 items-center gap-1">{item.actions}</div>
@@ -50,7 +50,7 @@ export function SettingsSection({
   children: ReactNode;
 }) {
   return (
-    <section className="border-border grid gap-5 border-b py-6 sm:grid-cols-[1fr_2fr]">
+    <section className="border-border grid gap-4 border-b py-4 sm:grid-cols-[1fr_2fr]">
       <header>
         <h3 className="text-sm font-semibold">{title}</h3>
         <p className="text-muted-foreground mt-1 text-xs">{description}</p>

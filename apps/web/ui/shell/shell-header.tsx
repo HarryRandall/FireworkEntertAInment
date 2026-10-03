@@ -6,7 +6,7 @@ import { ActionMenu } from '@/ui/kit/overlays';
 import type { AreaConfig } from './config/types';
 import type { EditorFrameOptions } from './workspace-shell';
 
-/** Renders a breadcrumb and Save/overflow actions without a back arrow. */
+/** Renders route chrome with optional editor status, centred tools and lifecycle actions. */
 export function ShellHeader({
   config,
   title,
@@ -18,8 +18,9 @@ export function ShellHeader({
   editorFrame?: EditorFrameOptions;
   openNavigation: () => void;
 }) {
+  const hasEditorTools = editorFrame?.centre !== undefined;
   return (
-    <header className="sc-shell-header">
+    <header className={`sc-shell-header ${hasEditorTools ? 'sc-shell-editor-header' : ''}`}>
       <Button
         className="sc-shell-mobile-menu"
         variant="ghost"
@@ -29,29 +30,58 @@ export function ShellHeader({
       >
         <Menu />
       </Button>
-      <nav aria-label="Breadcrumb" className="sc-shell-breadcrumb">
-        <Link href={config.href}>{config.label}</Link>
-        <span aria-hidden="true">/</span>
-        <span aria-current="page">{title}</span>
-      </nav>
-      {editorFrame !== undefined && (
-        <div className="ml-auto flex shrink-0 gap-2">
-          <Button
-            disabled={editorFrame.saving === true || editorFrame.saveDisabled === true}
-            onClick={editorFrame.onSave}
-          >
-            {editorFrame.saving === true ? 'Saving...' : 'Save'}
-          </Button>
-          <ActionMenu
-            trigger={
-              <Button variant="ghost" size="icon-sm" aria-label="Editor actions">
-                <MoreHorizontal />
-              </Button>
-            }
-            actions={editorFrame.actions}
-          />
-        </div>
-      )}
+      <div className="sc-shell-header-identity min-w-0">
+        <ShellBreadcrumb config={config} title={title} editorFrame={editorFrame} />
+        {editorFrame?.status}
+      </div>
+      {editorFrame?.centre}
+      {editorFrame !== undefined && <EditorActions editorFrame={editorFrame} />}
     </header>
+  );
+}
+function ShellBreadcrumb({
+  config,
+  title,
+  editorFrame,
+}: {
+  config: AreaConfig;
+  title: string;
+  editorFrame?: EditorFrameOptions;
+}) {
+  return (
+    <nav aria-label="Breadcrumb" className="sc-shell-breadcrumb">
+      <Link href={editorFrame?.breadcrumb?.href ?? config.href}>
+        {editorFrame?.breadcrumb?.label ?? config.label}
+      </Link>
+      <span aria-hidden="true">/</span>
+      {editorFrame?.centre !== undefined ? (
+        <h1 aria-current="page">{title}</h1>
+      ) : (
+        <span aria-current="page">{title}</span>
+      )}
+    </nav>
+  );
+}
+function EditorActions({ editorFrame }: { editorFrame: EditorFrameOptions }) {
+  return (
+    <div className="sc-shell-editor-actions ml-auto flex shrink-0 items-center gap-2">
+      {editorFrame.controls}
+      {editorFrame.controls === undefined && (
+        <Button
+          disabled={editorFrame.saving === true || editorFrame.saveDisabled === true}
+          onClick={editorFrame.onSave}
+        >
+          {editorFrame.saving === true ? 'Saving...' : 'Save'}
+        </Button>
+      )}
+      <ActionMenu
+        trigger={
+          <Button variant="ghost" size="icon-sm" aria-label="Editor actions">
+            <MoreHorizontal />
+          </Button>
+        }
+        actions={editorFrame.actions}
+      />
+    </div>
   );
 }

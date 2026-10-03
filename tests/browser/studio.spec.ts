@@ -198,7 +198,8 @@ test('failed autosave retains edits and Save retries the same draft', async ({ p
   await expect(page.locator('.sc-studio-toolbar').getByRole('status')).toHaveText('Save failed');
   await expect(name).toHaveValue('Retained after failure');
   await page.unroute('**/admin/studio/*');
-  await page.getByRole('button', { name: 'Save', exact: true }).click();
+  await page.getByRole('button', { name: 'Editor actions', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Save', exact: true }).click();
   await expect(page.locator('.sc-studio-toolbar').getByRole('status')).toHaveText('Saved');
   await name.fill(original);
   await name.blur();
@@ -480,3 +481,78 @@ test('first draft save preserves history, selection and subsequent saves', async
   await expect(name).toHaveValue('First saved edit');
   await expect(status).toHaveText('Saved');
 });
+
+for (const width of [1440, 1000, 390]) {
+  for (const theme of ['light', 'dark']) {
+    test(`${width}px ${theme} Studio panels stay separate and selected-layer controls render`, async ({
+      page,
+    }, info) => {
+      await page.setViewportSize({ width, height: 844 });
+      await page.addInitScript((value) => localStorage.setItem('theme', value), theme);
+      await signInAs(page, 'admin');
+      await openFromCatalogue(page);
+      await pauseStage(page);
+      const regions = ['.sc-studio-stage', '.sc-studio-layers', '.sc-studio-inspector'];
+      await expect(async () => {
+        const boxes = await Promise.all(
+          regions.map((selector) => page.locator(selector).boundingBox()),
+        );
+        for (const box of boxes) {
+          expect(box).not.toBeNull();
+          expect(box?.width).toBeGreaterThan(0);
+          expect(box?.height).toBeGreaterThan(0);
+        }
+        for (const [index, first] of boxes.entries()) {
+          if (!first) throw new Error('Studio region has no bounds');
+          for (const second of boxes.slice(index + 1)) {
+            if (!second) throw new Error('Studio region has no bounds');
+            const overlaps =
+              first.x < second.x + second.width &&
+              second.x < first.x + first.width &&
+              first.y < second.y + second.height &&
+              second.y < first.y + first.height;
+            expect(overlaps).toBe(false);
+          }
+        }
+        expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
+          true,
+        );
+        if (width >= 900) {
+          expect(
+            await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight),
+          ).toBe(true);
+          const body = page.locator('.sc-shell-editor-body');
+          expect(
+            await body.evaluate((element) => element.scrollHeight <= element.clientHeight),
+          ).toBe(true);
+        }
+      }).toPass();
+      const inspector = page.getByRole('region', { name: 'Inspector', exact: true });
+      await expect(
+        inspector.getByRole('textbox', { name: 'Star group name', exact: true }),
+      ).not.toHaveValue('');
+      await expect(inspector.getByRole('slider', { name: 'Size', exact: true })).toBeVisible();
+      for (const [section, role, name] of [
+        ['Launch', 'slider', 'Height'],
+        ['Burst', 'slider', 'Flash strength'],
+        ['Stars', 'slider', 'Size'],
+        ['Trail', 'button', 'Trail on'],
+        ['Effect', 'button', 'Twinkle'],
+      ] as const) {
+        await selectInspectorTab(page, section);
+        await expect(inspector.getByRole(role, { name, exact: true })).toBeVisible();
+      }
+      await selectInspectorTab(page, 'Stars');
+      const panelNavigation = page.getByRole('navigation', { name: 'Editor panels', exact: true });
+      if (width < 900)
+        await panelNavigation.getByRole('button', { name: 'Inspector', exact: true }).click();
+      await expect(inspector.getByRole('slider', { name: 'Size', exact: true })).toBeVisible();
+      expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
+      const label = `studio-layout-${width}-${theme}`;
+      await info.attach(label, {
+        body: await page.screenshot({ path: `output/playwright/${label}.png`, fullPage: false }),
+        contentType: 'image/png',
+      });
+    });
+  }
+}

@@ -18,6 +18,10 @@ import { useShellReady } from './use-shell-ready';
 /** Save and overflow actions supplied by an editor, with no implicit persistence. */
 export interface EditorFrameOptions {
   title: string;
+  breadcrumb?: { label: string; href: string };
+  status?: ReactNode;
+  centre?: ReactNode;
+  controls?: ReactNode;
   onSave: () => void;
   saving?: boolean;
   saveDisabled?: boolean;

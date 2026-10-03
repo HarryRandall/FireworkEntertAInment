@@ -24,7 +24,6 @@ export function StarsInspector(context: LayerContext) {
   const { layer, disabled, changeLayer } = context;
   return (
     <div>
-      <QuickAdjustments context={context} controls={STAR_QUICK} layerId={layer.id} />
       <ShapeControls context={context} />
       <InspectorSection title="Colour over life">
         <InspectorChoices
@@ -76,6 +75,7 @@ export function StarsInspector(context: LayerContext) {
           />
         ))}
       </InspectorSection>
+      <QuickAdjustments context={context} controls={STAR_QUICK} layerId={layer.id} open={false} />
       <InspectorSection title="Physics and fine controls" open={false}>
         {STARS_CONTROLS.slice(FINE_CONTROL_START).map((control) => (
           <RelativeSlider

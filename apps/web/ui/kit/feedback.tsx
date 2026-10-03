@@ -29,14 +29,14 @@ export function Callout({
     <div
       role={tone === 'danger' ? 'alert' : 'note'}
       className={cn(
-        'flex items-start gap-3 rounded-lg border border-current/20 p-3 text-sm',
+        'flex items-start gap-(--card-gap) rounded-lg border border-current/20 px-(--card-padding) py-3 text-sm',
         tones[tone],
       )}
     >
       <Icon className="mt-0.5 size-4 shrink-0" />
       <div className="min-w-0 flex-1">
         <b className="font-semibold">{title}</b>
-        <div className="text-foreground mt-1">{children}</div>
+        <div className="text-muted-foreground mt-0.5">{children}</div>
       </div>
       {action}
     </div>
@@ -105,7 +105,7 @@ export function Badge({ children, tone = 'neutral' }: { children: ReactNode; ton
   return (
     <span
       className={cn(
-        'inline-flex rounded-full border border-current/10 px-2 py-0.5 text-xs font-medium',
+        'inline-flex min-h-[22px] items-center rounded-full px-2 text-xs font-medium',
         tones[tone],
       )}
     >

@@ -42,7 +42,7 @@ export function NumberStepper({
       >
         <Minus />
       </Button>
-      <output aria-live="polite" className="min-w-10 text-center text-sm tabular-nums">
+      <output aria-live="polite" className="min-w-9 text-center text-sm tabular-nums">
         {value}
       </output>
       <Button
@@ -84,10 +84,12 @@ export function Slider({
 }) {
   const id = useId();
   return (
-    <div className="grid gap-3">
+    <div className="grid gap-2">
       <div className="flex justify-between text-sm">
         <label id={id}>{label}</label>
-        <output className="tabular-nums">{format(value)}</output>
+        <output className="text-muted-foreground font-mono text-[12.5px] tabular-nums">
+          {format(value)}
+        </output>
       </div>
       <RadixSlider.Root
         aria-labelledby={id}

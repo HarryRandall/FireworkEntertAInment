@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
 /** Displays a keyboard key without suggesting that a binding is installed by this component. */
 export function Kbd({ children }: { children: ReactNode }) {
   return (
-    <kbd className="border-border bg-muted text-muted-foreground rounded border px-1.5 py-0.5 font-mono text-xs">
+    <kbd className="border-border bg-muted text-muted-foreground inline-flex h-5 items-center rounded-[5px] border px-[5px] font-mono text-[11px]">
       {children}
     </kbd>
   );

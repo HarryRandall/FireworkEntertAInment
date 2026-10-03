@@ -30,13 +30,13 @@ export function TagInput({
   }
   return (
     <div
-      className="border-input bg-card flex min-h-10 flex-wrap items-center gap-1.5 rounded-md border p-2"
+      className="border-input bg-card flex min-h-(--field-height) flex-wrap items-center gap-1.5 rounded-md border px-2 py-[5px]"
       aria-disabled={disabled}
     >
       {value.map((tag) => (
         <span
           key={tag}
-          className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 text-xs ${email && !isEmailTag(tag) ? 'border-destructive bg-destructive-soft text-destructive' : 'border-border bg-muted'}`}
+          className={`inline-flex h-6 items-center gap-1 rounded-[6px] border pr-1 pl-2 text-[12.5px] ${email && !isEmailTag(tag) ? 'border-destructive bg-destructive-soft text-destructive' : 'border-border bg-muted'}`}
         >
           {tag}
           <button
@@ -56,7 +56,7 @@ export function TagInput({
         aria-label={label}
         aria-invalid={invalid}
         disabled={disabled}
-        className="min-w-24 flex-1 bg-transparent text-sm outline-none"
+        className="h-6 min-w-[140px] flex-1 bg-transparent text-base outline-none"
         value={draft}
         placeholder={placeholder}
         onChange={(event) => {
