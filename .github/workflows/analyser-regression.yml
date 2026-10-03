@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - development
+      - 'rebuild/**'
     paths:
       - 'services/music-analyser/**'
       - '.github/workflows/analyser-regression.yml'
@@ -12,6 +13,7 @@ on:
     branches:
       - main
       - development
+      - 'rebuild/**'
     paths:
       - 'services/music-analyser/**'
       - '.github/workflows/analyser-regression.yml'
@@ -25,7 +27,7 @@ concurrency:
 
 jobs:
   regression:
-    name: Real-audio baseline
+    name: Independent beat evaluation
     runs-on: ubuntu-latest
 
     defaults:
@@ -46,7 +48,12 @@ jobs:
       - name: Install analyser dependencies
         run: python -m pip install -r requirements.txt
 
-      - name: Run analyser real-audio regression
+      - name: Download pinned model and held-out recordings
+        run: |
+          python download_model.py
+          python download_evaluation.py
+
+      - name: Compare CPU trackers with independent labels
         run: python evaluate.py
 
       - name: Upload analyser evaluation report
