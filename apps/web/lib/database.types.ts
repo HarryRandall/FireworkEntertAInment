@@ -6543,6 +6543,38 @@ export type Database = {
         }
         Returns: string
       }
+      save_video_measurement: {
+        Args: {
+          p_attempt: number
+          p_error?: string
+          p_extractor: string
+          p_job: string
+          p_measurements?: Json
+          p_state: string
+          p_worker: string
+        }
+        Returns: {
+          created_at: string
+          error: string | null
+          extractor: string
+          features: Json | null
+          id: string
+          keyframes: Json | null
+          media_id: string
+          priors: Json
+          product_id: string | null
+          shots: Json | null
+          status: string
+          supplier_product_id: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "video_analyses"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       shop_customers: { Args: { p_organisation: string }; Returns: Json }
       show_for_store: {
         Args: { p_show: string; p_store: string }

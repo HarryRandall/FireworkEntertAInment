@@ -231,3 +231,74 @@ begin
 end;
 $$;
 comment on function public.install_music_result(uuid,text,smallint,text,jsonb,text,bigint,text,jsonb) is 'Backend-only fenced music result installation; analysis times are seconds and waveform peaks are normalised amplitudes.';
+
+-- One active measurement job per analysis prevents conflicting attempts for the same evidence.
+create unique index video_jobs_active_analysis_idx on public.jobs (((payload->>'analysis_id')::uuid))
+  where kind = 'video_analyse' and status in ('queued','running','failed');
+
+-- Queue and analysis locks fence status/result installation, including reclaimed attempts.
+create function private.save_video_measurement(p_job uuid,p_worker text,p_attempt smallint,
+  p_state text,p_extractor text,p_measurements jsonb default null,p_error text default null)
+returns public.video_analyses language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  v_job public.jobs;
+  v_analysis public.video_analyses;
+begin
+  select job.* into v_job from public.jobs as job where job.id = p_job for update;
+  if v_job.id is null or v_job.kind <> 'video_analyse' or v_job.status <> 'running'
+    or v_job.worker is distinct from p_worker or v_job.attempts is distinct from p_attempt
+    or v_job.lease_until <= clock_timestamp() then
+    raise exception using errcode = '23514', message = 'Current video worker lease required';
+  end if;
+  select analysis.* into v_analysis from public.video_analyses as analysis
+    where analysis.id = (v_job.payload->>'analysis_id')::uuid
+      and analysis.media_id = (v_job.payload->>'media_id')::uuid for update;
+  if v_analysis.id is null then
+    raise exception using errcode = '23503', message = 'Matching video analysis required';
+  end if;
+  if v_job.lease_until <= clock_timestamp() then
+    raise exception using errcode = '23514', message = 'Current video worker lease required';
+  end if;
+  if p_state not in ('measuring','interpreting','failed') or p_state is null
+    or nullif(btrim(p_extractor),'') is null then
+    raise exception using errcode = '23514', message = 'Measurement state and extractor required';
+  end if;
+  -- A retry after evidence installation must not regress interpretation or reviewed results.
+  if v_analysis.status in ('interpreting','fitting','ready') then
+    if p_state = 'measuring' and v_analysis.extractor = p_extractor then return v_analysis; end if;
+    raise exception using errcode = '23514', message = 'Installed video evidence is immutable to measurement';
+  end if;
+  if p_state = 'interpreting' then
+    if v_analysis.status <> 'measuring'
+      or jsonb_typeof(p_measurements->'shots') is distinct from 'array'
+      or jsonb_typeof(p_measurements->'features') is distinct from 'array'
+      or jsonb_typeof(p_measurements->'keyframes') is distinct from 'array' then
+      raise exception using errcode = '23514', message = 'Complete measured evidence required';
+    end if;
+    if jsonb_array_length(p_measurements->'shots') = 0
+      or jsonb_array_length(p_measurements->'shots') <> jsonb_array_length(p_measurements->'features')
+      or jsonb_array_length(p_measurements->'shots') <> jsonb_array_length(p_measurements->'keyframes') then
+      raise exception using errcode = '23514', message = 'Evidence must cover every shot';
+    end if;
+  elsif p_state = 'failed' and nullif(btrim(p_error),'') is null then
+    raise exception using errcode = '23514', message = 'Safe measurement error required';
+  end if;
+  update public.video_analyses as analysis set status = p_state, extractor = p_extractor,
+    shots = case when p_state = 'interpreting' then p_measurements->'shots' else null end,
+    features = case when p_state = 'interpreting' then p_measurements->'features' else null end,
+    keyframes = case when p_state = 'interpreting' then p_measurements->'keyframes' else null end,
+    error = case when p_state = 'failed' then p_error else null end
+    where analysis.id = v_analysis.id returning analysis.* into v_analysis;
+  return v_analysis;
+end;
+$$;
+comment on function private.save_video_measurement(uuid,text,smallint,text,text,jsonb,text) is 'Fences analysis state and complete shot evidence to the matching unexpired video job attempt. Times are ms from MP4 start; geometry is normalised image space. Returns the analysis row and preserves installed evidence on retries.';
+create function public.save_video_measurement(p_job uuid,p_worker text,p_attempt smallint,
+  p_state text,p_extractor text,p_measurements jsonb default null,p_error text default null)
+returns public.video_analyses language plpgsql set search_path = '' as $$
+begin
+  return private.save_video_measurement(p_job,p_worker,p_attempt,p_state,p_extractor,p_measurements,p_error);
+end;
+$$;
+comment on function public.save_video_measurement(uuid,text,smallint,text,text,jsonb,text) is 'Backend-only status and result write for one video measurement attempt; returns durable evidence for interpretation without completing the queue job.';
