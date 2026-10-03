@@ -145,7 +145,7 @@ test('product actions retain context and transport supports keyboard seek and pl
   const productId = productUrl.pathname.split('/').at(-1);
   await page.getByRole('link', { name: 'Plan a show around this' }).click();
   await expect(page).toHaveURL(new RegExp(`/plan\\?product=${productId}$`));
-  await expect(page.getByText('No plan or list has been saved.', { exact: false })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Before we plan' })).toBeVisible();
   await page.goto(productUrl.toString());
   await page.getByRole('link', { name: 'Add to my list' }).click();
   await expect(page).toHaveURL(new RegExp(`/list\\?product=${productId}$`));

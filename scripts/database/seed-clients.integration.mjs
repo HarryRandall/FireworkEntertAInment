@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 import { supabase } from './runtime.mjs';
 import { effectTemplates } from '../../packages/fireworks/src/templates/index.ts';
+import { verifyPlannerInputs } from './planner-input.integration.mjs';
 import { loadTemplate } from '../../apps/web/lib/supabase/load-template.ts';
 
 const requireWeb = createRequire(new URL('../../apps/web/package.json', import.meta.url));
@@ -42,3 +43,5 @@ for (const persona of ['admin', 'owner', 'manager', 'supplier', 'other-owner', '
   assert.equal(signedOut.error, null);
 }
 console.log('Six local email personas signed in with the expected tenant and store boundaries.');
+
+await verifyPlannerInputs(client);
