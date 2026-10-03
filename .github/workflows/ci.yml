@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - development
+      - rebuild/main
   pull_request:
   workflow_dispatch:
     inputs:
@@ -220,6 +221,7 @@ jobs:
 
   deploy:
     name: Migrate then deploy production
+    # Production deployments must originate from refs/heads/main.
     if: >-
       github.ref == 'refs/heads/main' &&
       (github.event_name == 'push' ||

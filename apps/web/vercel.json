@@ -5,7 +5,9 @@
   "buildCommand": "pnpm build",
   "git": {
     "deploymentEnabled": {
-      "main": false
+      "main": false,
+      "rebuild/main": false,
+      "rebuild/**": false
     }
   }
 }

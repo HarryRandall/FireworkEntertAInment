@@ -1,5 +1,10 @@
 # ShowCrafter
 
+## Rebuild in progress
+
+The rebuild follows the build plan. Legacy rules in the skills are being replaced in
+1.4. Nothing on `rebuild/main` may be merged to `main` before the switch-over PR.
+
 Use British English, straight apostrophes and no em dashes. Preserve unrelated
 work. Follow the user's requested scope and keep commits focused.
 
