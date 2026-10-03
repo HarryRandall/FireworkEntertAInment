@@ -7,6 +7,7 @@ import {
   currentSection,
   visibleSections,
   shellNavigation,
+  identityVisibility,
 } from '../ui/shell/navigation.ts';
 
 for (const config of Object.values(areaConfigs)) {
@@ -30,3 +31,31 @@ for (const config of Object.values(areaConfigs)) {
     assert.equal(shellNavigation(config, config.href, { area: () => false }).section, undefined);
   });
 }
+
+test('server area permissions constrain navigation even when preview predicates allow more', () => {
+  const visibility = identityVisibility({ permittedAreas: ['account'] }, { area: () => true });
+  for (const config of Object.values(areaConfigs)) {
+    assert.equal(visibility.area(config.area), config.area === 'account');
+    assert.equal(visibleSections(config, visibility).length > 0, config.area === 'account');
+  }
+  assert.deepEqual(
+    visibleSections(areaConfigs.account, identityVisibility({ permittedAreas: [] })),
+    [],
+  );
+});
+
+test('preview predicates can narrow permitted areas and still filter items', () => {
+  const visibility = identityVisibility(
+    { permittedAreas: ['retailer', 'account'] },
+    {
+      area: (area) => area === 'retailer',
+      item: (item) => item.href === '/retailer',
+    },
+  );
+  assert.equal(visibility.area('account'), false);
+  assert.deepEqual(visibleSections(areaConfigs.retailer, visibility)[0].items, [
+    { label: 'Overview', href: '/retailer' },
+  ]);
+  const preview = identityVisibility(undefined);
+  for (const area of Object.keys(areaConfigs)) assert.equal(preview.area(area), true);
+});

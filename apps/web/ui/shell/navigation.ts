@@ -1,5 +1,11 @@
 /** Route matching and visibility shared by sidebar, rail and command search. */
-import type { AreaConfig, NavItem, NavSection, ShellVisibility } from './config/types';
+import type {
+  AreaConfig,
+  NavItem,
+  NavSection,
+  ShellVisibility,
+  ShellIdentity,
+} from './config/types';
 
 /** Finds a configured route without treating a neighbouring prefix as a match. */
 export function currentItem(config: AreaConfig, pathname: string): NavItem | undefined {
@@ -44,4 +50,18 @@ export function shellNavigation(
   const section = sections.find((item) => item.label === active.label) ?? sections.at(0);
   const title = currentItem(config, pathname)?.label ?? section?.label ?? config.label;
   return { sections, section, title };
+}
+
+/** Intersects server-permitted areas with optional preview presentation filters. */
+export function identityVisibility(
+  identity: Pick<ShellIdentity, 'permittedAreas'> | undefined,
+  visibility?: ShellVisibility,
+): ShellVisibility {
+  const permittedAreas = identity?.permittedAreas;
+  return {
+    area: (area) =>
+      (permittedAreas === undefined || permittedAreas.includes(area)) &&
+      visibility?.area?.(area) !== false,
+    item: visibility?.item,
+  };
 }
