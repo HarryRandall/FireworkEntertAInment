@@ -1,17 +1,30 @@
+/** Built-in launch-tail visual tuning selected by the authored launch tail name. */
 import type { Launch } from '../schema/index';
 export interface LaunchStyle {
+  /** Optional sRGB head colour; omission uses the simulated burst colour. */
   colour?: string;
+  /** Whether the launch head uses its sampled star colour instead of `colour`. */
   star?: boolean;
+  /** Head quad size multiplier in renderer pixels. */
   head: number;
+  /** Head alpha multiplier in the normalised [0, 1] opacity range. */
   headAlpha: number;
+  /** Horizontal sinusoidal displacement amplitude in metres. */
   jitter?: number;
+  /** Horizontal launch wobble amplitude in metres. */
   wobble?: number;
+  /** Whether the launch path includes a circular spiral offset. */
   spiral?: boolean;
+  /** Spiral radius in metres. */
   spiralR?: number;
+  /** Spiral angular velocity in radians per second. */
   spiralRate?: number;
+  /** Whether the spiral radius remains at its authored size through the climb. */
   spiralKeep?: boolean;
+  /** Optional launch strobe rate in hertz. */
   strobe?: number;
 }
+/** Maps each stored launch tail to its prototype-derived visual controls. */
 export const LAUNCH_STYLES: Readonly<Record<Launch['tail'], LaunchStyle>> = {
   gold: { colour: '#ffb45a', head: 0.7, headAlpha: 1 },
   silver: { colour: '#ffffff', head: 1.1, headAlpha: 1 },

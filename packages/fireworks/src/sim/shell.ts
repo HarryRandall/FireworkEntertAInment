@@ -1,3 +1,4 @@
+/** Stateless simulation entry point for launches, shell breaks and ground effects. */
 import { resolveDesign, type Design } from '../schema/index';
 import { brightnessAt, colourAt, mix, rgb, type Vec3 } from './colour';
 import { fillCore } from './core';
@@ -11,10 +12,17 @@ import { starPos } from './motion';
 import { ParticleWriter, type Particles } from './particles';
 
 export interface SimulationOptions extends ShotPlacement {
+  /** Optional deterministic seed override; zero retains the stored seed fallback. */
   seed?: number;
 }
 
-/** Stateless heads and discrete events. Sprays and smoke are added in PR 2.4. */
+/**
+ * Simulates fresh particle arrays for a design at a firing-relative time.
+ * @param design Validated design with stored units.
+ * @param time_s Seconds from firing.
+ * @param options Optional seed, horizontal metres and muzzle height in metres.
+ * @returns Tightly sized particle attributes for the requested instant.
+ */
 export function simulate(
   design: Design,
   time_s: number,

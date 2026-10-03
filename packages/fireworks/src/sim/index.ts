@@ -1,3 +1,4 @@
+/** Public DOM-free firework simulation API. */
 export { simulate, type SimulationOptions } from './shell';
 export { shotDuration } from './timing';
 export { ParticleKind, type Particles } from './particles';
