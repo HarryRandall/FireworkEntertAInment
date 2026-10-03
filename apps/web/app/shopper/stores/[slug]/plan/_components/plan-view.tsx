@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import type { StorePage } from '@/lib/shopper/contracts';
 import type { SavedPlan } from '@/lib/shopper/planner/contracts';
 import { showName } from '@/lib/shopper/planner/names';
+import { AddListButton } from '@/ui/shopper/add-list-button';
 import { MusicPicker } from './music-picker';
 import { PlanEdits } from './plan-edits';
 import { currentCandidate } from '@/lib/shopper/planner/progress';
@@ -110,21 +111,28 @@ export function PlanView({
           Show me something different
         </Button>
         {pending ? <p role="status">Updating your show...</p> : null}
-        <PlanActionPlaceholders />
+        <SavePlanList store={store} candidate={candidate} pending={pending} />
       </section>
     </div>
   );
 }
-/** Keeps the unavailable list action visible without pretending to save. */
-function PlanActionPlaceholders() {
+
+function SavePlanList({
+  store,
+  candidate,
+  pending,
+}: {
+  store: StorePage;
+  candidate: SavedPlan['plan_candidates'][number];
+  pending: boolean;
+}) {
   return (
-    <div className="grid gap-2">
-      <div className="flex flex-wrap gap-2">
-        <Button variant="outline" disabled>
-          Save to list
-        </Button>
-      </div>
-      <p className="text-muted-foreground text-xs">Saving to a list is not available yet.</p>
-    </div>
+    <AddListButton
+      store={store.store.id}
+      slug={store.store.slug}
+      candidate={candidate.id}
+      revision={candidate.revision}
+      disabled={pending}
+    />
   );
 }
