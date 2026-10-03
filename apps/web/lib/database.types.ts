@@ -6442,6 +6442,20 @@ export type Database = {
         Args: { credits: number; idempotency_key: string; organisation: string }
         Returns: number
       }
+      install_music_result: {
+        Args: {
+          p_algorithm: string
+          p_analysis: Json
+          p_attempt: number
+          p_audio_sha256: string
+          p_bytes: number
+          p_job: string
+          p_mime: string
+          p_waveform: Json
+          p_worker: string
+        }
+        Returns: string
+      }
       publish_effect_version: {
         Args: { p_version_id: string }
         Returns: undefined
