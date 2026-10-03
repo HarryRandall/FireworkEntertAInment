@@ -18,7 +18,7 @@
     "audit:ui": "pnpm --filter @showcrafter/web audit:ui",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm format:check && pnpm test:lint-rules && pnpm test:database-tooling && pnpm test:packages && pnpm knip && pnpm --filter @showcrafter/web check && pnpm test:browser",
+    "check": "pnpm format:check && pnpm db:documents --check && pnpm db:duration-fixtures --check && pnpm test:lint-rules && pnpm test:database-tooling && pnpm test:packages && pnpm knip && pnpm --filter @showcrafter/web check && pnpm test:browser",
     "test:analyser": "services/music-analyser/.venv/bin/python -m unittest discover -s services/music-analyser/tests -p '*test*.py'",
     "db:start": "node scripts/database/local.mjs start",
     "db:stop": "node scripts/database/local.mjs stop",
@@ -33,7 +33,9 @@
     "db:setup": "pnpm db:start && pnpm db:reset",
     "test:packages": "pnpm --filter @showcrafter/fireworks check && pnpm --filter @showcrafter/planner check",
     "knip": "knip",
-    "test:browser": "tsc -p tests/browser/tsconfig.json && playwright test"
+    "test:browser": "tsc -p tests/browser/tsconfig.json && playwright test",
+    "db:documents": "node scripts/database/documents.mjs",
+    "db:duration-fixtures": "node --import ./scripts/register-typescript.mjs scripts/database/duration-fixtures.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.11.1",
