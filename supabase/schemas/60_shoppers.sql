@@ -15,10 +15,12 @@ create table public.plan_sessions (
   age_confirmed_at timestamptz,
   solver text not null check (length(solver) > 0),
   input_hash text not null check (length(input_hash) > 0),
+  solver_snapshot jsonb check (jsonb_typeof(solver_snapshot) = 'object'),
   status text not null default 'open' check (status in ('open','listed','abandoned')),
   credits_reservation_id uuid,
   created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
+comment on column public.plan_sessions.solver_snapshot is 'Trusted immutable solver input for reproducible alternatives; contains only public stock and safety facts.';
 comment on column public.plan_sessions.credits_reservation_id is 'Nullable UUID reference to public.credit_reservations(id).';
 create table public.plan_candidates (
   id uuid primary key default gen_random_uuid(),
@@ -150,10 +152,14 @@ create policy privacy_requests_insert on public.privacy_requests for insert to a
   with check (private.owns_shopper(shopper_id) and status = 'pending' and result_media_id is null);
 
 -- Session creation and its credit settlement share a transaction.
+-- Abuse budget: three starts per shopper, with one token earned per 20 minutes.
 create function private.start_plan_session(p_store uuid,p_answers jsonb,p_solver text,p_input_hash text,p_qr_code uuid,p_age_confirmed_at timestamptz)
 returns uuid language plpgsql security definer set search_path = '' as $$
 #variable_conflict error
 declare
+  -- Product abuse budget: three starts, with one token earned per 1,200 seconds.
+  v_start_capacity constant int := 3;
+  v_start_refill_seconds constant int := 1200;
   v_session uuid;
   v_organisation uuid;
 begin
@@ -170,6 +176,9 @@ begin
   end if;
   if p_age_confirmed_at is null or p_age_confirmed_at > now() then
     raise exception using errcode = '23514', message = 'Age confirmation required';
+  end if;
+  if not private.consume_rate_limit('planner:start:' || private.uid(),v_start_capacity,1.0 / v_start_refill_seconds) then
+    raise exception using errcode = 'P0001', message = 'Planner rate limit reached';
   end if;
   insert into public.plan_sessions(shopper_id,store_id,qr_code_id,answers,solver,input_hash,age_confirmed_at)
     values (private.uid(),p_store,p_qr_code,p_answers,p_solver,p_input_hash,p_age_confirmed_at) returning id into v_session;

@@ -3098,10 +3098,12 @@ create table public.plan_sessions (
   age_confirmed_at timestamptz,
   solver text not null check (length(solver) > 0),
   input_hash text not null check (length(input_hash) > 0),
+  solver_snapshot jsonb check (jsonb_typeof(solver_snapshot) = 'object'),
   status text not null default 'open' check (status in ('open','listed','abandoned')),
   credits_reservation_id uuid,
   created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
+comment on column public.plan_sessions.solver_snapshot is 'Trusted immutable solver input for reproducible alternatives; contains only public stock and safety facts.';
 comment on column public.plan_sessions.credits_reservation_id is 'Nullable UUID reference to public.credit_reservations(id).';
 create table public.plan_candidates (
   id uuid primary key default gen_random_uuid(),
@@ -3233,10 +3235,14 @@ create policy privacy_requests_insert on public.privacy_requests for insert to a
   with check (private.owns_shopper(shopper_id) and status = 'pending' and result_media_id is null);
 
 -- Session creation and its credit settlement share a transaction.
+-- Abuse budget: three starts per shopper, with one token earned per 20 minutes.
 create function private.start_plan_session(p_store uuid,p_answers jsonb,p_solver text,p_input_hash text,p_qr_code uuid,p_age_confirmed_at timestamptz)
 returns uuid language plpgsql security definer set search_path = '' as $$
 #variable_conflict error
 declare
+  -- Product abuse budget: three starts, with one token earned per 1,200 seconds.
+  v_start_capacity constant int := 3;
+  v_start_refill_seconds constant int := 1200;
   v_session uuid;
   v_organisation uuid;
 begin
@@ -3253,6 +3259,9 @@ begin
   end if;
   if p_age_confirmed_at is null or p_age_confirmed_at > now() then
     raise exception using errcode = '23514', message = 'Age confirmation required';
+  end if;
+  if not private.consume_rate_limit('planner:start:' || private.uid(),v_start_capacity,1.0 / v_start_refill_seconds) then
+    raise exception using errcode = 'P0001', message = 'Planner rate limit reached';
   end if;
   insert into public.plan_sessions(shopper_id,store_id,qr_code_id,answers,solver,input_hash,age_confirmed_at)
     values (private.uid(),p_store,p_qr_code,p_answers,p_solver,p_input_hash,p_age_confirmed_at) returning id into v_session;
@@ -4454,6 +4463,118 @@ begin
 end;
 $$;
 comment on function public.video_fit_step(uuid,text,smallint,text,jsonb) is 'Backend-only fitting lifecycle for an unexpired matching queue attempt; preserves measured evidence and ready results.';
+
+-- Fixed annual windows are evaluated in the shop's local calendar. Unknown feast rules fail closed.
+create function private.planner_sale_open(p_store uuid)
+returns boolean language sql stable security definer set search_path = '' as $$
+  select store.licence = 'all_year' or exists (
+    select from public.sale_periods as period
+    where period.market = store.market and (period.region is null or period.region = store.region)
+      and period.rule->>'type' = 'fixed'
+      and case when period.rule->>'from' <= period.rule->>'to'
+        then to_char(now() at time zone store.timezone,'MM-DD') between period.rule->>'from' and period.rule->>'to'
+        else to_char(now() at time zone store.timezone,'MM-DD') >= period.rule->>'from'
+          or to_char(now() at time zone store.timezone,'MM-DD') <= period.rule->>'to' end)
+  from public.stores as store join public.markets as market on market.code = store.market
+  where store.id = p_store;
+$$;
+comment on function private.planner_sale_open(uuid) is 'Checks an all-year store licence or a fixed annual sale window in store time; unsupported feast calendars remain closed.';
+
+create function private.planner_context(p_store uuid)
+returns jsonb language sql stable security definer set search_path = '' as $$
+  select jsonb_build_object(
+    'market',jsonb_build_object('code',market.code,'currency',market.currency,'min_age',market.min_age,'enabled',market.enabled),
+    'sale',jsonb_build_object('open',private.planner_sale_open(store.id),'evaluated_at',to_char(now() at time zone 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"')),
+    'bands',(select jsonb_agg(jsonb_build_object('market',band.market,'band',band.band,
+      'max_distance_m',band.max_distance_m,'allowed_categories',band.allowed_categories))
+      from public.safety_bands as band where band.market = market.code),
+    'products',coalesce((select jsonb_agg(jsonb_build_object(
+      'product_id',product.id,'store_id',store.id,'current_version_id',product.current_version_id,
+      'status',product.status,'kind',product.kind,'price_minor',visible.price_minor,'currency',visible.currency,
+      'stock_qty',visible.stock_qty,'hidden',false,'min_safety_distance_m',product.min_safety_distance_m,
+      'noise_level',product.noise_level,'safety_confirmed',product.safety_confirmed_at is not null,
+      'has_bangs',product.has_bangs,'has_crackle',product.has_crackle,'has_whistle',product.has_whistle,
+      'duration_ms',product.duration_ms,'energy',product.energy,'colours',product.colours,'tags',product.tags,
+      'product_market',jsonb_build_object('market',listing.market,'allowed',listing.allowed,
+        'legal_category',listing.legal_category,'min_age',listing.min_age,'confirmed',listing.confirmed_at is not null)))
+      from private.shopper_store_products(store.id) as visible
+      join public.products as product on product.id = visible.product_id
+      join public.product_markets as listing on listing.product_id = product.id and listing.market = market.code),'[]'::jsonb))
+  from public.stores as store join public.markets as market on market.code = store.market
+  where store.id = p_store and private.store_page(store.id) is not null;
+$$;
+comment on function private.planner_context(uuid) is 'Reads public solver facts, current sale eligibility and market garden bands for a visible store; excludes billing and private retailer facts.';
+create function public.planner_context(p_store uuid)
+returns jsonb language sql stable set search_path = '' as $$ select private.planner_context(p_store); $$;
+comment on function public.planner_context(uuid) is 'Returns the restricted public planner input slice for one open store.';
+
+-- Only the trusted solver boundary may author money, clocks and candidates.
+create function private.persist_planner_result(p_shopper uuid,p_session uuid,p_store uuid,p_snapshot jsonb,
+  p_hash text,p_solver text,p_candidate jsonb,p_qr uuid default null)
+returns uuid language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  -- Product choice: three starts per hour, alternatives burst six and refill once per minute.
+  v_start_capacity constant int := 3;
+  v_start_refill_seconds constant int := 1200;
+  v_alternative_capacity constant int := 6;
+  v_alternative_refill_seconds constant int := 60;
+  v_existing public.plan_sessions;
+  v_candidate uuid;
+  v_rank int := (p_candidate->>'rank')::int;
+  v_organisation uuid;
+begin
+  if not exists (select from public.profiles as profile where profile.id = p_shopper and profile.status = 'active') then
+    raise exception using errcode = '42501',message = 'Active shopper required';
+  end if;
+  -- Serialise retries of the same request before looking for its session.
+  perform pg_advisory_xact_lock(hashtextextended(p_session::text,0));
+  select session.* into v_existing from public.plan_sessions as session where session.id = p_session for update;
+  if v_existing.id is not null then
+    if v_existing.shopper_id <> p_shopper or v_existing.store_id <> p_store
+      or v_existing.input_hash <> p_hash or v_existing.solver <> p_solver or (v_rank > 1 and v_existing.solver_snapshot is distinct from p_snapshot) then
+      raise exception using errcode = '42501',message = 'Session snapshot mismatch';
+    end if;
+    select candidate.id into v_candidate from public.plan_candidates as candidate
+      where candidate.session_id = p_session and candidate.rank = v_rank;
+    if v_candidate is not null then return v_candidate; end if;
+    if v_rank <> (select coalesce(max(candidate.rank),0) + 1 from public.plan_candidates as candidate where candidate.session_id = p_session) then
+      raise exception using errcode = '23514',message = 'Next candidate rank required';
+    end if;
+    if not private.consume_rate_limit('planner:alternative:' || p_shopper,v_alternative_capacity,1.0 / v_alternative_refill_seconds) then
+      raise exception using errcode = 'P0001',message = 'Planner rate limit reached';
+    end if;
+  else
+    select store.organisation_id into v_organisation from public.stores as store where store.id = p_store;
+    if private.store_page(p_store) is null or not private.planner_sale_open(p_store) or v_rank <> 1
+      or p_snapshot->'age_confirmation'->>'confirmed_at' is null
+      or (p_snapshot->'age_confirmation'->>'confirmed_at')::timestamptz > now()
+      or (p_qr is not null and not exists (select from public.qr_codes as code
+        where code.id = p_qr and code.organisation_id = v_organisation
+          and (code.store_id is null or code.store_id = p_store) and code.status = 'live')) then
+      raise exception using errcode = '23514',message = 'Eligible store, age and QR required';
+    end if;
+    if not private.consume_rate_limit('planner:start:' || p_shopper,v_start_capacity,1.0 / v_start_refill_seconds) then
+      raise exception using errcode = 'P0001',message = 'Planner rate limit reached';
+    end if;
+    insert into public.plan_sessions(id,shopper_id,store_id,qr_code_id,answers,age_confirmed_at,solver,input_hash,solver_snapshot)
+      values (p_session,p_shopper,p_store,p_qr,p_snapshot->'answers',
+        (p_snapshot->'age_confirmation'->>'confirmed_at')::timestamptz,p_solver,p_hash,p_snapshot);
+    perform private.charge_plan_session(p_session);
+  end if;
+  insert into public.plan_candidates(session_id,rank,mood,cues,total_minor,currency,duration_ms,scores,picked_at)
+    values (p_session,v_rank,p_candidate->>'mood',p_candidate->'cues',(p_candidate->>'total_minor')::bigint,
+      p_candidate->>'currency',(p_candidate->>'duration_ms')::int,p_candidate->'scores',clock_timestamp()) returning id into v_candidate;
+  return v_candidate;
+end;
+$$;
+comment on function private.persist_planner_result(uuid,uuid,uuid,jsonb,text,text,jsonb,uuid) is 'Atomically persists a trusted solver snapshot and next candidate, rate limiting starts and alternatives; retries reuse the result and only a new session spends one credit.';
+create function public.persist_planner_result(p_shopper uuid,p_session uuid,p_store uuid,p_snapshot jsonb,
+  p_hash text,p_solver text,p_candidate jsonb,p_qr uuid default null)
+returns uuid language sql set search_path = '' as $$
+  select private.persist_planner_result(p_shopper,p_session,p_store,p_snapshot,p_hash,p_solver,p_candidate,p_qr);
+$$;
+comment on function public.persist_planner_result(uuid,uuid,uuid,jsonb,text,text,jsonb,uuid) is 'Service-only atomic boundary for server-verified shopper plans; browser callers cannot author candidates.';
 
 -- Retailer integration metadata; credentials live in Vault and API keys are hashes.
 create table public.integrations (

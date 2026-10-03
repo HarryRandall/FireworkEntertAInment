@@ -4363,6 +4363,7 @@ export type Database = {
           qr_code_id: string | null
           shopper_id: string
           solver: string
+          solver_snapshot: Json | null
           status: string
           store_id: string
           updated_at: string
@@ -4377,6 +4378,7 @@ export type Database = {
           qr_code_id?: string | null
           shopper_id: string
           solver: string
+          solver_snapshot?: Json | null
           status?: string
           store_id: string
           updated_at?: string
@@ -4391,6 +4393,7 @@ export type Database = {
           qr_code_id?: string | null
           shopper_id?: string
           solver?: string
+          solver_snapshot?: Json | null
           status?: string
           store_id?: string
           updated_at?: string
@@ -6468,6 +6471,20 @@ export type Database = {
         }
         Returns: string
       }
+      persist_planner_result: {
+        Args: {
+          p_candidate: Json
+          p_hash: string
+          p_qr?: string
+          p_session: string
+          p_shopper: string
+          p_snapshot: Json
+          p_solver: string
+          p_store: string
+        }
+        Returns: string
+      }
+      planner_context: { Args: { p_store: string }; Returns: Json }
       product_for_store: {
         Args: { p_product: string; p_slug: string }
         Returns: Json
