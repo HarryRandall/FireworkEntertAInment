@@ -1181,3 +1181,18 @@ import/job deduplication, pending and analysed solves, stale writes, immutable
 pins, historical audio, saved-show offsets, store visibility, withdrawn tracks
 and the one-credit invariant. Provider responses and audio are synthetic in the
 web and browser tests.
+
+## Owned list additions and account reads
+
+`add_shopper_list` derives sale validity and a sixteen-digit till identifier, snapshots
+current store prices and serialises additions for one shopper. Product additions reuse
+an open store list; repeated request UUIDs are idempotent. Plan saves check the displayed
+candidate revision and save both the list and an owned show with the exact soundtrack
+pin. Private replay records have no API table privileges.
+
+`set_list_quantity` checks the active owner, current stock and the list's inclusive
+validity in store time. Existing unit prices never change; zero removes an item. The
+account RPC enriches only owned snapshots with readable shop and product names and
+marks expired open lists before the maintenance job runs. Maintenance now expires
+lists using their store timezone. See [shopper lists](shopper-lists.md) for decisions,
+local checks and remaining visual evidence.

@@ -67,3 +67,14 @@ staff and membership facts under RLS. Authentication callbacks exchange PKCE cod
 and accept only same-origin destinations. Email upgrade calls `updateUser` on the
 anonymous session; it never signs in as a newly created email user. Invitation
 acceptance delegates the multi-row write to its fenced database RPC.
+
+## Shopper list and account surfaces
+
+The list domain in `lib/shopper/lists` validates owned account payloads, computes exact
+minor-unit totals and handles caller-bound mutations. Shared list controls live in
+`ui/shopper` so the store till page and workspace list detail use the same behaviour.
+`/account` uses the existing permanent-identity boundary and workspace shell; anonymous
+shoppers use the store list page and its existing identity-preserving email upgrade.
+Saved show playback reads immutable cues and pinned audio through the existing owned
+store/show readers. Privacy controls acknowledge pending requests without claiming
+completion. See [shopper lists](shopper-lists.md) for the complete local evidence.
