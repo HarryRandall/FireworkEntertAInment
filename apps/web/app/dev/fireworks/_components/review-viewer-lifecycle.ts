@@ -1,6 +1,13 @@
 /** Cancellable review preparation; neither still capture nor readiness waits for audio or display frames. */
 import type { RefObject, Dispatch, SetStateAction } from 'react';
-import { type Viewer, PosterRenderer, buildPlayer, reviewTime } from '@showcrafter/fireworks/view';
+import {
+  type Viewer,
+  type PosterRenderer,
+  poster,
+  disposePosters,
+  buildPlayer,
+  reviewTime,
+} from '@showcrafter/fireworks/view';
 import { mountPosters } from './review-posters';
 import { entries } from './review-catalogue';
 import type { ReviewState } from './review-state';
@@ -23,8 +30,21 @@ export function mountReviewViewer(
   setters: ReviewSetters,
   viewer: RefObject<Viewer | null>,
   createViewer: () => Viewer,
-  createPosters: () => Pick<PosterRenderer, 'capture' | 'dispose'> = () =>
-    new PosterRenderer(THUMB_WIDTH_PX, THUMB_HEIGHT_PX, viewer.current?.options.forceLdr),
+  createPosters: () => Pick<PosterRenderer, 'capture' | 'dispose'> = () => ({
+    capture: (design, time_s, options) =>
+      poster(null, design, {
+        ...options,
+        t: time_s,
+        width: THUMB_WIDTH_PX,
+        height: THUMB_HEIGHT_PX,
+        forceLdr: viewer.current?.options.forceLdr ?? false,
+      }),
+    dispose: () => {
+      disposePosters().catch((cause: unknown) => {
+        console.error('Poster cleanup failed', cause);
+      });
+    },
+  }),
 ) {
   const { setReady, setError, setPosters, setState, setSelected } = setters;
   let rig: Viewer | null = null;

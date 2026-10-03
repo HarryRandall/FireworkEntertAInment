@@ -7,6 +7,7 @@ import { Viewer } from '../src/view/viewer.ts';
 import { ViewerSound } from '../src/view/sound/scheduler.ts';
 import { SETTINGS } from '../src/view/settings.ts';
 import { FrameTimes } from '../src/view/frame-times.ts';
+import { developedTime } from '../src/poster/moment.ts';
 import { entries } from '../../../apps/web/app/dev/fireworks/_components/review-catalogue.ts';
 import { mountReviewViewer } from '../../../apps/web/app/dev/fireworks/_components/review-viewer-lifecycle.ts';
 
@@ -40,6 +41,7 @@ function mount(Context) {
   sound.listen();
   const viewer = Object.create(Viewer.prototype);
   const captures = [];
+  const captureOptions = [];
   Object.assign(viewer, {
     container: new Element('div'),
     listeners: new Set(),
@@ -81,8 +83,9 @@ function mount(Context) {
     captureStarted = resolve;
   });
   const posterRenderer = {
-    capture(design) {
+    capture(design, time, options) {
       captures.push(design);
+      captureOptions.push({ time, options });
       captureStarted();
       return encoded;
     },
@@ -129,6 +132,7 @@ function mount(Context) {
     readies,
     errors,
     captures,
+    captureOptions,
     firstCapture,
     finishCapture: () => finishCapture(new Blob(['poster'], { type: 'image/png' })),
     posterDisposed: () => posterDisposed,
@@ -223,6 +227,13 @@ test(
         rig.captures,
         entries.map((entry) => entry.design),
       );
+      for (const [index, entry] of entries.entries()) {
+        const capture = rig.captureOptions[index];
+        assert.equal(capture.time, developedTime(entry.design), entry.key);
+        if (entry.group === 'Rockets and candles')
+          assert.equal(capture.options.framing.position[1], 1.7, entry.key);
+        else assert.deepEqual(capture.options, {}, entry.key);
+      }
       const urls = Object.values(rig.posters());
       assert.equal(urls.length, entries.length);
       assert.equal((await fetch(urls[0])).status, 200);
