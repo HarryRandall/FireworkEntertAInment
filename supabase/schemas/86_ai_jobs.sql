@@ -177,3 +177,57 @@ begin
 end;
 $$;
 comment on function public.renew_job_lease(uuid,text,smallint) is 'Renews the current trusted worker attempt and returns its lease expiry.';
+
+-- One active analysis per shared track prevents duplicate workers and provider fetches.
+create unique index music_jobs_active_track_idx on public.jobs (((payload->>'track_id')::uuid))
+  where kind = 'music_analyse' and status in ('queued','running','failed');
+
+-- Install audio metadata and shared features under the same fenced queue attempt.
+create function private.install_music_result(p_job uuid,p_worker text,p_attempt smallint,
+  p_algorithm text,p_analysis jsonb,p_audio_sha256 text,p_bytes bigint,p_mime text,p_waveform jsonb)
+returns uuid language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  v_job public.jobs;
+  v_track uuid;
+  v_media uuid;
+  v_analysis uuid;
+  v_path text;
+  -- Stored track durations use integer milliseconds; analysis clocks use seconds.
+  v_ms_per_second constant integer := 1000;
+  v_duration integer := round((p_analysis->>'duration_seconds')::numeric * v_ms_per_second);
+begin
+  select job.* into v_job from public.jobs as job where job.id = p_job for update;
+  if v_job.id is null or v_job.kind <> 'music_analyse' or v_job.status <> 'running'
+    or v_job.worker is distinct from p_worker or v_job.attempts is distinct from p_attempt
+    or v_job.lease_until <= clock_timestamp() then
+    raise exception using errcode = '23514', message = 'Current music worker lease required';
+  end if;
+  v_track := (v_job.payload->>'track_id')::uuid;
+  perform track.id from public.music_tracks as track where track.id = v_track and track.provider = 'jamendo' for update;
+  if not found then raise exception using errcode = '23503', message = 'Jamendo track required'; end if;
+  -- A blocked track lock may outlive the lease checked before acquiring it.
+  if v_job.lease_until <= clock_timestamp() then
+    raise exception using errcode = '23514', message = 'Current music worker lease required';
+  end if;
+  v_path := v_track::text || '/' || p_audio_sha256;
+  insert into public.media(bucket,path,kind,mime,bytes,sha256,duration_ms)
+    values ('audio',v_path,'audio',p_mime,p_bytes,p_audio_sha256,v_duration)
+    on conflict (bucket,path) do update set duration_ms = excluded.duration_ms
+    returning id into v_media;
+  v_analysis := private.save_music_analysis(v_track,p_algorithm,p_analysis,p_audio_sha256);
+  update public.music_tracks set audio_media_id = v_media,duration_ms = v_duration,
+    bpm = (p_analysis->>'tempo_bpm')::numeric,waveform = p_waveform where id = v_track;
+  return v_analysis;
+end;
+$$;
+comment on function private.install_music_result(uuid,text,smallint,text,jsonb,text,bigint,text,jsonb) is 'Atomically installs content-addressed audio metadata, immutable shared analysis and track display facts for the current music job attempt; returns the analysis UUID.';
+create function public.install_music_result(p_job uuid,p_worker text,p_attempt smallint,
+  p_algorithm text,p_analysis jsonb,p_audio_sha256 text,p_bytes bigint,p_mime text,p_waveform jsonb)
+returns uuid language plpgsql set search_path = '' as $$
+begin
+  -- Keep the public privilege boundary explicit rather than using SQL inlining.
+  return private.install_music_result(p_job,p_worker,p_attempt,p_algorithm,p_analysis,p_audio_sha256,p_bytes,p_mime,p_waveform);
+end;
+$$;
+comment on function public.install_music_result(uuid,text,smallint,text,jsonb,text,bigint,text,jsonb) is 'Backend-only fenced music result installation; analysis times are seconds and waveform peaks are normalised amplitudes.';

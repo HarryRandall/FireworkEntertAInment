@@ -64,7 +64,7 @@ ANCHOR_POST_SEC = 4.0
 # event, so a small tolerance is needed.
 FINALE_BUILDUP_TOLERANCE_SEC = 3.0
 
-# FIR-39 pragmatic tuning: keep musical anchors useful for choreography
+# Choreography tuning: keep musical anchors useful for choreography
 # instead of marking every local loudness peak as a climax.
 KEY_MOMENT_DISTANCE_SEC = 6.0
 CLIMAX_TARGET_SECONDS = 55.0
@@ -77,8 +77,8 @@ PRE_CHORUS_MAX_DURATION_SEC = 24.0
 MIN_SPECTRAL_BEATS = 8
 MIN_SPECTRAL_DURATION_SEC = 20.0
 
-# The Modal image has 4 GiB of memory and librosa decodes to an in-memory
-# float waveform before computing substantially larger feature matrices.
+# Librosa decodes to an in-memory float waveform before computing
+# substantially larger feature matrices.
 # Bound both the input duration and decoded waveform independently so a small,
 # low-bitrate upload cannot expand into an unbounded analysis workload.
 TARGET_SAMPLE_RATE = 22050

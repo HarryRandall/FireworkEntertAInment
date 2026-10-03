@@ -1,0 +1,977 @@
+{
+  "$defs": {
+    "AnalysisMetaModel": {
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "const": "fast",
+          "title": "Mode",
+          "type": "string"
+        },
+        "runner_version": {
+          "minLength": 1,
+          "title": "Runner Version",
+          "type": "string"
+        },
+        "timings_ms": {
+          "$ref": "#/$defs/AnalysisTimingsModel"
+        }
+      },
+      "required": ["mode", "runner_version", "timings_ms"],
+      "title": "AnalysisMetaModel",
+      "type": "object"
+    },
+    "AnalysisTimingsModel": {
+      "additionalProperties": false,
+      "properties": {
+        "download_ms": {
+          "minimum": 0.0,
+          "title": "Download Ms",
+          "type": "number"
+        },
+        "decode_ms": {
+          "minimum": 0.0,
+          "title": "Decode Ms",
+          "type": "number"
+        },
+        "beat_ms": {
+          "minimum": 0.0,
+          "title": "Beat Ms",
+          "type": "number"
+        },
+        "energy_ms": {
+          "minimum": 0.0,
+          "title": "Energy Ms",
+          "type": "number"
+        },
+        "onset_ms": {
+          "minimum": 0.0,
+          "title": "Onset Ms",
+          "type": "number"
+        },
+        "section_ms": {
+          "minimum": 0.0,
+          "title": "Section Ms",
+          "type": "number"
+        },
+        "profile_ms": {
+          "minimum": 0.0,
+          "title": "Profile Ms",
+          "type": "number"
+        },
+        "validation_ms": {
+          "minimum": 0.0,
+          "title": "Validation Ms",
+          "type": "number"
+        },
+        "total_ms": {
+          "minimum": 0.0,
+          "title": "Total Ms",
+          "type": "number"
+        }
+      },
+      "required": [
+        "download_ms",
+        "decode_ms",
+        "beat_ms",
+        "energy_ms",
+        "onset_ms",
+        "section_ms",
+        "profile_ms",
+        "validation_ms",
+        "total_ms"
+      ],
+      "title": "AnalysisTimingsModel",
+      "type": "object"
+    },
+    "AnchorWindowModel": {
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": ["climax", "buildup"],
+          "title": "Type",
+          "type": "string"
+        },
+        "anchor_time": {
+          "minimum": 0.0,
+          "title": "Anchor Time",
+          "type": "number"
+        },
+        "start": {
+          "minimum": 0.0,
+          "title": "Start",
+          "type": "number"
+        },
+        "end": {
+          "minimum": 0.0,
+          "title": "End",
+          "type": "number"
+        },
+        "energy": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Energy"
+        },
+        "energy_rise": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Energy Rise"
+        }
+      },
+      "required": ["type", "anchor_time", "start", "end"],
+      "title": "AnchorWindowModel",
+      "type": "object"
+    },
+    "BlendWeightsModel": {
+      "additionalProperties": false,
+      "properties": {
+        "user": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "User",
+          "type": "number"
+        },
+        "music": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Music",
+          "type": "number"
+        }
+      },
+      "required": ["user", "music"],
+      "title": "BlendWeightsModel",
+      "type": "object"
+    },
+    "BuildupModel": {
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "minimum": 0.0,
+          "title": "Start",
+          "type": "number"
+        },
+        "peak": {
+          "minimum": 0.0,
+          "title": "Peak",
+          "type": "number"
+        },
+        "duration": {
+          "minimum": 0.0,
+          "title": "Duration",
+          "type": "number"
+        },
+        "energy_rise": {
+          "minimum": 0.0,
+          "title": "Energy Rise",
+          "type": "number"
+        }
+      },
+      "required": ["start", "peak", "duration", "energy_rise"],
+      "title": "BuildupModel",
+      "type": "object"
+    },
+    "DerivedFeaturesModel": {
+      "additionalProperties": false,
+      "properties": {
+        "finale_window": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/FinaleWindowModel"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "quietest_section_index": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Quietest Section Index"
+        },
+        "highest_energy_section_index": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Highest Energy Section Index"
+        },
+        "repeated_chorus_count": {
+          "minimum": 0,
+          "title": "Repeated Chorus Count",
+          "type": "integer"
+        },
+        "section_rank_by_energy": {
+          "items": {
+            "minimum": 0,
+            "type": "integer"
+          },
+          "title": "Section Rank By Energy",
+          "type": "array"
+        },
+        "anchor_windows": {
+          "items": {
+            "$ref": "#/$defs/AnchorWindowModel"
+          },
+          "title": "Anchor Windows",
+          "type": "array"
+        }
+      },
+      "required": [
+        "finale_window",
+        "quietest_section_index",
+        "highest_energy_section_index",
+        "repeated_chorus_count",
+        "section_rank_by_energy",
+        "anchor_windows"
+      ],
+      "title": "DerivedFeaturesModel",
+      "type": "object"
+    },
+    "DescriptorModel": {
+      "additionalProperties": false,
+      "properties": {
+        "energy": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Energy",
+          "type": "number"
+        },
+        "drive": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Drive",
+          "type": "number"
+        },
+        "brightness": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Brightness",
+          "type": "number"
+        },
+        "warmth": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Warmth",
+          "type": "number"
+        },
+        "tension": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Tension",
+          "type": "number"
+        },
+        "grandeur": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Grandeur",
+          "type": "number"
+        },
+        "playfulness": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Playfulness",
+          "type": "number"
+        },
+        "precision": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Precision",
+          "type": "number"
+        },
+        "dynamic_range": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Dynamic Range",
+          "type": "number"
+        },
+        "bass_impact": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Bass Impact",
+          "type": "number"
+        },
+        "section_contrast": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Section Contrast",
+          "type": "number"
+        }
+      },
+      "required": [
+        "energy",
+        "drive",
+        "brightness",
+        "warmth",
+        "tension",
+        "grandeur",
+        "playfulness",
+        "precision",
+        "dynamic_range",
+        "bass_impact",
+        "section_contrast"
+      ],
+      "title": "DescriptorModel",
+      "type": "object"
+    },
+    "EnergyPointModel": {
+      "additionalProperties": false,
+      "properties": {
+        "time": {
+          "minimum": 0.0,
+          "title": "Time",
+          "type": "number"
+        },
+        "energy": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Energy",
+          "type": "number"
+        }
+      },
+      "required": ["time", "energy"],
+      "title": "EnergyPointModel",
+      "type": "object"
+    },
+    "FinaleWindowModel": {
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "minimum": 0.0,
+          "title": "Start",
+          "type": "number"
+        },
+        "end": {
+          "minimum": 0.0,
+          "title": "End",
+          "type": "number"
+        }
+      },
+      "required": ["start", "end"],
+      "title": "FinaleWindowModel",
+      "type": "object"
+    },
+    "FireworkCueModel": {
+      "additionalProperties": false,
+      "properties": {
+        "time": {
+          "minimum": 0.0,
+          "title": "Time",
+          "type": "number"
+        },
+        "end": {
+          "anyOf": [
+            {
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "End"
+        },
+        "effect": {
+          "enum": ["barrage", "accent", "crackle", "single"],
+          "title": "Effect",
+          "type": "string"
+        },
+        "reason": {
+          "minLength": 1,
+          "title": "Reason",
+          "type": "string"
+        },
+        "energy": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Energy",
+          "type": "number"
+        },
+        "section": {
+          "enum": [
+            "intro",
+            "verse",
+            "pre-chorus",
+            "chorus",
+            "bridge",
+            "drop",
+            "build",
+            "breakdown",
+            "outro",
+            "unknown"
+          ],
+          "title": "Section",
+          "type": "string"
+        },
+        "palette": {
+          "minLength": 1,
+          "title": "Palette",
+          "type": "string"
+        },
+        "shape": {
+          "minLength": 1,
+          "title": "Shape",
+          "type": "string"
+        },
+        "height": {
+          "minLength": 1,
+          "title": "Height",
+          "type": "string"
+        },
+        "spread": {
+          "minLength": 1,
+          "title": "Spread",
+          "type": "string"
+        },
+        "density": {
+          "minLength": 1,
+          "title": "Density",
+          "type": "string"
+        },
+        "style_tags": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Style Tags",
+          "type": "array"
+        },
+        "genre_hint": {
+          "minLength": 1,
+          "title": "Genre Hint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "time",
+        "effect",
+        "reason",
+        "energy",
+        "section",
+        "palette",
+        "shape",
+        "height",
+        "spread",
+        "density",
+        "style_tags",
+        "genre_hint"
+      ],
+      "title": "FireworkCueModel",
+      "type": "object"
+    },
+    "KeyMomentModel": {
+      "additionalProperties": false,
+      "properties": {
+        "time": {
+          "minimum": 0.0,
+          "title": "Time",
+          "type": "number"
+        },
+        "energy": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Energy",
+          "type": "number"
+        },
+        "prominence": {
+          "minimum": 0.0,
+          "title": "Prominence",
+          "type": "number"
+        },
+        "type": {
+          "enum": ["build", "climax"],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": ["time", "energy", "prominence", "type"],
+      "title": "KeyMomentModel",
+      "type": "object"
+    },
+    "KeySignatureModel": {
+      "additionalProperties": false,
+      "properties": {
+        "root": {
+          "minLength": 1,
+          "title": "Root",
+          "type": "string"
+        },
+        "mode": {
+          "enum": ["major", "minor"],
+          "title": "Mode",
+          "type": "string"
+        },
+        "confidence": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Confidence",
+          "type": "number"
+        }
+      },
+      "required": ["root", "mode", "confidence"],
+      "title": "KeySignatureModel",
+      "type": "object"
+    },
+    "MusicProfileModel": {
+      "additionalProperties": false,
+      "properties": {
+        "genre_hint": {
+          "minLength": 1,
+          "title": "Genre Hint",
+          "type": "string"
+        },
+        "key_signature": {
+          "$ref": "#/$defs/KeySignatureModel"
+        },
+        "descriptors": {
+          "$ref": "#/$defs/DescriptorModel"
+        },
+        "style_vector": {
+          "$ref": "#/$defs/StyleVectorModel"
+        },
+        "dominant_traits": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Dominant Traits",
+          "type": "array"
+        },
+        "raw_metrics": {
+          "$ref": "#/$defs/RawMetricsModel"
+        }
+      },
+      "required": [
+        "genre_hint",
+        "key_signature",
+        "descriptors",
+        "style_vector",
+        "dominant_traits",
+        "raw_metrics"
+      ],
+      "title": "MusicProfileModel",
+      "type": "object"
+    },
+    "PaletteDirectionModel": {
+      "additionalProperties": false,
+      "properties": {
+        "primary": {
+          "minLength": 1,
+          "title": "Primary",
+          "type": "string"
+        },
+        "secondary": {
+          "minLength": 1,
+          "title": "Secondary",
+          "type": "string"
+        },
+        "accent": {
+          "minLength": 1,
+          "title": "Accent",
+          "type": "string"
+        }
+      },
+      "required": ["primary", "secondary", "accent"],
+      "title": "PaletteDirectionModel",
+      "type": "object"
+    },
+    "RawMetricsModel": {
+      "additionalProperties": false,
+      "properties": {
+        "tempo_bpm": {
+          "minimum": 0.0,
+          "title": "Tempo Bpm",
+          "type": "number"
+        },
+        "onset_density_per_sec": {
+          "minimum": 0.0,
+          "title": "Onset Density Per Sec",
+          "type": "number"
+        },
+        "key_moments_per_min": {
+          "minimum": 0.0,
+          "title": "Key Moments Per Min",
+          "type": "number"
+        },
+        "buildups_per_min": {
+          "minimum": 0.0,
+          "title": "Buildups Per Min",
+          "type": "number"
+        },
+        "beat_stability": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Beat Stability",
+          "type": "number"
+        },
+        "section_contrast": {
+          "minimum": 0.0,
+          "title": "Section Contrast",
+          "type": "number"
+        },
+        "bass_ratio": {
+          "minimum": 0.0,
+          "title": "Bass Ratio",
+          "type": "number"
+        }
+      },
+      "required": [
+        "tempo_bpm",
+        "onset_density_per_sec",
+        "key_moments_per_min",
+        "buildups_per_min",
+        "beat_stability",
+        "section_contrast",
+        "bass_ratio"
+      ],
+      "title": "RawMetricsModel",
+      "type": "object"
+    },
+    "SectionModel": {
+      "additionalProperties": false,
+      "properties": {
+        "start": {
+          "minimum": 0.0,
+          "title": "Start",
+          "type": "number"
+        },
+        "end": {
+          "minimum": 0.0,
+          "title": "End",
+          "type": "number"
+        },
+        "duration": {
+          "minimum": 0.0,
+          "title": "Duration",
+          "type": "number"
+        },
+        "avg_energy": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Avg Energy",
+          "type": "number"
+        },
+        "peak_energy": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Peak Energy",
+          "type": "number"
+        },
+        "intensity": {
+          "enum": ["low", "medium", "high"],
+          "title": "Intensity",
+          "type": "string"
+        },
+        "cluster_id": {
+          "title": "Cluster Id",
+          "type": "integer"
+        },
+        "label": {
+          "enum": [
+            "intro",
+            "verse",
+            "pre-chorus",
+            "chorus",
+            "bridge",
+            "drop",
+            "build",
+            "breakdown",
+            "outro",
+            "unknown"
+          ],
+          "title": "Label",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start",
+        "end",
+        "duration",
+        "avg_energy",
+        "peak_energy",
+        "intensity",
+        "cluster_id",
+        "label"
+      ],
+      "title": "SectionModel",
+      "type": "object"
+    },
+    "ShowPersonalityModel": {
+      "additionalProperties": false,
+      "properties": {
+        "preset": {
+          "enum": ["balanced", "bold", "cinematic", "elegant", "intimate", "playful"],
+          "title": "Preset",
+          "type": "string"
+        },
+        "blend_weights": {
+          "$ref": "#/$defs/BlendWeightsModel"
+        },
+        "dimensions": {
+          "$ref": "#/$defs/StyleVectorModel"
+        },
+        "dominant_traits": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "title": "Dominant Traits",
+          "type": "array"
+        },
+        "palette_direction": {
+          "$ref": "#/$defs/PaletteDirectionModel"
+        },
+        "density_level": {
+          "enum": ["low", "medium", "high"],
+          "title": "Density Level",
+          "type": "string"
+        },
+        "genre_hint": {
+          "minLength": 1,
+          "title": "Genre Hint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "preset",
+        "blend_weights",
+        "dimensions",
+        "dominant_traits",
+        "palette_direction",
+        "density_level",
+        "genre_hint"
+      ],
+      "title": "ShowPersonalityModel",
+      "type": "object"
+    },
+    "StyleVectorModel": {
+      "additionalProperties": false,
+      "properties": {
+        "boldness": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Boldness",
+          "type": "number"
+        },
+        "elegance": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Elegance",
+          "type": "number"
+        },
+        "playfulness": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Playfulness",
+          "type": "number"
+        },
+        "warmth": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Warmth",
+          "type": "number"
+        },
+        "brightness": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Brightness",
+          "type": "number"
+        },
+        "grandeur": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Grandeur",
+          "type": "number"
+        },
+        "tension": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Tension",
+          "type": "number"
+        },
+        "precision": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Precision",
+          "type": "number"
+        }
+      },
+      "required": [
+        "boldness",
+        "elegance",
+        "playfulness",
+        "warmth",
+        "brightness",
+        "grandeur",
+        "tension",
+        "precision"
+      ],
+      "title": "StyleVectorModel",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "1.4.0",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "file": {
+      "minLength": 1,
+      "title": "File",
+      "type": "string"
+    },
+    "analysis_meta": {
+      "$ref": "#/$defs/AnalysisMetaModel"
+    },
+    "duration_seconds": {
+      "exclusiveMinimum": 0.0,
+      "title": "Duration Seconds",
+      "type": "number"
+    },
+    "tempo_bpm": {
+      "minimum": 0.0,
+      "title": "Tempo Bpm",
+      "type": "number"
+    },
+    "total_beats": {
+      "minimum": 0,
+      "title": "Total Beats",
+      "type": "integer"
+    },
+    "beat_times": {
+      "items": {
+        "minimum": 0.0,
+        "type": "number"
+      },
+      "maxItems": 200000,
+      "title": "Beat Times",
+      "type": "array"
+    },
+    "onset_times": {
+      "items": {
+        "minimum": 0.0,
+        "type": "number"
+      },
+      "maxItems": 200000,
+      "title": "Onset Times",
+      "type": "array"
+    },
+    "energy_timeline": {
+      "items": {
+        "$ref": "#/$defs/EnergyPointModel"
+      },
+      "maxItems": 50000,
+      "title": "Energy Timeline",
+      "type": "array"
+    },
+    "sections": {
+      "items": {
+        "$ref": "#/$defs/SectionModel"
+      },
+      "maxItems": 1000,
+      "minItems": 1,
+      "title": "Sections",
+      "type": "array"
+    },
+    "key_moments": {
+      "items": {
+        "$ref": "#/$defs/KeyMomentModel"
+      },
+      "maxItems": 10000,
+      "title": "Key Moments",
+      "type": "array"
+    },
+    "buildups": {
+      "items": {
+        "$ref": "#/$defs/BuildupModel"
+      },
+      "maxItems": 10000,
+      "title": "Buildups",
+      "type": "array"
+    },
+    "music_profile": {
+      "$ref": "#/$defs/MusicProfileModel"
+    },
+    "show_personality": {
+      "$ref": "#/$defs/ShowPersonalityModel"
+    },
+    "firework_cues": {
+      "items": {
+        "$ref": "#/$defs/FireworkCueModel"
+      },
+      "maxItems": 200000,
+      "title": "Firework Cues",
+      "type": "array"
+    },
+    "derived": {
+      "$ref": "#/$defs/DerivedFeaturesModel"
+    },
+    "downbeat_times": {
+      "items": {
+        "minimum": 0.0,
+        "type": "number"
+      },
+      "maxItems": 200000,
+      "title": "Downbeat Times",
+      "type": "array"
+    },
+    "beats_per_bar": {
+      "enum": [2, 3, 4],
+      "title": "Beats Per Bar",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "schema_version",
+    "file",
+    "analysis_meta",
+    "duration_seconds",
+    "tempo_bpm",
+    "total_beats",
+    "beat_times",
+    "onset_times",
+    "energy_timeline",
+    "sections",
+    "key_moments",
+    "buildups",
+    "music_profile",
+    "show_personality",
+    "firework_cues",
+    "derived",
+    "downbeat_times",
+    "beats_per_bar"
+  ],
+  "title": "AnalysisResultModel",
+  "type": "object"
+}

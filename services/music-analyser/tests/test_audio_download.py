@@ -14,6 +14,7 @@ from audio_download import (  # noqa: E402
     AudioDownloadError,
     classify_http_error,
     download_audio,
+    validated_audio_host,
 )
 
 
@@ -66,7 +67,24 @@ class Clock:
         self.now += seconds
 
 
+@patch.dict(
+    "os.environ",
+    {"ANALYSER_ALLOWED_AUDIO_HOSTS": "project.supabase.co,prod-1.storage.jamendo.com"},
+)
 class AudioDownloadTests(unittest.TestCase):
+    def test_jamendo_requires_explicit_https_allowlist(self):
+        self.assertEqual(
+            validated_audio_host("https://prod-1.storage.jamendo.com/audio.mp3"),
+            "prod-1.storage.jamendo.com",
+        )
+        for url in (
+            "http://prod-1.storage.jamendo.com/audio.mp3",
+            "https://other.supabase.co/audio",
+            "https://prod-1.storage.jamendo.com:8443/audio",
+        ):
+            with self.subTest(url=url), self.assertRaises(AudioDownloadError):
+                validated_audio_host(url)
+
     def test_slow_stream_is_bounded_by_one_total_deadline(self):
         clock = Clock()
         response = FakeResponse(
@@ -78,7 +96,9 @@ class AudioDownloadTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "audio"
-            with patch("audio_download.urllib.request.build_opener", return_value=opener):
+            with patch(
+                "audio_download.urllib.request.build_opener", return_value=opener
+            ):
                 with self.assertRaises(AudioDownloadError) as raised:
                     download_audio(
                         "https://project.supabase.co/storage/v1/object/sign/audio/file.wav",
@@ -96,7 +116,9 @@ class AudioDownloadTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "audio"
-            with patch("audio_download.urllib.request.build_opener", return_value=opener):
+            with patch(
+                "audio_download.urllib.request.build_opener", return_value=opener
+            ):
                 with self.assertRaises(AudioDownloadError) as raised:
                     download_audio(
                         "https://project.supabase.co/storage/v1/object/sign/audio/file.wav",
@@ -116,7 +138,9 @@ class AudioDownloadTests(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "audio"
-            with patch("audio_download.urllib.request.build_opener", return_value=opener):
+            with patch(
+                "audio_download.urllib.request.build_opener", return_value=opener
+            ):
                 with self.assertRaises(AudioDownloadError) as raised:
                     download_audio(
                         "https://project.supabase.co/storage/v1/object/sign/audio/file.wav",
@@ -128,12 +152,16 @@ class AudioDownloadTests(unittest.TestCase):
         self.assertEqual(raised.exception.error_code, "audio_response_truncated")
 
     def test_http_protocol_errors_are_classified_as_retryable_download_failures(self):
-        response = FakeResponse([], read_error=http.client.BadStatusLine("invalid status"))
+        response = FakeResponse(
+            [], read_error=http.client.BadStatusLine("invalid status")
+        )
         opener = FakeOpener(response)
 
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "audio"
-            with patch("audio_download.urllib.request.build_opener", return_value=opener):
+            with patch(
+                "audio_download.urllib.request.build_opener", return_value=opener
+            ):
                 with self.assertRaises(AudioDownloadError) as raised:
                     download_audio(
                         "https://project.supabase.co/storage/v1/object/sign/audio/file.wav",

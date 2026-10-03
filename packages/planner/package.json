@@ -7,10 +7,17 @@
     "lint": "eslint src --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "test": "node --import ../../scripts/register-typescript.mjs --test tests/*.test.mjs",
-    "check": "pnpm lint && pnpm typecheck && pnpm test"
+    "check": "pnpm check:music-schema && pnpm lint && pnpm typecheck && pnpm test",
+    "generate:music-schema": "node scripts/generate-music-schema.mjs",
+    "check:music-schema": "node scripts/generate-music-schema.mjs --check"
   },
   "devDependencies": {
     "eslint": "9.39.4",
-    "typescript": "5.9.3"
+    "typescript": "5.9.3",
+    "json-schema-to-zod": "2.6.1",
+    "prettier": "3.8.3"
+  },
+  "dependencies": {
+    "zod": "3.25.76"
   }
 }

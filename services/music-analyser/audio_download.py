@@ -9,10 +9,14 @@ import urllib.request
 from pathlib import Path
 from typing import Callable
 
+# Operational input cap in bytes, bounding download, decoding and upload memory.
 MAX_AUDIO_BYTES = 50 * 1024 * 1024
+# Operational download deadlines in seconds and streaming chunk size in bytes.
 DOWNLOAD_TOTAL_TIMEOUT_SECONDS = 30
 DOWNLOAD_SOCKET_TIMEOUT_SECONDS = 10
 DOWNLOAD_CHUNK_BYTES = 1024 * 1024
+# IANA default HTTPS port; alternate ports are outside the provider download contract.
+HTTPS_PORT = 443
 
 
 class AudioDownloadError(Exception):
@@ -38,8 +42,14 @@ class AudioDownloadError(Exception):
 
 
 def validated_audio_host(audio_url: str) -> str:
+    """Require HTTPS on its standard port and an explicitly configured audio host."""
     parsed = urllib.parse.urlsplit(audio_url)
-    if parsed.scheme != "https" or not parsed.hostname or parsed.username or parsed.password:
+    if (
+        parsed.scheme != "https"
+        or not parsed.hostname
+        or parsed.username
+        or parsed.password
+    ):
         raise AudioDownloadError(
             "audio_url must be an authenticated HTTPS URL",
             status_code=422,
@@ -53,7 +63,7 @@ def validated_audio_host(audio_url: str) -> str:
         for value in os.environ.get("ANALYSER_ALLOWED_AUDIO_HOSTS", "").split(",")
         if value.strip()
     }
-    if host not in configured_hosts and not host.endswith(".supabase.co"):
+    if parsed.port not in (None, HTTPS_PORT) or host not in configured_hosts:
         raise AudioDownloadError(
             "audio_url host is not allowed",
             status_code=422,
@@ -80,6 +90,7 @@ class SameHostRedirectHandler(urllib.request.HTTPRedirectHandler):
 
 
 def classify_http_error(error: urllib.error.HTTPError) -> AudioDownloadError:
+    """Classify provider response status without treating it as an empty download."""
     status = error.code
     if status in {401, 403}:
         return AudioDownloadError(
@@ -116,16 +127,21 @@ def download_audio(
     *,
     monotonic: Callable[[], float] = time.monotonic,
 ) -> None:
+    """Download allowlisted audio within the byte and wall-clock budgets to a local path."""
     expected_host = validated_audio_host(audio_url)
     opener = urllib.request.build_opener(SameHostRedirectHandler(expected_host))
-    request = urllib.request.Request(audio_url, headers={"User-Agent": "ShowCrafter-Analyser/1"})
+    request = urllib.request.Request(
+        audio_url, headers={"User-Agent": "ShowCrafter-Analyser/1"}
+    )
     deadline = monotonic() + DOWNLOAD_TOTAL_TIMEOUT_SECONDS
 
     try:
         remaining = deadline - monotonic()
         if remaining <= 0:
             raise TimeoutError
-        with opener.open(request, timeout=min(DOWNLOAD_SOCKET_TIMEOUT_SECONDS, remaining)) as response:
+        with opener.open(
+            request, timeout=min(DOWNLOAD_SOCKET_TIMEOUT_SECONDS, remaining)
+        ) as response:
             if validated_audio_host(response.geturl()) != expected_host:
                 raise AudioDownloadError(
                     "audio_url resolved to a different host",
@@ -201,6 +217,7 @@ def download_audio(
             retryable=True,
         ) from exc
     except urllib.error.HTTPError as exc:
+        exc.close()
         raise classify_http_error(exc) from exc
     except http.client.IncompleteRead as exc:
         raise AudioDownloadError(

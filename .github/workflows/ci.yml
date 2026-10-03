@@ -98,7 +98,7 @@ jobs:
           cache-dependency-path: services/music-analyser/requirements.txt
 
       - name: Install analyser dependencies
-        run: python -m pip install -r requirements.txt
+        run: python -m pip install -r requirements.txt -r ../workers/requirements.txt -e ../worker-common
 
       - name: Lint analyser
         run: python -m pip install ruff==0.16.9 && ruff check .
@@ -107,9 +107,7 @@ jobs:
         run: python -m unittest discover -s tests -p "*test*.py"
 
   analyser-contract:
-    name: Python to Zod to planner contract
-    # Disabled until 9.2 restores the contract against the new planner types.
-    if: false
+    name: Python to planner music contract
     runs-on: ubuntu-latest
 
     steps:
@@ -137,9 +135,9 @@ jobs:
           cache-dependency-path: services/music-analyser/requirements.txt
 
       - name: Install analyser dependencies
-        run: python -m pip install -r services/music-analyser/requirements.txt
+        run: python -m pip install -r services/music-analyser/requirements.txt -e services/worker-common
 
-      - name: Run Python to Zod to planner contract
+      - name: Run Python to planner music contract
         env:
           SHOWCRAFTER_RUN_CROSS_LANGUAGE_CONTRACT: '1'
         run: python services/music-analyser/tests/test_schema_validation.py
@@ -181,6 +179,12 @@ jobs:
           pnpm db:documents --check
       - name: Exercise fake Python worker against local Supabase
         run: pnpm test:workers:local
+      - name: Install music analyser dependencies
+        run: |
+          python -m venv services/music-analyser/.venv
+          services/music-analyser/.venv/bin/python -m pip install -r services/music-analyser/requirements.txt -e services/worker-common
+      - name: Exercise music jobs with offline audio against local Supabase
+        run: pnpm test:analyser:local
       - name: Stop the test database
         if: always()
         run: pnpm db:stop

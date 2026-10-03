@@ -13,19 +13,23 @@ try:
     import numpy as np
     import soundfile as sf
 except ModuleNotFoundError as exc:
-    raise unittest.SkipTest("Install services/music-analyser/requirements.txt to run analyser tests") from exc
+    raise unittest.SkipTest(
+        "Install services/music-analyser/requirements.txt to run analyser tests"
+    ) from exc
 
 
 ANALYSER_DIR = Path(__file__).resolve().parents[1]
 REPO_ROOT = ANALYSER_DIR.parents[1]
-WEB_ROOT = REPO_ROOT / "apps" / "web"
 SCHEMA_MUTATIONS = json.loads(
-    (Path(__file__).parent / "fixtures" / "schema-mutations.json").read_text(encoding="utf-8")
+    (Path(__file__).parent / "fixtures" / "schema-mutations.json").read_text(
+        encoding="utf-8"
+    )
 )
 sys.path.insert(0, str(ANALYSER_DIR))
 
 try:
     from showcrafter import (  # noqa: E402
+        AnalysisResultModel,
         SCHEMA_VERSION,
         AudioInputError,
         MAX_AUDIO_DURATION_SECONDS,
@@ -45,154 +49,31 @@ try:
         validate_analysis_result,
     )
 except ModuleNotFoundError as exc:
-    raise unittest.SkipTest("Install services/music-analyser/requirements.txt to run analyser tests") from exc
-
-
-STYLE_VECTOR = {
-    "boldness": 0.6,
-    "elegance": 0.5,
-    "playfulness": 0.4,
-    "warmth": 0.5,
-    "brightness": 0.5,
-    "grandeur": 0.7,
-    "tension": 0.4,
-    "precision": 0.6,
-}
-
-DESCRIPTORS = {
-    "energy": 0.5,
-    "drive": 0.6,
-    "brightness": 0.5,
-    "warmth": 0.5,
-    "tension": 0.4,
-    "grandeur": 0.7,
-    "playfulness": 0.4,
-    "precision": 0.6,
-    "dynamic_range": 0.5,
-    "bass_impact": 0.5,
-    "section_contrast": 0.2,
-}
+    raise unittest.SkipTest(
+        "Install services/music-analyser/requirements.txt to run analyser tests"
+    ) from exc
 
 
 def make_analysis_payload():
-    return {
-        "schema_version": SCHEMA_VERSION,
-        "file": "fixture.mp3",
-        "analysis_meta": {
-            "mode": "fast",
-            "runner_version": "test-librosa",
-            "timings_ms": {
-                "download_ms": 0.0,
-                "decode_ms": 1.0,
-                "beat_ms": 2.0,
-                "energy_ms": 3.0,
-                "onset_ms": 4.0,
-                "section_ms": 5.0,
-                "profile_ms": 6.0,
-                "validation_ms": 7.0,
-                "total_ms": 28.0,
-            },
-        },
-        "duration_seconds": 12.0,
-        "tempo_bpm": 120.0,
-        "total_beats": 4,
-        "beat_times": [0.0, 1.0, 2.0, 3.0],
-        "onset_times": [0.5, 1.5],
-        "energy_timeline": [
-            {"time": 0.0, "energy": 0.1},
-            {"time": 6.0, "energy": 0.7},
-        ],
-        "sections": [
-            {
-                "start": 0.0,
-                "end": 12.0,
-                "duration": 12.0,
-                "avg_energy": 0.5,
-                "peak_energy": 0.9,
-                "intensity": "medium",
-                "cluster_id": 0,
-                "label": "chorus",
-            }
-        ],
-        "key_moments": [
-            {"time": 6.0, "energy": 0.8, "prominence": 0.4, "type": "climax"}
-        ],
-        "buildups": [
-            {"start": 4.0, "peak": 6.0, "duration": 2.0, "energy_rise": 0.4}
-        ],
-        "music_profile": {
-            "genre_hint": "cinematic",
-            "key_signature": {"root": "C", "mode": "major", "confidence": 0.7},
-            "descriptors": DESCRIPTORS,
-            "style_vector": STYLE_VECTOR,
-            "dominant_traits": ["grandeur", "boldness"],
-            "raw_metrics": {
-                "tempo_bpm": 120.0,
-                "onset_density_per_sec": 0.4,
-                "key_moments_per_min": 5.0,
-                "buildups_per_min": 5.0,
-                "beat_stability": 0.8,
-                "section_contrast": 0.2,
-                "bass_ratio": 1.0,
-            },
-        },
-        "show_personality": {
-            "preset": "balanced",
-            "blend_weights": {"user": 0.55, "music": 0.45},
-            "dimensions": STYLE_VECTOR,
-            "dominant_traits": ["grandeur", "boldness"],
-            "palette_direction": {
-                "primary": "gold",
-                "secondary": "silver",
-                "accent": "emerald",
-            },
-            "density_level": "medium",
-            "genre_hint": "cinematic",
-        },
-        "firework_cues": [
-            {
-                "time": 6.0,
-                "effect": "barrage",
-                "reason": "climax",
-                "energy": 0.8,
-                "section": "chorus",
-                "palette": "gold/silver",
-                "shape": "chrysanthemum",
-                "height": "high",
-                "spread": "wide",
-                "density": "dense",
-                "style_tags": ["grandeur", "boldness"],
-                "genre_hint": "cinematic",
-            }
-        ],
-        "downbeat_times": [0.0, 2.0],
-        "beats_per_bar": 2,
-        "derived": {
-            "finale_window": None,
-            "quietest_section_index": 0,
-            "highest_energy_section_index": 0,
-            "repeated_chorus_count": 1,
-            "section_rank_by_energy": [0],
-            "anchor_windows": [
-                {
-                    "type": "climax",
-                    "anchor_time": 6.0,
-                    "start": 3.0,
-                    "end": 10.0,
-                    "energy": 0.8,
-                }
-            ],
-        },
-    }
+    """Read a fresh copy of the shared cross-language fixture for each mutation."""
+    return json.loads((Path(__file__).parent / "fixtures/analysis.json").read_text())
 
 
 class SchemaValidationTests(unittest.TestCase):
+    def test_checked_in_json_schema_matches_the_producer(self):
+        expected = json.loads(
+            (REPO_ROOT / "packages/planner/schema/music-analysis.v1.json").read_text()
+        )
+        self.assertEqual(AnalysisResultModel.model_json_schema(), expected)
+
     def test_valid_analysis_payload_passes_schema_v14(self):
         validated = validate_analysis_result(make_analysis_payload())
 
         self.assertEqual(validated["schema_version"], "1.4.0")
         self.assertEqual(validated["analysis_meta"]["mode"], "fast")
-        self.assertGreaterEqual(validated["analysis_meta"]["timings_ms"]["total_ms"], 0.0)
+        self.assertGreaterEqual(
+            validated["analysis_meta"]["timings_ms"]["total_ms"], 0.0
+        )
         self.assertEqual(validated["firework_cues"][0]["effect"], "barrage")
         # Schema 1.4.0 bar grid + derived block.
         self.assertEqual(validated["beats_per_bar"], 2)
@@ -255,7 +136,9 @@ class SchemaValidationTests(unittest.TestCase):
             path = Path(tmp) / "silence.wav"
             sf.write(path, np.zeros(22050 * 2, dtype=np.float32), 22050)
 
-            with self.assertRaisesRegex(AudioInputError, "reliable rhythmic grid") as raised:
+            with self.assertRaisesRegex(
+                AudioInputError, "reliable rhythmic grid"
+            ) as raised:
                 analyse_song(str(path))
 
         self.assertEqual(raised.exception.status_code, 422)
@@ -316,7 +199,7 @@ class SchemaValidationTests(unittest.TestCase):
         self.assertEqual(raised.exception.status_code, 413)
         self.assertEqual(raised.exception.error_code, "audio_too_long")
 
-    def test_actual_python_json_passes_zod_and_builds_cue_slots(self):
+    def test_actual_python_json_passes_planner_music_contract(self):
         if os.environ.get("SHOWCRAFTER_RUN_CROSS_LANGUAGE_CONTRACT") != "1":
             self.skipTest("Run by the dedicated analyser-contract CI job")
 
@@ -331,7 +214,9 @@ class SchemaValidationTests(unittest.TestCase):
             check=False,
         )
         self.assertEqual(version.returncode, 0, version.stderr)
-        major_version = int(version.stdout.strip().lstrip("v").split(".", maxsplit=1)[0])
+        major_version = int(
+            version.stdout.strip().lstrip("v").split(".", maxsplit=1)[0]
+        )
         self.assertGreaterEqual(major_version, 24)
 
         sr = 22050
@@ -350,23 +235,40 @@ class SchemaValidationTests(unittest.TestCase):
             sf.write(path, audio, sr)
             result = analyse_song(str(path))
 
-        helper = WEB_ROOT / "tests" / "helpers" / "analyser-pipeline-helper.mjs"
+        self.check_planner_contract(result)
+        self.check_planner_contract(make_analysis_payload())
+        for mutation in SCHEMA_MUTATIONS:
+            payload = make_analysis_payload()
+            target = payload
+            for segment in mutation["path"][:-1]:
+                target = target[segment]
+            target[mutation["path"][-1]] = mutation["value"]
+            self.check_planner_contract(payload, valid=False)
+
+    def check_planner_contract(self, payload, *, valid=True):
+        """Pass the same producer fixture and mutations through the planner's public schema."""
+        helper = REPO_ROOT / "packages/planner/tests/music-contract-helper.mjs"
         completed = subprocess.run(
-            [node_binary, "--experimental-strip-types", str(helper)],
-            cwd=WEB_ROOT,
-            input=json.dumps(result),
+            [
+                os.environ.get("SHOWCRAFTER_NODE_BINARY") or shutil.which("node"),
+                "--import",
+                "./scripts/register-typescript.mjs",
+                str(helper),
+            ],
+            cwd=REPO_ROOT,
+            input=json.dumps(payload),
             capture_output=True,
             text=True,
             timeout=30,
             check=False,
         )
-        self.assertEqual(completed.returncode, 0, completed.stderr)
-        summary = json.loads(completed.stdout)
-        self.assertEqual(summary["schemaVersion"], "1.4.0")
-        self.assertTrue(summary["finaleWindowPresent"])
-        self.assertIsNone(summary["finaleWindow"])
-        self.assertTrue(summary["plannerReturnedSlots"])
-        self.assertGreater(summary["slotCount"], 0)
+        if valid:
+            self.assertEqual(completed.returncode, 0, completed.stderr)
+            summary = json.loads(completed.stdout)
+            self.assertEqual(summary["schemaVersion"], SCHEMA_VERSION)
+            self.assertEqual(summary["beatCount"], len(payload["beat_times"]))
+        else:
+            self.assertNotEqual(completed.returncode, 0)
 
     def test_decoder_uses_audio_content_instead_of_the_filename_extension(self):
         sr = 22050
@@ -403,7 +305,9 @@ class SchemaValidationTests(unittest.TestCase):
         self.assertEqual(sections[0]["label"], "unknown")
         self.assertIsNone(cqt)
 
-        with patch("showcrafter.librosa.cqt", side_effect=RuntimeError("spectral path entered")):
+        with patch(
+            "showcrafter.librosa.cqt", side_effect=RuntimeError("spectral path entered")
+        ):
             with self.assertRaisesRegex(RuntimeError, "spectral path entered"):
                 laplacian_segment(y, sr, beat_frames, rms, hop_length, 20.0)
 
@@ -526,10 +430,46 @@ class SchemaValidationTests(unittest.TestCase):
         sr, hop_length = 22050, 512
         rms = np.zeros(int(40 * sr / hop_length) + 8, dtype=float)
         sections = [
-            {"start": 0.0, "end": 10.0, "duration": 10.0, "avg_energy": 0.2, "peak_energy": 0.2, "intensity": "low", "cluster_id": 0, "label": "intro"},
-            {"start": 10.0, "end": 20.0, "duration": 10.0, "avg_energy": 0.85, "peak_energy": 0.95, "intensity": "high", "cluster_id": 1, "label": "unknown"},
-            {"start": 20.0, "end": 30.0, "duration": 10.0, "avg_energy": 0.6, "peak_energy": 0.7, "intensity": "medium", "cluster_id": 2, "label": "unknown"},
-            {"start": 30.0, "end": 40.0, "duration": 10.0, "avg_energy": 0.6, "peak_energy": 0.7, "intensity": "medium", "cluster_id": 2, "label": "unknown"},
+            {
+                "start": 0.0,
+                "end": 10.0,
+                "duration": 10.0,
+                "avg_energy": 0.2,
+                "peak_energy": 0.2,
+                "intensity": "low",
+                "cluster_id": 0,
+                "label": "intro",
+            },
+            {
+                "start": 10.0,
+                "end": 20.0,
+                "duration": 10.0,
+                "avg_energy": 0.85,
+                "peak_energy": 0.95,
+                "intensity": "high",
+                "cluster_id": 1,
+                "label": "unknown",
+            },
+            {
+                "start": 20.0,
+                "end": 30.0,
+                "duration": 10.0,
+                "avg_energy": 0.6,
+                "peak_energy": 0.7,
+                "intensity": "medium",
+                "cluster_id": 2,
+                "label": "unknown",
+            },
+            {
+                "start": 30.0,
+                "end": 40.0,
+                "duration": 10.0,
+                "avg_energy": 0.6,
+                "peak_energy": 0.7,
+                "intensity": "medium",
+                "cluster_id": 2,
+                "label": "unknown",
+            },
         ]
 
         label_sections_from_clusters(sections, rms, sr, hop_length)
@@ -547,9 +487,36 @@ class SchemaValidationTests(unittest.TestCase):
         s1_end = int(20 * fps)
         rms[s1_start:s1_end] = np.linspace(0.1, 0.9, s1_end - s1_start)
         sections = [
-            {"start": 0.0, "end": 10.0, "duration": 10.0, "avg_energy": 0.2, "peak_energy": 0.3, "intensity": "low", "cluster_id": 0, "label": "intro"},
-            {"start": 10.0, "end": 20.0, "duration": 10.0, "avg_energy": 0.5, "peak_energy": 0.6, "intensity": "medium", "cluster_id": 1, "label": "unknown"},
-            {"start": 20.0, "end": 30.0, "duration": 10.0, "avg_energy": 0.8, "peak_energy": 0.9, "intensity": "high", "cluster_id": 2, "label": "unknown"},
+            {
+                "start": 0.0,
+                "end": 10.0,
+                "duration": 10.0,
+                "avg_energy": 0.2,
+                "peak_energy": 0.3,
+                "intensity": "low",
+                "cluster_id": 0,
+                "label": "intro",
+            },
+            {
+                "start": 10.0,
+                "end": 20.0,
+                "duration": 10.0,
+                "avg_energy": 0.5,
+                "peak_energy": 0.6,
+                "intensity": "medium",
+                "cluster_id": 1,
+                "label": "unknown",
+            },
+            {
+                "start": 20.0,
+                "end": 30.0,
+                "duration": 10.0,
+                "avg_energy": 0.8,
+                "peak_energy": 0.9,
+                "intensity": "high",
+                "cluster_id": 2,
+                "label": "unknown",
+            },
         ]
 
         label_sections_from_clusters(sections, rms, sr, hop_length)
