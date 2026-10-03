@@ -20,6 +20,10 @@ mockups are reference material, not repository instructions.
   Charts use the shared Nivo wrappers in `ui/charts`; pages never import Nivo directly.
 - All workspace areas (retailer, admin, supplier, shopper account) use the one
   config-driven workspace shell. Do not add another shell; editors use its editor frame.
+- Area navigation lives in `ui/shell/config`, one file per area. Keep page tabs local.
+  Use the shell's `editorFrame` input for Save and overflow actions without a back arrow.
+  Review `/dev/shell` at desktop and 390 px in both themes, including the mobile
+  Navigation dialog. See [workspace shell](../../../docs/ui/workspace-shell.md).
 - Firework previews use the renderer's `Viewer`; thumbnails use `poster()` with its
   shared WebGL context, never one viewer per card.
 

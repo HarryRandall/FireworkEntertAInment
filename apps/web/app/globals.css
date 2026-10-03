@@ -3,6 +3,7 @@
 @import 'shadcn/tailwind.css';
 @import '../ui/theme.css';
 @import '../ui/kit/kit.css';
+@import '../ui/shell/shell.css';
 
 @custom-variant dark (&:where(.dark, .dark *));
 

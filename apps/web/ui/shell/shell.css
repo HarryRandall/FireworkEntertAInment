@@ -1,0 +1,250 @@
+/* Workspace dimensions in px match workspace.css: 60 rail, 228 sidebar, 1240 content.
+   The 980 and 640 px breakpoints follow the prototype; mobile keeps a menu for hidden controls. */
+.sc-shell {
+  --shell-rail-width: 60px;
+  --shell-sidebar-width: 228px;
+  --shell-content-width: 1240px;
+  --shell-rail-control: 40px;
+  --shell-icon-size: 19px;
+  --shell-phone-footer: 88px;
+  display: grid;
+  grid-template-columns: var(--shell-rail-width) var(--shell-sidebar-width) minmax(0, 1fr);
+  min-height: 100dvh;
+}
+.sc-shell-rail {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 0;
+  border-right: 1px solid var(--border);
+  background: var(--muted);
+  z-index: 20;
+}
+.sc-shell-rail a,
+.sc-shell-rail button {
+  display: grid;
+  place-items: center;
+  position: relative;
+  width: var(--shell-rail-control);
+  height: var(--shell-rail-control);
+  border-radius: 10px;
+  color: var(--muted-foreground);
+  cursor: pointer;
+}
+.sc-shell-rail svg {
+  width: var(--shell-icon-size);
+  height: var(--shell-icon-size);
+}
+.sc-shell-rail a:hover,
+.sc-shell-rail button:hover {
+  background: var(--accent);
+  color: var(--foreground);
+}
+.sc-shell-rail a[aria-current='page'] {
+  background: var(--card);
+  color: var(--foreground);
+  box-shadow: var(--surface-shadow);
+}
+.sc-shell-rail .sc-shell-logo {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  font-size: 12px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.sc-shell-tip {
+  position: absolute;
+  left: 48px;
+  padding: 4px 8px;
+  background: var(--foreground);
+  color: var(--background);
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+}
+.sc-shell-rail a:hover .sc-shell-tip,
+.sc-shell-rail a:focus-visible .sc-shell-tip {
+  opacity: 1;
+}
+.sc-shell-utilities {
+  display: grid;
+  gap: 4px;
+  margin-top: auto;
+}
+.sc-shell-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overflow: auto;
+  border-right: 1px solid var(--border);
+}
+.sc-shell-sidebar-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 10px;
+  min-height: 100%;
+}
+.sc-shell-picker {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 8px;
+  font-size: 13px;
+  background: var(--card);
+  cursor: pointer;
+}
+.sc-shell-picker svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.sc-shell-sidebar-content h2 {
+  padding: 8px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.sc-shell-sidebar-content h3 {
+  padding: 14px 8px 4px;
+  font-size: 12px;
+  color: var(--muted-foreground);
+}
+.sc-shell-sidebar-content nav {
+  display: grid;
+  gap: 3px;
+}
+.sc-shell-sidebar-content nav a {
+  padding: 7px 8px;
+  border-radius: 7px;
+  font-size: 13px;
+}
+.sc-shell-sidebar-content nav a:hover,
+.sc-shell-sidebar-content a[aria-current='page'] {
+  background: var(--accent);
+}
+.sc-shell-sidebar-content a[aria-current='page'] {
+  font-weight: 600;
+}
+.sc-shell-column {
+  min-width: 0;
+}
+.sc-shell-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px 28px;
+  border-bottom: 1px solid var(--border);
+}
+.sc-shell-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted-foreground);
+  min-width: 0;
+}
+.sc-shell-breadcrumb span:last-child {
+  color: var(--foreground);
+}
+.sc-shell-main {
+  padding: 20px 28px 64px;
+  max-width: var(--shell-content-width);
+}
+.sc-shell-mobile-menu {
+  display: none;
+}
+.sc-shell-skip {
+  position: fixed;
+  left: 12px;
+  top: 12px;
+  z-index: 60;
+  padding: 8px;
+  background: var(--card);
+  transform: translateY(-200%);
+}
+.sc-shell-skip:focus {
+  transform: none;
+}
+.sc-shell-editor {
+  grid-template-columns: var(--shell-rail-width) minmax(0, 1fr);
+}
+.sc-shell-editor .sc-shell-column {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+.sc-shell-editor-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+@media (max-width: 980px) {
+  .sc-shell {
+    grid-template-columns: var(--shell-rail-width) minmax(0, 1fr);
+  }
+  .sc-shell-sidebar {
+    display: none;
+  }
+  .sc-shell-mobile-menu {
+    display: inline-flex;
+  }
+}
+@media (max-width: 640px) {
+  .sc-shell {
+    grid-template-columns: minmax(0, 1fr);
+    padding-bottom: calc(var(--shell-phone-footer) + env(safe-area-inset-bottom));
+  }
+  .sc-shell-rail {
+    position: fixed;
+    inset: auto 0 0;
+    height: auto;
+    flex-direction: row;
+    justify-content: space-around;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+    border-right: 0;
+    border-top: 1px solid var(--border);
+  }
+  .sc-shell-rail .sc-shell-logo,
+  .sc-shell-utilities,
+  .sc-shell-tip {
+    display: none;
+  }
+  .sc-shell-header {
+    padding: 12px 16px;
+  }
+  .sc-shell-main {
+    padding: 16px;
+  }
+  .sc-shell-editor .sc-shell-column {
+    height: calc(100dvh - var(--shell-phone-footer) - env(safe-area-inset-bottom));
+  }
+}
+/* Review-only slot sizes are visual tuning: readable library and inspector at desktop width. */
+.sc-shell-review-editor {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr) 280px;
+  height: 100%;
+  min-height: 0;
+}
+@media (max-width: 980px) {
+  .sc-shell-review-editor {
+    grid-template-columns: minmax(0, 1fr);
+    height: auto;
+  }
+  .sc-shell-review-editor section {
+    min-height: 180px;
+  }
+}
