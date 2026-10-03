@@ -12,6 +12,8 @@ import {
 
 import { QuickAdjustments, LAUNCH_QUICK } from './quick-adjustments';
 
+import { libraryChipPreview } from './chip-preview';
+
 const TAILS = launchSchema.shape.tail.options;
 /** Edits climb, smoke, lean and every built-in renderer tail with square-root height/time coupling. */
 export function LaunchInspector(context: InspectorContext) {
@@ -24,6 +26,8 @@ export function LaunchInspector(context: InspectorContext) {
       <InspectorSection title="Climb and fine controls">
         <InspectorChoices
           label="Tail style"
+          climbPreview
+          preview={(tail) => libraryChipPreview(document, null, 'tails', tail)}
           items={TAILS}
           value={launch.tail}
           disabled={disabled}

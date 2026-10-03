@@ -31,6 +31,8 @@ export function StudioToolbar({
         <Button
           variant="outline"
           disabled={!undoAvailable}
+          title="Undo (Ctrl+Z or Command+Z)"
+          aria-keyshortcuts="Control+Z Meta+Z"
           onClick={() => {
             dispatch({ type: 'commit' });
             dispatch({ type: 'undo' });
@@ -41,6 +43,8 @@ export function StudioToolbar({
         <Button
           variant="outline"
           disabled={history.redo.length === 0 || history.gesture !== null}
+          title="Redo (Ctrl+Shift+Z, Command+Shift+Z or Ctrl+Y)"
+          aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z Control+Y"
           onClick={() => {
             dispatch({ type: 'redo' });
           }}

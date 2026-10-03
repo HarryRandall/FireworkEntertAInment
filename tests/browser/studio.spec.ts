@@ -98,7 +98,9 @@ for (const [size, viewport] of Object.entries(viewports)) {
             'true',
           );
         }).toPass();
-        await expect(page.getByRole('tabpanel')).toContainText(`${tab} settings`);
+        await expect(
+          page.getByRole('region', { name: 'Inspector', exact: true }).getByRole('tabpanel'),
+        ).toContainText(`${tab} settings`);
         let temporaryToggle = false;
         if (tab === 'Trail') temporaryToggle = await ensureToggle(page, 'Trail on');
         if (tab === 'Effect') temporaryToggle = await ensureToggle(page, 'Twinkle');
