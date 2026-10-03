@@ -1,35 +1,29 @@
 ---
 name: showcrafter-contracts
-description: Change ShowCrafter music analysis, firework rendering, import workers or contracts shared between the web app and Python services. Use for timing, reconstruction, schemas and cross-service verification.
+description: Change ShowCrafter firework rendering, the design schema, music analysis, video import or any contract shared between the web app, the database and Python services. Use for timing, schemas and cross-service verification.
 ---
 
 # ShowCrafter contracts
 
-The web app is `apps/web`; Python 3.11 services have separate requirements and
-virtual environments under `services/`. Read the relevant service and its tests,
-then the consumer, before changing a payload or timing model.
+Read the producer, its tests and every consumer before changing a payload, schema or
+timing model.
 
-- Music analysis: `services/music-analyser/showcrafter.py`,
-  `apps/web/lib/show-analysis-validation.ts` and the analyser pipeline helper in
-  `apps/web/tests/helpers/`.
-- Import reconstruction: `services/firework-import-worker/` and
-  `apps/web/lib/firework-import/`.
-- Renderer: `apps/web/lib/fireworks/`, the replay canvas and the import harness.
+- **Renderer:** `packages/fireworks` owns the renderer, its DOM-free simulation and the
+  design JSON Schema (`schema/design.v1.json`). The schema is the contract between the
+  renderer, the database (`pg_jsonschema` checks on stored designs) and the app (Zod
+  types generated from it). Change all three together, with a generated-file check.
+- **Renderer version:** `RENDERER_VERSION` is a semver string exported by the package
+  and stored as data on design versions and posters. There is no source fingerprint and
+  no migration per renderer change. Bump it when output changes visibly.
+- **Design versions:** stored designs are never rewritten in place. A schema change
+  ships with `upgradeDesign()` and new versions through the normal publish path.
+- **Determinism:** the simulation computes state from `(design, seed, t)` alone. Keep
+  it free of DOM, time and accumulated state, and keep the CPU spray reference in step
+  with the GPU path (parity tests).
+- **Music analysis:** `services/music-analyser` writes `music_analyses`; its Pydantic
+  schema, the planner's types and a shared fixture must agree. When the analyser
+  contract changes, run the cross-language check as well as `pnpm test:analyser`.
+- **Jobs:** workers claim and finish work through the `jobs` table RPCs only.
 
-The renderer source paths are relative to `apps/web`. Its source list and bytes
-are fingerprinted in `lib/firework-import/renderer-contract.ts`. Moving the
-whole app preserves those relative paths. Changing a listed file or path requires
-an intentional version update aligned across app, worker and database. Do not
-refresh a fingerprint just to make a failing test green.
-
-Keep renderer schema, defaults, editor controls, persistence, timing and tests
-aligned. Preserve fixed-step capture and cue-safety invariants. Run `pnpm test:worker` for import/renderer changes and `pnpm test:analyser` for analysis
-changes. When the analyser contract changes, also run:
-
-```bash
-SHOWCRAFTER_RUN_CROSS_LANGUAGE_CONTRACT=1 services/music-analyser/.venv/bin/python services/music-analyser/tests/test_schema_validation.py
-```
-
-Run the relevant Node tests and `pnpm check`. Keep any preview server stopped
-while a build rewrites its output; use an isolated `NEXT_DIST_DIR` for concurrent
-local previews. Local checks do not deploy Modal services or apply migrations.
+Run the package tests, the relevant service suite and `pnpm check`. Local checks do not
+deploy Modal services or apply hosted migrations.
