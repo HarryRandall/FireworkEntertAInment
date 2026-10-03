@@ -14,7 +14,7 @@ export function drawViewerFrame(viewer: Viewer, sprays: GpuSprays): void {
   const profiling = viewer.profiler.requested;
   if (profiling) viewer.profiler.begin(viewer.t);
   const start = performance.now();
-  sprays.births.reset();
+  sprays.sources.reset(viewer.t);
   const frames = viewer.shots.flatMap((shot, index) => {
     const time = viewer.t - (shot.t0 ?? 0);
     if (time < 0 || time > shotDuration(shot.design)) return [];
@@ -26,7 +26,7 @@ export function drawViewerFrame(viewer: Viewer, sprays: GpuSprays): void {
         ...placement,
         smoke: SETTINGS.smoke,
         sprayPhase: profiling ? viewer.profiler.sprayPhase : undefined,
-        sprayBirth: viewer.sprayMode === 'gpu' ? sprays.births.receive : undefined,
+        spraySource: viewer.sprayMode === 'gpu' ? sprays.sources.receive : undefined,
       }),
     ];
   });
@@ -36,7 +36,7 @@ export function drawViewerFrame(viewer: Viewer, sprays: GpuSprays): void {
   sprays.upload();
   if (profiling && viewer.profiler.result)
     viewer.profiler.result.packingMs = performance.now() - simulated;
-  viewer.count = frames.reduce((sum, frame) => sum + frame.kinds.length, sprays.births.count);
+  viewer.count = frames.reduce((sum, frame) => sum + frame.kinds.length, sprays.sources.count);
   viewer.fillMs =
     viewer.fillMs * TIMING_OLD_WEIGHT + (performance.now() - start) * (1 - TIMING_OLD_WEIGHT);
   viewer.output.render(
