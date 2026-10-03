@@ -19,7 +19,8 @@ supabase/.branches/
 .worktrees/
 .cursor/
 .codex/
-.claude/
+.claude/*
+!.claude/skills/
 *.swp
 *.swo
 *~

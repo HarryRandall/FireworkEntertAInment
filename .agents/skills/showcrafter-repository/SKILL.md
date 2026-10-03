@@ -35,3 +35,24 @@ dependencies in the owning package and verify a frozen install. Move environment
 without displaying their contents.
 
 Run `pnpm check` and the relevant service suites before delivery.
+
+## Agent handoff
+
+Record the branch and dirty paths before editing. Codex proposes focused commits;
+the composer stages, commits, rebases, pushes and opens PRs. Read-only Git commands
+are available for inspection. Do not alter the index or history from Codex.
+
+For .agents or .codex changes, supply exact proposed text or a patch in the handoff.
+Do not claim those changes are applied. The composer applies and verifies them.
+For overlapping commit file lists, identify the hunks or explain the dependency.
+
+## Readability tooling
+
+The root owns scripts/eslint/readability.mjs and its exact tool dependencies.
+Package-local flat configs compose that factory with framework and boundary checks.
+Every handwritten TypeScript package has lint, typecheck, test and check scripts,
+and root pnpm check reaches them. Do not assume tests typecheck source files.
+
+Keep Knip entry points limited to actual package APIs, scripts and tests; do not
+mark all source files as entries. Keep Prettier separate from ESLint. Review tool
+preset changes and peer compatibility when updating pinned dependencies.

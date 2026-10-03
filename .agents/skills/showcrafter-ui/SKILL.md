@@ -41,3 +41,20 @@ user input after a failure and roll back optimistic values when a write fails.
 Check light and dark, 390 px and desktop widths, focus, loading, empty and error
 states. UI pull requests attach screenshots from the running app next to the matching
 prototype page, and are reviewed by the owner.
+
+## Registry and browser workflow
+
+Use the registries configured in apps/web/components.json. Before adding an item,
+inspect its files, dependencies, licence and target paths. Record provenance and
+required notices. Preserve existing components unless replacement is in scope.
+
+Use the local app and prototype with an isolated browser profile and synthetic
+accounts. Capture desktop and 390 px widths in light and dark. Record route,
+viewport, theme, relevant state and screenshot path. Exercise keyboard access,
+loading, empty and failure states; screenshots alone do not prove interactions.
+
+For WebGL changes, compare actual rendered output at fixed seeds and times.
+DOM or accessibility snapshots do not prove renderer parity. The composer handles
+the owner's side-by-side review using the current visual review set.
+
+Component structure and readability rules are in [the web workflow](../showcrafter-web/SKILL.md).
