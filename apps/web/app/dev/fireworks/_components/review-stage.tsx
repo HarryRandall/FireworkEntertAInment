@@ -82,7 +82,9 @@ function PreviewStatus({
   if (error.length > 0)
     return (
       <div role="alert">
-        <p>Preview unavailable: {error}</p>
+        <p>
+          {ready ? 'Thumbnail preparation unavailable' : 'Preview unavailable'}: {error}
+        </p>
         <Button onClick={retry}>Try again</Button>
       </div>
     );

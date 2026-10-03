@@ -124,7 +124,8 @@ export class SpraySources {
     for (let lane = 0; lane < SOURCE_SCALARS; lane++) {
       const value = this.scratch[lane];
       if (value === undefined) throw new RangeError('Missing source lane');
-      if (this.data[offset + lane] !== value) {
+      // Copy signed zero too, so packed inputs cannot retain the sign from an earlier record.
+      if (!Object.is(this.data[offset + lane], value)) {
         this.data[offset + lane] = value;
         this.dirty = true;
       }

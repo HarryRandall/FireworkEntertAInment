@@ -1,59 +1,17 @@
 /** Native transport regressions use synchronous viewer notifications without a WebGL context. */
 import test from 'node:test';
+import { Element } from './viewer-dom.mjs';
 import assert from 'node:assert/strict';
 import { buildPlayer } from '../src/view/player.ts';
 import { Viewer } from '../src/view/viewer.ts';
 import { viewerInput } from '../src/view/viewer-input.ts';
+import { SETTINGS } from '../src/view/settings.ts';
 
 // Fixed show instants, duration and observation step, in seconds.
 const REVIEW_TIME_S = 2.2;
 const FINALE_TIME_S = 14;
 const DURATION_S = 25;
 const FRAME_STEP_S = 0.02;
-class Element extends EventTarget {
-  children = [];
-  attributes = new Map();
-  value = '';
-  textContent = '';
-  dataset = {};
-  constructor(tag) {
-    super();
-    this.tag = tag;
-  }
-  append(...children) {
-    for (const child of children) {
-      if (child instanceof Element) child.parent = this;
-      this.children.push(child);
-    }
-  }
-  setAttribute(key, value) {
-    this.attributes.set(key, value);
-  }
-  querySelectorAll() {
-    return this.children.flatMap((child) =>
-      child instanceof Element
-        ? [...(child.dataset.setting ? [child] : []), ...child.querySelectorAll()]
-        : [],
-    );
-  }
-  closest() {
-    return ['input', 'select', 'button'].includes(this.tag) ? this : null;
-  }
-  focus() {
-    document.activeElement = this;
-  }
-  remove() {
-    this.parent.children = this.parent.children.filter((child) => child !== this);
-  }
-  find(predicate) {
-    if (predicate(this)) return this;
-    for (const child of this.children) {
-      if (!(child instanceof Element)) continue;
-      const result = child.find(predicate);
-      if (result) return result;
-    }
-  }
-}
 function dispatch(element, name, properties = {}) {
   const event = new Event(name, { cancelable: true });
   Object.assign(event, properties);
@@ -61,6 +19,10 @@ function dispatch(element, name, properties = {}) {
   return event;
 }
 function mount() {
+  const previousWindow = globalThis.window;
+  const window = new EventTarget();
+  window.localStorage = { getItem: () => null, setItem() {} };
+  globalThis.window = window;
   const previousDocument = globalThis.document;
   const previousInput = globalThis.HTMLInputElement;
   globalThis.document = new Element('document');
@@ -77,7 +39,12 @@ function mount() {
     last: 0,
     speed: 1,
     playing: false,
+    sound: { reset() {}, hush() {} },
     schedule() {},
+    cancelFrame() {
+      this.sound.hush();
+    },
+    controls: { stop() {} },
     invalidate() {},
     resetCamera() {},
   });
@@ -90,6 +57,7 @@ function mount() {
     ),
     cleanup() {
       cleanup();
+      globalThis.window = previousWindow;
       globalThis.document = previousDocument;
       globalThis.HTMLInputElement = previousInput;
     },
@@ -122,6 +90,29 @@ for (const playing of [false, true]) {
     }
   });
 }
+test('pause and native scrubbing retain sub-step show seconds; keyboard nudges stay precise', () => {
+  const rig = mount();
+  const exactTime = 0.017602142;
+  try {
+    assert.equal(rig.range.step, 'any');
+    rig.viewer.play();
+    rig.viewer.t = exactTime;
+    rig.viewer.emit();
+    dispatch(rig.find('Pause'), 'click');
+    assert.equal(rig.viewer.t, exactTime);
+    assert.equal(Number(rig.range.value), exactTime);
+    rig.range.value = '2.205142857';
+    dispatch(rig.range, 'input');
+    assert.equal(rig.viewer.t, 2.205142857);
+    rig.range.focus();
+    dispatch(rig.range, 'keydown', { key: 'ArrowRight' });
+    assert.equal(rig.viewer.t, 2.205142857 + 0.01);
+    assert.equal(Number(rig.range.value), rig.viewer.t);
+    assert.equal(rig.viewer.playing, false);
+  } finally {
+    rig.cleanup();
+  }
+});
 test('Pause, seeks, settings and speed preserve paused state; Restart deliberately plays', () => {
   const rig = mount();
   const canvas = new Element('canvas');
@@ -151,5 +142,31 @@ test('Pause, seeks, settings and speed preserve paused state; Restart deliberate
   } finally {
     cleanupInput();
     rig.cleanup();
+  }
+});
+
+test('native sound controls share mute and volume preferences without changing paused playback', () => {
+  const saved = { ...SETTINGS };
+  const rig = mount();
+  try {
+    SETTINGS.sound = false;
+    // Use the existing label from default-mute settings so activation also paints the new label.
+    dispatch(rig.find('Unmute'), 'click');
+    assert.equal(SETTINGS.sound, true);
+    assert.ok(rig.find('Mute'));
+    assert.equal(rig.viewer.playing, false);
+    const volume = rig.viewer.container.find(
+      (element) => element.attributes.get('aria-label') === 'Sound volume',
+    );
+    volume.value = '0.2';
+    dispatch(volume, 'input');
+    assert.equal(SETTINGS.volume, 0.2);
+    dispatch(rig.find('Mute'), 'click');
+    assert.equal(SETTINGS.sound, false);
+    assert.equal(SETTINGS.volume, 0.2);
+    assert.equal(rig.viewer.playing, false);
+  } finally {
+    rig.cleanup();
+    Object.assign(SETTINGS, saved);
   }
 });

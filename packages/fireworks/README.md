@@ -352,3 +352,103 @@ full-frame parity and deterministic scrubbing. Reference capture executes the or
 `design(key)` and simulation without converting stored designs back into the prototype
 format. Provenance records the reference source SHA-256. Comparisons use the core
 suite's absolute Float32 tolerance of `0.000001`.
+
+## Sound events and playback
+
+`soundEvents(shots, listener?)` from `./sim` returns sorted cues with sequence `time_s`,
+`kind`, world-metre `position`, `distance_m` to the supplied listener, deterministic
+`seed` and
+`duration_s`. It resolves stored adjustments without mutating designs. Use
+`soundDistance(event, listener)` for distance in metres and `soundLag(distance)`
+for the capped acoustic travel time. Event distances are snapshots; the view
+recomputes them for the current unshaken camera when scheduling. No simulation module creates audio nodes.
+
+`./view` owns the synthesised rise, mortar lift, N-wave burst crack, body/rumble,
+crackle pops, pulsed whistles and hiss. Seeded noise buffers and outdoor stereo
+reflections need no audio files. Cue selection and synthesis levels match the
+prototype; the stored `design.sound` gain block is retained as authored data and
+is not applied by playback, just as in the prototype. In particular, its default
+whistle gain of zero does not silence a whistling launch style. Each viewer owns its AudioContext and a separate
+voice containing dry and echo paths. Distance attenuates and low-passes each cue;
+lag and sustained cue durations divide by playback speed. Pause, seek, mute,
+speed changes, sequence replacement and hidden/off-screen views stop pending
+sources and disconnect the voice, including its echo. Disposal removes gesture
+listeners and closes the context. Completed events release their transient nodes
+after their audible and echo tails.
+
+The native player, also used on `/dev/fireworks`, shares browser-wide mute and
+volume preferences through `sc-viewer-settings`. New preferences default to muted
+at volume 0.7. `setSetting('sound', enabled)` changes the mute choice and
+`setVolume(value)` accepts a finite linear gain from zero to one. A remembered
+unmuted choice cannot create audio until a pointer or keyboard gesture on the new
+page. Changing volume does not implicitly unmute.
+
+Muted viewer construction, shot replacement and poster capture retain shots without
+resolving acoustic cues or allocating waveforms. A sound-enabled pointer, key or
+click gesture creates the context and buffers; the first audible forward interval
+resolves only the current sequence's cues. Earlier muted gestures cannot authorise
+context creation by a later preference update. Sound and volume notifications do
+not reapply visual settings, move the camera or request a redraw. Audio reads the
+camera's existing unshaken matrix without updating it and never advances show time.
+
+Cue parity covers all 99 presets against the original prototype `soundEvents`,
+including times, kinds, distances and flags. Capture those independent numbers
+manually from the read-only reference:
+
+```sh
+node packages/fireworks/scripts/capture-sound-goldens.mjs /Users/harry/projects/FireworkEntertAInment-reference/docs/design/redesign-2026-09/prototype/fireworks3d.js
+corepack pnpm exec prettier --write packages/fireworks/tests/fixtures/sound-goldens.json
+```
+
+Review readiness mounts the native transport before any poster capture. Cards fill
+progressively using one detached thumbnail renderer with fixed CSS dimensions and
+the live viewer's capped DPR. Its canvas and output target are allocated once;
+PNG encoding uses `toBlob`, without resizing, seeking or changing the live viewer.
+Preparation yields between posters with browser tasks. Navigation cancels further
+captures, disposes the thumbnail context and revokes published blob URLs. No card
+owns a renderer. Audio creation, buffer synthesis and resume happen only on
+sound-enabled gestures; resume is never awaited by readiness or visual playback.
+Audio failures are logged without interrupting visual frames or transport cleanup.
+Node readiness tests run the review lifecycle and native player with WebGL replaced,
+covering unavailable audio, unresolved resume and cancellation during PNG encoding.
+
+Node tests verify cue determinism, waveform generation, synthesis scheduling,
+slow-motion timing, gesture unlock and voice isolation/cleanup. The browser
+journeys in `tests/browser/sound.spec.ts` spy on real AudioContext sources and
+verify play scheduling, silence during pause/seek/mute, persisted settings and
+context closure on client navigation. Typecheck without a browser using
+`corepack pnpm exec tsc -p tests/browser/tsconfig.json`; execution is part of
+`pnpm check` and requires Chromium. Listening comparison and screen review still
+require the owner's browser.
+
+The live canvas exposes `data-drawn-time` as show seconds with six decimal places,
+set after every live render returns. Invalidation retains the last completed time
+and sets `data-draw-pending="true"`; a successful draw sets it to `"false"`. Browser
+captures wait for both the requested time and no pending draw, including repeated
+seeks, rather than counting animation callbacks or awaiting posters.
+The wait brings the stage into view first, allowing an off-screen demand draw to
+resume, and retries absent first-draw evidence. The native transport range accepts
+arbitrary seconds without step sanitisation; only the text readout rounds to two
+decimal places. Pause retains the exact show instant, seeks retain the requested
+clamped instant, and arrow keys nudge by 0.01 seconds from that exact time.
+`Viewer.liveDrawPending` identifies visible demand work, playback and camera easing;
+progressive catalogue posters yield throughout that work before allocating their
+renderer or starting another capture.
+An unresolved poster PNG encoder does not hold the live viewer's draw scheduling.
+
+Static launch hardware bakes transforms and linear colours into one opaque mesh,
+without per-face groups. The forty-shot fixture has a maximum of nine live draw
+submissions: sky, ground, stars, hardware, CPU sparks, additive glow billboards,
+smoke billboards, GPU sprays and output. Empty or culled layers may draw fewer.
+Pause clears playback state, cancels the queued callback and stops camera easing
+before requesting one unshaken paused redraw. That draw keeps show time fixed;
+subsequent idle frames submit no live GPU draws. Camera gestures and explicit
+settings or seek changes can request new paused draws. Detached posters can resume
+preparation while paused until the catalogue is complete.
+
+The Node hardware test counts the complete scene and output submissions, and the
+pause test exercises production transport and scheduling with a stub output pass.
+It also compares populated CPU attributes and GPU source inputs after a dense
+finale seek replay. `tests/browser/finale-rendering.spec.ts` counts all four WebGL
+submission methods on the connected live canvas and checks paused idle draws and
+exact pixel replay. Its screenshot is `output/playwright/finale-replay.png`.

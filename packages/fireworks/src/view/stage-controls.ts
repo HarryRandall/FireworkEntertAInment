@@ -214,6 +214,11 @@ export class StageControls {
     this.applyPose();
     return moving;
   }
+  /** Stops easing at the current metre/radian pose, removing playback shake on the next draw. */
+  stop(): void {
+    this.goal = { ...this.current };
+    this.panGoal.copy(this.pan);
+  }
   private applyPose(): void {
     const { yaw, pitch, dist } = this.current;
     const low = this.lowElevation(dist);

@@ -24,7 +24,7 @@ export function loadReference(path) {
   // Only unused browser imports and export keywords change; simulation maths stays intact.
   const executable = source.replace(/^import .*;\n/gm, '').replace(/^export /gm, '');
   vm.runInContext(
-    `${executable}\nthis.reference = { PRESETS, design, Buffer, fillShot, shotDuration };`,
+    `${executable}\nthis.reference = { PRESETS, design, Buffer, fillShot, shotDuration, soundEvents };`,
     context,
   );
   return { ...context.reference, source_sha256: createHash('sha256').update(source).digest('hex') };

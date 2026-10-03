@@ -53,12 +53,18 @@ test('shared hardware resources dispose once and cake tubes wrap at their own to
   assert.equal(props.children.length, 1, 'Shared launch position owns one mortar');
   assert.deepEqual(cakeHole(0), cakeHole(25));
   const cake = makeProps([], 'cake');
-  assert.equal(cake.children.length, 27);
-  for (const hole of cake.children.slice(2)) assert.equal(hole.position.y, CAKE_TOP_M);
+  assert.equal(cake.children.length, 1, 'Cake box, lid and holes share one draw');
+  const vertices = cake.children[0].geometry.getAttribute('position');
+  assert.ok(
+    Array.from({ length: vertices.count }, (_, index) => vertices.getY(index)).some(
+      (height) => Math.abs(height - CAKE_TOP_M) < 1e-6,
+    ),
+    'Baked holes retain their muzzle height',
+  );
   let materialDisposals = 0;
-  cake.children[2].material.addEventListener('dispose', () => materialDisposals++);
+  cake.children[0].material.addEventListener('dispose', () => materialDisposals++);
   disposeTree(cake);
-  assert.equal(materialDisposals, 1, 'Shared hole material is freed once');
+  assert.equal(materialDisposals, 1, 'Batched hardware material is freed once');
   disposeTree(props);
 });
 

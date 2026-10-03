@@ -197,3 +197,32 @@ test('wheel Float32 inherited motion keeps a shared phase through forward and ba
     `Float32 model inherited error ${largestError} m/s`,
   );
 });
+
+test('source record caching retains signed zero independently of the previous source', () => {
+  const sources = new SpraySources();
+  const options = {
+    count: 20,
+    life: 1,
+    spread: 2,
+    size: 1,
+    flicker: 0.6,
+    colour: [1, 0.5, 0.2],
+    seed: 1,
+  };
+  const originOffset = sourceLane.origin * SOURCE_COMPONENTS;
+  const receive = (x) => {
+    sources.reset(2.2);
+    sources.receive({ kind: 'fixed', origin: [x, 1, 0] }, 0, 3, 2.2, options);
+  };
+  receive(-0);
+  assert.equal(sources.data[originOffset], -0, 'fresh allocation must preserve the authored sign');
+  const negativeFrame = sources.data.slice(0, SOURCE_SCALARS);
+  receive(0);
+  assert.equal(sources.data[originOffset], 0);
+  assert.equal(sources.dirty, true, 'a changed zero sign needs a texture upload');
+  receive(-0);
+  assert.deepEqual(sources.data.slice(0, SOURCE_SCALARS), negativeFrame);
+  assert.equal(sources.dirty, true);
+  receive(-0);
+  assert.equal(sources.dirty, false, 'an identical record still reuses its texture');
+});
