@@ -22,6 +22,7 @@ export function prepareEdit(
     .flatMap((op) => (op.op === 'swap_product' ? [op.product_id] : []));
   const input = {
     ...current,
+    music: plan.solver_snapshot.music,
     preferred_mood: plan.solver_snapshot.preferred_mood,
     products: current.products.filter((product) => !swapped.includes(product.product_id)),
   };

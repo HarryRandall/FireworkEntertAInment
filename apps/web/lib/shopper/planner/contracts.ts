@@ -1,5 +1,6 @@
 /** Validated planner requests and persisted snapshots across the server boundary. */
 import { z } from 'zod';
+import { soundtrackSchema } from '../music/contracts';
 import { savedEditSchema } from './edit-contracts';
 import {
   planAnswersSchema,
@@ -60,6 +61,8 @@ const savedCandidateSchema = z.object({
   id: z.string().uuid(),
   rank: z.number().int().positive(),
   revision: z.number().int().nonnegative(),
+  soundtrack_track_id: z.string().uuid().nullable().default(null),
+  soundtrack_analysis_id: z.string().uuid().nullable().default(null),
   name: z.string().nullable(),
   mood: z.string(),
   cues: z.array(
@@ -83,6 +86,7 @@ export const savedPlanSchema = z.object({
   solver_snapshot: plannerInputSchema,
   plan_candidates: z.array(savedCandidateSchema).min(1),
   plan_edits: z.array(savedEditSchema),
+  soundtrack: soundtrackSchema.nullable().default(null),
 });
 /** Owned and validated persisted planning session. */
 export type SavedPlan = z.infer<typeof savedPlanSchema>;

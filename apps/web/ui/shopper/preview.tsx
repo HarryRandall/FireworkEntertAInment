@@ -9,6 +9,7 @@ import {
   type Shot,
 } from '@showcrafter/fireworks/view';
 import { Button } from '@/ui/primitives/button';
+import { useSoundtrack } from './use-soundtrack';
 import { recordShopperView } from './view-events';
 
 // QR prototype stage height: 360 CSS px minimum, 64 viewport-height units, 760 CSS px maximum.
@@ -69,12 +70,22 @@ export function Preview({
   shots,
   title,
   prop,
+  soundtrackUrl,
+  soundtrackOffsetMs = 0,
 }: {
   shots: readonly Shot[];
   title: string;
   prop?: 'cake';
+  soundtrackUrl?: string;
+  soundtrackOffsetMs?: number;
 }) {
   const { container, viewer, state, error } = usePreview(shots, prop);
+  const soundtrack = useSoundtrack(
+    viewer,
+    { url: soundtrackUrl, offsetMs: soundtrackOffsetMs },
+    shots,
+    state.duration,
+  );
   return (
     <section
       aria-label={`${title} preview`}
@@ -84,6 +95,7 @@ export function Preview({
       <div ref={container} className={`relative ${STAGE_HEIGHT_CLASS} overflow-hidden`} />
       <div className="bg-stage/90 absolute inset-x-0 bottom-0 grid gap-3 p-4">
         <p className="truncate text-sm font-semibold">{title}</p>
+        {soundtrack.failure !== undefined ? <p role="alert">{soundtrack.failure}</p> : null}
         {error !== undefined ? (
           <p role="alert">{error}</p>
         ) : (
@@ -93,7 +105,9 @@ export function Preview({
               disabled={state.duration === 0}
               onClick={() => {
                 if (!state.playing) recordShopperView({ kind: 'show_play', target: title });
-                viewer.current?.toggle();
+                if (soundtrack.transport.current)
+                  soundtrack.transport.current.toggle().catch(console.error);
+                else viewer.current?.toggle();
               }}
             >
               {state.playing ? 'Pause' : 'Play'}
@@ -106,7 +120,9 @@ export function Preview({
               step={SEEK_STEP_SECONDS}
               value={state.time}
               onChange={(event) => {
-                viewer.current?.seek(Number(event.target.value));
+                const seconds = Number(event.target.value);
+                if (soundtrack.transport.current) soundtrack.transport.current.seek(seconds);
+                else viewer.current?.seek(seconds);
               }}
               className="accent-highlight focus-visible:outline-ring min-w-0 flex-1 focus-visible:outline-2 focus-visible:outline-offset-4"
             />

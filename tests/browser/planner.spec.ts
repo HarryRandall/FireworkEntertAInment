@@ -123,7 +123,7 @@ for (const [viewportName, viewport] of Object.entries(viewports)) {
       await expect(page.getByText('Preparing 3D poster', { exact: true })).toHaveCount(0);
       await capture(page, info, `${viewportName}-${theme}-show`);
       await expect(page.getByRole('button', { name: 'Change it', exact: true })).toBeEnabled();
-      await expect(page.getByRole('button', { name: 'Pick music' })).toBeDisabled();
+      await expect(page.getByRole('button', { name: 'Pick music' })).toBeEnabled();
       await expect(page.getByRole('button', { name: 'Save to list' })).toBeDisabled();
     });
   }

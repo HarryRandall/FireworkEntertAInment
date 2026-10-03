@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
-import { musicAnalysisSchema } from '../src/index.ts';
+import { musicAnalysisSchema } from '@showcrafter/planner/music';
 
 const fixtureRoot = new URL('../../../services/music-analyser/tests/fixtures/', import.meta.url);
 const fixture = JSON.parse(readFileSync(new URL('analysis.json', fixtureRoot), 'utf8'));

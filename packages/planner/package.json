@@ -22,6 +22,7 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./input": "./src/solver/input.ts"
+    "./input": "./src/solver/input.ts",
+    "./music": "./src/music/analysis.ts"
   }
 }

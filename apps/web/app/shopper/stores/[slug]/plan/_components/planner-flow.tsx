@@ -114,6 +114,7 @@ function PlannerScreen({
         pending={state.pending}
         onDifferent={state.alternative}
         onEdit={state.edit}
+        onMusic={state.music}
       />
     );
   }

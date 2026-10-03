@@ -2,7 +2,9 @@
 
 A synchronous, deterministic Node solver over a validated store snapshot. It does
 not query a database, reserve stock, charge credits or call a model. Import the
-public API from `src/index.ts`.
+public API from `src/index.ts`. Browser validation imports
+`@showcrafter/planner/input` or `@showcrafter/planner/music` so it does not pull
+the Node solver and its hashing dependencies into client bundles.
 
 ```ts
 const result = solvePlan(snapshot);

@@ -1,5 +1,6 @@
 /** Cookie-bound public RPC reads retain failures and validate their limited data contracts. */
 import 'server-only';
+import { readShowSoundtrack } from './music/readers';
 import { cookies } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
 import { qrSchema, storePageSchema, storeProductSchema, showPageSchema } from './contracts';
@@ -23,7 +24,9 @@ export async function readShow(store: string, id: string) {
   const client = createClient(await cookies());
   const { data, error } = await client.rpc('show_for_store', { p_store: store, p_show: id });
   if (error) throw error;
-  return data === null ? null : showPageSchema.parse(data);
+  return data === null
+    ? null
+    : { ...showPageSchema.parse(data), soundtrack: await readShowSoundtrack(store, id) };
 }
 /** Resolves a permanent QR code without reading raw retailer tables. */
 export async function readQr(slug: string) {

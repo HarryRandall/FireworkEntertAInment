@@ -4509,6 +4509,14 @@ returns jsonb language sql stable set search_path = '' as $$ select private.plan
 comment on function public.planner_context(uuid) is 'Returns the restricted public planner input slice for one open store.';
 
 -- Only the trusted solver boundary may author money, clocks and candidates.
+-- Shopper soundtrack snapshots carry the exact shared analysis used for their cues.
+alter table public.music_tracks add column source_audio_url text
+  check (source_audio_url ~ '^https://(prod-1\.storage\.jamendo\.com|prod-2\.storage\.jamendo\.com|storage\.jamendo\.com)/');
+comment on column public.music_tracks.source_audio_url is 'Validated provider audio source for pending analysis and playback; never supplied directly by a shopper.';
+alter table public.plan_candidates add column soundtrack_track_id uuid references public.music_tracks(id);
+alter table public.plan_candidates add column soundtrack_analysis_id uuid references public.music_analyses(id);
+
+
 create function private.persist_planner_result(p_shopper uuid,p_session uuid,p_store uuid,p_snapshot jsonb,
   p_hash text,p_solver text,p_candidate jsonb,p_qr uuid default null)
 returns uuid language plpgsql security definer set search_path = '' as $$
@@ -4562,9 +4570,10 @@ begin
         (p_snapshot->'age_confirmation'->>'confirmed_at')::timestamptz,p_solver,p_hash,p_snapshot);
     perform private.charge_plan_session(p_session);
   end if;
-  insert into public.plan_candidates(session_id,rank,mood,name,cues,total_minor,currency,duration_ms,scores,picked_at)
+  insert into public.plan_candidates(session_id,rank,mood,name,cues,total_minor,currency,duration_ms,scores,picked_at,soundtrack_track_id,soundtrack_analysis_id)
     values (p_session,v_rank,p_candidate->>'mood',p_candidate->>'name',p_candidate->'cues',(p_candidate->>'total_minor')::bigint,
-      p_candidate->>'currency',(p_candidate->>'duration_ms')::int,p_candidate->'scores',clock_timestamp()) returning id into v_candidate;
+      p_candidate->>'currency',(p_candidate->>'duration_ms')::int,p_candidate->'scores',clock_timestamp(),(p_snapshot->'answers'->>'soundtrack')::uuid,
+      (select soundtrack_analysis_id from public.plan_candidates where session_id = p_session order by rank desc limit 1)) returning id into v_candidate;
   return v_candidate;
 end;
 $$;
@@ -4645,6 +4654,163 @@ returns uuid language sql set search_path = '' as $$
   select private.persist_plan_edit(p_shopper,p_session,p_candidate,p_revision,p_seq,p_hash,p_edit,p_snapshot,p_result);
 $$;
 comment on function public.persist_plan_edit(uuid,uuid,uuid,int,int,text,jsonb,jsonb,jsonb) is 'Persists a server-verified chip or rule edit; shoppers cannot author results directly.';
+
+create function private.validate_plan_soundtrack()
+returns trigger language plpgsql security definer set search_path = '' as $$
+begin
+  if new.soundtrack_analysis_id is not null and not exists (
+    select from public.music_analyses analysis where analysis.id = new.soundtrack_analysis_id
+      and analysis.track_id = new.soundtrack_track_id) then
+    raise exception using errcode = '23514',message = 'Analysis must match plan soundtrack';
+  end if;
+  return new;
+end;
+$$;
+comment on function private.validate_plan_soundtrack() is 'Ensures each candidate pins features belonging to its selected soundtrack.';
+create trigger validate_plan_soundtrack before insert or update on public.plan_candidates
+  for each row execute function private.validate_plan_soundtrack();
+
+create function private.import_shopper_track(p_shopper uuid,p_session uuid,p_track jsonb)
+returns uuid language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  v_track uuid;
+  -- Import abuse budget: six requests in a burst, one restored token per minute.
+  v_capacity constant int := 6;
+  v_refill_seconds constant int := 60;
+begin
+  if not exists (select from public.plan_sessions session join public.profiles profile on profile.id = session.shopper_id
+    where session.id = p_session and session.shopper_id = p_shopper and profile.status = 'active') then
+    raise exception using errcode = '42501',message = 'Owned active planning session required';
+  end if;
+  if not private.consume_rate_limit('music:import:' || p_shopper,v_capacity,1.0 / v_refill_seconds) then
+    raise exception using errcode = 'P0001',message = 'Planner rate limit reached';
+  end if;
+  insert into public.music_tracks(provider,provider_track_id,title,artist,duration_ms,licence_code,licence_url,attribution,source_audio_url,status)
+    values ('jamendo',p_track->>'provider_track_id',p_track->>'title',p_track->>'artist',(p_track->>'duration_ms')::int,
+      p_track->>'licence_code',p_track->>'licence_url',p_track->>'attribution',p_track->>'audio_url','published')
+    on conflict (provider,provider_track_id) do update set title = excluded.title,artist = excluded.artist,
+      licence_code = excluded.licence_code,licence_url = excluded.licence_url,attribution = excluded.attribution,
+      source_audio_url = excluded.source_audio_url
+    where public.music_tracks.status <> 'withdrawn' returning id into v_track;
+  if v_track is null then raise exception using errcode = '23514',message = 'Track is unavailable'; end if;
+  if not exists (select from public.music_analyses analysis where analysis.track_id = v_track and analysis.is_current) then
+    insert into public.jobs(kind,payload) values ('music_analyse',jsonb_build_object('track_id',v_track,'audio_url',p_track->>'audio_url'))
+      on conflict do nothing;
+  end if;
+  return v_track;
+end;
+$$;
+comment on function private.import_shopper_track(uuid,uuid,jsonb) is 'Imports server-validated Jamendo metadata for an owned session; reuses shared identity and queues at most one active analysis without spending credits.';
+create function public.import_shopper_track(p_shopper uuid,p_session uuid,p_track jsonb)
+returns uuid language sql set search_path = '' as $$ select private.import_shopper_track(p_shopper,p_session,p_track); $$;
+comment on function public.import_shopper_track(uuid,uuid,jsonb) is 'Service-only transactional import and deduplicated shared analysis enqueue.';
+
+create function private.plan_soundtrack(p_session uuid)
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  v_candidate public.plan_candidates;
+begin
+  if not private.owns_plan(p_session) then return null; end if;
+  select candidate.* into v_candidate from public.plan_candidates candidate where candidate.session_id = p_session order by rank desc limit 1;
+  return (select jsonb_build_object('track_id',track.id,'provider_track_id',track.provider_track_id,'title',track.title,'artist',track.artist,
+    'licence_code',track.licence_code,'licence_url',track.licence_url,'attribution',track.attribution,
+    'source_audio_url',track.source_audio_url,'audio_media_id',case when analysis.id is null then track.audio_media_id else
+      (select media.id from public.media media where media.bucket = 'audio' and media.path = track.id::text || '/' || analysis.audio_sha256) end,
+    'analysis_id',analysis.id,'analysis',analysis.analysis,'pinned_analysis_id',v_candidate.soundtrack_analysis_id)
+    from public.music_tracks track left join public.music_analyses analysis on analysis.track_id = track.id
+      and (case when v_candidate.soundtrack_analysis_id is null then analysis.is_current else analysis.id = v_candidate.soundtrack_analysis_id end)
+    where track.id = v_candidate.soundtrack_track_id and track.status = 'published');
+end;
+$$;
+comment on function private.plan_soundtrack(uuid) is 'Owned soundtrack metadata and exact pinned features, or current features when a pending candidate can be retimed; analysis clocks are seconds.';
+create function public.plan_soundtrack(p_session uuid)
+returns jsonb language sql stable set search_path = '' as $$ select private.plan_soundtrack(p_session); $$;
+comment on function public.plan_soundtrack(uuid) is 'Returns only the caller-owned latest candidate soundtrack; unauthorised and silent plans return null.';
+
+create function private.persist_plan_music(p_shopper uuid,p_session uuid,p_candidate uuid,p_revision int,p_hash text,
+  p_snapshot jsonb,p_result jsonb,p_track uuid default null,p_analysis uuid default null,p_next_hash text default null)
+returns uuid language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  v_session public.plan_sessions;
+  v_candidate public.plan_candidates;
+  -- Same bounded mutation budget as chip edits: six requests, one token per minute.
+  v_capacity constant int := 6;
+  v_refill_seconds constant int := 60;
+begin
+  perform pg_advisory_xact_lock(hashtextextended(p_session::text,0));
+  select session.* into v_session from public.plan_sessions session where session.id = p_session for update;
+  if v_session.shopper_id is distinct from p_shopper or not exists (
+    select from public.profiles profile where profile.id = p_shopper and profile.status = 'active') then
+    raise exception using errcode = '42501',message = 'Owned active planning session required';
+  end if;
+  select candidate.* into v_candidate from public.plan_candidates candidate where candidate.id = p_candidate and candidate.session_id = p_session for update;
+  if v_candidate.id is null or v_candidate.revision <> p_revision or v_session.input_hash <> p_hash
+    or v_candidate.rank <> (select max(rank) from public.plan_candidates where session_id = p_session) then
+    raise exception using errcode = '40001',message = 'Plan changed; reload before editing';
+  end if;
+  if nullif(p_next_hash,'') is null or p_snapshot->>'store_id' is distinct from v_session.store_id::text
+    or p_snapshot->'age_confirmation' is distinct from v_session.solver_snapshot->'age_confirmation'
+    or p_snapshot->'answers'->>'soundtrack' is distinct from p_track::text
+    or p_result->>'currency' is distinct from v_candidate.currency::text
+    or (p_result->>'total_minor')::bigint > (p_snapshot->'answers'->>'budget_minor')::bigint
+    or (p_analysis is not null and not exists (select from public.music_analyses analysis
+      where analysis.id = p_analysis and analysis.track_id = p_track and analysis.analysis = p_snapshot->'music'))
+    or (p_analysis is null and p_snapshot->'music' is distinct from 'null'::jsonb) then
+    raise exception using errcode = '23514',message = 'Music snapshot mismatch';
+  end if;
+  if p_track is not null and not exists (select from public.music_tracks track where track.id = p_track and track.status = 'published') then
+    raise exception using errcode = '23514',message = 'Track is unavailable';
+  end if;
+  if not private.consume_rate_limit('planner:edit:' || p_shopper,v_capacity,1.0 / v_refill_seconds) then
+    raise exception using errcode = 'P0001',message = 'Planner rate limit reached';
+  end if;
+  update public.plan_candidates set revision = revision + 1,name = p_result->>'name',mood = p_result->>'mood',
+    cues = p_result->'cues',total_minor = (p_result->>'total_minor')::bigint,duration_ms = (p_result->>'duration_ms')::int,
+    scores = p_result->'scores',soundtrack_track_id = p_track,soundtrack_analysis_id = p_analysis where id = p_candidate;
+  update public.plan_sessions set answers = p_snapshot->'answers',solver_snapshot = p_snapshot,input_hash = p_next_hash where id = p_session;
+  return p_candidate;
+end;
+$$;
+comment on function private.persist_plan_music(uuid,uuid,uuid,int,text,jsonb,jsonb,uuid,uuid,text) is 'Atomically revises an owned server-solved candidate and pins its analysis with stale-write and abuse fences; never charges a credit.';
+create function public.persist_plan_music(p_shopper uuid,p_session uuid,p_candidate uuid,p_revision int,p_hash text,
+  p_snapshot jsonb,p_result jsonb,p_track uuid default null,p_analysis uuid default null,p_next_hash text default null)
+returns uuid language sql set search_path = '' as $$
+  select private.persist_plan_music(p_shopper,p_session,p_candidate,p_revision,p_hash,p_snapshot,p_result,p_track,p_analysis,p_next_hash);
+$$;
+comment on function public.persist_plan_music(uuid,uuid,uuid,int,text,jsonb,jsonb,uuid,uuid,text) is 'Service-only persistence of a verified soundtrack solve and its immutable feature identity.';
+
+-- Saved show playback reads the version's pin, never a replacement current analysis.
+create function private.show_soundtrack(p_store uuid,p_show uuid)
+returns jsonb language sql stable security definer set search_path = '' as $$
+  select jsonb_build_object('track_id',track.id,'provider_track_id',track.provider_track_id,'title',track.title,
+    'artist',track.artist,'licence_code',track.licence_code,'licence_url',track.licence_url,'attribution',track.attribution,
+    'source_audio_url',track.source_audio_url,'audio_media_id',case when analysis.id is null then track.audio_media_id else
+      (select media.id from public.media media where media.bucket = 'audio' and media.path = track.id::text || '/' || analysis.audio_sha256) end,
+    'analysis_id',analysis.id,'analysis',analysis.analysis,'pinned_analysis_id',version.soundtrack_analysis_id,
+    'offset_ms',version.soundtrack_offset_ms)
+  from public.shows show join public.show_versions version on version.id = show.current_version_id
+    join public.music_tracks track on track.id = show.soundtrack_track_id and track.status = 'published'
+    left join public.music_analyses analysis on analysis.id = version.soundtrack_analysis_id and analysis.track_id = track.id
+  where show.id = p_show and private.show_for_store(p_show,p_store) is not null;
+$$;
+comment on function private.show_soundtrack(uuid,uuid) is 'Returns attribution and pinned music for a show visible at this store, including the version offset in milliseconds from audio origin.';
+create function public.show_soundtrack(p_store uuid,p_show uuid)
+returns jsonb language sql stable set search_path = '' as $$ select private.show_soundtrack(p_store,p_show); $$;
+comment on function public.show_soundtrack(uuid,uuid) is 'Public soundtrack read through the existing store/show visibility fence; inaccessible shows return null.';
+
+create function private.music_track_analysis(p_session uuid,p_track uuid)
+returns jsonb language sql stable security definer set search_path = '' as $$
+  select jsonb_build_object('analysis_id',analysis.id,'analysis',analysis.analysis)
+  from public.music_analyses analysis join public.music_tracks track on track.id = analysis.track_id
+  where private.owns_plan(p_session) and track.id = p_track and track.status = 'published' and analysis.is_current;
+$$;
+comment on function private.music_track_analysis(uuid,uuid) is 'Reads validated-provider track features only within an owned planning session; current features use seconds from audio origin.';
+create function public.music_track_analysis(p_session uuid,p_track uuid)
+returns jsonb language sql stable set search_path = '' as $$ select private.music_track_analysis(p_session,p_track); $$;
+comment on function public.music_track_analysis(uuid,uuid) is 'Ownership-fenced lookup for a newly selected published soundtrack; no raw music table read is required.';
 
 -- Retailer integration metadata; credentials live in Vault and API keys are hashes.
 create table public.integrations (
