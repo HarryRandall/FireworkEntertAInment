@@ -1,11 +1,13 @@
 /** Stateless simulation entry point for launches, shell breaks and ground effects. */
+import type { SimulationOptions } from './simulation-options';
+export type { SimulationOptions } from './simulation-options';
 import { prototypeOr } from './numeric';
 import { resolveDesign, type Design, type Fade } from '../schema/index';
 import { brightnessAt, colourAt, rgb, type Vec3 } from './colour';
 import { fillCore } from './core';
 import { directions } from './directions';
 import { fadeAlpha, starAppearance } from './fade';
-import { MUZZLE_M, launchPos, type ShotPlacement } from './launch';
+import { MUZZLE_M, launchPos } from './launch';
 import { launchTailColour } from './launch-colour';
 import { LAUNCH_STYLES } from './launch-styles';
 import { fillGround } from './kinds/ground';
@@ -77,17 +79,6 @@ const LAUNCH_STROBE_SEED_PHASE = 0.37;
 // Prototype visual tuning: mine flash s (seconds).
 const MINE_FLASH_S = 0.2;
 
-export interface SimulationOptions extends ShotPlacement {
-  /** Optional deterministic seed override; zero retains the stored seed fallback. */
-  seed?: number;
-  /** Whether to emit CPU spray points; enabled by default. */
-  sprays?: boolean;
-  /** Whether to emit smoke attributes; enabled by default. */
-  smoke?: boolean;
-  /** Whether to emit flame, blossoms and climb crackle; enabled by default. */
-  launchEffects?: boolean;
-}
-
 /**
  * Simulates fresh particle arrays for a design at a firing-relative time.
  * @param design - Validated design with stored units.
@@ -102,7 +93,12 @@ export function simulate(
 ): Particles {
   design = resolveDesign(design);
   if (!Number.isFinite(time_s)) throw new RangeError('Simulation time must be finite');
-  const writer = new ParticleWriter(options.sprays, options.smoke, options.launchEffects);
+  const writer = new ParticleWriter(
+    options.sprays,
+    options.smoke,
+    options.launchEffects,
+    options.sprayBirth,
+  );
   if (time_s < 0) return writer.finish();
   // Preserve the prototype's seed-zero fallback, including for a playback override.
   const seed = prototypeOr(options.seed ?? design.seed, 1);
