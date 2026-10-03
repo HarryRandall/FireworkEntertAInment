@@ -12,7 +12,8 @@ function narrowDesign(doc: Design): number {
 
 const parse: (doc: unknown, version: number) => Design = upgradeDesign;
 const layerName = (layer: Layer): string => layer.name;
-void [narrowDesign, parse, layerName];
+/** Compile-time assignability evidence for the public API. */
+export const schemaTypeChecks = [narrowDesign, parse, layerName];
 
 import {
   simulate,
@@ -37,7 +38,8 @@ const options: SimulationOptions = {
 const particleCount = (frame: Particles): number => frame.kinds.length;
 const smokeOutput = (frame: Particles): SmokeParticles => frame.smoke;
 const kind: ParticleKind = ParticleKind.Head;
-void [evaluate, duration, options, particleCount, smokeOutput, kind];
+/** Compile-time assignability evidence for the public API. */
+export const simulationTypeChecks = [evaluate, duration, options, particleCount, smokeOutput, kind];
 
 import {
   effectTemplates,
@@ -52,4 +54,11 @@ const templateGroup: EffectTemplateGroup = 'Shells';
 const templateDesign = (entry: EffectTemplate): Design => entry.design;
 // @ts-expect-error Unknown keys are not members of the built-in catalogue.
 const unknownTemplate: EffectTemplateKey = 'unknown-template';
-void [catalogue, templateKey, templateGroup, templateDesign, unknownTemplate];
+/** Compile-time assignability evidence for the public API. */
+export const templateTypeChecks = [
+  catalogue,
+  templateKey,
+  templateGroup,
+  templateDesign,
+  unknownTemplate,
+];
