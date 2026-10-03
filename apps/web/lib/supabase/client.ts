@@ -1,6 +1,7 @@
 /** Browser-side Supabase client factory (uses the publishable anon key); call from Client Components. */
 
 import { createBrowserClient } from '@supabase/ssr';
+import { type Database } from '@/lib/database.types';
 import { getSupabaseBrowserEnv } from '@/lib/supabase/env';
 
 /** Creates a browser client from configured public Supabase credentials. */
@@ -11,5 +12,5 @@ export const createClient = () => {
       'Supabase browser client: set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY, or NEXT_PUBLIC_SUPABASE_ANON_KEY (must be NEXT_PUBLIC_* for the browser).',
     );
   }
-  return createBrowserClient(env.url, env.key);
+  return createBrowserClient<Database>(env.url, env.key);
 };

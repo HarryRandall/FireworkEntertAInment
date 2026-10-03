@@ -11,7 +11,8 @@ const eslintConfig = [
   ...nextVitals,
   ...nextTypescript,
   {
-    ignores: ['.next*/**', 'node_modules/**', 'next-env.d.ts'],
+    // Generated files: Next type stubs and Supabase types from `pnpm db:types`.
+    ignores: ['.next*/**', 'node_modules/**', 'next-env.d.ts', 'lib/database.types.ts'],
   },
   {
     files: ['app/**/*.{ts,tsx}', 'ui/**/*.{ts,tsx}'],

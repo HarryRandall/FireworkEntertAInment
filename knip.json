@@ -20,6 +20,7 @@
   },
   "ignoreIssues": {
     "apps/web/hooks/use-mobile.ts": ["files"],
+    "apps/web/lib/database.types.ts": ["files"],
     "apps/web/hooks/use-prefers-reduced-motion.ts": ["files"],
     "apps/web/lib/supabase/client.ts": ["files"],
     "apps/web/lib/supabase/errors.ts": ["files"],
