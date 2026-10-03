@@ -1,6 +1,7 @@
 /** Public shop identity and safety footer outside the workspace shell. */
 import Link from 'next/link';
 import Image from 'next/image';
+import { Button } from '@/ui/primitives/button';
 import { publicVisualUrl } from '@/lib/shopper/media';
 import type { StorePage } from '@/lib/shopper/contracts';
 import { storePath } from '@/lib/shopper/paths';
@@ -40,11 +41,14 @@ export function StoreHeader({ store }: { store: StorePage }) {
       </span>
       <Link
         href={storePath(store.store.slug)}
-        className="focus-visible:outline-ring min-w-0 rounded focus-visible:outline-2"
+        className="focus-visible:outline-ring min-w-0 flex-1 rounded focus-visible:outline-2"
       >
         <b className="block text-sm">{store.organisation.name}</b>
         <span className="text-muted-foreground block text-xs">{store.store.name}</span>
       </Link>
+      <Button asChild variant="ghost" className="shrink-0">
+        <Link href={`${storePath(store.store.slug)}/list`}>My list</Link>
+      </Button>
     </header>
   );
 }

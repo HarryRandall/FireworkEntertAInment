@@ -6,12 +6,14 @@ declare
   v_changed bigint;
 begin
   update public.lists as list set status = 'expired'
-    where list.status = 'open' and list.valid_until < (now() at time zone 'UTC')::date;
+    from public.stores as store
+    where store.id = list.store_id and list.status = 'open'
+      and list.valid_until < (now() at time zone store.timezone)::date;
   get diagnostics v_changed = row_count;
   return v_changed;
 end;
 $$;
-comment on function private.expire_lists() is 'Expires open lists before today in UTC, preserving redeemed lists and the inclusive validity date; returns rows changed.';
+comment on function private.expire_lists() is 'Expires open lists before today in store time, preserving redeemed lists and the inclusive validity date; returns rows changed.';
 
 create function private.expire_invitations()
 returns bigint language plpgsql security definer set search_path = '' as $$

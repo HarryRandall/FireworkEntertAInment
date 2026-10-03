@@ -6375,6 +6375,16 @@ export type Database = {
         Returns: string
       }
       accept_invitation: { Args: { p_token: string }; Returns: string }
+      add_shopper_list: {
+        Args: {
+          p_candidate?: string
+          p_product?: string
+          p_request: string
+          p_revision?: number
+          p_store: string
+        }
+        Returns: string
+      }
       archive_effect: { Args: { p_effect_id: string }; Returns: undefined }
       archive_product: { Args: { p_product_id: string }; Returns: undefined }
       claim_job: {
@@ -6625,6 +6635,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      save_shopper_consent: {
+        Args: {
+          p_marketing: boolean
+          p_organisation: string
+          p_version: string
+          p_visible: boolean
+        }
+        Returns: undefined
+      }
       save_show: {
         Args: {
           p_change_note?: string
@@ -6669,7 +6688,12 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      set_list_quantity: {
+        Args: { p_list: string; p_product: string; p_quantity: number }
+        Returns: undefined
+      }
       shop_customers: { Args: { p_organisation: string }; Returns: Json }
+      shopper_account: { Args: never; Returns: Json }
       show_for_store: {
         Args: { p_show: string; p_store: string }
         Returns: Json

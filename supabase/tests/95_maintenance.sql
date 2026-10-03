@@ -2,12 +2,12 @@
 select no_plan();
 select tests.create_operations_fixture();
 -- valid_until is inclusive; redeemed lists remain a historical receipt.
-update public.lists set valid_until = (now() at time zone 'UTC')::date - 1
+update public.lists set valid_until = (now() at time zone 'Europe/London')::date - 1
   where id in ('a2000000-0000-0000-0000-000000000001','a2000000-0000-0000-0000-000000000003');
-update public.lists set valid_until = (now() at time zone 'UTC')::date
+update public.lists set valid_until = (now() at time zone 'Europe/London')::date
   where id = 'a2000000-0000-0000-0000-000000000002';
 set local timezone = 'Pacific/Auckland';
-select is(private.expire_lists(),1::bigint,'only yesterday open list expires even outside UTC');
+select is(private.expire_lists(),1::bigint,'only yesterday open list expires using the store calendar');
 select is((select status from public.lists where id = 'a2000000-0000-0000-0000-000000000002'),'open','today list remains valid');
 select is((select status from public.lists where id = 'a2000000-0000-0000-0000-000000000003'),'redeemed','redeemed history preserved');
 select is(private.expire_lists(),0::bigint,'list expiry is idempotent');

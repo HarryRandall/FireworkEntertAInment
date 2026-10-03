@@ -9,6 +9,7 @@ import { Preview } from '@/ui/shopper/preview';
 import { StoreHeader, StoreFooter } from '@/ui/shopper/store-header';
 import { ViewEvent } from '@/ui/shopper/view-events';
 import { Badge, Callout } from '@/ui/kit/feedback';
+import { AddListButton } from '@/ui/shopper/add-list-button';
 import { Button } from '@/ui/primitives/button';
 
 /** Shows only a published, visible product at the requested open store. */
@@ -49,9 +50,12 @@ export default async function Page({ params }: { params: Promise<{ slug: string;
           <Button asChild>
             <Link href={`${base}/plan${context}`}>Plan a show around this</Link>
           </Button>
-          <Button asChild variant="outline">
-            <Link href={`${base}/list${context}`}>Add to my list</Link>
-          </Button>
+          <AddListButton
+            store={store.store.id}
+            slug={slug}
+            product={id}
+            disabled={product.stock_qty === 0}
+          />
         </div>
         <Callout title="Before you choose">
           {product.min_safety_distance_m === null

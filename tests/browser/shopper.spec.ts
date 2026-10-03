@@ -147,8 +147,10 @@ test('product actions retain context and transport supports keyboard seek and pl
   await expect(page).toHaveURL(new RegExp(`/plan\\?product=${productId}$`));
   await expect(page.getByRole('heading', { name: 'Before we plan' })).toBeVisible();
   await page.goto(productUrl.toString());
-  await page.getByRole('link', { name: 'Add to my list' }).click();
-  await expect(page).toHaveURL(new RegExp(`/list\\?product=${productId}$`));
+  await expect(async () => {
+    await page.getByRole('button', { name: 'Add to my list' }).click();
+    await expect(page).toHaveURL(/\/list\?id=[a-f0-9-]+$/);
+  }).toPass();
 });
 
 test('missing store and malformed product identifiers show a friendly unavailable page', async ({

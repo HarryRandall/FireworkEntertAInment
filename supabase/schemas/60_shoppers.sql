@@ -272,7 +272,7 @@ begin
     raise exception using errcode = '42501', message = 'Active shopper required';
   end if;
   if p_items is null or jsonb_typeof(p_items) <> 'array' or jsonb_array_length(p_items) = 0
-    or p_valid_until is null or p_valid_until < current_date then
+    or p_valid_until is null or p_valid_until < (now() at time zone (select timezone from public.stores where id = p_store))::date then
     raise exception using errcode = '23514', message = 'Non-empty items and unexpired validity required';
   end if;
   if p_candidate is not null and not exists (
@@ -349,3 +349,31 @@ $$;
 comment on function private.record_shopper_consent() is 'Stamps consent choices with database transaction time and preserves the original shopper and organisation identity.';
 create trigger record_consent before insert or update on public.follows
   for each row execute function private.record_shopper_consent();
+
+-- Consent writes derive ownership and leave identity columns outside the conflict update.
+create function private.save_shopper_consent(p_organisation uuid,p_visible boolean,p_marketing boolean,p_version text)
+returns void language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  shopper uuid := private.uid();
+begin
+  if not private.owns_shopper(shopper) then
+    raise exception using errcode = '42501', message = 'Active shopper required';
+  end if;
+  if p_organisation is null or p_visible is null or p_marketing is null
+    or p_version is null or length(p_version) = 0 then
+    raise exception using errcode = '23514', message = 'Complete consent choices required';
+  end if;
+  insert into public.follows(shopper_id,organisation_id,visible_to_shop,marketing_opt_in,consent_text_version)
+    values (shopper,p_organisation,p_visible,p_marketing,p_version)
+    on conflict (shopper_id,organisation_id) do update
+      set visible_to_shop = excluded.visible_to_shop, marketing_opt_in = excluded.marketing_opt_in,
+        consent_text_version = excluded.consent_text_version;
+end;
+$$;
+comment on function private.save_shopper_consent(uuid,boolean,boolean,text) is 'Atomically saves explicit consent for the active caller and one organisation, preserving identity and database-owned timestamps.';
+create function public.save_shopper_consent(p_organisation uuid,p_visible boolean,p_marketing boolean,p_version text)
+returns void language sql set search_path = '' as $$
+  select private.save_shopper_consent(p_organisation,p_visible,p_marketing,p_version);
+$$;
+comment on function public.save_shopper_consent(uuid,boolean,boolean,text) is 'Saves the caller''s independent activity and marketing choices for one organisation with the displayed consent version.';
