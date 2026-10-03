@@ -21,6 +21,28 @@ const row = (p, i) => [
   p.sizes[i],
   p.alphas[i],
 ];
+test('fountain glow uses its own height, falling back to the emitter without moving sparks', () => {
+  const d = kindCases().find((c) => c.name === 'kind-fountain').design;
+  const fountain = d.ground.fountain;
+  // Seconds into established emission and metres above ground, from prototype fountain tuning.
+  const sampleTimeS = 0.53;
+  const glowHeightM = 1.2;
+  const base = simulateAll(d, sampleTimeS);
+  const glowIndices = [...base.kinds.keys()].filter((i) => base.kinds[i] !== ParticleKind.Spark);
+  assert.ok(glowIndices.length > 0);
+  for (const i of glowIndices)
+    assert.equal(base.positions[i * 3 + 1], Math.fround(fountain.height_m));
+  for (const height of [glowHeightM, 0]) {
+    fountain.glow_height_m = height;
+    const changed = simulateAll(upgradeDesign(d, 1), sampleTimeS);
+    const expected = structuredClone(base);
+    for (const i of glowIndices) expected.positions[i * 3 + 1] = height;
+    assert.deepEqual(changed, expected);
+  }
+  fountain.emitters = 2;
+  assert.ok(simulateAll(d, sampleTimeS).kinds.every((k) => k === ParticleKind.Spark));
+  assert.equal(simulateAll(d, fountain.duration_s).kinds.includes(ParticleKind.Halo), false);
+});
 for (const c of golden.kinds) {
   test(`${c.name}: heads and discrete particles match the independent prototype capture`, () => {
     const d = upgradeDesign(kindCases().find((input) => input.name === c.name).design, 1);

@@ -1,0 +1,42 @@
+{
+  "key": "cone",
+  "name": "Cone fountain",
+  "group": "Ground",
+  "design": {
+    "kind": "fountain",
+    "launch": null,
+    "breaks": [],
+    "ground": {
+      "kind": "fountain",
+      "fountain": {
+        "duration_s": 7,
+        "rate_per_s": 1600,
+        "speed_m_s": 20,
+        "cone": 0.1,
+        "colour": "#ffd98a",
+        "life_s": 1.2,
+        "emitters": 1,
+        "spacing_m": 1.2,
+        "height_m": 0.6,
+        "glow_height_m": 1.2,
+        "direction": [0, 1, 0],
+        "streak": 2,
+        "gravity_m_s2": 14,
+        "drag_per_s": 0.9,
+        "size": 1,
+        "flicker": 0.3,
+        "glitter": 0,
+        "fork": 0,
+        "glow": 3,
+        "glow_alpha": 0.2
+      }
+    },
+    "sound": {
+      "lift": 0.7,
+      "break": 0.85,
+      "crackle": 0.6,
+      "whistle": 0
+    },
+    "seed": 11
+  }
+}

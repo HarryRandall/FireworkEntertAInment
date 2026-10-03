@@ -423,7 +423,12 @@ export function fillGround(
       });
     }
     if (time < f.duration_s && f.emitters === 1)
-      writer.glow([px, f.height_m, pz], rgb(FOUNTAIN_GLOW_COLOUR), f.glow, f.glow_alpha);
+      writer.glow(
+        [px, f.glow_height_m ?? f.height_m, pz],
+        rgb(FOUNTAIN_GLOW_COLOUR),
+        f.glow,
+        f.glow_alpha,
+      );
   } else if (design.kind === 'tourbillon') {
     const t = design.ground.tourbillon;
     for (let i = 0; i < t.count; i++) {

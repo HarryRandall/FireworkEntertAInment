@@ -1,0 +1,105 @@
+{
+  "key": "timeRain",
+  "name": "Time rain",
+  "group": "Shells",
+  "design": {
+    "kind": "shell",
+    "launch": {
+      "height_m": 78,
+      "time_s": 2.0523157651784487,
+      "tilt_deg": 0,
+      "tail": "glitter",
+      "sparks": 180,
+      "spread": 1.4,
+      "smoke": 1
+    },
+    "breaks": [
+      {
+        "at_s": 0,
+        "core": {
+          "enabled": false,
+          "colour": "#ff3b2f",
+          "count": 110,
+          "radius": 0.5,
+          "flash": 1,
+          "flash_on": true,
+          "ring": false
+        },
+        "fade": {
+          "white_hot": 0.03,
+          "ember_at": 0.8,
+          "fade_at": 0.72,
+          "prime_s": 0.25
+        },
+        "layers": [
+          {
+            "id": "l1",
+            "name": "Falling stars",
+            "pattern": "sphere",
+            "count": 58,
+            "radius_m": 24,
+            "tilt": 0.4,
+            "speed_var": 0.22,
+            "drag_per_s": 1.2,
+            "gravity_m_s2": 10,
+            "life_s": 6,
+            "life_var": 0.2,
+            "delay_s": 0,
+            "offset_m": [0, 0, 0],
+            "flash": true,
+            "hidden": false,
+            "colour": {
+              "mode": "solid",
+              "stops": [
+                [0, ["#ffe3a0"]],
+                [1, ["#ffe3a0"]]
+              ]
+            },
+            "brightness": [
+              [0, 1.2],
+              [1, 1.2]
+            ],
+            "head": {
+              "size": 0.4,
+              "visible": true
+            },
+            "trail": {
+              "sparks": 50,
+              "length_s": 1.6,
+              "spread_m_s": 0.6,
+              "gravity_m_s2": 5,
+              "drag_per_s": 2.6,
+              "size": 1,
+              "flicker": 0.1,
+              "colour": "#ffd27a",
+              "glitter": 1,
+              "glitter_delay_s": 0.3,
+              "fork": 0
+            },
+            "modifiers": [
+              {
+                "kind": "crackle",
+                "at": 0.3,
+                "rate_hz": 12,
+                "count": 3,
+                "amount": 1,
+                "spread": "continuous",
+                "gap": 0.12,
+                "angular_speed_rad_s": 0,
+                "rate_rad_s": 12
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "ground": null,
+    "sound": {
+      "lift": 0.7,
+      "break": 0.85,
+      "crackle": 0.6,
+      "whistle": 0
+    },
+    "seed": 11
+  }
+}

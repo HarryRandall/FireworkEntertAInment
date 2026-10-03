@@ -38,3 +38,18 @@ const particleCount = (frame: Particles): number => frame.kinds.length;
 const smokeOutput = (frame: Particles): SmokeParticles => frame.smoke;
 const kind: ParticleKind = ParticleKind.Head;
 void [evaluate, duration, options, particleCount, smokeOutput, kind];
+
+import {
+  effectTemplates,
+  type EffectTemplate,
+  type EffectTemplateKey,
+  type EffectTemplateGroup,
+} from '../src/index';
+
+const catalogue: readonly EffectTemplate[] = effectTemplates;
+const templateKey: EffectTemplateKey = 'saturn';
+const templateGroup: EffectTemplateGroup = 'Shells';
+const templateDesign = (entry: EffectTemplate): Design => entry.design;
+// @ts-expect-error Unknown keys are not members of the built-in catalogue.
+const unknownTemplate: EffectTemplateKey = 'unknown-template';
+void [catalogue, templateKey, templateGroup, templateDesign, unknownTemplate];

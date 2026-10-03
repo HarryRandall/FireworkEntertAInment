@@ -441,10 +441,10 @@
         },
         "tilt": {
           "type": "number",
-          "minimum": -1,
-          "maximum": 1,
+          "minimum": -2,
+          "maximum": 2,
           "default": 0.4,
-          "description": "Prototype ring tilt control: angle = tilt * pi / 2 + 0.3 radians."
+          "description": "Dimensionless ring tilt: angle = tilt * pi / 2 + 0.3 radians. The range -2 to 2 permits a half turn in either direction around the fixed offset."
         },
         "speed_var": {
           "type": "number",
@@ -1006,6 +1006,12 @@
           "maximum": 1000,
           "default": 0.6,
           "description": "Emitter height above ground, not plume height."
+        },
+        "glow_height_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000,
+          "description": "Height of the muzzle glow above the ground in metres. Defaults to height_m when absent."
         },
         "direction": {
           "$ref": "#/definitions/direction"

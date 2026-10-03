@@ -27,7 +27,7 @@ reignition is optional and applies only to colour changes.
 same values. It does not mutate the document or apply defaults. Invalid documents
 throw a Zod error containing property paths; unknown versions throw a range error.
 The version is stored externally as `design_schema`, not inside the document.
-`RENDERER_VERSION` is `0.4.0` for the CPU sprays and smoke port.
+`RENDERER_VERSION` is `0.4.1`, including an independently positioned fountain muzzle glow.
 
 ## Quick adjustments
 
@@ -81,7 +81,9 @@ Physical fields use `_m`, `_s`, `_deg`, `_rad_s`, `_hz`, `_per_s` or `_m_s2`.
 Dimensionless controls keep their names. In particular, layer `tilt` is the
 prototype's dimensionless ring control, core `radius` is a radius fraction,
 launch `spread` is a style multiplier, and fountain `cone` is a vector multiplier.
-Fountain `height_m` is emitter height, not plume height. Wheel spin is revolutions
+Fountain `height_m` is emitter height, not plume height. Optional `glow_height_m`
+sets the muzzle glow height above ground and falls back to `height_m` when absent.
+Wheel spin is revolutions
 per second; spinner, tourbillon and comet spin are radians per second. Positive
 drag and lifetimes avoid division by zero in the prototype's closed-form maths.
 Ranges include the actual renderer presets, rather than the editor spec's
@@ -124,48 +126,49 @@ Read from the reference checkout: `design`, `layer`, `trail`, direction helpers,
 `shotDuration`, `starPos`, `spray`, every `fill*` function, crossette/crackle,
 props, framing, sound events and `developedTime`, plus `editor-spec.json`. An
 in-memory inventory of all 99 presets found seven runtime kinds and 14 launch
-styles. No prototype file or converted preset was copied into this checkout.
+styles. The converted catalogue is stored separately from the reference prototype.
 
-| Prototype field                                                                                                            | Stored v1 field or decision                                                                                      |
-| -------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `kind`                                                                                                                     | Root discriminator; all seven runtime kinds plus `rocket` and `candle`                                           |
-| `name`, `group`, `key`                                                                                                     | Catalogue/template metadata, dropped from renderer input                                                         |
-| `launch.height`, `time`, `tilt`, `style`                                                                                   | `launch.height_m`, `time_s`, `tilt_deg`, `tail`                                                                  |
-| `launch.sparks`, `spread`, `smoke`                                                                                         | Same names; spread remains a style multiplier                                                                    |
-| Height scaling in `design()`                                                                                               | Store the final scaled `time_s`, no implicit rescaling on load                                                   |
-| Root `layers`, `core`, `fade`                                                                                              | `breaks[].layers`, `core`, `fade`                                                                                |
-| Layer `delay`                                                                                                              | Group into `break.at_s`; independent ignition uses `layer.delay_s`                                               |
-| Layer `offset`, `radius`, `drag`, `gravity`, `life`                                                                        | `offset_m`, `radius_m`, `drag_per_s`, `gravity_m_s2`, `life_s`                                                   |
-| Layer `name`, `pattern`, `count`, `tilt`, `speedVar`, `lifeVar`, `flash`, `hidden`                                         | Same names, with `speed_var` and `life_var`; add stable `id`                                                     |
-| Layer `twist`                                                                                                              | A `twist` modifier's `angular_speed_rad_s`                                                                       |
-| `colours`, `colourMode`, `changeTo`, `changeAt`                                                                            | `colour.mode`, palette-capable gradient `stops`, optional `reignition`; ghost uses a step                        |
-| `head.brightness`                                                                                                          | Layer `brightness` curve, constant for the prototype                                                             |
-| `head.size`, `visible`, `halo`                                                                                             | Same names; optional halo preserves contextual default                                                           |
-| `trail.sparks`, `size`, `flicker`, `colour`, `glitter`, `fork`                                                             | Same names; colour is `house`, `star` or hex                                                                     |
-| `trail.length`, `spread`, `gravity`, `drag`, `glitterDelay`                                                                | `length_s`, `spread_m_s`, `gravity_m_s2`, `drag_per_s`, `glitter_delay_s`                                        |
-| `effect.kind`, `at`, `count`, `amount`, `spread`, `gap`                                                                    | `modifiers[]` with the same fields; `none` becomes no modifier                                                   |
-| `effect.rate`                                                                                                              | `rate_hz` for strobe/twinkle, `rate_rad_s` for fish; other effects retain unused defaults                        |
-| `core.enabled`, `colour`, `count`, `radius`, `flash`, `ring`, `flashOn`                                                    | Same fields, with `flash_on`; radius remains a fraction                                                          |
-| `fade.whiteHot`, `emberAt`, `fadeAt`, `prime`                                                                              | `white_hot`, `ember_at`, `fade_at`, `prime_s`                                                                    |
-| Root `comets`                                                                                                              | `ground.comets` for `comet` or `candle`                                                                          |
-| `comets.count`, `pattern`, `size`, `sparks`, `glitter`, `pop`, `halo`, `whistle`                                           | Same fields, including `sequence` and `sweep` patterns                                                           |
-| `comets.colour`, `colours`, `changeTo`, `changeAt`                                                                         | `comets.colour` gradient; original palette cycles by star index                                                  |
-| `comets.spread`, `height`, `time`, `gap`, `tailLife`, `spin`, `spinR`                                                      | `spread_deg`, `height_m`, `time_s`, `gap_s`, `tail_life_s`, `spin_rad_s`, `spin_radius_m`                        |
-| `comets.trail`, `split.count`, `split.distance`, `split.life`                                                              | `trail` and nullable `split: { count, distance_m, life_s }`                                                      |
-| Root `fountain`                                                                                                            | `ground.fountain`                                                                                                |
-| `fountain.duration`, `rate`, `speed`, `life`, `height`, `spacing`, `dir`                                                   | `duration_s`, `rate_per_s`, `speed_m_s`, `life_s`, `height_m`, `spacing_m`, `direction`                          |
-| `fountain.colour`, `cone`, `emitters`, `streak`, `size`, `flicker`, `glitter`, `fork`, `glow`                              | Same names                                                                                                       |
-| `fountain.gravity`, `drag`, `glowAlpha`                                                                                    | `gravity_m_s2`, `drag_per_s`, `glow_alpha`                                                                       |
-| Root `tourbillon`; `height`, `time`, `radius`, `spin`, `count`, `sparks`                                                   | `ground.tourbillon`; `height_m`, `time_s`, `radius_m`, `spin_rad_s`, `count`, `sparks`                           |
-| Root `wheel`; `radius`, `height`, `spin`, `duration`, `drivers`, `colour`, `sparks`, `glitter`                             | `ground.wheel`; `radius_m`, `height_m`, `spin_hz`, `duration_s`, other names unchanged                           |
-| Root `spinner`; `duration`, `spin`, `wander`, `count`, `sparks`, `colours`                                                 | `ground.spinner`; `duration_s`, `spin_rad_s`, `wander_m`, other names unchanged                                  |
-| Launch-style table fields                                                                                                  | Built-in style tuning selected by `launch.tail`, not a second stored design format                               |
-| `spray` options (`speedDist`, `streak`, `fork`, `glitterDelay`, `alphaAt`, `inherit`, `cluster`, `dir`, `cone`)            | Keep the prototype's internal source maths; expose the design inputs above, no stored callback or particle state |
-| `shot.seed`                                                                                                                | Root default `seed`, with optional playback overrides per tube                                                   |
-| `shot.pos`, `t0`, `muzzle`, viewer settings, poster framing, props                                                         | Playback/composition/view inputs outside the effect design                                                       |
-| `DEFAULTS`, `WIND`, global density/lifetime factors                                                                        | Built-in renderer tuning, not authored fields                                                                    |
-| Editor spec seed, envelopes, colours, modifiers, sound                                                                     | Seed; stops and brightness curve; per-layer modifiers; required sound gain block                                 |
-| Editor spec adjectives, calibre, house-rule switches, sequence/product refs, unimplemented shapes, variation distributions | Editor and catalogue concerns not read by this renderer                                                          |
+| Prototype field                                                                                                            | Stored v1 field or decision                                                                                              |
+| -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `kind`                                                                                                                     | Root discriminator; all seven runtime kinds plus `rocket` and `candle`                                                   |
+| `name`, `group`, `key`                                                                                                     | Catalogue/template metadata, dropped from renderer input                                                                 |
+| `launch.height`, `time`, `tilt`, `style`                                                                                   | `launch.height_m`, `time_s`, `tilt_deg`, `tail`                                                                          |
+| `launch.sparks`, `spread`, `smoke`                                                                                         | Same names; spread remains a style multiplier                                                                            |
+| Height scaling in `design()`                                                                                               | Store the final scaled `time_s`, no implicit rescaling on load                                                           |
+| Root `layers`, `core`, `fade`                                                                                              | `breaks[].layers`, `core`, `fade`                                                                                        |
+| Layer `delay`                                                                                                              | Group into `break.at_s`; independent ignition uses `layer.delay_s`                                                       |
+| Layer `offset`, `radius`, `drag`, `gravity`, `life`                                                                        | `offset_m`, `radius_m`, `drag_per_s`, `gravity_m_s2`, `life_s`                                                           |
+| Layer `name`, `pattern`, `count`, `tilt`, `speedVar`, `lifeVar`, `flash`, `hidden`                                         | Same names, with `speed_var` and `life_var`; add stable `id`                                                             |
+| Layer `twist`                                                                                                              | A `twist` modifier's `angular_speed_rad_s`                                                                               |
+| `colours`, `colourMode`, `changeTo`, `changeAt`                                                                            | `colour.mode`, palette-capable gradient `stops`, optional `reignition`; ghost uses a step                                |
+| `head.brightness`                                                                                                          | Layer `brightness` curve, constant for the prototype                                                                     |
+| `head.size`, `visible`, `halo`                                                                                             | Same names; optional halo preserves contextual default                                                                   |
+| `trail.sparks`, `size`, `flicker`, `colour`, `glitter`, `fork`                                                             | Same names; colour is `house`, `star` or hex                                                                             |
+| `trail.length`, `spread`, `gravity`, `drag`, `glitterDelay`                                                                | `length_s`, `spread_m_s`, `gravity_m_s2`, `drag_per_s`, `glitter_delay_s`                                                |
+| `effect.kind`, `at`, `count`, `amount`, `spread`, `gap`                                                                    | `modifiers[]` with the same fields; `none` becomes no modifier                                                           |
+| `effect.rate`                                                                                                              | `rate_hz` for strobe/twinkle, `rate_rad_s` for fish; other effects retain unused defaults                                |
+| `core.enabled`, `colour`, `count`, `radius`, `flash`, `ring`, `flashOn`                                                    | Same fields, with `flash_on`; radius remains a fraction                                                                  |
+| `fade.whiteHot`, `emberAt`, `fadeAt`, `prime`                                                                              | `white_hot`, `ember_at`, `fade_at`, `prime_s`                                                                            |
+| Root `comets`                                                                                                              | `ground.comets` for `comet` or `candle`                                                                                  |
+| `comets.count`, `pattern`, `size`, `sparks`, `glitter`, `pop`, `halo`, `whistle`                                           | Same fields, including `sequence` and `sweep` patterns                                                                   |
+| `comets.colour`, `colours`, `changeTo`, `changeAt`                                                                         | `comets.colour` gradient; original palette cycles by star index                                                          |
+| `comets.spread`, `height`, `time`, `gap`, `tailLife`, `spin`, `spinR`                                                      | `spread_deg`, `height_m`, `time_s`, `gap_s`, `tail_life_s`, `spin_rad_s`, `spin_radius_m`                                |
+| `comets.trail`, `split.count`, `split.distance`, `split.life`                                                              | `trail` and nullable `split: { count, distance_m, life_s }`                                                              |
+| Root `fountain`                                                                                                            | `ground.fountain`                                                                                                        |
+| `fountain.duration`, `rate`, `speed`, `life`, `height`, `spacing`, `dir`                                                   | `duration_s`, `rate_per_s`, `speed_m_s`, `life_s`, `height_m`, `spacing_m`, `direction`                                  |
+| `fountain.colour`, `cone`, `emitters`, `streak`, `size`, `flicker`, `glitter`, `fork`, `glow`                              | Same names                                                                                                               |
+| `fountain.gravity`, `drag`, `glowAlpha`                                                                                    | `gravity_m_s2`, `drag_per_s`, `glow_alpha`                                                                               |
+| Fountain height fallbacks when `height` is absent                                                                          | `height_m: 0.6` for sparks and `glow_height_m: 1.2` for the muzzle glow; explicit heights use the shared-height fallback |
+| Root `tourbillon`; `height`, `time`, `radius`, `spin`, `count`, `sparks`                                                   | `ground.tourbillon`; `height_m`, `time_s`, `radius_m`, `spin_rad_s`, `count`, `sparks`                                   |
+| Root `wheel`; `radius`, `height`, `spin`, `duration`, `drivers`, `colour`, `sparks`, `glitter`                             | `ground.wheel`; `radius_m`, `height_m`, `spin_hz`, `duration_s`, other names unchanged                                   |
+| Root `spinner`; `duration`, `spin`, `wander`, `count`, `sparks`, `colours`                                                 | `ground.spinner`; `duration_s`, `spin_rad_s`, `wander_m`, other names unchanged                                          |
+| Launch-style table fields                                                                                                  | Built-in style tuning selected by `launch.tail`, not a second stored design format                                       |
+| `spray` options (`speedDist`, `streak`, `fork`, `glitterDelay`, `alphaAt`, `inherit`, `cluster`, `dir`, `cone`)            | Keep the prototype's internal source maths; expose the design inputs above, no stored callback or particle state         |
+| `shot.seed`                                                                                                                | Root default `seed`, with optional playback overrides per tube                                                           |
+| `shot.pos`, `t0`, `muzzle`, viewer settings, poster framing, props                                                         | Playback/composition/view inputs outside the effect design                                                               |
+| `DEFAULTS`, `WIND`, global density/lifetime factors                                                                        | Built-in renderer tuning, not authored fields                                                                            |
+| Editor spec seed, envelopes, colours, modifiers, sound                                                                     | Seed; stops and brightness curve; per-layer modifiers; required sound gain block                                         |
+| Editor spec adjectives, calibre, house-rule switches, sequence/product refs, unimplemented shapes, variation distributions | Editor and catalogue concerns not read by this renderer                                                                  |
 
 The schema accepts `split`, `glitter` and `whistle` modifiers and the supported
 pattern names. The simulation evaluates split child heads and exposes glitter tail
@@ -311,3 +314,39 @@ comparisons sample particles and counts at several times, alongside exact scrub,
 placement, seed, adjustment resolution and combined-modifier behaviour tests.
 Float32 comparisons use an absolute tolerance of 0.000001; analytical motion
 checks use 0.000000000001. Scrub determinism compares arrays exactly.
+
+## Effect template catalogue
+
+`effectTemplates` is a typed, ordered catalogue exported from the package root.
+Each entry in `src/templates/*.json` stores `key`, `name`, `group` and `design`.
+Only `design` is renderer input. `EffectTemplate`, `EffectTemplateKey` and
+`EffectTemplateGroup` describe the public catalogue. Designs validate on loading;
+clone a design before editing it. Metadata and the stored design can be loaded
+separately by seed tooling without importing the simulation.
+
+Layer `tilt` accepts `-2` to `2`: the ring angle is `tilt * PI / 2 + 0.3` radians,
+so this covers a half turn either way around the fixed offset, including Saturn's
+`1.15` orientation.
+
+The conversion and independent reference capture are manual operations, never CI
+steps. Both read the reference file without writing to its checkout. Run with Node
+24 from the repository root:
+
+```sh
+node --import ./scripts/register-typescript.mjs packages/fireworks/scripts/convert-templates.mjs /Users/harry/projects/FireworkEntertAInment-reference/docs/design/redesign-2026-09/prototype/fireworks3d.js
+node packages/fireworks/scripts/capture-template-goldens.mjs /Users/harry/projects/FireworkEntertAInment-reference/docs/design/redesign-2026-09/prototype/fireworks3d.js
+pnpm exec prettier --write packages/fireworks/src/templates packages/fireworks/tests/fixtures/template-goldens.json
+```
+
+The converter follows the field mapping above, materialises audited schema defaults,
+groups delays into breaks without changing flattened layer seed order, and assigns
+stable layer ids. Colour blends, ghost steps, shell reignition and twist modifiers
+retain the authored prototype values. Sound gains use the schema's authoring defaults;
+the capture checks particles and smoke, not audio playback.
+
+`tests/templates.test.mjs` checks catalogue coverage against independently captured
+prototype metadata, both validators, resolution, finite simulation output, sampled
+full-frame parity and deterministic scrubbing. Reference capture executes the original
+`design(key)` and simulation without converting stored designs back into the prototype
+format. Provenance records the reference source SHA-256. Comparisons use the core
+suite's absolute Float32 tolerance of `0.000001`.

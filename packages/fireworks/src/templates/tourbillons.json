@@ -1,0 +1,28 @@
+{
+  "key": "tourbillons",
+  "name": "Five tourbillons",
+  "group": "Variations",
+  "design": {
+    "kind": "tourbillon",
+    "launch": null,
+    "breaks": [],
+    "ground": {
+      "kind": "tourbillon",
+      "tourbillon": {
+        "height_m": 38,
+        "time_s": 2.4,
+        "radius_m": 1.2,
+        "spin_rad_s": 60,
+        "count": 5,
+        "sparks": 110
+      }
+    },
+    "sound": {
+      "lift": 0.7,
+      "break": 0.85,
+      "crackle": 0.6,
+      "whistle": 0
+    },
+    "seed": 11
+  }
+}

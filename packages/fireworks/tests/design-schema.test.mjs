@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import Ajv from 'ajv';
 import { z } from 'zod';
+import { kindCases } from './kind-cases.mjs';
 import {
   designSchema,
   upgradeDesign,
@@ -362,3 +363,44 @@ for (const bad of [null, [], 'shell', 1, {}, { kind: 'shell' }]) {
     assert.throws(() => upgradeDesign(bad, 1), z.ZodError);
   });
 }
+
+test('ring tilt accepts a half turn either way and the Saturn orientation', () => {
+  // Dimensionless orientation from Saturn; the half-turn range follows tilt * PI / 2.
+  const saturnTilt = 1.15;
+  const halfTurnLimit = 2;
+  // A hundredth beyond the authored bound checks rejection without floating-point ambiguity.
+  const outsideLimit = 2.01;
+  for (const tilt of [-halfTurnLimit, saturnTilt, halfTurnLimit]) {
+    const doc = structuredClone(peony);
+    doc.breaks[0].layers[0].pattern = 'ring';
+    doc.breaks[0].layers[0].tilt = tilt;
+    assert.equal(validate(doc), true, ajv.errorsText(validate.errors));
+    assert.deepEqual(designSchema.parse(doc), doc);
+  }
+  for (const tilt of [-outsideLimit, outsideLimit]) {
+    const doc = structuredClone(peony);
+    doc.breaks[0].layers[0].tilt = tilt;
+    assert.equal(validate(doc), false);
+    assert.equal(designSchema.safeParse(doc).success, false);
+  }
+});
+
+test('fountain glow height is optional, bounded and retained without filling defaults', () => {
+  const doc = kindCases().find((c) => c.name === 'kind-fountain').design;
+  const fountain = doc.ground.fountain;
+  // Height in metres from the prototype's default glow and the stored emitter-height bounds.
+  const prototypeGlowHeightM = 1.2;
+  const maximumHeightM = 1000;
+  assert.equal(validate(doc), true, ajv.errorsText(validate.errors));
+  assert.equal(upgradeDesign(doc, 1).ground.fountain.glow_height_m, undefined);
+  for (const height of [0, prototypeGlowHeightM, maximumHeightM]) {
+    fountain.glow_height_m = height;
+    assert.equal(validate(doc), true, ajv.errorsText(validate.errors));
+    assert.deepEqual(upgradeDesign(doc, 1), doc);
+  }
+  for (const height of [-1, maximumHeightM + 1, null, '1.2m']) {
+    fountain.glow_height_m = height;
+    assert.equal(validate(doc), false);
+    assert.equal(designSchema.safeParse(doc).success, false);
+  }
+});
