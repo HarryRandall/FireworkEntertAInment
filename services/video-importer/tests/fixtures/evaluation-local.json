@@ -1,0 +1,127 @@
+{
+  "extractor": "video-measure-1.0.0",
+  "platform": "macOS-27.0-arm64-arm-64bit-Mach-O",
+  "python": "3.14.5",
+  "ffmpeg": "ffmpeg version 8.1.1 Copyright (c) 2000-2026 the FFmpeg developers",
+  "analysis_fps": 20,
+  "tolerances": {
+    "time_ms": 100,
+    "position_fraction": 0.04,
+    "rgb_channel": 0.22,
+    "angle_deg": 5
+  },
+  "clips": [
+    {
+      "name": "shell-cake",
+      "bytes": 207153,
+      "sha256": "02fb18c04925d3b13cc009a641b4b8e7eba40496fa42dbbdf824a653e01e8e5f",
+      "runtime_seconds": 0.4136859580175951,
+      "shots": [
+        {
+          "truth": {
+            "t_ms": 500,
+            "x": 0.3,
+            "colour": "#ff3048",
+            "angle_deg": 0
+          },
+          "measured_shot": {
+            "t_ms": 500,
+            "confidence": 1.0,
+            "x": 0.30076345676752886,
+            "angle_deg": -1.048,
+            "evidence": "audio_visual"
+          },
+          "measured_dominant_rgb": [0.9864, 0.2135, 0.2936],
+          "time_error_ms": 0,
+          "position_error": 0.0007634567675288695,
+          "angle_error_deg": 1.048,
+          "colour_error_max_channel": 0.02526470588235294,
+          "passed": true
+        },
+        {
+          "truth": {
+            "t_ms": 5500,
+            "x": 0.7,
+            "colour": "#2fe06a",
+            "angle_deg": 12
+          },
+          "measured_shot": {
+            "t_ms": 5500,
+            "confidence": 0.9431,
+            "x": 0.7030179355407845,
+            "angle_deg": 11.482,
+            "evidence": "audio_visual"
+          },
+          "measured_dominant_rgb": [0.191, 0.8952, 0.4214],
+          "time_error_ms": 0,
+          "position_error": 0.0030179355407845554,
+          "angle_error_deg": 0.5180000000000007,
+          "colour_error_max_channel": 0.0167686274509804,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "silent-comet",
+      "bytes": 11709,
+      "sha256": "c609a62086996db2a8cc09726e736387cfc8c5d05bd4753d4b51730d5ae22e94",
+      "runtime_seconds": 0.14097066700924188,
+      "shots": [
+        {
+          "truth": {
+            "t_ms": 500,
+            "x": 0.5,
+            "colour": "#3050ff",
+            "angle_deg": 0
+          },
+          "measured_shot": {
+            "t_ms": 500,
+            "confidence": 0.55,
+            "x": 0.5002615348680025,
+            "angle_deg": 0.049,
+            "evidence": "visual"
+          },
+          "measured_dominant_rgb": [0.3, 0.3242, 0.9849],
+          "time_error_ms": 0,
+          "position_error": 0.0002615348680025109,
+          "angle_error_deg": 0.049,
+          "colour_error_max_channel": 0.11176470588235293,
+          "passed": true
+        }
+      ]
+    },
+    {
+      "name": "delayed-audio",
+      "bytes": 113703,
+      "sha256": "6c5e1f26ca24cbdc6d13600dc8b835580b01755f428fdd87dec49b5f0f5389f3",
+      "runtime_seconds": 0.2293645000027027,
+      "shots": [
+        {
+          "truth": {
+            "t_ms": 500,
+            "x": 0.5,
+            "colour": "#ff3048",
+            "angle_deg": -12
+          },
+          "measured_shot": {
+            "t_ms": 500,
+            "confidence": 1.0,
+            "x": 0.4961649985358099,
+            "angle_deg": -12.642,
+            "evidence": "audio_visual"
+          },
+          "measured_dominant_rgb": [0.9884, 0.2142, 0.2881],
+          "time_error_ms": 0,
+          "position_error": 0.00383500146419008,
+          "angle_error_deg": 0.6419999999999995,
+          "colour_error_max_channel": 0.025964705882352945,
+          "passed": true
+        }
+      ]
+    }
+  ],
+  "passed": true,
+  "provider_usd": 0,
+  "modal_compute_usd": null,
+  "scope": "Local synthetic static-camera evidence; real-video and Modal accuracy unverified"
+}

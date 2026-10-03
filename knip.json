@@ -2,7 +2,11 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     ".": {
-      "entry": ["scripts/**/*.{js,mjs,ts}", "tests/browser/**/*.ts"]
+      "entry": [
+        "scripts/**/*.{js,mjs,ts}",
+        "tests/browser/**/*.ts",
+        "services/video-importer/tests/generate-fixtures.mjs"
+      ]
     },
     "apps/web": {
       "entry": ["scripts/**/*.mjs"],
@@ -33,5 +37,6 @@
     "apps/web/lib/supabase/env.ts": ["exports"],
     "apps/web/ui/theme/ThemePreferenceSync.tsx": ["files"],
     "apps/web/lib/documents/*.generated.ts": ["exports", "types"]
-  }
+  },
+  "ignoreBinaries": ["ffmpeg"]
 }
