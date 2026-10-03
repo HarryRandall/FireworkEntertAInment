@@ -10,11 +10,11 @@ import { supabaseFetchLong } from '@/lib/supabase/fetch';
  * Use only after normal permission checks; never expose the key to clients.
  */
 export function createServiceRoleSupabase() {
-  const rawUrl =
-    process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || process.env.SUPABASE_URL?.trim() || '';
+  const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ?? '';
+  const configuredUrl = rawUrl.length > 0 ? rawUrl : (process.env.SUPABASE_URL?.trim() ?? '');
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim();
-  const url = rawUrl.replace(/\/+$/, '');
-  if (!url || !key) return null;
+  const url = configuredUrl.replace(/\/+$/, '');
+  if (url.length === 0 || key === undefined || key.length === 0) return null;
 
   return createClient(url, key, {
     global: { fetch: supabaseFetchLong },

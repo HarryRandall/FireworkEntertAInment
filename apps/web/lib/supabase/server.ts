@@ -1,10 +1,11 @@
 /** Server-side Supabase client bound to the current request cookies; call from Server Components, Route Handlers, and Server Actions. */
 
 import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
+import { type cookies } from 'next/headers';
 import { getSupabaseServerEnv } from '@/lib/supabase/env';
 import { supabaseFetch } from '@/lib/supabase/fetch';
 
+/** Creates a request cookie-bound server client with the supplied fetch boundary. */
 export const createClient = (
   cookieStore: Awaited<ReturnType<typeof cookies>>,
   fetchImpl: typeof fetch = supabaseFetch,
@@ -25,7 +26,9 @@ export const createClient = (
       setAll(cookiesToSet) {
         try {
           cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
-        } catch {
+        } catch (error) {
+          if (!(error instanceof Error) || !error.message.includes('Cookies can only be modified'))
+            throw error;
           // The `setAll` method was called from a Server Component.
           // This can be ignored if you have middleware refreshing
           // user sessions.

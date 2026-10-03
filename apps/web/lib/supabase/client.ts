@@ -3,6 +3,7 @@
 import { createBrowserClient } from '@supabase/ssr';
 import { getSupabaseBrowserEnv } from '@/lib/supabase/env';
 
+/** Creates a browser client from configured public Supabase credentials. */
 export const createClient = () => {
   const env = getSupabaseBrowserEnv();
   if (!env) {

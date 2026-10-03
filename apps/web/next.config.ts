@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next';
 import path from 'path';
 
+const configuredDistDir = process.env.NEXT_DIST_DIR?.trim() ?? '';
+
 const nextConfig: NextConfig = {
   // AGENTS.md already points to the bundled version-matched documentation.
   // Prevent `next dev` from appending a second managed instruction block.
@@ -8,7 +10,7 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ['127.0.0.1'],
   // Parallel renderer QA uses an isolated cache so it cannot disturb a
   // developer's existing Next process in this fast-moving worktree.
-  distDir: process.env.NEXT_DIST_DIR?.trim() || '.next',
+  distDir: configuredDistDir.length > 0 ? configuredDistDir : '.next',
   turbopack: {
     root: path.resolve(__dirname, '../..'),
   },
