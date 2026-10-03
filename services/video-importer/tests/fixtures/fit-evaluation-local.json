@@ -1,0 +1,1115 @@
+{
+  "model": "gemini-2.5-flash-lite",
+  "price_date": "2026-10-03",
+  "machine": "macOS-27.0-arm64-arm-64bit-Mach-O",
+  "provider": "synthetic classification; zero paid calls",
+  "seed": 17,
+  "budgets": {
+    "iterations_per_effect": 30,
+    "population": 8,
+    "wall_seconds_per_video": 300
+  },
+  "clips": [
+    {
+      "name": "shell-cake",
+      "estimate": {
+        "tokens_in": 47092,
+        "tokens_out": 4096,
+        "cost_usd": 0.015766
+      },
+      "llm_candidate": {
+        "proposal": {
+          "effects": {
+            "a": {
+              "template": "peony",
+              "overrides": {
+                "kind": "shell",
+                "launch": {
+                  "height_m": 44.800000000000004,
+                  "time_s": 1.3911721676000002,
+                  "tilt_deg": 0,
+                  "tail": "gold",
+                  "sparks": 180,
+                  "spread": 1.4,
+                  "smoke": 1
+                },
+                "breaks": [
+                  {
+                    "at_s": 0,
+                    "core": {
+                      "enabled": true,
+                      "colour": "#ff3b2f",
+                      "count": 110,
+                      "radius": 0.5,
+                      "flash": 1,
+                      "flash_on": false,
+                      "ring": false
+                    },
+                    "fade": {
+                      "white_hot": 0,
+                      "ember_at": 1,
+                      "fade_at": 0.72,
+                      "prime_s": 0
+                    },
+                    "layers": [
+                      {
+                        "id": "petals",
+                        "name": "Red and green petals",
+                        "pattern": "sphere",
+                        "count": 90,
+                        "radius_m": 20.8,
+                        "tilt": 0.4,
+                        "speed_var": 0.22,
+                        "drag_per_s": 2.08,
+                        "gravity_m_s2": 9,
+                        "life_s": 1.7600000000000002,
+                        "life_var": 0.2,
+                        "delay_s": 0,
+                        "offset_m": [0, 0, 0],
+                        "flash": true,
+                        "hidden": false,
+                        "colour": {
+                          "mode": "solid",
+                          "stops": [
+                            [0, "#ff3048"],
+                            [1, "#ff3048"]
+                          ]
+                        },
+                        "brightness": [
+                          [0, 1.5],
+                          [1, 1.5]
+                        ],
+                        "head": {
+                          "size": 1.1,
+                          "visible": true,
+                          "halo": 1
+                        },
+                        "trail": {
+                          "sparks": 10,
+                          "length_s": 0.2,
+                          "spread_m_s": 0.4,
+                          "gravity_m_s2": 3,
+                          "drag_per_s": 2.6,
+                          "size": 1,
+                          "flicker": 0.3,
+                          "colour": "star",
+                          "glitter": 0,
+                          "glitter_delay_s": 0.35,
+                          "fork": 0
+                        },
+                        "modifiers": []
+                      }
+                    ]
+                  }
+                ],
+                "ground": null,
+                "sound": {
+                  "lift": 0.7,
+                  "break": 0.85,
+                  "crackle": 0.6,
+                  "whistle": 0
+                },
+                "seed": 11
+              }
+            },
+            "b": {
+              "template": "peony",
+              "overrides": {
+                "kind": "shell",
+                "launch": {
+                  "height_m": 44.800000000000004,
+                  "time_s": 1.3911721676000002,
+                  "tilt_deg": 12,
+                  "tail": "gold",
+                  "sparks": 180,
+                  "spread": 1.4,
+                  "smoke": 1
+                },
+                "breaks": [
+                  {
+                    "at_s": 0,
+                    "core": {
+                      "enabled": true,
+                      "colour": "#ff3b2f",
+                      "count": 110,
+                      "radius": 0.5,
+                      "flash": 1,
+                      "flash_on": false,
+                      "ring": false
+                    },
+                    "fade": {
+                      "white_hot": 0,
+                      "ember_at": 1,
+                      "fade_at": 0.72,
+                      "prime_s": 0
+                    },
+                    "layers": [
+                      {
+                        "id": "petals",
+                        "name": "Red and green petals",
+                        "pattern": "sphere",
+                        "count": 90,
+                        "radius_m": 20.8,
+                        "tilt": 0.4,
+                        "speed_var": 0.22,
+                        "drag_per_s": 2.08,
+                        "gravity_m_s2": 9,
+                        "life_s": 1.7600000000000002,
+                        "life_var": 0.2,
+                        "delay_s": 0,
+                        "offset_m": [0, 0, 0],
+                        "flash": true,
+                        "hidden": false,
+                        "colour": {
+                          "mode": "solid",
+                          "stops": [
+                            [0, "#2fe06a"],
+                            [1, "#2fe06a"]
+                          ]
+                        },
+                        "brightness": [
+                          [0, 1.5],
+                          [1, 1.5]
+                        ],
+                        "head": {
+                          "size": 1.1,
+                          "visible": true,
+                          "halo": 1
+                        },
+                        "trail": {
+                          "sparks": 10,
+                          "length_s": 0.2,
+                          "spread_m_s": 0.4,
+                          "gravity_m_s2": 3,
+                          "drag_per_s": 2.6,
+                          "size": 1,
+                          "flicker": 0.3,
+                          "colour": "star",
+                          "glitter": 0,
+                          "glitter_delay_s": 0.35,
+                          "fork": 0
+                        },
+                        "modifiers": []
+                      }
+                    ]
+                  }
+                ],
+                "ground": null,
+                "sound": {
+                  "lift": 0.7,
+                  "break": 0.85,
+                  "crackle": 0.6,
+                  "whistle": 0
+                },
+                "seed": 11
+              }
+            }
+          },
+          "composition": {
+            "tubes": [
+              {
+                "i": 0,
+                "letter": "a",
+                "t_ms": 500,
+                "angle_deg": 0
+              },
+              {
+                "i": 1,
+                "letter": "b",
+                "t_ms": 5500,
+                "angle_deg": 12
+              }
+            ]
+          }
+        },
+        "scores": {
+          "shots": [
+            {
+              "distances": {
+                "apex": 0.21354166666666663,
+                "radius": 0.0546875,
+                "life": 0.19318181818181818,
+                "trail": 0,
+                "trail_length": 0.17708333333333337,
+                "colour": 0.02952249568932626,
+                "colour_over_time": 0.24057763154558115,
+                "strobe": 0,
+                "crackle": null
+              },
+              "overall": 0.8864256943229093
+            },
+            {
+              "distances": {
+                "apex": 0.21354166666666663,
+                "radius": 0.021484375,
+                "life": 0.19318181818181818,
+                "trail": 0,
+                "trail_length": 0.17708333333333337,
+                "colour": 0.014032745490196074,
+                "colour_over_time": 0.29757815108488367,
+                "strobe": 0,
+                "crackle": null
+              },
+              "overall": 0.8853872387803878
+            }
+          ]
+        },
+        "overall": 0.8859064665516485,
+        "renderer": "0.5.0"
+      },
+      "fit_candidate": {
+        "proposal": {
+          "effects": {
+            "a": {
+              "template": "peony",
+              "overrides": {
+                "kind": "shell",
+                "launch": {
+                  "height_m": 65.34927919544845,
+                  "time_s": 1.6582804409108196,
+                  "tilt_deg": 0,
+                  "tail": "gold",
+                  "sparks": 180,
+                  "spread": 1.4,
+                  "smoke": 1
+                },
+                "breaks": [
+                  {
+                    "at_s": 0,
+                    "core": {
+                      "enabled": true,
+                      "colour": "#ff3b2f",
+                      "count": 110,
+                      "radius": 0.5,
+                      "flash": 1,
+                      "flash_on": false,
+                      "ring": false
+                    },
+                    "fade": {
+                      "white_hot": 0,
+                      "ember_at": 1,
+                      "fade_at": 0.72,
+                      "prime_s": 0
+                    },
+                    "layers": [
+                      {
+                        "id": "petals",
+                        "name": "Red and green petals",
+                        "pattern": "sphere",
+                        "count": 90,
+                        "radius_m": 27.824884322424932,
+                        "tilt": 0.4,
+                        "speed_var": 0.22,
+                        "drag_per_s": 1.1266019104623253,
+                        "gravity_m_s2": 9,
+                        "life_s": 2.2233247827723206,
+                        "life_var": 0.2,
+                        "delay_s": 0,
+                        "offset_m": [0, 0, 0],
+                        "flash": true,
+                        "hidden": false,
+                        "colour": {
+                          "mode": "solid",
+                          "stops": [
+                            [0, "#ff3048"],
+                            [1, "#ff3048"]
+                          ]
+                        },
+                        "brightness": [
+                          [0, 1.5],
+                          [1, 1.5]
+                        ],
+                        "head": {
+                          "size": 1.1,
+                          "visible": true,
+                          "halo": 1
+                        },
+                        "trail": {
+                          "sparks": 10,
+                          "length_s": 0.2826470428878217,
+                          "spread_m_s": 0.4,
+                          "gravity_m_s2": 3,
+                          "drag_per_s": 2.6,
+                          "size": 1,
+                          "flicker": 0.3,
+                          "colour": "star",
+                          "glitter": 0,
+                          "glitter_delay_s": 0.35,
+                          "fork": 0
+                        },
+                        "modifiers": []
+                      }
+                    ]
+                  }
+                ],
+                "ground": null,
+                "sound": {
+                  "lift": 0.7,
+                  "break": 0.85,
+                  "crackle": 0.6,
+                  "whistle": 0
+                },
+                "seed": 11
+              }
+            },
+            "b": {
+              "template": "peony",
+              "overrides": {
+                "kind": "shell",
+                "launch": {
+                  "height_m": 58.734831183569234,
+                  "time_s": 1.9654353954882258,
+                  "tilt_deg": 12,
+                  "tail": "gold",
+                  "sparks": 180,
+                  "spread": 1.4,
+                  "smoke": 1
+                },
+                "breaks": [
+                  {
+                    "at_s": 0,
+                    "core": {
+                      "enabled": true,
+                      "colour": "#ff3b2f",
+                      "count": 110,
+                      "radius": 0.5,
+                      "flash": 1,
+                      "flash_on": false,
+                      "ring": false
+                    },
+                    "fade": {
+                      "white_hot": 0,
+                      "ember_at": 1,
+                      "fade_at": 0.72,
+                      "prime_s": 0
+                    },
+                    "layers": [
+                      {
+                        "id": "petals",
+                        "name": "Red and green petals",
+                        "pattern": "sphere",
+                        "count": 90,
+                        "radius_m": 25.774537202132294,
+                        "tilt": 0.4,
+                        "speed_var": 0.22,
+                        "drag_per_s": 2.845061412803059,
+                        "gravity_m_s2": 9,
+                        "life_s": 2.134399726155319,
+                        "life_var": 0.2,
+                        "delay_s": 0,
+                        "offset_m": [0, 0, 0],
+                        "flash": true,
+                        "hidden": false,
+                        "colour": {
+                          "mode": "solid",
+                          "stops": [
+                            [0, "#2fe06a"],
+                            [1, "#2fe06a"]
+                          ]
+                        },
+                        "brightness": [
+                          [0, 1.5],
+                          [1, 1.5]
+                        ],
+                        "head": {
+                          "size": 1.1,
+                          "visible": true,
+                          "halo": 1
+                        },
+                        "trail": {
+                          "sparks": 10,
+                          "length_s": 0.3213932709695808,
+                          "spread_m_s": 0.4,
+                          "gravity_m_s2": 3,
+                          "drag_per_s": 2.6,
+                          "size": 1,
+                          "flicker": 0.3,
+                          "colour": "star",
+                          "glitter": 0,
+                          "glitter_delay_s": 0.35,
+                          "fork": 0
+                        },
+                        "modifiers": []
+                      }
+                    ]
+                  }
+                ],
+                "ground": null,
+                "sound": {
+                  "lift": 0.7,
+                  "break": 0.85,
+                  "crackle": 0.6,
+                  "whistle": 0
+                },
+                "seed": 11
+              }
+            }
+          },
+          "composition": {
+            "tubes": [
+              {
+                "i": 0,
+                "letter": "a",
+                "t_ms": 500,
+                "angle_deg": 0
+              },
+              {
+                "i": 1,
+                "letter": "b",
+                "t_ms": 5500,
+                "angle_deg": 12
+              }
+            ]
+          }
+        },
+        "scores": {
+          "shots": [
+            {
+              "distances": {
+                "apex": 0,
+                "radius": 0.005859375,
+                "life": 0,
+                "trail": 0,
+                "trail_length": 0,
+                "colour": 0.029396148261150615,
+                "colour_over_time": 0.0234104850682436,
+                "strobe": 0,
+                "crackle": null
+              },
+              "overall": 0.9926667489588257
+            },
+            {
+              "distances": {
+                "apex": 0,
+                "radius": 0.01171875,
+                "life": 0.022727272727272728,
+                "trail": 0,
+                "trail_length": 0.00520833333333337,
+                "colour": 0.03694516960784314,
+                "colour_over_time": 0.022335315730897694,
+                "strobe": 0,
+                "crackle": null
+              },
+              "overall": 0.9876331448250817
+            }
+          ]
+        },
+        "overall": 0.9901499468919537,
+        "renderer": "0.5.0"
+      },
+      "parameters": {
+        "a": [
+          {
+            "path": "launch.height_m",
+            "truth": 56,
+            "initial": 44.800000000000004,
+            "recovered": 65.34927919544845,
+            "absolute_error": 9.349279195448446
+          },
+          {
+            "path": "launch.time_s",
+            "truth": 1.7389652095,
+            "initial": 1.3911721676000002,
+            "recovered": 1.6582804409108196,
+            "absolute_error": 0.0806847685891805
+          },
+          {
+            "path": "breaks.0.layers.0.radius_m",
+            "truth": 26,
+            "initial": 20.8,
+            "recovered": 27.824884322424932,
+            "absolute_error": 1.824884322424932
+          },
+          {
+            "path": "breaks.0.layers.0.drag_per_s",
+            "truth": 2.6,
+            "initial": 2.08,
+            "recovered": 1.1266019104623253,
+            "absolute_error": 1.4733980895376748
+          },
+          {
+            "path": "breaks.0.layers.0.life_s",
+            "truth": 2.2,
+            "initial": 1.7600000000000002,
+            "recovered": 2.2233247827723206,
+            "absolute_error": 0.023324782772320418
+          },
+          {
+            "path": "breaks.0.layers.0.trail.length_s",
+            "truth": 0.25,
+            "initial": 0.2,
+            "recovered": 0.2826470428878217,
+            "absolute_error": 0.03264704288782172
+          }
+        ],
+        "b": [
+          {
+            "path": "launch.height_m",
+            "truth": 56,
+            "initial": 44.800000000000004,
+            "recovered": 58.734831183569234,
+            "absolute_error": 2.7348311835692343
+          },
+          {
+            "path": "launch.time_s",
+            "truth": 1.7389652095,
+            "initial": 1.3911721676000002,
+            "recovered": 1.9654353954882258,
+            "absolute_error": 0.22647018598822566
+          },
+          {
+            "path": "breaks.0.layers.0.radius_m",
+            "truth": 26,
+            "initial": 20.8,
+            "recovered": 25.774537202132294,
+            "absolute_error": 0.2254627978677064
+          },
+          {
+            "path": "breaks.0.layers.0.drag_per_s",
+            "truth": 2.6,
+            "initial": 2.08,
+            "recovered": 2.845061412803059,
+            "absolute_error": 0.24506141280305904
+          },
+          {
+            "path": "breaks.0.layers.0.life_s",
+            "truth": 2.2,
+            "initial": 1.7600000000000002,
+            "recovered": 2.134399726155319,
+            "absolute_error": 0.06560027384468103
+          },
+          {
+            "path": "breaks.0.layers.0.trail.length_s",
+            "truth": 0.25,
+            "initial": 0.2,
+            "recovered": 0.3213932709695808,
+            "absolute_error": 0.07139327096958081
+          }
+        ]
+      },
+      "fit_seconds": 41.297407667007064,
+      "iterations": {
+        "a": 30,
+        "b": 30
+      }
+    },
+    {
+      "name": "silent-comet",
+      "estimate": {
+        "tokens_in": 39863,
+        "tokens_out": 4096,
+        "cost_usd": 0.013598
+      },
+      "llm_candidate": {
+        "proposal": {
+          "effects": {
+            "a": {
+              "template": "comet",
+              "overrides": {
+                "kind": "comet",
+                "launch": null,
+                "breaks": [],
+                "ground": {
+                  "kind": "comet",
+                  "comets": {
+                    "count": 1,
+                    "pattern": "straight",
+                    "spread_deg": 0,
+                    "height_m": 40,
+                    "time_s": 1.7600000000000002,
+                    "colour": {
+                      "mode": "solid",
+                      "stops": [
+                        [0, "#3050ff"],
+                        [1, "#3050ff"]
+                      ]
+                    },
+                    "trail": "star",
+                    "size": 1.7600000000000002,
+                    "sparks": 200,
+                    "tail_life_s": 1.1199999999999999,
+                    "glitter": 0,
+                    "gap_s": 0.5,
+                    "spin_rad_s": 0,
+                    "spin_radius_m": 2.2,
+                    "pop": false,
+                    "split": null,
+                    "halo": 1,
+                    "whistle": false
+                  }
+                },
+                "sound": {
+                  "lift": 0.7,
+                  "break": 0,
+                  "crackle": 0,
+                  "whistle": 0
+                },
+                "seed": 11
+              }
+            }
+          },
+          "composition": {
+            "tubes": [
+              {
+                "i": 0,
+                "letter": "a",
+                "t_ms": 500,
+                "angle_deg": 0
+              }
+            ]
+          }
+        },
+        "scores": {
+          "shots": [
+            {
+              "distances": {
+                "apex": 0.140625,
+                "radius": 0.001953125,
+                "life": 0.08571428571428572,
+                "trail": 0,
+                "trail_length": 0.08333333333333331,
+                "colour": 0.03893371509803922,
+                "colour_over_time": 0.15132712038572693,
+                "strobe": 0,
+                "crackle": null
+              },
+              "overall": 0.9372641775585768
+            }
+          ]
+        },
+        "overall": 0.9372641775585768,
+        "renderer": "0.5.0"
+      },
+      "fit_candidate": {
+        "proposal": {
+          "effects": {
+            "a": {
+              "template": "comet",
+              "overrides": {
+                "kind": "comet",
+                "launch": null,
+                "breaks": [],
+                "ground": {
+                  "kind": "comet",
+                  "comets": {
+                    "count": 1,
+                    "pattern": "straight",
+                    "spread_deg": 0,
+                    "height_m": 50.30699182369422,
+                    "time_s": 2.984209334638365,
+                    "colour": {
+                      "mode": "solid",
+                      "stops": [
+                        [0, "#3050ff"],
+                        [1, "#3050ff"]
+                      ]
+                    },
+                    "trail": "star",
+                    "size": 2.1278061801309196,
+                    "sparks": 200,
+                    "tail_life_s": 0.9174001702448873,
+                    "glitter": 0,
+                    "gap_s": 0.5,
+                    "spin_rad_s": 0,
+                    "spin_radius_m": 2.2,
+                    "pop": false,
+                    "split": null,
+                    "halo": 1,
+                    "whistle": false
+                  }
+                },
+                "sound": {
+                  "lift": 0.7,
+                  "break": 0,
+                  "crackle": 0,
+                  "whistle": 0
+                },
+                "seed": 11
+              }
+            }
+          },
+          "composition": {
+            "tubes": [
+              {
+                "i": 0,
+                "letter": "a",
+                "t_ms": 500,
+                "angle_deg": 0
+              }
+            ]
+          }
+        },
+        "scores": {
+          "shots": [
+            {
+              "distances": {
+                "apex": 0,
+                "radius": 0.001953125,
+                "life": 0,
+                "trail": 0,
+                "trail_length": 0.01041666666666663,
+                "colour": 0.018008757080610047,
+                "colour_over_time": 0.0703788226090044,
+                "strobe": 0,
+                "crackle": null
+              },
+              "overall": 0.9874053285804648
+            }
+          ]
+        },
+        "overall": 0.9874053285804648,
+        "renderer": "0.5.0"
+      },
+      "parameters": {
+        "a": [
+          {
+            "path": "ground.comets.height_m",
+            "truth": 50,
+            "initial": 40,
+            "recovered": 50.30699182369422,
+            "absolute_error": 0.3069918236942186
+          },
+          {
+            "path": "ground.comets.time_s",
+            "truth": 2.2,
+            "initial": 1.7600000000000002,
+            "recovered": 2.984209334638365,
+            "absolute_error": 0.7842093346383647
+          },
+          {
+            "path": "ground.comets.tail_life_s",
+            "truth": 1.4,
+            "initial": 1.1199999999999999,
+            "recovered": 0.9174001702448873,
+            "absolute_error": 0.4825998297551126
+          },
+          {
+            "path": "ground.comets.size",
+            "truth": 2.2,
+            "initial": 1.7600000000000002,
+            "recovered": 2.1278061801309196,
+            "absolute_error": 0.07219381986908058
+          }
+        ]
+      },
+      "fit_seconds": 9.40362495899899,
+      "iterations": {
+        "a": 30
+      }
+    },
+    {
+      "name": "delayed-audio",
+      "estimate": {
+        "tokens_in": 40857,
+        "tokens_out": 4096,
+        "cost_usd": 0.013896
+      },
+      "llm_candidate": {
+        "proposal": {
+          "effects": {
+            "a": {
+              "template": "peony",
+              "overrides": {
+                "kind": "shell",
+                "launch": {
+                  "height_m": 44.800000000000004,
+                  "time_s": 1.3911721676000002,
+                  "tilt_deg": -12,
+                  "tail": "gold",
+                  "sparks": 180,
+                  "spread": 1.4,
+                  "smoke": 1
+                },
+                "breaks": [
+                  {
+                    "at_s": 0,
+                    "core": {
+                      "enabled": true,
+                      "colour": "#ff3b2f",
+                      "count": 110,
+                      "radius": 0.5,
+                      "flash": 1,
+                      "flash_on": false,
+                      "ring": false
+                    },
+                    "fade": {
+                      "white_hot": 0,
+                      "ember_at": 1,
+                      "fade_at": 0.72,
+                      "prime_s": 0
+                    },
+                    "layers": [
+                      {
+                        "id": "petals",
+                        "name": "Red and green petals",
+                        "pattern": "sphere",
+                        "count": 90,
+                        "radius_m": 20.8,
+                        "tilt": 0.4,
+                        "speed_var": 0.22,
+                        "drag_per_s": 2.08,
+                        "gravity_m_s2": 9,
+                        "life_s": 1.7600000000000002,
+                        "life_var": 0.2,
+                        "delay_s": 0,
+                        "offset_m": [0, 0, 0],
+                        "flash": true,
+                        "hidden": false,
+                        "colour": {
+                          "mode": "solid",
+                          "stops": [
+                            [0, "#ff3048"],
+                            [1, "#ff3048"]
+                          ]
+                        },
+                        "brightness": [
+                          [0, 1.5],
+                          [1, 1.5]
+                        ],
+                        "head": {
+                          "size": 1.1,
+                          "visible": true,
+                          "halo": 1
+                        },
+                        "trail": {
+                          "sparks": 10,
+                          "length_s": 0.2,
+                          "spread_m_s": 0.4,
+                          "gravity_m_s2": 3,
+                          "drag_per_s": 2.6,
+                          "size": 1,
+                          "flicker": 0.3,
+                          "colour": "star",
+                          "glitter": 0,
+                          "glitter_delay_s": 0.35,
+                          "fork": 0
+                        },
+                        "modifiers": []
+                      }
+                    ]
+                  }
+                ],
+                "ground": null,
+                "sound": {
+                  "lift": 0.7,
+                  "break": 0.85,
+                  "crackle": 0.6,
+                  "whistle": 0
+                },
+                "seed": 11
+              }
+            }
+          },
+          "composition": {
+            "tubes": [
+              {
+                "i": 0,
+                "letter": "a",
+                "t_ms": 500,
+                "angle_deg": -12
+              }
+            ]
+          }
+        },
+        "scores": {
+          "shots": [
+            {
+              "distances": {
+                "apex": 0.21354166666666663,
+                "radius": 0.0546875,
+                "life": 0.19318181818181818,
+                "trail": 0,
+                "trail_length": 0.17708333333333337,
+                "colour": 0.03493974889568526,
+                "colour_over_time": 0.2464655023769685,
+                "strobe": 0,
+                "crackle": null
+              },
+              "overall": 0.885012553818191
+            }
+          ]
+        },
+        "overall": 0.885012553818191,
+        "renderer": "0.5.0"
+      },
+      "fit_candidate": {
+        "proposal": {
+          "effects": {
+            "a": {
+              "template": "peony",
+              "overrides": {
+                "kind": "shell",
+                "launch": {
+                  "height_m": 65.29560524437207,
+                  "time_s": 1.6290427060544441,
+                  "tilt_deg": -12,
+                  "tail": "gold",
+                  "sparks": 180,
+                  "spread": 1.4,
+                  "smoke": 1
+                },
+                "breaks": [
+                  {
+                    "at_s": 0,
+                    "core": {
+                      "enabled": true,
+                      "colour": "#ff3b2f",
+                      "count": 110,
+                      "radius": 0.5,
+                      "flash": 1,
+                      "flash_on": false,
+                      "ring": false
+                    },
+                    "fade": {
+                      "white_hot": 0,
+                      "ember_at": 1,
+                      "fade_at": 0.72,
+                      "prime_s": 0
+                    },
+                    "layers": [
+                      {
+                        "id": "petals",
+                        "name": "Red and green petals",
+                        "pattern": "sphere",
+                        "count": 90,
+                        "radius_m": 28.190412278373447,
+                        "tilt": 0.4,
+                        "speed_var": 0.22,
+                        "drag_per_s": 1.0119687103102522,
+                        "gravity_m_s2": 9,
+                        "life_s": 2.586870195216194,
+                        "life_var": 0.2,
+                        "delay_s": 0,
+                        "offset_m": [0, 0, 0],
+                        "flash": true,
+                        "hidden": false,
+                        "colour": {
+                          "mode": "solid",
+                          "stops": [
+                            [0, "#ff3048"],
+                            [1, "#ff3048"]
+                          ]
+                        },
+                        "brightness": [
+                          [0, 1.5],
+                          [1, 1.5]
+                        ],
+                        "head": {
+                          "size": 1.1,
+                          "visible": true,
+                          "halo": 1
+                        },
+                        "trail": {
+                          "sparks": 10,
+                          "length_s": 0.8681640487264238,
+                          "spread_m_s": 0.4,
+                          "gravity_m_s2": 3,
+                          "drag_per_s": 2.6,
+                          "size": 1,
+                          "flicker": 0.3,
+                          "colour": "star",
+                          "glitter": 0,
+                          "glitter_delay_s": 0.35,
+                          "fork": 0
+                        },
+                        "modifiers": []
+                      }
+                    ]
+                  }
+                ],
+                "ground": null,
+                "sound": {
+                  "lift": 0.7,
+                  "break": 0.85,
+                  "crackle": 0.6,
+                  "whistle": 0
+                },
+                "seed": 11
+              }
+            }
+          },
+          "composition": {
+            "tubes": [
+              {
+                "i": 0,
+                "letter": "a",
+                "t_ms": 500,
+                "angle_deg": -12
+              }
+            ]
+          }
+        },
+        "scores": {
+          "shots": [
+            {
+              "distances": {
+                "apex": 0,
+                "radius": 0,
+                "life": 0.022727272727272728,
+                "trail": 0,
+                "trail_length": 0,
+                "colour": 0.03271386009138046,
+                "colour_over_time": 0.030372789230258837,
+                "strobe": 0,
+                "crackle": null
+              },
+              "overall": 0.989273259743886
+            }
+          ]
+        },
+        "overall": 0.989273259743886,
+        "renderer": "0.5.0"
+      },
+      "parameters": {
+        "a": [
+          {
+            "path": "launch.height_m",
+            "truth": 56,
+            "initial": 44.800000000000004,
+            "recovered": 65.29560524437207,
+            "absolute_error": 9.29560524437207
+          },
+          {
+            "path": "launch.time_s",
+            "truth": 1.7389652095,
+            "initial": 1.3911721676000002,
+            "recovered": 1.6290427060544441,
+            "absolute_error": 0.10992250344555599
+          },
+          {
+            "path": "breaks.0.layers.0.radius_m",
+            "truth": 26,
+            "initial": 20.8,
+            "recovered": 28.190412278373447,
+            "absolute_error": 2.190412278373447
+          },
+          {
+            "path": "breaks.0.layers.0.drag_per_s",
+            "truth": 2.6,
+            "initial": 2.08,
+            "recovered": 1.0119687103102522,
+            "absolute_error": 1.588031289689748
+          },
+          {
+            "path": "breaks.0.layers.0.life_s",
+            "truth": 2.2,
+            "initial": 1.7600000000000002,
+            "recovered": 2.586870195216194,
+            "absolute_error": 0.3868701952161939
+          },
+          {
+            "path": "breaks.0.layers.0.trail.length_s",
+            "truth": 0.25,
+            "initial": 0.2,
+            "recovered": 0.8681640487264238,
+            "absolute_error": 0.6181640487264238
+          }
+        ]
+      },
+      "fit_seconds": 20.467231042013736,
+      "iterations": {
+        "a": 30
+      }
+    }
+  ]
+}
