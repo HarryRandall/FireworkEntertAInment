@@ -70,6 +70,63 @@ export type Database = {
           },
         ]
       }
+      design_candidates: {
+        Row: {
+          analysis_id: string
+          created_at: string
+          id: string
+          model: string | null
+          overall: number | null
+          parent_id: string | null
+          proposal: Json
+          renderer: string
+          scores: Json
+          source: string
+          updated_at: string
+        }
+        Insert: {
+          analysis_id: string
+          created_at?: string
+          id?: string
+          model?: string | null
+          overall?: number | null
+          parent_id?: string | null
+          proposal: Json
+          renderer: string
+          scores?: Json
+          source: string
+          updated_at?: string
+        }
+        Update: {
+          analysis_id?: string
+          created_at?: string
+          id?: string
+          model?: string | null
+          overall?: number | null
+          parent_id?: string | null
+          proposal?: Json
+          renderer?: string
+          scores?: Json
+          source?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "design_candidates_analysis_id_fkey"
+            columns: ["analysis_id"]
+            isOneToOne: false
+            referencedRelation: "video_analyses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "design_candidates_analysis_id_parent_id_fkey"
+            columns: ["analysis_id", "parent_id"]
+            isOneToOne: false
+            referencedRelation: "design_candidates"
+            referencedColumns: ["analysis_id", "id"]
+          },
+        ]
+      }
       effect_versions: {
         Row: {
           author_id: string | null
@@ -251,6 +308,147 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "effect_versions"
             referencedColumns: ["effect_id", "id"]
+          },
+        ]
+      }
+      import_lines: {
+        Row: {
+          confidence: number | null
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          id: string
+          import_id: string
+          note: string | null
+          raw: Json
+          row_number: number
+          state: string
+          suggested_product_id: string | null
+          supplier_product_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          import_id: string
+          note?: string | null
+          raw: Json
+          row_number: number
+          state: string
+          suggested_product_id?: string | null
+          supplier_product_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          id?: string
+          import_id?: string
+          note?: string | null
+          raw?: Json
+          row_number?: number
+          state?: string
+          suggested_product_id?: string | null
+          supplier_product_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_lines_decided_by_fkey"
+            columns: ["decided_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_lines_import_id_fkey"
+            columns: ["import_id"]
+            isOneToOne: false
+            referencedRelation: "imports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_lines_suggested_product_id_fkey"
+            columns: ["suggested_product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "import_lines_supplier_product_id_fkey"
+            columns: ["supplier_product_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      imports: {
+        Row: {
+          counts: Json
+          created_at: string
+          error: string | null
+          id: string
+          mapping: Json
+          media_id: string
+          published_at: string | null
+          stage: string
+          submitted_by: string | null
+          supplier_id: string
+          updated_at: string
+        }
+        Insert: {
+          counts?: Json
+          created_at?: string
+          error?: string | null
+          id?: string
+          mapping?: Json
+          media_id: string
+          published_at?: string | null
+          stage?: string
+          submitted_by?: string | null
+          supplier_id: string
+          updated_at?: string
+        }
+        Update: {
+          counts?: Json
+          created_at?: string
+          error?: string | null
+          id?: string
+          mapping?: Json
+          media_id?: string
+          published_at?: string | null
+          stage?: string
+          submitted_by?: string | null
+          supplier_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "imports_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "imports_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "imports_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -891,6 +1089,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "product_versions_candidate_fk"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "design_candidates"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "product_versions_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -1095,6 +1300,64 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "markets"
             referencedColumns: ["code"]
+          },
+        ]
+      }
+      reviews: {
+        Row: {
+          created_at: string
+          decision: string
+          effect_version_id: string | null
+          id: string
+          note: string | null
+          product_version_id: string | null
+          reasons: string[]
+          reviewer_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decision: string
+          effect_version_id?: string | null
+          id?: string
+          note?: string | null
+          product_version_id?: string | null
+          reasons?: string[]
+          reviewer_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decision?: string
+          effect_version_id?: string | null
+          id?: string
+          note?: string | null
+          product_version_id?: string | null
+          reasons?: string[]
+          reviewer_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_effect_version_id_fkey"
+            columns: ["effect_version_id"]
+            isOneToOne: false
+            referencedRelation: "effect_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_product_version_id_fkey"
+            columns: ["product_version_id"]
+            isOneToOne: false
+            referencedRelation: "product_versions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1374,6 +1637,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "supplier_products_import_supplier_fk"
+            columns: ["supplier_id", "last_import_id"]
+            isOneToOne: false
+            referencedRelation: "imports"
+            referencedColumns: ["supplier_id", "id"]
+          },
+          {
+            foreignKeyName: "supplier_products_last_import_fk"
+            columns: ["last_import_id"]
+            isOneToOne: false
+            referencedRelation: "imports"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "supplier_products_product_id_fkey"
             columns: ["product_id"]
             isOneToOne: false
@@ -1443,11 +1720,90 @@ export type Database = {
           },
         ]
       }
+      video_analyses: {
+        Row: {
+          created_at: string
+          error: string | null
+          extractor: string
+          features: Json | null
+          id: string
+          keyframes: Json | null
+          media_id: string
+          priors: Json
+          product_id: string | null
+          shots: Json | null
+          status: string
+          supplier_product_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          extractor: string
+          features?: Json | null
+          id?: string
+          keyframes?: Json | null
+          media_id: string
+          priors?: Json
+          product_id?: string | null
+          shots?: Json | null
+          status?: string
+          supplier_product_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          extractor?: string
+          features?: Json | null
+          id?: string
+          keyframes?: Json | null
+          media_id?: string
+          priors?: Json
+          product_id?: string | null
+          shots?: Json | null
+          status?: string
+          supplier_product_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "video_analyses_media_id_fkey"
+            columns: ["media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_analyses_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "video_analyses_supplier_product_id_fkey"
+            columns: ["supplier_product_id"]
+            isOneToOne: false
+            referencedRelation: "supplier_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      accept_design_candidate: {
+        Args: {
+          p_candidate_id: string
+          p_kind?: string
+          p_name?: string
+          p_slug?: string
+        }
+        Returns: string
+      }
       archive_effect: { Args: { p_effect_id: string }; Returns: undefined }
       archive_product: { Args: { p_product_id: string }; Returns: undefined }
       confirm_product_safety: {
