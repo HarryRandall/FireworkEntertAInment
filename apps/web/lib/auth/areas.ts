@@ -1,5 +1,6 @@
 /** Shared area policy for server guards and workspace configuration. */
-export type Area = 'retailer' | 'admin' | 'supplier' | 'account';
+const workspaceAreas = ['retailer', 'admin', 'supplier', 'account'] as const;
+export type Area = (typeof workspaceAreas)[number];
 export type AccessIdentity = {
   status: string;
   anonymous: boolean;
@@ -31,6 +32,10 @@ export function canAccessArea(area: Area, identity: AccessIdentity): boolean {
     case 'account':
       return true;
   }
+}
+/** Lists permitted workspace areas for serialisable server-to-client navigation inputs. */
+export function permittedAreas(identity: AccessIdentity): Area[] {
+  return workspaceAreas.filter((area) => canAccessArea(area, identity));
 }
 /** Chooses a workspace destination from the same access policy used by guards. */
 export function landingArea(identity: AccessIdentity): string {

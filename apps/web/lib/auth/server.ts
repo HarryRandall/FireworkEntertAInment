@@ -4,6 +4,7 @@ import { cache } from 'react';
 import { redirect } from 'next/navigation';
 import { getServerClient } from '@/lib/supabase/server-client';
 import { areas, canAccessArea, landingArea, type Area, type AccessIdentity } from './areas';
+import { workspaceIdentity } from './workspace';
 
 /** Loads access facts under the caller's RLS identity; unexpected read errors remain failures. */
 export const getIdentity = cache(async () => {
@@ -15,7 +16,7 @@ export const getIdentity = cache(async () => {
   if (error && error.name !== 'AuthSessionMissingError') throw error;
   if (!user) return null;
   const [profile, staff, memberships, suppliers] = await Promise.all([
-    client.from('profiles').select('status,is_anonymous').eq('id', user.id).single(),
+    client.from('profiles').select('status,is_anonymous,display_name').eq('id', user.id).single(),
     client.rpc('current_staff_role'),
     client.from('memberships').select('role').eq('profile_id', user.id),
     client.from('supplier_members').select('role').eq('profile_id', user.id),
@@ -32,7 +33,11 @@ export const getIdentity = cache(async () => {
     retailerRoles: memberships.data.map((member) => member.role),
     supplierRoles: suppliers.data.map((member) => member.role),
   };
-  return { user, access };
+  return {
+    user,
+    access,
+    workspace: workspaceIdentity(access, profile.data.display_name, user.email),
+  };
 });
 /** Refuses missing, anonymous and unauthorised identities before an area renders. */
 export async function requireArea(area: Area) {

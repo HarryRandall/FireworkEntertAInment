@@ -1,7 +1,8 @@
 /** Behavioural guard checks cover all roles, inactive identities and redirect boundaries. */
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { canAccessArea, landingArea, safeDestination } from '../lib/auth/areas.ts';
+import { canAccessArea, landingArea, safeDestination, permittedAreas } from '../lib/auth/areas.ts';
+import { workspaceIdentity } from '../lib/auth/workspace.ts';
 const shopper = {
   status: 'active',
   anonymous: false,
@@ -75,4 +76,36 @@ test('callback destinations cannot escape the app origin', () => {
     assert.equal(safeDestination(path), '/account');
   assert.equal(safeDestination('/auth/invite?token=abc'), '/auth/invite?token=abc');
   assert.equal(safeDestination('/retailer/../admin'), '/admin');
+});
+
+test('serialisable area lists follow every persona and fail closed for inactive identities', () => {
+  const personas = [
+    [shopper, ['account']],
+    [{ ...shopper, retailerRoles: ['owner'] }, ['retailer', 'account']],
+    [{ ...shopper, supplierRoles: ['member'] }, ['supplier', 'account']],
+    [{ ...shopper, staffRole: 'support' }, ['retailer', 'admin', 'supplier', 'account']],
+    [
+      { ...shopper, retailerRoles: ['owner'], supplierRoles: ['member'] },
+      ['retailer', 'supplier', 'account'],
+    ],
+    [{ ...shopper, anonymous: true }, []],
+    [{ ...shopper, status: 'suspended' }, []],
+  ];
+  for (const [identity, expected] of personas) {
+    assert.deepEqual(permittedAreas(identity), expected);
+    assert.deepEqual(JSON.parse(JSON.stringify(permittedAreas(identity))), expected);
+  }
+});
+
+test('workspace identity exposes only serialisable presentation fields', () => {
+  assert.deepEqual(workspaceIdentity(shopper, 'Saved name', 'shopper@showcrafter.test'), {
+    permittedAreas: ['account'],
+    displayName: 'Saved name',
+    email: 'shopper@showcrafter.test',
+  });
+  assert.deepEqual(workspaceIdentity(shopper, null, undefined), {
+    permittedAreas: ['account'],
+    displayName: null,
+    email: null,
+  });
 });
