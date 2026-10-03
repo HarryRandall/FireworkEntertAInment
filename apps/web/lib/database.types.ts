@@ -5854,6 +5854,41 @@ export type Database = {
           },
         ]
       }
+      studio_library_parts: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string
+          design: Json
+          id: string
+          name: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by: string
+          design: Json
+          id?: string
+          name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string
+          design?: Json
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "studio_library_parts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supplier_members: {
         Row: {
           created_at: string
@@ -6557,6 +6592,10 @@ export type Database = {
           p_soundtrack_analysis?: string
           p_soundtrack_offset_ms?: number
         }
+        Returns: string
+      }
+      save_studio_library_part: {
+        Args: { p_category: string; p_design: Json; p_name: string }
         Returns: string
       }
       save_video_measurement: {

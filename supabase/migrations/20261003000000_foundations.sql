@@ -1960,6 +1960,44 @@ returns uuid language sql set search_path = '' as $$
 $$;
 comment on function public.duplicate_catalogue_item(text, uuid) is 'Duplicates an effect or product into an independent draft and returns its parent UUID.';
 
+-- Reusable Studio parts carry a validated renderer envelope, independent of effect history.
+create table public.studio_library_parts (
+  id uuid primary key default gen_random_uuid(),
+  name text not null check (length(btrim(name)) between 1 and 120),
+  category text not null check (category in ('stars', 'trails', 'effects', 'tails')),
+  design jsonb not null,
+  created_by uuid not null references public.profiles(id),
+  created_at timestamptz not null default now(),
+  constraint studio_part_design_valid check (extensions.jsonb_matches_schema(private.design_schema(), design)),
+  constraint studio_part_source_valid check (
+    case when category = 'tails' then design->'launch' <> 'null'::jsonb
+    else jsonb_array_length(design->'breaks') = 1
+      and jsonb_array_length(design#>'{breaks,0,layers}') = 1 end
+  )
+);
+comment on table public.studio_library_parts is 'Immutable reusable parts shared by catalogue editors; source values are copied, never linked to effect versions.';
+create index studio_library_parts_created_at_idx on public.studio_library_parts(created_at desc, id);
+alter table public.studio_library_parts enable row level security;
+create policy studio_parts_read on public.studio_library_parts for select to authenticated
+  using (private.staff_role() in ('super_admin', 'catalogue_editor'));
+
+create or replace function private.save_studio_library_part(p_name text, p_category text, p_design jsonb)
+returns uuid language plpgsql security definer set search_path = '' as $$
+declare part_id uuid;
+begin
+  perform private.require_catalogue_editor();
+  insert into public.studio_library_parts(name, category, design, created_by)
+    values (btrim(p_name), p_category, p_design, private.uid()) returning id into part_id;
+  return part_id;
+end;
+$$;
+comment on function private.save_studio_library_part(text, text, jsonb) is 'Checks catalogue editor authority and stores an immutable validated part with caller attribution.';
+create or replace function public.save_studio_library_part(p_name text, p_category text, p_design jsonb)
+returns uuid language sql security invoker set search_path = '' as $$
+  select private.save_studio_library_part(p_name, p_category, p_design);
+$$;
+comment on function public.save_studio_library_part(text, text, jsonb) is 'Saves a reusable Studio part and returns its UUID.';
+
 -- Supplier submissions, measured video evidence, proposed designs and client-append-only QA decisions.
 create table public.imports (
   id uuid primary key default gen_random_uuid(),
