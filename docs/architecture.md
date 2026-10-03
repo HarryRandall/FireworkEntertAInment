@@ -42,6 +42,11 @@ access, visible focus and honest loading, empty and failure states.
 
 All workspace areas use one config-driven workspace shell. A route supplies its
 navigation and context through configuration; it does not introduce another shell.
+Area layouts are thin server boundaries for `/retailer`, `/admin`, `/supplier` and
+`/account`. Optional visibility predicates filter presentation; server checks and
+RLS enforce access. Editors use the same shell with the `editorFrame` input.
+See [workspace shell](ui/workspace-shell.md) for configuration, keyboard panels,
+context selectors and the `/dev/shell` review surface.
 
 ## Renderer and data
 

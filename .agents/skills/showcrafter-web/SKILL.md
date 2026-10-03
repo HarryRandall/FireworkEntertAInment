@@ -21,6 +21,11 @@ server, public, service role). Keep service-role clients and server integrations
 of client bundles. Public shopper data comes through the security-definer RPCs, not
 direct table reads.
 
+Workspace layouts in `app/retailer`, `app/admin`, `app/supplier` and `app/account`
+remain thin server boundaries around `ui/shell/workspace-shell.tsx`. See
+[workspace shell](../../../docs/ui/workspace-shell.md) for area keys, visibility
+predicates and context inputs. Visibility never replaces server access checks.
+
 Code rules:
 
 - TypeScript strict. Use `unknown`, narrowing, discriminated unions or Zod at external
