@@ -887,3 +887,82 @@ Supabase project or remote database was accessed. Denied internal function execu
 is checked through ACLs because of the documented local PostgreSQL crash; allowed
 RPCs and policy denials execute normally. Storage, schedules, launch seeds, external
 integrations, notification delivery and actual support impersonation are not included.
+
+## Storage and scheduled maintenance
+
+`94_storage.sql` owns the path and permission helpers. The separate storage migration
+creates six buckets and their policies on `storage.objects`. Only `brand` and
+`posters` are public. The private buckets use authenticated row visibility for
+listing and signing; the trusted backend can issue scoped signed URLs for shopper
+playback without making `audio` public.
+
+Paths use a canonical lower-case UUID as the first folder and a non-empty filename.
+Empty folders, `.` and `..` segments and unknown owners fail closed:
+
+| Bucket            | First folder                                           | Client writes                                 | Client reads                                                                    |
+| ----------------- | ------------------------------------------------------ | --------------------------------------------- | ------------------------------------------------------------------------------- |
+| `posters`         | Effect-version or product-version UUID                 | Catalogue editors and super admins            | Public                                                                          |
+| `brand`           | Organisation UUID                                      | Unrestricted organisation owners and managers | Public                                                                          |
+| `catalogue-media` | Supplier, organisation or uploading staff profile UUID | Active staff; members of the owning supplier  | Staff, owning supplier members, owning organisation members                     |
+| `imports`         | Supplier, organisation or uploading staff profile UUID | Active staff; members of the owning supplier  | Staff and owning supplier members                                               |
+| `audio`           | Music-track UUID                                       | Active staff                                  | Active staff; backend-issued signed URLs for playback                           |
+| `exports`         | Recipient profile or organisation UUID                 | Trusted backend only                          | Active recipient, including anonymous shoppers; unrestricted organisation owner |
+
+Update policies check both the original and destination bucket/path. A manager
+cannot move a logo to another organisation, and a supplier cannot move an import
+to another supplier. Staff identity comes from the existing table-backed helper.
+Storage service-role writes retain Supabase's trusted RLS bypass. Browser clients
+have no export write policy. No bucket size or MIME restrictions have been guessed.
+
+`95_maintenance.sql` provides idempotent list expiry, invitation expiry and anonymous
+account cleanup. List validity dates are inclusive and evaluated in UTC. Accepted
+invitations and redeemed lists keep their history. Anonymous accounts become eligible
+after more than 30 days without activity, using Auth creation/sign-in and profile
+creation/last-seen timestamps. Lists, follows, privileged memberships, stored assets
+and non-cascading profile references retain the identity. Cleanup deletes Auth users
+and cascades disposable profiles and planning sessions; it does not silently catch
+unexpected deletion failures.
+
+The stock calculation in `50_shows_qr.sql` is callable through
+`private.recalculate_show_stock()`. Statement triggers delegate to it, and cron uses
+the same calculation. It reconciles retailer shows with current range and stock;
+drafts, archives and private shopper shows remain untouched.
+
+The cron migration installs eight named jobs as `postgres`, using the local image's
+GMT/UTC scheduler clock. Partition maintenance runs at 02:00, the ten-minute event
+lookback every five minutes, and the previous UTC day's rollup at 03:00. The existing
+rollup function expands intervals to complete UTC buckets, preserving earlier events
+when a partial window is rerun. Daily list expiry, credit release and anonymous cleanup
+run at 03:10, 03:20 and 03:30. Stock reconciliation runs on the hour and invitation
+expiry at five minutes past. These staggered cleanup times are operational choices.
+The installed `pg_partman` configuration controls partition premaking and retention.
+There is no billing-mirror job.
+
+New maintenance functions are inaccessible to API roles, checked by ACL inspection
+rather than denied private calls. Existing service-role execution rights for rollups,
+partition maintenance and credit release are preserved. Storage access alone is
+explicitly granted to authenticated clients for policy evaluation.
+
+### Local acceptance evidence
+
+The storage suite exercises read, insert, update and delete boundaries as all seven
+personas, another supplier and unauthenticated public requests. It also covers
+cross-owner moves, store-scoped managers, reviewer poster denial, invalid paths and
+suspended staff. Maintenance suites check installed schedules and execute their
+actual command strings, verify stock triggers and callable reconciliation, lifecycle
+boundaries, anonymous retention and idempotent reruns. Each suite rolls back.
+
+Local verification used Node 24.18.0 and pinned pnpm through Corepack. Reset passed;
+`db:test` passed twice with 31 suites and 2,415 assertions, plus the concurrent job
+claim test on each run. `db:documents --check`, `db:types --check`, formatting,
+web typecheck and all 10 database-tooling tests passed. Type regeneration produced
+no application-type changes because the new functions are private and bucket records
+belong to Storage. Database lint reported only the three existing volatility warnings
+in `private.effect_facts`. Application schema diff contained grant lines only, reflecting
+the separate privilege migrations.
+
+The complete `pnpm check` and browser suite were not run under the database-lane
+instructions. No UI screenshots, timed cron wake-up verification, Storage HTTP upload
+or signed-URL journey, CI, deployment or hosted database verification is claimed.
+Initial test-harness failures were corrected, including the Storage deletion guard,
+existing service-role ACL expectations and a deleted Basejump identity lookup.
