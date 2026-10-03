@@ -277,3 +277,12 @@ test('market filters and currency accounting work for each supported market', ()
     assert.equal(successful(snapshot).candidates[0].currency, currency);
   }
 });
+
+test('immutable published packs need no composition version but ordinary products do', () => {
+  const snapshot = input([product(1)]);
+  const original = snapshot.products[0];
+  snapshot.products = [{ ...original, kind: 'pack', current_version_id: null }];
+  assert.equal(solvePlan(snapshot).status, 'ok');
+  snapshot.products = [{ ...original, current_version_id: null }];
+  assert.equal(solvePlan(snapshot).status, 'invalid_input');
+});

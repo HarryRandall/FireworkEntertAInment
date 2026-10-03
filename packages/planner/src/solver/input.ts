@@ -33,7 +33,8 @@ export const plannerProductSchema = z
   .object({
     product_id: z.string().uuid(),
     store_id: z.string().uuid(),
-    current_version_id: z.string().uuid(),
+    // Published selection packs are immutable product rows without composition versions.
+    current_version_id: z.string().uuid().nullable(),
     status: z.enum(['draft', 'needs_review', 'published', 'archived']),
     kind: text,
     price_minor: money,
@@ -63,9 +64,15 @@ export const plannerProductSchema = z
       .strict(),
   })
   .strict()
-  .refine((product) => product.impact_delay_ms <= product.duration_ms, {
-    message: 'Impact must fall within the product duration',
-  });
+  .refine(
+    (product) =>
+      (product.current_version_id !== null || product.kind === 'pack') &&
+      product.impact_delay_ms <= product.duration_ms,
+    {
+      message:
+        'Non-pack products require a composition version and impact must fall within duration',
+    },
+  );
 
 /** Trusted sale_open and market snapshots must be resolved for this store and request time. */
 export const plannerInputSchema = z

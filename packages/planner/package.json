@@ -19,5 +19,9 @@
   },
   "dependencies": {
     "zod": "3.25.76"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./input": "./src/solver/input.ts"
   }
 }
