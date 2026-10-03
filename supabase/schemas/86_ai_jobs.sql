@@ -782,3 +782,200 @@ comment on function private.music_track_analysis(uuid,uuid) is 'Reads validated-
 create function public.music_track_analysis(p_session uuid,p_track uuid)
 returns jsonb language sql stable set search_path = '' as $$ select private.music_track_analysis(p_session,p_track); $$;
 comment on function public.music_track_analysis(uuid,uuid) is 'Ownership-fenced lookup for a newly selected published soundtrack; no raw music table read is required.';
+
+-- Owned till lists, sale-window expiry and saved shopper account summaries.
+create function private.list_sale_end(p_store uuid)
+returns date language plpgsql stable security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  v_store public.stores;
+  v_today date;
+  v_end date;
+begin
+  select * into v_store from public.stores where id = p_store;
+  v_today := (now() at time zone v_store.timezone)::date;
+  if not coalesce(private.planner_sale_open(p_store),false) then
+    raise exception using errcode = '23514', message = 'Shop sales are closed';
+  end if;
+  select max(case when period.rule->>'from' > period.rule->>'to'
+      and to_char(v_today,'MM-DD') >= period.rule->>'from'
+    then (extract(year from v_today)::int + 1)::text || '-' || (period.rule->>'to')
+    else extract(year from v_today)::int::text || '-' || (period.rule->>'to') end)::date into v_end
+    from public.sale_periods as period where period.market = v_store.market
+      and (period.region is null or period.region = v_store.region) and period.rule->>'type' = 'fixed'
+      and case when period.rule->>'from' <= period.rule->>'to'
+        then to_char(v_today,'MM-DD') between period.rule->>'from' and period.rule->>'to'
+        else to_char(v_today,'MM-DD') >= period.rule->>'from' or to_char(v_today,'MM-DD') <= period.rule->>'to' end;
+  -- An all-year licence has an annual list validity boundary in the store's calendar.
+  return coalesce(v_end,make_date(extract(year from v_today)::int,12,31));
+end;
+$$;
+comment on function private.list_sale_end(uuid) is 'Returns the inclusive fixed sale-window end in store time, or calendar year end for an all-year licence; unsupported calendars fail closed.';
+
+create table private.shopper_list_requests (
+  id uuid primary key,
+  shopper_id uuid not null references public.profiles(id) on delete cascade,
+  list_id uuid not null references public.lists(id) on delete cascade,
+  product_id uuid references public.products(id),
+  candidate_id uuid references public.plan_candidates(id),
+  revision int
+);
+alter table private.shopper_list_requests enable row level security;
+comment on table private.shopper_list_requests is 'Private replay keys for transactional list additions; API roles have no table access.';
+
+create function private.add_shopper_list(p_store uuid,p_request uuid,p_product uuid,p_candidate uuid,p_revision int)
+returns uuid language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  v_list uuid;
+  v_items jsonb;
+  v_candidate public.plan_candidates;
+  v_end date;
+  v_show uuid;
+  v_existing private.shopper_list_requests;
+  v_price bigint;
+  v_currency char(3);
+  v_quantity int;
+  v_stock int;
+begin
+  if not coalesce(private.owns_shopper(private.uid()),false) then
+    raise exception using errcode = '42501', message = 'Active shopper required';
+  end if;
+  -- Serialise one shopper's additions and replay checks without reserving store stock.
+  perform pg_advisory_xact_lock(hashtextextended(private.uid()::text,0));
+  if p_request is null then
+    raise exception using errcode = '23514', message = 'List request key required';
+  end if;
+  select * into v_existing from private.shopper_list_requests where id = p_request;
+  if v_existing.id is not null then
+    if v_existing.shopper_id <> private.uid() or v_existing.product_id is distinct from p_product
+      or v_existing.candidate_id is distinct from p_candidate
+      or v_existing.revision is distinct from p_revision
+      or not exists (select from public.lists where id = v_existing.list_id and store_id = p_store) then
+      raise exception using errcode = '42501', message = 'List request ownership mismatch';
+    end if;
+    return v_existing.list_id;
+  end if;
+  if (p_product is null) = (p_candidate is null) or private.store_page(p_store) is null then
+    raise exception using errcode = '23514', message = 'Choose one visible product or plan';
+  end if;
+  v_end := private.list_sale_end(p_store);
+  if p_candidate is not null then
+    select candidate.* into v_candidate from public.plan_candidates as candidate
+      join public.plan_sessions as session on session.id = candidate.session_id
+      where candidate.id = p_candidate and session.store_id = p_store and private.owns_shopper(session.shopper_id)
+      for update of candidate;
+    if v_candidate.id is null then
+      raise exception using errcode = '42501', message = 'Own candidate at matching store required';
+    end if;
+    if v_candidate.revision is distinct from p_revision then
+      raise exception using errcode = '23514', message = 'Plan changed; reload before saving';
+    end if;
+    select jsonb_agg(jsonb_build_object('product_id',item.product,'quantity',item.quantity)) into v_items
+      from (select cue->>'product_id' as product,count(*) as quantity
+        from jsonb_array_elements(v_candidate.cues) as cue group by cue->>'product_id') as item;
+  else
+    v_items := jsonb_build_array(jsonb_build_object('product_id',p_product,'quantity',1));
+  end if;
+  if p_product is not null then
+    select id into v_list from public.lists where shopper_id = private.uid() and store_id = p_store
+      and plan_candidate_id is null and status = 'open' and valid_until = v_end
+      order by created_at desc limit 1 for update;
+  end if;
+  if v_list is null then
+    v_list := private.create_list(p_store,v_items,
+      lpad((('x' || substr(encode(extensions.gen_random_bytes(8),'hex'),1,13))::bit(52)::bigint)::text,16,'0'),v_end,p_candidate);
+  else
+    select price_minor,currency,stock_qty into v_price,v_currency,v_stock
+      from private.shopper_store_products(p_store) where product_id = p_product;
+    select coalesce((select quantity from public.list_items where list_id = v_list and product_id = p_product),0) + 1 into v_quantity;
+    if v_price is null or v_stock < v_quantity then
+      raise exception using errcode = '23514', message = 'List product unavailable at store';
+    end if;
+    -- Existing products keep the price of their first addition, even if the shop changes its price.
+    insert into public.list_items(list_id,product_id,quantity,unit_price_minor,currency)
+      values (v_list,p_product,v_quantity,v_price,v_currency)
+      on conflict (list_id,product_id) do update set quantity = excluded.quantity;
+  end if;
+  insert into private.shopper_list_requests(id,shopper_id,list_id,product_id,candidate_id,revision)
+    values (p_request,private.uid(),v_list,p_product,p_candidate,p_revision);
+  if p_candidate is not null then
+    insert into public.shows(owner_id,name,origin,soundtrack_track_id)
+      values (private.uid(),coalesce(v_candidate.name,'My garden show'),'planner',v_candidate.soundtrack_track_id)
+      returning id into v_show;
+    perform private.save_show(v_show,v_candidate.cues,v_candidate.duration_ms,v_candidate.soundtrack_analysis_id,
+      0,v_candidate.session_id,'Saved from a plan');
+    update public.shows set status = 'live' where id = v_show;
+  end if;
+  return v_list;
+end;
+$$;
+
+comment on function private.add_shopper_list(uuid,uuid,uuid,uuid,int) is 'Atomically saves one product or an owned current plan, snapshots current prices, generates a sixteen-digit barcode and saves the planned show; request UUID makes retries idempotent. Never reserves stock.';
+create function public.add_shopper_list(p_store uuid,p_request uuid,p_product uuid default null,p_candidate uuid default null,p_revision int default null)
+returns uuid language sql set search_path = '' as $$ select private.add_shopper_list(p_store,p_request,p_product,p_candidate,p_revision); $$;
+comment on function public.add_shopper_list(uuid,uuid,uuid,uuid,int) is 'Adds a product or current owned candidate to a new till list; returns the list UUID. Prices are minor-unit snapshots and validity is server-derived.';
+
+create function private.set_list_quantity(p_list uuid,p_product uuid,p_quantity int)
+returns void language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  v_list public.lists;
+  v_stock int;
+begin
+  select * into v_list from public.lists where id = p_list for update;
+  if v_list.id is null or not coalesce(private.owns_shopper(v_list.shopper_id),false) then
+    raise exception using errcode = '42501', message = 'Own list required';
+  end if;
+  if v_list.status <> 'open' or v_list.valid_until < (now() at time zone (select timezone from public.stores where id = v_list.store_id))::date then
+    raise exception using errcode = '23514', message = 'List is no longer editable';
+  end if;
+  -- The database quantity column is a positive smallint; zero means remove.
+  if p_quantity is null or p_quantity < 0 or p_quantity > 32767 then
+    raise exception using errcode = '23514', message = 'Invalid quantity';
+  end if;
+  if not exists (select from public.list_items where list_id = p_list and product_id = p_product) then
+    raise exception using errcode = '23514', message = 'List item unavailable';
+  end if;
+  if p_quantity = 0 then
+    delete from public.list_items where list_id = p_list and product_id = p_product;
+  else
+    select stock_qty into v_stock from private.shopper_store_products(v_list.store_id) where product_id = p_product;
+    if v_stock is null or v_stock < p_quantity then
+      raise exception using errcode = '23514', message = 'Quantity exceeds current stock';
+    end if;
+    update public.list_items set quantity = p_quantity where list_id = p_list and product_id = p_product;
+  end if;
+end;
+$$;
+comment on function private.set_list_quantity(uuid,uuid,int) is 'Changes an owned open unexpired list quantity without changing its price snapshot; zero removes the item. Stock is checked but never reserved.';
+create function public.set_list_quantity(p_list uuid,p_product uuid,p_quantity int)
+returns void language sql set search_path = '' as $$ select private.set_list_quantity(p_list,p_product,p_quantity); $$;
+comment on function public.set_list_quantity(uuid,uuid,int) is 'Sets an existing owned list item quantity, or removes it with zero, preserving minor-unit prices.';
+
+create function private.shopper_account()
+returns jsonb language plpgsql stable security definer set search_path = '' as $$
+#variable_conflict error
+begin
+  if not coalesce(private.owns_shopper(private.uid()),false) then
+    raise exception using errcode = '42501', message = 'Active shopper required';
+  end if;
+  return jsonb_build_object(
+    'lists',coalesce((select jsonb_agg(to_jsonb(list) || jsonb_build_object('store_name',store.name,'store_slug',store.slug,
+      'status',case when list.status = 'open' and list.valid_until < (now() at time zone store.timezone)::date then 'expired' else list.status end,
+      'organisation_id',store.organisation_id,'items',coalesce((select jsonb_agg(to_jsonb(item) || jsonb_build_object('name',product.name))
+        from public.list_items as item join public.products as product on product.id = item.product_id where item.list_id = list.id),'[]'::jsonb)) order by list.created_at desc)
+      from public.lists as list join public.stores as store on store.id = list.store_id where list.shopper_id = private.uid()),'[]'::jsonb),
+    'shows',coalesce((select jsonb_agg(jsonb_build_object('id',show.id,'name',show.name,'version_id',show.current_version_id,'session_id',version.plan_session_id))
+      from public.shows as show join public.show_versions as version on version.id = show.current_version_id where show.owner_id = private.uid()),'[]'::jsonb),
+    'plans',coalesce((select jsonb_agg(jsonb_build_object('id',session.id,'store_slug',store.slug,'store_name',store.name,'created_at',session.created_at,'status',session.status) order by session.created_at desc)
+      from public.plan_sessions as session join public.stores as store on store.id = session.store_id where session.shopper_id = private.uid()),'[]'::jsonb),
+    'follows',coalesce((select jsonb_agg(to_jsonb(follow) || jsonb_build_object('name',organisation.name))
+      from public.follows as follow join public.organisations as organisation on organisation.id = follow.organisation_id where follow.shopper_id = private.uid()),'[]'::jsonb),
+    'requests',coalesce((select jsonb_agg(to_jsonb(request) order by request.created_at desc) from public.privacy_requests as request where request.shopper_id = private.uid()),'[]'::jsonb));
+end;
+$$;
+comment on function private.shopper_account() is 'Reads only the active caller account, enriching owned snapshots with shop and product labels without exposing retailer administration.';
+create function public.shopper_account()
+returns jsonb language sql stable set search_path = '' as $$ select private.shopper_account(); $$;
+comment on function public.shopper_account() is 'Returns owned lists, saved shows, planning history, per-shop consent and privacy request status for the active shopper.';
