@@ -57,3 +57,35 @@ colour schemes. It is included in `pnpm check`. Screenshots stay in ignored
 `output/playwright/`; they are review evidence, not approved visual baselines.
 Software GL measurements do not establish performance on a real device. The owner
 must review visual parity against the prototype before delivery is called verified.
+
+## Agent tooling
+
+Project skills are maintained once under `.agents/skills`. Claude uses relative links
+from `.claude/skills`; the composer creates and verifies those links because agent
+configuration is protected from workspace edits.
+
+The project `.mcp.json` pins the Playwright MCP used for local visual reviews. It runs
+an isolated Chromium profile, accepts only the local app and prototype origins, and
+writes temporary output outside the repository. These settings reduce accidental
+cross-project access but are not a security boundary. Use synthetic local data and
+keep production sessions out of the profile.
+
+Read documentation shipped with installed packages first. Use matching official docs
+when installed docs are absent, and Context7 only for an unresolved version-specific
+library question. Never send credentials, personal data or private source in a
+documentation query.
+
+| Tool           | Pinned source            | Licence    | Purpose                                    |
+| -------------- | ------------------------ | ---------- | ------------------------------------------ |
+| Playwright MCP | `@playwright/mcp@0.0.83` | Apache-2.0 | Local screenshots and browser interactions |
+
+## Readability lint
+
+Each handwritten TypeScript workspace composes the shared policy in
+`scripts/eslint/readability.mjs`. The policy includes type-checked TypeScript rules,
+TSDoc syntax, complexity and size limits, numeric-literal checks, selected SonarJS
+checks and local rules for export documentation and lint exceptions.
+
+Dated `eslint-suppressions-*.json` files record violations that existed when the gate
+was introduced. Do not regenerate them during ordinary feature work. New violations
+fail lint, and resolved entries should be pruned rather than retained.
