@@ -53,10 +53,12 @@ export function ChatPrompt({
   onSubmit,
   pending = false,
   suggestions = [],
+  maxLength,
 }: {
   onSubmit: (text: string) => void;
   pending?: boolean;
   suggestions?: readonly string[];
+  maxLength?: number;
 }) {
   const [text, setText] = useState('');
   return (
@@ -90,6 +92,7 @@ export function ChatPrompt({
           aria-label="Ask for a change"
           placeholder="Ask for a change"
           rows={1}
+          maxLength={maxLength}
           value={text}
           disabled={pending}
           onChange={(event) => {

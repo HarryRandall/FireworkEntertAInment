@@ -1,8 +1,10 @@
-/** One persisted show with quantity-aware prices and named action placeholders. */
+/** One persisted show with quantity-aware prices and editing controls. */
 'use client';
 import { useMemo } from 'react';
 import type { StorePage } from '@/lib/shopper/contracts';
 import type { SavedPlan } from '@/lib/shopper/planner/contracts';
+import { showName } from '@/lib/shopper/planner/names';
+import { PlanEdits } from './plan-edits';
 import { currentCandidate } from '@/lib/shopper/planner/progress';
 import { showShots } from '@/lib/shopper/playback';
 import { formatPrice } from '@/lib/shopper/paths';
@@ -18,14 +20,18 @@ export function PlanView({
   plan,
   pending,
   onDifferent,
+  onEdit,
 }: {
   store: StorePage;
   plan: SavedPlan;
   pending: boolean;
   onDifferent: () => void;
+  onEdit: (source: 'chip' | 'rule', message: string, product?: string) => void;
 }) {
   const candidate = currentCandidate(plan.plan_candidates);
   const input = plan.solver_snapshot;
+  const names = new Map(store.products.map((product) => [product.product_id, product.name]));
+  const title = candidate.name ?? showName(candidate, input, names);
   const items = store.products.flatMap((product) => {
     const quantity = candidate.cues.filter((cue) => cue.product_id === product.product_id).length;
     const snapshot = input.products.find((item) => item.product_id === product.product_id);
@@ -44,7 +50,7 @@ export function PlanView({
       complete
         ? showShots({
             ...currentCandidate(plan.plan_candidates),
-            name: 'Your planned show',
+            name: currentCandidate(plan.plan_candidates).name ?? 'Your planned show',
             price_minor: currentCandidate(plan.plan_candidates).total_minor,
             available: true,
             products: store.products.map((product) => ({ quantity: 1, product: product.playback })),
@@ -55,7 +61,7 @@ export function PlanView({
   return (
     <div className="grid gap-6">
       {complete ? (
-        <Preview title="Your planned show" shots={shots} />
+        <Preview title={title} shots={shots} />
       ) : (
         <Callout title="Preview unavailable">
           Some products are no longer visible at this shop. Your saved plan and total remain
@@ -64,7 +70,7 @@ export function PlanView({
       )}
       <section data-section="plan-products" className="grid gap-4 px-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
-          <h2 className="text-xl font-semibold">Your planned show</h2>
+          <h2 className="min-w-0 text-xl font-semibold break-words">{title}</h2>
           <b className="text-2xl tabular-nums">
             {formatPrice(candidate.total_minor, candidate.currency)}
           </b>
@@ -90,24 +96,22 @@ export function PlanView({
           box's instructions.
         </p>
       </section>
+      <PlanEdits plan={plan} names={names} pending={pending} onEdit={onEdit} />
       <section data-section="plan-actions" className="grid gap-3 px-4 pb-6">
         <Button disabled={pending} onClick={onDifferent}>
           Show me something different
         </Button>
-        {pending ? <p role="status">Finding a different show...</p> : null}
+        {pending ? <p role="status">Updating your show...</p> : null}
         <PlanActionPlaceholders />
       </section>
     </div>
   );
 }
-/** Clearly names unavailable editing, music and list actions without pretending to save anything. */
+/** Clearly names unavailable music and list actions without pretending to save anything. */
 function PlanActionPlaceholders() {
   return (
     <div className="grid gap-2">
       <div className="flex flex-wrap gap-2">
-        <Button variant="outline" disabled>
-          Change it
-        </Button>
         <Button variant="outline" disabled>
           Pick music
         </Button>
@@ -116,7 +120,7 @@ function PlanActionPlaceholders() {
         </Button>
       </div>
       <p className="text-muted-foreground text-xs">
-        Changes, music and saving to a list are not available yet.
+        Music and saving to a list are not available yet.
       </p>
     </div>
   );

@@ -113,6 +113,7 @@ function PlannerScreen({
         plan={state.plan}
         pending={state.pending}
         onDifferent={state.alternative}
+        onEdit={state.edit}
       />
     );
   }
