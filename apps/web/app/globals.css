@@ -3,7 +3,7 @@
 @import 'shadcn/tailwind.css';
 @import '../ui/theme.css';
 
-@custom-variant dark (&:is(.dark *, [data-theme='dark'] *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 html {
   min-height: 100%;
@@ -20,7 +20,12 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-[data-theme='dark'],
 .dark {
   color-scheme: dark;
+}
+
+/* The prototype uses the highlight colour for keyboard focus in both themes. */
+:focus-visible {
+  outline: 2px solid var(--highlight);
+  outline-offset: 2px;
 }

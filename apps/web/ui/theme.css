@@ -1,6 +1,8 @@
+/* Shared palette, typography and radii from the redesign's shared.css. */
 @theme inline {
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-sans:
+    var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, 'SF Mono', Menlo, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -16,55 +18,85 @@
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-soft: var(--destructive-soft);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --color-highlight: var(--highlight);
+  --color-highlight-soft: var(--highlight-soft);
+  --color-highlight-foreground: var(--highlight-foreground);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-stage: var(--stage);
+  --color-stage-foreground: var(--stage-foreground);
+  --shadow-card: var(--surface-shadow);
+  --radius-sm: var(--radius-small);
+  --radius-md: calc((var(--radius-small) + var(--radius)) / 2);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  /* Larger containers extend the prototype radius by its small-to-large step. */
+  --radius-xl: calc(var(--radius) + (var(--radius) - var(--radius-small)));
 }
 
 :root {
   --background: #ffffff;
-  --foreground: #18181b;
+  --foreground: #24242a;
   --card: #ffffff;
-  --card-foreground: #18181b;
-  --popover: #ffffff;
-  --popover-foreground: #18181b;
+  --card-foreground: var(--foreground);
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
   --primary: #075f40;
   --primary-foreground: #ffffff;
-  --secondary: #f4f4f5;
-  --secondary-foreground: #18181b;
-  --muted: #f4f4f5;
-  --muted-foreground: #71717a;
-  --accent: #f4f4f5;
-  --accent-foreground: #18181b;
-  --destructive: #b91c1c;
-  --border: #e4e4e7;
-  --input: #e4e4e7;
-  --ring: #075f40;
-  --radius: 0.5rem;
+  --secondary: var(--muted);
+  --secondary-foreground: var(--foreground);
+  --muted: #f4f4f6;
+  --muted-foreground: #6b6d76;
+  --accent: #ececf0;
+  --accent-foreground: var(--foreground);
+  --highlight: #15bd8b;
+  --highlight-soft: #d7f3e9;
+  --highlight-foreground: #075f40;
+  --warning: #a15c00;
+  --warning-soft: #fdf0dc;
+  --destructive: #b42318;
+  --destructive-soft: #fde8e6;
+  --info: #1f5fbf;
+  --info-soft: #e3edfc;
+  --border: #e5e5ea;
+  --border-strong: #b9bbc6;
+  --input: var(--border);
+  --ring: var(--highlight);
+  /* Cinematic viewers retain the prototype's dark backdrop in either theme. */
+  --stage: #05070d;
+  /* Overlay text borrows the prototype dark foreground for stage contrast. */
+  --stage-foreground: #f7f7f8;
+  --surface-shadow: 0 1px 2px rgba(20, 20, 30, 0.06), 0 8px 24px -12px rgba(20, 20, 30, 0.18);
+  /* Prototype corner radii, in CSS pixels: cards 12, compact controls 8. */
+  --radius: 12px;
+  --radius-small: 8px;
 }
 
-.dark,
-[data-theme='dark'] {
-  --background: #09090b;
-  --foreground: #fafafa;
-  --card: #18181b;
-  --card-foreground: #fafafa;
-  --popover: #18181b;
-  --popover-foreground: #fafafa;
-  --primary: #2ee0a3;
-  --primary-foreground: #052e20;
-  --secondary: #27272a;
-  --secondary-foreground: #fafafa;
-  --muted: #27272a;
+.dark {
+  --background: #050507;
+  --foreground: #f7f7f8;
+  --card: #0c0c0f;
+  --primary: #1fd093;
+  --primary-foreground: #053024;
+  --muted: #151518;
   --muted-foreground: #a1a1aa;
-  --accent: #27272a;
-  --accent-foreground: #fafafa;
-  --destructive: #f87171;
-  --border: #3f3f46;
-  --input: #3f3f46;
-  --ring: #2ee0a3;
+  --accent: #1c1c20;
+  --highlight: #2ee0a3;
+  --highlight-soft: #0f3026;
+  --highlight-foreground: #46e7b0;
+  --warning: #f5b454;
+  --warning-soft: #33250f;
+  --destructive: #ff8a80;
+  --destructive-soft: #3a1512;
+  --info: #8ab4ff;
+  --info-soft: #14223a;
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.22);
+  --surface-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 12px 32px -16px rgba(0, 0, 0, 0.8);
 }

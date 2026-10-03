@@ -53,7 +53,7 @@ export function ReviewStage({
         data-testid="stage"
         aria-busy={!ready}
         inert={!ready}
-        className={`bg-muted overflow-hidden rounded-xl border ${large ? 'h-[75dvh]' : 'aspect-[16/10] max-h-[600px]'}`}
+        className={`bg-stage overflow-hidden rounded-xl border ${large ? 'h-[75dvh]' : 'aspect-[16/10] max-h-[600px]'}`}
       />
       <PreviewStatus
         error={error}
