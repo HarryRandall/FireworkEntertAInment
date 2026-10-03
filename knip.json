@@ -27,7 +27,6 @@
       "project": ["src/**/*.ts"]
     }
   },
-  "ignoreUnresolved": ["../../apps/web/lib/firework-import/reconstruction.ts"],
   "ignoreIssues": {
     "apps/web/hooks/use-mobile.ts": ["files"],
     "apps/web/hooks/use-prefers-reduced-motion.ts": ["files"],
