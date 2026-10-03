@@ -1,10 +1,15 @@
+/** Authored impact, lift and computed launch clocks, seconds from show start. */
 export type ImpactTiming = {
   impactTimeSeconds: number;
   launchTimeSeconds: number;
   liftTimeSeconds: number;
 };
 
-/** Pure launch clock calculation, kept separate for direct behavioural tests. */
+// Half of the millisecond rounding quantum, seconds, retained from the timing contract.
+const LAUNCH_ROUNDING_TOLERANCE_S = 0.0005;
+// Three decimal places store seconds at millisecond precision.
+const MILLISECOND_DECIMAL_PLACES = 3;
+/** Computes a launch clock from finite non-negative impact and lift seconds; returns null if launch would precede show start. */
 export function scheduleImpactWithLift(
   impactTimeSeconds: number,
   liftTimeSeconds: number,
@@ -19,7 +24,7 @@ export function scheduleImpactWithLift(
   }
 
   const launchTimeSeconds = impactTimeSeconds - liftTimeSeconds;
-  if (launchTimeSeconds < -0.0005) return null;
+  if (launchTimeSeconds < -LAUNCH_ROUNDING_TOLERANCE_S) return null;
 
   return {
     impactTimeSeconds: roundMilliseconds(impactTimeSeconds),
@@ -29,5 +34,5 @@ export function scheduleImpactWithLift(
 }
 
 function roundMilliseconds(value: number): number {
-  return Number(value.toFixed(3));
+  return Number(value.toFixed(MILLISECOND_DECIMAL_PLACES));
 }
