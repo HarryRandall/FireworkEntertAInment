@@ -2,28 +2,30 @@
 import * as THREE from 'three';
 
 // Prototype scene dimensions in metres, and tessellation chosen for a smooth horizon.
-const SKY_RADIUS_M = 1400,
-  STAR_RADIUS_M = 1300,
-  GROUND_RADIUS_M = 1350;
-const SKY_SEGMENTS = 48,
-  SKY_RINGS = 24,
-  GROUND_SEGMENTS = 96;
+const SKY_RADIUS_M = 1400;
+const STAR_RADIUS_M = 1300;
+const GROUND_RADIUS_M = 1350;
+const SKY_SEGMENTS = 48;
+const SKY_RINGS = 24;
+const GROUND_SEGMENTS = 96;
 // Prototype starfield count, seed and magnitude exponent (dimensionless visual tuning).
-const STAR_COUNT = 1300,
-  STAR_SEED = 20260930,
-  MAGNITUDE_POWER = 6;
+const STAR_COUNT = 1300;
+const STAR_SEED = 20260930;
+const MAGNITUDE_POWER = 6;
+// Prototype star horizon cutoff, normalised unit-sphere height.
 const STAR_MIN_ELEVATION = 0.06;
 // Prototype thumbnail scaling: full sky detail at 820 CSS pixels, minimum scale 0.35.
-const STAR_REFERENCE_HEIGHT_PX = 820,
-  STAR_MIN_SCALE = 0.35;
+const STAR_REFERENCE_HEIGHT_PX = 820;
+const STAR_MIN_SCALE = 0.35;
+// Packed star positions and colours each have three scalar components.
 const VECTOR_COMPONENTS = 3;
 // Prototype Mulberry32 starfield sequence: unsigned 32-bit arithmetic constants and shifts.
-const RANDOM_INCREMENT = 0x6d2b79f5,
-  RANDOM_MIX = 61,
-  UINT32_RANGE = 4294967296;
-const MIX_SHIFT_A = 15,
-  MIX_SHIFT_B = 7,
-  MIX_SHIFT_C = 14;
+const RANDOM_INCREMENT = 0x6d2b79f5;
+const RANDOM_MIX = 61;
+const UINT32_RANGE = 4294967296;
+const MIX_SHIFT_A = 15;
+const MIX_SHIFT_B = 7;
+const MIX_SHIFT_C = 14;
 const skyVertex =
   'varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }';
 const skyFragment = `
@@ -70,8 +72,51 @@ export function makeWorld(scene: THREE.Scene) {
       }),
     ),
   );
-  const positions = new Float32Array(STAR_COUNT * VECTOR_COMPONENTS),
-    magnitudes = new Float32Array(STAR_COUNT);
+  const { stars, uniforms } = makeStars();
+  scene.add(stars);
+  const ground = new THREE.Mesh(
+    new THREE.CircleGeometry(GROUND_RADIUS_M, GROUND_SEGMENTS),
+    new THREE.ShaderMaterial({ vertexShader: groundVertex, fragmentShader: groundFragment }),
+  );
+  ground.rotation.x = -Math.PI / 2;
+  scene.add(ground);
+  return {
+    resize(height: number, dpr: number) {
+      uniforms.uDpr.value = dpr;
+      uniforms.uView.value = Math.max(
+        STAR_MIN_SCALE,
+        Math.min(1, height / STAR_REFERENCE_HEIGHT_PX),
+      );
+    },
+  };
+}
+
+/** Releases geometries and materials in a scene subtree, once per shared resource. */
+export function disposeTree(root: THREE.Object3D): void {
+  const geometries = new Set<THREE.BufferGeometry>();
+  const materials = new Set<THREE.Material>();
+  root.traverse((object) => {
+    if (object instanceof THREE.Mesh || object instanceof THREE.Points) {
+      const geometry: unknown = object.geometry;
+      if (!(geometry instanceof THREE.BufferGeometry))
+        throw new TypeError('Drawable geometry must be a buffer geometry');
+      geometries.add(geometry as THREE.BufferGeometry);
+      const material: unknown = object.material;
+      const ownedMaterials: unknown[] = Array.isArray(material) ? material : [material];
+      for (const owned of ownedMaterials) {
+        if (!(owned instanceof THREE.Material))
+          throw new TypeError('Drawable material must be a Three material');
+        materials.add(owned as THREE.Material);
+      }
+    }
+  });
+  for (const geometry of geometries) geometry.dispose();
+  for (const material of materials) material.dispose();
+}
+
+function makeStars() {
+  const positions = new Float32Array(STAR_COUNT * VECTOR_COMPONENTS);
+  const magnitudes = new Float32Array(STAR_COUNT);
   let seed = STAR_SEED;
   const random = () => {
     seed = (seed + RANDOM_INCREMENT) | 0;
@@ -81,8 +126,8 @@ export function makeWorld(scene: THREE.Scene) {
   };
   for (let i = 0; i < STAR_COUNT; i++) {
     const elevation = STAR_MIN_ELEVATION + random() * (1 - STAR_MIN_ELEVATION);
-    const azimuth = random() * Math.PI * 2,
-      radius = Math.sqrt(1 - elevation * elevation);
+    const azimuth = random() * Math.PI * 2;
+    const radius = Math.sqrt(1 - elevation * elevation);
     positions.set(
       [
         radius * Math.cos(azimuth) * STAR_RADIUS_M,
@@ -109,35 +154,6 @@ export function makeWorld(scene: THREE.Scene) {
     }),
   );
   stars.frustumCulled = false;
-  scene.add(stars);
-  const ground = new THREE.Mesh(
-    new THREE.CircleGeometry(GROUND_RADIUS_M, GROUND_SEGMENTS),
-    new THREE.ShaderMaterial({ vertexShader: groundVertex, fragmentShader: groundFragment }),
-  );
-  ground.rotation.x = -Math.PI / 2;
-  scene.add(ground);
-  return {
-    resize(height: number, dpr: number) {
-      uniforms.uDpr.value = dpr;
-      uniforms.uView.value = Math.max(
-        STAR_MIN_SCALE,
-        Math.min(1, height / STAR_REFERENCE_HEIGHT_PX),
-      );
-    },
-  };
-}
 
-/** Releases geometries and materials in a scene subtree, once per shared resource. */
-export function disposeTree(root: THREE.Object3D): void {
-  const geometries = new Set<THREE.BufferGeometry>(),
-    materials = new Set<THREE.Material>();
-  root.traverse((object) => {
-    if (object instanceof THREE.Mesh || object instanceof THREE.Points) {
-      geometries.add(object.geometry);
-      for (const material of Array.isArray(object.material) ? object.material : [object.material])
-        materials.add(material);
-    }
-  });
-  for (const geometry of geometries) geometry.dispose();
-  for (const material of materials) material.dispose();
+  return { stars, uniforms };
 }

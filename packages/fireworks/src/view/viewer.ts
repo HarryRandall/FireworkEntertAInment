@@ -1,4 +1,5 @@
 /** Browser playback coordinates stateless CPU frames, scene resources and redraw scheduling. */
+import { prototypeOr } from '../sim/numeric';
 import * as THREE from 'three';
 import { resolveDesign, type Design } from '../schema/index';
 import { simulate, shotDuration } from '../sim/index';
@@ -9,19 +10,19 @@ import { disposeTree, makeWorld } from './world';
 import type { Shot, ViewerOptions } from './types';
 
 // Prototype projection settings, in degrees and metres.
-const FOV_DEG = 45,
-  NEAR_M = 0.5,
-  FAR_M = 4000;
+const FOV_DEG = 45;
+const NEAR_M = 0.5;
+const FAR_M = 4000;
 // Prototype pixel-ratio cap limits fill rate on high-density displays.
 const MAX_DPR = 1.5;
 // Basic fixed view padding and floor, chosen for legible review frames in any aspect ratio.
-const FIT_PADDING = 1.3,
-  MIN_EXTENT_M = 4,
-  CAMERA_HEIGHT_FRACTION = 0.55;
+const FIT_PADDING = 1.3;
+const MIN_EXTENT_M = 4;
+const CAMERA_HEIGHT_FRACTION = 0.55;
 // Wall clock conversion; smoothing weights follow the prototype's performance readout.
-const MS_PER_SECOND = 1000,
-  FPS_OLD_WEIGHT = 0.92,
-  TIMING_OLD_WEIGHT = 0.9;
+const MS_PER_SECOND = 1000;
+const FPS_OLD_WEIGHT = 0.92;
+const TIMING_OLD_WEIGHT = 0.9;
 const HALF_TURN_DEG = 180;
 // Particle positions store three Cartesian components per world-space vertex.
 const VECTOR_COMPONENTS = 3;
@@ -64,7 +65,7 @@ export class Viewer {
       antialias: false,
       powerPreference: 'high-performance',
     });
-    this.renderer.setPixelRatio(Math.min(MAX_DPR, window.devicePixelRatio || 1));
+    this.renderer.setPixelRatio(Math.min(MAX_DPR, prototypeOr(window.devicePixelRatio, 1)));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.NoToneMapping;
     this.renderer.domElement.style.cssText = 'display:block;width:100%;height:100%';
@@ -77,7 +78,9 @@ export class Viewer {
     this.t = Math.max(0, Math.min(this.duration, options.startAt ?? 0));
     this.playing =
       options.autoplay !== false && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    this.resizeObserver = new ResizeObserver(() => this.resize());
+    this.resizeObserver = new ResizeObserver(() => {
+      this.resize();
+    });
     this.resizeObserver.observe(container);
     this.intersectionObserver = new IntersectionObserver((entries) => {
       this.onScreen = entries[0]?.isIntersecting ?? false;
@@ -102,7 +105,7 @@ export class Viewer {
   private schedule(): void {
     if (
       !this.disposed &&
-      !this.raf &&
+      this.raf === 0 &&
       this.onScreen &&
       !document.hidden &&
       (this.dirty || this.playing)
@@ -112,19 +115,9 @@ export class Viewer {
   private frame = (now: number): void => {
     this.raf = 0;
     if (this.disposed || !this.onScreen || document.hidden) return;
-    const dt = this.last ? (now - this.last) / MS_PER_SECOND : 0;
+    const dt = this.last !== 0 ? (now - this.last) / MS_PER_SECOND : 0;
     this.last = now;
-    if (this.playing) {
-      if (dt > 0) this.fps = this.fps * FPS_OLD_WEIGHT + (1 / dt) * (1 - FPS_OLD_WEIGHT);
-      const next = this.t + dt * this.speed;
-      if (next > this.duration) {
-        if (this.options.loop !== false && this.duration > 0) this.t = next % this.duration;
-        else {
-          this.t = this.duration;
-          this.playing = false;
-        }
-      } else this.t = next;
-    }
+    if (this.playing) this.advancePlayback(dt);
     if (this.dirty || this.playing || dt > 0) {
       this.draw();
       this.dirty = false;
@@ -132,6 +125,17 @@ export class Viewer {
     }
     this.schedule();
   };
+  private advancePlayback(dt: number): void {
+    if (dt > 0) this.fps = this.fps * FPS_OLD_WEIGHT + (1 / dt) * (1 - FPS_OLD_WEIGHT);
+    const next = this.t + dt * this.speed;
+    if (next > this.duration) {
+      if (this.options.loop !== false && this.duration > 0) this.t = next % this.duration;
+      else {
+        this.t = this.duration;
+        this.playing = false;
+      }
+    } else this.t = next;
+  }
   private draw(): void {
     const start = performance.now();
     const frames = this.shots.flatMap((shot, index) => {
@@ -214,8 +218,8 @@ export class Viewer {
   }
   /** Replaces the sequence with one stored design; keepCamera preserves the projection. */
   setDesign(design: Design, keepCamera = false): void {
-    const position = this.camera.position.clone(),
-      rotation = this.camera.rotation.clone();
+    const position = this.camera.position.clone();
+    const rotation = this.camera.rotation.clone();
     this.setShots([{ design }]);
     if (keepCamera) {
       this.camera.position.copy(position);
@@ -225,9 +229,9 @@ export class Viewer {
   /** Restores a fixed review view fitted to sampled CPU particle bounds in world metres. */
   resetCamera(): void {
     if (this.disposed) return;
-    let minX = -MIN_EXTENT_M,
-      maxX = MIN_EXTENT_M,
-      top = MIN_EXTENT_M;
+    let minX = -MIN_EXTENT_M;
+    let maxX = MIN_EXTENT_M;
+    let top = MIN_EXTENT_M;
     for (const shot of this.shots) {
       const design = resolveDesign(shot.design);
       const preview = simulate(design, reviewTime(design), shot);
@@ -238,8 +242,8 @@ export class Viewer {
       }
       top = Math.max(top, design.launch?.height_m ?? 0);
     }
-    const targetY = top / 2,
-      halfWidth = (maxX - minX) / 2;
+    const targetY = top / 2;
+    const halfWidth = (maxX - minX) / 2;
     // A perspective frustum grows by tan(fov/2); the larger dimension sets distance.
     const distance =
       (FIT_PADDING * Math.max(top / 2, halfWidth / this.camera.aspect)) /
@@ -294,8 +298,8 @@ export class Viewer {
 }
 
 // Review stills show developed trails: half a second after apex, or half way through ground effects.
-const REVIEW_AFTER_APEX_S = 0.5,
-  GROUND_REVIEW_FRACTION = 0.4;
+const REVIEW_AFTER_APEX_S = 0.5;
+const GROUND_REVIEW_FRACTION = 0.4;
 /** Chooses a readable review time in seconds for a stored design. */
 export function reviewTime(design: Design): number {
   return design.launch
