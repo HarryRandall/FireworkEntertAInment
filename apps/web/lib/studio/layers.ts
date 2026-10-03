@@ -83,3 +83,20 @@ export function previewDocument(document: Design, hidden: ReadonlySet<string>): 
   }));
   return preview;
 }
+
+/** Retains a valid source address after structural edits, otherwise selects the first available source. */
+export function studioSelection(document: Design, requested: string): string {
+  if (selectedLayer(document, requested)) return requested;
+  if (isSourceAddress(document, requested)) return requested;
+  const layer = document.breaks.at(0)?.layers.at(0);
+  if (layer) return layerAddress(0, layer.id);
+  return document.ground === null ? 'launch' : 'ground';
+}
+
+function isSourceAddress(document: Design, requested: string): boolean {
+  if (requested === 'launch') return document.launch !== null;
+  if (requested === 'ground') return document.ground !== null;
+  const burst = requested.match(/^(break|core):(\d+)$/);
+  const index = burst?.[2];
+  return index !== undefined && document.breaks.at(Number(index)) !== undefined;
+}
