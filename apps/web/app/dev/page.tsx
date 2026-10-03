@@ -9,6 +9,9 @@ export default function DevPage() {
       <Link className="text-primary underline underline-offset-4" href="/dev/components">
         Component gallery
       </Link>
+      <Link className="text-primary underline underline-offset-4" href="/dev/shell">
+        Workspace shell
+      </Link>
       <Link className="text-primary underline underline-offset-4" href="/dev/fireworks">
         Firework previews
       </Link>
