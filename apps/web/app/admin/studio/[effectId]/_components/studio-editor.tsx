@@ -6,7 +6,7 @@ import type { ShellIdentity } from '@/ui/shell/config/types';
 import { WorkspaceShell } from '@/ui/shell/workspace-shell';
 import { LayerList } from '@/ui/kit/layer-list';
 import { createHistory, studioReducer } from '@/lib/studio/document';
-import { previewDocument, studioLayers, layerAddress } from '@/lib/studio/layers';
+import { previewDocument, studioLayers, layerAddress, studioSelection } from '@/lib/studio/layers';
 import { StudioToolbar } from './studio-toolbar';
 import { StudioStage } from './studio-stage';
 import { StudioInspector } from './studio-inspector';
@@ -33,7 +33,11 @@ export function StudioEditor({
 }) {
   const [history, dispatch] = useReducer(studioReducer, initialDocument, createHistory);
   const firstLayer = initialDocument.breaks.at(0)?.layers.at(0);
-  const [selected, setSelected] = useState(firstLayer ? layerAddress(0, firstLayer.id) : 'ground');
+  const [requestedSelection, setSelected] = useState(
+    firstLayer ? layerAddress(0, firstLayer.id) : 'ground',
+  );
+  const selected = studioSelection(history.document, requestedSelection);
+  const [listenerDistanceM, setListenerDistanceM] = useState<number | null>(null);
   const [hidden, setHidden] = useState(new Set<string>());
   const [collapsed, setCollapsed] = useState(new Set<string>());
   const { status, save } = useDraftSave({
@@ -92,11 +96,17 @@ export function StudioEditor({
               Visibility affects the preview only.
             </p>
           </section>
-          <StudioStage document={preview} hidden={hidden.has('ground')} />
+          <StudioStage
+            document={preview}
+            hidden={hidden.has('ground')}
+            listenerDistanceM={listenerDistanceM}
+          />
           <StudioInspector
             document={history.document}
             selected={selected}
             editable={editable}
+            listenerDistanceM={listenerDistanceM}
+            onListenerDistanceChange={setListenerDistanceM}
             dispatch={dispatch}
           />
         </div>

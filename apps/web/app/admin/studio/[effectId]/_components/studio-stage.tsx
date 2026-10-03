@@ -1,46 +1,26 @@
 /** One owned renderer stage and a floating transport for the current draft. */
 'use client';
-import { useEffect, useRef, useState } from 'react';
 import type { Design } from '@showcrafter/fireworks';
-import { Viewer } from '@showcrafter/fireworks/view';
+import { useStudioViewer } from './use-studio-viewer';
 import { Button } from '@/ui/primitives/button';
 
 const SCRUB_STEP_S = 0.01; // Player tuning in seconds for precise seeking, matching the renderer player.
 const CLOCK_DECIMALS = 1; // Tenths of a second keep the floating transport readable.
-/** Mounts one Viewer, updates designs without remounting, and disposes browser resources on exit. */
-export function StudioStage({ document, hidden }: { document: Design; hidden: boolean }) {
-  const container = useRef<HTMLDivElement>(null);
-  const viewer = useRef<Viewer | null>(null);
-  const initial = useRef(document);
-  const [failure, setFailure] = useState('');
-  const [clock, setClock] = useState({ time: 0, duration: 0, playing: false });
-  useEffect(() => {
-    if (!container.current) return;
-    let active: Viewer;
-    try {
-      active = new Viewer(container.current, {
-        design: initial.current,
-        ui: false,
-        clickToPause: false,
-      });
-    } catch {
-      setFailure('The live preview could not start. Check WebGL support and reload.');
-      return;
-    }
-    viewer.current = active;
-    const unsubscribe = active.on((value) => {
-      setClock({ time: value.t, duration: value.duration, playing: value.playing });
-    });
-    return () => {
-      unsubscribe();
-      active.dispose();
-      viewer.current = null;
-    };
-  }, []);
-  useEffect(() => {
-    if (hidden) viewer.current?.setShots([], true);
-    else viewer.current?.setDesign(document, true);
-  }, [document, hidden]);
+/** Displays the owned Viewer and transport in seconds; optional listener distance is world metres. */
+export function StudioStage({
+  document,
+  hidden,
+  listenerDistanceM,
+}: {
+  document: Design;
+  hidden: boolean;
+  listenerDistanceM: number | null;
+}) {
+  const { container, viewer, failure, clock } = useStudioViewer(
+    document,
+    hidden,
+    listenerDistanceM,
+  );
   return (
     <section aria-label="Stage" className="sc-studio-stage bg-stage text-stage-foreground">
       <h2 className="absolute top-4 left-4 z-10 text-sm font-medium">Design preview</h2>
@@ -57,6 +37,7 @@ export function StudioStage({ document, hidden }: { document: Design; hidden: bo
       >
         <Button
           variant="ghost"
+          className="hover:bg-stage-foreground/15 hover:text-stage-foreground dark:hover:bg-stage-foreground/15"
           disabled={failure !== ''}
           onClick={() => {
             viewer.current?.toggle();
@@ -66,6 +47,7 @@ export function StudioStage({ document, hidden }: { document: Design; hidden: bo
         </Button>
         <Button
           variant="ghost"
+          className="hover:bg-stage-foreground/15 hover:text-stage-foreground dark:hover:bg-stage-foreground/15"
           disabled={failure !== ''}
           onClick={() => {
             viewer.current?.seek(0);

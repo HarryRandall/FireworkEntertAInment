@@ -79,3 +79,22 @@
     overflow: visible;
   }
 }
+/* Inspector disclosures use the shared tokens. Container queries match the prototype's
+   chip-to-select behaviour below 260 CSS px of available control width. */
+.sc-studio-inspector {
+  container-type: inline-size;
+}
+.sc-inspector-section {
+  border-top: 1px solid var(--border);
+}
+.sc-inspector-select {
+  display: none;
+}
+@container (max-width: 260px) {
+  .sc-inspector-chips {
+    display: none;
+  }
+  .sc-inspector-select {
+    display: block;
+  }
+}

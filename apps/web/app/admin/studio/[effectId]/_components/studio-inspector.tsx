@@ -1,87 +1,118 @@
-/** Chronological inspector tabs reserve coherent sections around the selected source. */
+/** Chronological inspector controls edit one validated v1 document through the shared reducer. */
 'use client';
+import type { Dispatch } from 'react';
 import type { Design } from '@showcrafter/fireworks';
 import { Tabs } from '@/ui/kit/overlays';
-import { selectedLayer, isGroundEffect } from '@/lib/studio/layers';
-import { renameLayer, type StudioEdit } from '@/lib/studio/document';
-import type { Dispatch } from 'react';
+import { Input } from '@/ui/primitives/input';
+import { isGroundEffect } from '@/lib/studio/layers';
+import { useInspector } from './use-inspector';
+import type { StudioEdit } from '@/lib/studio/document';
+import { InspectorGestures, type InspectorContext, type LayerContext } from './inspector-controls';
+import { LaunchInspector } from './launch-inspector';
+import { BurstInspector } from './burst-inspector';
+import { StarsInspector } from './stars-inspector';
+import { TrailInspector } from './trail-inspector';
+import { EffectInspector } from './effect-inspector';
+import { GroundInspector } from './ground-inspector';
+import { SoundInspector } from './sound-inspector';
 
-const MAX_LAYER_NAME_LENGTH = 120; // Characters, the renderer schema's layer-name limit.
-const AIRBORNE_SECTIONS = ['Launch', 'Burst', 'Stars', 'Trail', 'Effect'];
-/** Shows source naming and chronological section placeholders; ground designs have one panel. */
+const MAX_LAYER_NAME_LENGTH = 120; // Characters, the v1 layer-name bound.
+/** Shows every authored inspector section, with source selection and gesture-aware history. */
 export function StudioInspector({
   document,
   selected,
   editable,
   dispatch,
+  listenerDistanceM,
+  onListenerDistanceChange,
 }: {
   document: Design;
   selected: string;
   editable: boolean;
   dispatch: Dispatch<StudioEdit>;
+  listenerDistanceM: number | null;
+  onListenerDistanceChange: (distanceM: number) => void;
 }) {
-  const selection = selectedLayer(document, selected);
-  const layer = selection
-    ? document.breaks[selection.breakIndex]?.layers.find((item) => item.id === selection.layerId)
-    : null;
-  const sections = isGroundEffect(document) ? ['Ground'] : AIRBORNE_SECTIONS;
-  let description = 'Select a star group to name it.';
-  if (selected === 'launch') description = 'From the tube to the break';
-  if (isGroundEffect(document)) description = 'Ground effect';
+  const { failure, effective, selection, context, layerContext } = useInspector(
+    document,
+    selected,
+    editable,
+    dispatch,
+  );
+  const items = inspectorItems(context, layerContext);
+  const defaultValue = defaultSection(effective, selected);
   return (
     <section aria-label="Inspector" className="sc-studio-inspector bg-card">
       <h2 className="mb-3 font-semibold">Inspector</h2>
-      {layer && selection ? (
-        <label className="mb-4 grid gap-2 text-sm">
-          Star group name
-          <input
-            key={selected}
-            className="border-input bg-background w-full min-w-0 rounded-md border px-3 py-2"
-            aria-label="Star group name"
-            disabled={!editable}
-            maxLength={MAX_LAYER_NAME_LENGTH}
-            value={layer.name}
-            onFocus={() => {
-              dispatch({ type: 'begin' });
-            }}
-            onChange={(event) => {
-              dispatch({
-                type: 'replace',
-                document: renameLayer(
-                  document,
-                  selection.breakIndex,
-                  selection.layerId,
-                  event.target.value,
-                ),
-              });
-            }}
-            onBlur={() => {
-              dispatch({ type: 'commit' });
-            }}
-          />
-          <span className="text-muted-foreground">
-            Star group in Break {selection.breakIndex + 1}
-          </span>
-        </label>
-      ) : (
-        <p className="text-muted-foreground mb-4 text-sm">{description}</p>
+      <InspectorGestures dispatch={dispatch}>
+        {layerContext && (
+          <label className="mb-4 grid gap-2 text-sm">
+            Star group name
+            <Input
+              aria-label="Star group name"
+              value={layerContext.layer.name}
+              disabled={!editable}
+              maxLength={MAX_LAYER_NAME_LENGTH}
+              onChange={(event) => {
+                layerContext.changeLayer((target) => {
+                  target.name = event.target.value;
+                });
+              }}
+            />
+            <span className="text-muted-foreground">
+              Star group in Break {(selection?.breakIndex ?? 0) + 1}
+            </span>
+          </label>
+        )}
+        {selected === 'launch' && (
+          <p className="text-muted-foreground mb-4 text-sm">From the tube to the break</p>
+        )}
+        <Tabs
+          key={`${selected}:${effective.kind}`}
+          defaultValue={defaultValue}
+          items={items.map((item) => ({
+            ...item,
+            content: (
+              <div>
+                <h3 className="mb-2 font-medium">{item.label} settings</h3>
+                {item.content}
+              </div>
+            ),
+          }))}
+        />
+        <SoundInspector
+          {...context}
+          listenerDistanceM={listenerDistanceM}
+          onListenerDistanceChange={onListenerDistanceChange}
+        />
+      </InspectorGestures>
+      {failure !== '' && (
+        <p role="alert" className="text-destructive text-sm">
+          {failure}
+        </p>
       )}
-      <Tabs
-        key={isGroundEffect(document) ? 'ground' : 'airborne'}
-        defaultValue={sections[0] ?? 'Stars'}
-        items={sections.map((label) => ({
-          value: label,
-          label,
-          content: (
-            <div className="grid gap-2">
-              <h3 className="font-medium">{label} settings</h3>
-              <p className="text-muted-foreground">
-                Detailed controls are not available in this editor.
-              </p>
-            </div>
-          ),
-        }))}
-      />
     </section>
   );
+}
+function defaultSection(document: Design, selected: string): string {
+  if (isGroundEffect(document)) return 'Ground';
+  if (selected === 'launch') return 'Launch';
+  if (selected.startsWith('break:') || selected.startsWith('core:')) return 'Burst';
+  return 'Stars';
+}
+function inspectorItems(context: InspectorContext, layer: LayerContext | null) {
+  if (isGroundEffect(context.document))
+    return [{ value: 'Ground', label: 'Ground', content: <GroundInspector {...context} /> }];
+  const noLayer = <p className="text-muted-foreground">This firework has no burst star groups.</p>;
+  return [
+    { value: 'Launch', label: 'Launch', content: <LaunchInspector {...context} /> },
+    { value: 'Burst', label: 'Burst', content: <BurstInspector {...context} /> },
+    {
+      value: 'Stars',
+      label: 'Stars',
+      content: layer ? <StarsInspector {...layer} /> : <GroundInspector {...context} />,
+    },
+    { value: 'Trail', label: 'Trail', content: layer ? <TrailInspector {...layer} /> : noLayer },
+    { value: 'Effect', label: 'Effect', content: layer ? <EffectInspector {...layer} /> : noLayer },
+  ];
 }
