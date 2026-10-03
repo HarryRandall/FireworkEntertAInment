@@ -22,11 +22,30 @@ export async function loadStudio(effectId: string) {
     .eq('effect_id', effectId)
     .single();
   if (version.error) throw version.error;
+  const published = await loadPublished(client, effectId, effect.data.current_version_id);
   return {
+    published,
     kind: 'document' as const,
     effect: effect.data,
     versionId: version.data.status === 'draft' ? version.data.id : null,
     sourceVersionId: version.data.id,
     document: designSchema.parse(version.data.design),
   };
+}
+
+async function loadPublished(
+  client: Awaited<ReturnType<typeof getServerClient>>,
+  effectId: string,
+  versionId: string | null,
+) {
+  if (versionId === null) return null;
+  const result = await client
+    .from('effect_versions')
+    .select('id,number,design')
+    .eq('id', versionId)
+    .eq('effect_id', effectId)
+    .eq('status', 'published')
+    .single();
+  if (result.error) throw result.error;
+  return { number: result.data.number, document: designSchema.parse(result.data.design) };
 }
