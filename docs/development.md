@@ -117,14 +117,32 @@ writes temporary output outside the repository. These settings reduce accidental
 cross-project access but are not a security boundary. Use synthetic local data and
 keep production sessions out of the profile.
 
+The adjacent `supabase-local` entry uses the CLI-provided HTTP MCP endpoint at
+`http://127.0.0.1:55421/mcp?read_only=true&features=database`. The server version
+follows the pinned Supabase CLI (`2.101.0`) and its local image. No hosted project,
+access token or cloud MCP endpoint is configured. See the
+[official MCP configuration](https://supabase.com/docs/guides/ai-tools/mcp).
+
+The composer starts local Supabase, confirms `pnpm db:status` identifies this project's
+API on port 55421, and verifies the MCP connection before inspection. Check the tool
+list and a read-only identity query (`select current_database(), current_user,
+current_setting('transaction_read_only')`). Confirm the server honours read-only
+mode and does not expose migration writes before using it. MCP connectivity and
+read-only enforcement have not yet been verified here. If the pinned local server
+cannot enforce this setting, leave the connection unused and report it; use the local
+CLI for inspection. Schema changes always go through SQL files and the migration
+workflow. MCP inspection is elevated local evidence and does not establish RLS
+correctness for an API persona.
+
 Read documentation shipped with installed packages first. Use matching official docs
 when installed docs are absent, and Context7 only for an unresolved version-specific
 library question. Never send credentials, personal data or private source in a
 documentation query.
 
-| Tool           | Pinned source            | Licence    | Purpose                                    |
-| -------------- | ------------------------ | ---------- | ------------------------------------------ |
-| Playwright MCP | `@playwright/mcp@0.0.83` | Apache-2.0 | Local screenshots and browser interactions |
+| Tool           | Pinned source                              | Licence    | Purpose                                    |
+| -------------- | ------------------------------------------ | ---------- | ------------------------------------------ |
+| Playwright MCP | `@playwright/mcp@0.0.83`                   | Apache-2.0 | Local screenshots and browser interactions |
+| Supabase MCP   | Supabase CLI `2.101.0` local HTTP endpoint | Apache-2.0 | Local read-only database inspection        |
 
 ## Readability lint
 
