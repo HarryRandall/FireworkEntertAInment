@@ -14,6 +14,11 @@ const sql = [
   'begin;',
   `select set_config('request.jwt.claims', '{"sub":"10000000-0000-4000-8000-000000000001","role":"authenticated","is_anonymous":false}', true);`,
   ...statements,
+  // Catalogue presets are reusable starting designs, not ordinary published effects.
+  ...effectTemplates.map(
+    (template) =>
+      `select public.save_effect_details((select id from public.effects where slug = ${quote(template.key)}), ${quote(template.name)}, ${quote(template.group)}, true);`,
+  ),
   'commit;\n',
 ].join('\n');
 if (process.argv.length > 3 || (process.argv[2] && process.argv[2] !== '--check')) {
