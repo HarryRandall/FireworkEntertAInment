@@ -38,6 +38,10 @@ export function useReviewViewer(
     playing: false,
     count: 0,
     hdr: false,
+    sprayMode: 'gpu',
+    shotCount: 1,
+    timing: { medianMs: 0, p95Ms: 0, samples: 0, window: 0 },
+    frameMs: 0,
   });
   useEffect(() => {
     const element = host.current;
@@ -84,6 +88,10 @@ function mountReviewViewer(
           playing: v.playing,
           count: v.count,
           hdr: v.output.hdr,
+          sprayMode: v.sprayMode,
+          shotCount: v.shots.length,
+          timing: v.frameTimes.summary(),
+          frameMs: v.frameMs,
         });
       });
       setSelected(entries[0]);

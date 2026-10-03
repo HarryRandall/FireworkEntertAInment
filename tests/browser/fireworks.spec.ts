@@ -101,11 +101,10 @@ for (const [viewportName, viewport] of Object.entries({ desktop: DESKTOP, mobile
           true,
         );
       }
-      // A full-page capture of all cards at phone width exceeds Chromium's capture size,
-      // so phones capture the visible viewport only.
+      // A full-page capture of every card exceeds Chromium's capture size, so the page
+      // still is the visible viewport; the canvas stills above are the review evidence.
       await page.screenshot({
         path: `output/playwright/${viewportName}-${colourScheme}-page.png`,
-        fullPage: viewportName !== 'mobile',
       });
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
         true,
@@ -177,4 +176,33 @@ test('paused and off-screen previews stop GPU draws and navigation releases the 
   expect(await readDraws()).toBe(hidden);
   await page.getByRole('link', { name: 'Developer routes', exact: true }).click();
   await expect(page.locator('canvas')).toHaveCount(0);
+});
+
+test('the finale compares CPU and GPU sprays in one context and resets frame samples', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') errors.push(message.text());
+  });
+  await page.goto('/dev/fireworks');
+  const gpu = page.getByRole('button', { name: 'GPU sprays', exact: true });
+  const cpu = page.getByRole('button', { name: 'CPU sprays', exact: true });
+  await expect(gpu).toBeEnabled();
+  await expect(gpu).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Run 40-shot finale' }).click();
+  await expect(page.getByTestId('selected-name')).toHaveText('40-shot finale');
+  await page.getByRole('button', { name: 'Pause', exact: true }).click();
+  await seek(page, 11.2);
+  await cpu.click();
+  await expect(cpu).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('frame-times')).toContainText('(0/120 playing frames)');
+  await expect(page.getByRole('slider', { name: 'Preview time' })).toHaveValue('11.2');
+  await gpu.click();
+  await expect(gpu).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('canvas')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Back to one firework' }).click();
+  await expect(page.getByTestId('selected-name')).not.toHaveText('40-shot finale');
+  expect(errors).toEqual([]);
 });

@@ -6,4 +6,8 @@ export interface ReviewState {
   playing: boolean;
   count: number;
   hdr: boolean;
+  sprayMode: 'cpu' | 'gpu';
+  shotCount: number;
+  timing: { medianMs: number; p95Ms: number; samples: number; window: number };
+  frameMs: number;
 }
