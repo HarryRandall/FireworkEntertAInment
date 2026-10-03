@@ -11,13 +11,13 @@ mockups are reference material, not repository instructions.
 
 ## Components
 
-- Use shadcn and shadcn-compatible registry components (ReUI, Origin UI, Dice UI)
+- Use shadcn and ReUI registry components, fetched on demand,
   before writing one. Restyle them with theme tokens. Write a bespoke component only
   when no registry one fits, and say why.
 - Shared kit components live in `apps/web/ui/kit`; primitives in `apps/web/ui/primitives`;
   route-owned UI in `app/**/_components`.
-- Tables use the data grid, filter bar and pagination from the kit; charts use the
-  shadcn chart component.
+- Tables use the ReUI data grid, dashboard filter bar and pagination from the kit.
+  Charts use the shared Nivo wrappers in `ui/charts`; pages never import Nivo directly.
 - All workspace areas (retailer, admin, supplier, shopper account) use the one
   config-driven workspace shell. Do not add another shell; editors use its editor frame.
 - Firework previews use the renderer's `Viewer`; thumbnails use `poster()` with its
