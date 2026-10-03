@@ -1,5 +1,5 @@
 /** Shopper account navigation, grouped by the prototype's rail sections. */
-import { Home, Play, Settings, ShoppingBasket, Store } from 'lucide-react';
+import { Home, Play, Settings, ShoppingBasket, Sparkles, Store } from 'lucide-react';
 import type { AreaConfig } from './types';
 
 /** Routes and shortcuts presented in the shopper account workspace. */
@@ -25,6 +25,12 @@ export const accountConfig: AreaConfig = {
       label: 'Lists',
       icon: ShoppingBasket,
       items: [{ label: 'Lists', href: '/account/lists' }],
+      shortcuts: [],
+    },
+    {
+      label: 'Planned shows',
+      icon: Sparkles,
+      items: [{ label: 'Planned shows', href: '/account/planned' }],
       shortcuts: [],
     },
     {
