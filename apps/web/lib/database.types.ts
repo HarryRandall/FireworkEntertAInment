@@ -6471,6 +6471,20 @@ export type Database = {
         }
         Returns: string
       }
+      persist_plan_edit: {
+        Args: {
+          p_candidate: string
+          p_edit: Json
+          p_hash: string
+          p_result: Json
+          p_revision: number
+          p_seq: number
+          p_session: string
+          p_shopper: string
+          p_snapshot: Json
+        }
+        Returns: string
+      }
       persist_planner_result: {
         Args: {
           p_candidate: Json
