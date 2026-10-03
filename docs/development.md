@@ -599,10 +599,12 @@ extractors need an explicit new analysis row. Failures retain a safe exception c
 on the analysis and use `fail_job` through the shared runtime. A hard process kill
 may leave status measuring until the reclaimed job retries.
 
-The measurement job finishes at interpreting and returns `next: 'interpretation'`.
-There is no automatic interpretation enqueue, model call, fitting or design
-candidate creation here. The interpretation consumer must explicitly select these
-rows and use their source video, priors, shots, features and imports keyframes.
+Measurement installation atomically queues one active `video_fit` job with the same
+analysis/media payload. The measurement job finishes at interpreting and returns
+`next: 'video_fit'`. Reused measurements preserve that atomic hand-off. A trusted
+dispatcher must wake the drain for this hand-off, delayed retries and expired
+leases; enqueueing alone does not wake Modal. Local acceptance explicitly claims
+the fit job and injects a synthetic classification response.
 
 Storage and Postgres cannot share a transaction. Content-addressed crop keys under
 `video/<analysis UUID>/` make reuploads idempotent. A failure between upload and
@@ -650,10 +652,100 @@ it does not establish real supplier-video accuracy or crowd/overlap handling.
 
 `services/video-importer/modal_app.py` registers `showcrafter-video` through the same
 finite-drain and proxy-authenticated wake layout as the music worker, with
-`video_analyse` as its only handler. It needs only the existing `showcrafter-workers`
-secret containing `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`; no model/provider
-key is used. Trusted enqueue dispatchers use the existing `Modal-Key` and
+`video_analyse` and `video_fit` handlers. Its Node 24.18.0 Debian/Python 3.11 image
+contains FFmpeg, the pinned Python requirements, the fireworks and video-fit
+packages and the TypeScript loader. The lockfile install supplies the CPU scorer's
+dependencies. Image registration is tested offline; the image has not been built.
+It currently needs only the existing `showcrafter-workers` secret containing
+`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY`. Trusted enqueue dispatchers use the existing `Modal-Key` and
 `Modal-Secret` headers to POST the wake hook. No periodic poller or warm container is
 added. App enqueue and wake dispatch are absent in this lane and remain explicit
 integration hooks. No Modal image build, deployment, secret creation, hosted
 Supabase access, live wake verification or actual compute billing was performed.
+
+### Capped video interpretation and CPU fitting
+
+`fit_jobs.py` consumes the measured analysis, downloads the integrity-checked source
+MP4 and asks an injected `VideoProvider` for exactly one native-video classification.
+The default `DisabledProvider` refuses generation without making a network request.
+There is no hosted adapter or provider SDK installed. A local drain can resume an
+already installed interpretation without a paid call:
+
+```bash
+services/video-importer/.venv/bin/python services/video-importer/fit_jobs.py --max-jobs 1
+services/video-importer/.venv/bin/python services/video-importer/evaluate_fit.py
+```
+
+The local drain uses the shared environment and rejects non-local Supabase. A new
+interpretation fails closed with the disabled provider. Tests inject responses
+through the interface, never credentials. Any separately reviewed hosted adapter
+would need the Modal secret `showcrafter-video-model` with `GEMINI_API_KEY`, attached
+only to the credential-bearing drain. Neither this secret nor its attachment is
+created here. Do not deploy or configure a hosted database during the rebuild.
+
+`model_config.py` pins `gemini-2.5-flash-lite` and standard paid input/output tariffs
+in one place, sourced and dated 3 October 2026. The published rates per million
+tokens are USD 0.10 for text/image/video, 0.30 for audio and 0.40 for output,
+including thinking. See [Google's pricing](https://ai.google.dev/gemini-api/docs/pricing)
+and [video tokenisation](https://ai.google.dev/gemini-api/docs/video-understanding).
+The preflight estimate uses 600 video tokens/second, UTF-8 prompt byte count,
+1,024 structural tokens and a 4,096-token output ceiling, pricing every input token
+at the higher audio rate and rounding up to a microdollar. This is conservative
+headroom, not measured provider usage. Estimates above USD 0.10 are refused before
+generation. An adapter must honour the billed input/output ceilings, use static
+video input, disable thinking/tools/caching and automatic retries, and supply
+complete billed usage with audio's input-token breakdown. The interface cannot
+establish a provider's live limit enforcement without that adapter's acceptance.
+
+`video_fit_step` reserves a single durable `llm_calls` row per source media before
+generation. A lost response retains the estimate with unknown tokens and prevents
+another call, even for a new analysis of the same media. Received usage replaces
+the reservation with actual tokens, USD cost and latency before JSON validation.
+Overrun or invalid JSON fails the analysis without installing a candidate. An
+uncertain or invalid interpretation requires operator review, not an automatic
+paid retry. A successfully installed interpretation can be fitted again after a
+crash without buying another response. Attempt costs remain scoped to the latest
+finished attempt; reserved spend on uncertain calls is not proven billing.
+
+Model JSON is checked against a closed response schema, exact measured shot/tube
+coverage and the canonical design schema. Unknown templates, unsafe keys, NaN,
+changed timing/kind and unused effects are rejected. Starting presets must be
+published `is_template` effects; the seed generator sets that flag through the
+catalogue metadata RPC. Node uses the matching built-in canonical templates.
+
+`packages/video-fit` calls `@showcrafter/fireworks/sim` in a persistent Node process.
+It rasterises CPU particles at 20 Hz and scores apex, radius, lifetime, trail,
+dominant/temporal colour and strobe. Audio crackle stays explicitly unscored.
+Equal feature weights and a fixed 100 x 75 metre orthographic camera are initial
+visual assumptions, not calibrated supplier-camera geometry. Highest-opacity
+point rasterisation matches the synthetic fixtures, without WebGL, bloom or a GPU.
+
+Seeded full-covariance CMA-ES searches six shell fields or four ground fields in
+normalised bounded coordinates. For shells it adjusts launch height/time and the
+first layer's radius, drag, life and trail length. Ground fields depend on subtype.
+Other layers, colours and tube sequence remain classified values. The budgets are
+30 generations/effect, eight candidates/generation and a 300-second per-video
+deadline including Node startup and interpretation. Deadline failure aborts the
+attempt rather than installing a partial fit. The best score is retained, so a
+fit cannot degrade the initial similarity. Identical inputs and seed reproduce
+the fitted candidate when the iteration budget completes; runtime is machine-dependent.
+
+The lease-fenced transaction writes an `llm` candidate, then a `fit` child with
+`parent_id`, per-shot feature distances, mean overall similarity and the renderer
+version. It moves the analysis through interpreting, fitting and ready. Repeated
+completion reuses the stored candidates; stale workers cannot install results.
+These scores are similarities, not classification confidence or safety evidence.
+
+The [fit evaluation report](../services/video-importer/tests/fixtures/fit-evaluation-local.json)
+records initial/fitted scores, every recovered parameter against independent truth,
+fit wall time and conservative model estimates on the three measurement fixtures.
+It uses deliberately biased synthetic classifications and no model calls. It
+does not establish real classification accuracy, live billed cost, Modal runtime
+or the full video's 2 to 5 minute target. Height, drag and trail parameters are
+weakly identifiable from image ratios and truncated windows; high similarity does
+not prove exact physical recovery. Fixed pixel point size also weakens size recovery.
+
+App upload/enqueue, reliable authenticated wake delivery, candidate review and
+Studio reference synchronisation are documented integration hooks here, with no
+routes or screens added. Owner visual review, CI and hosted verification remain
+separate from the local acceptance commands.
