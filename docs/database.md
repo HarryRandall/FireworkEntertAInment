@@ -781,3 +781,109 @@ function ACL for unavailable capabilities without widening grants. Allowed RPCs
 and row-policy denials run normally. Direct denied-function execution needs
 reverification on an image without this engine failure; the database image and
 server settings have not been changed.
+
+## Integrations and platform configuration
+
+`87_integrations.sql` owns `integrations`, `sync_runs`, `webhook_endpoints` and
+`api_keys`. Every row has an indexed organisation identity; a composite foreign key
+prevents a sync run from referring to another organisation's integration. Active
+members and platform staff can read integration metadata. Organisation-wide owners
+with `team.manage` and super admins can configure integrations and webhook endpoints.
+Managers and store-restricted owners cannot change organisation-wide settings.
+Integration lifecycle uses `status`, without a client delete capability.
+
+Credentials remain in Supabase Vault. The nullable `secret_id` columns document
+`vault.secrets(id)` as their external reference, without an application foreign key.
+Clients cannot read or write these UUIDs. `config` is non-secret JSON metadata, not a
+credential store. API keys store only a unique lower-case SHA-256 digest; clients can
+read the prefix, scopes and lifecycle metadata, but never the hash. Issuance,
+revocation, last-use tracking and sync results are backend-owned single-row writes.
+No OAuth flow, key generation, provider connection, HTTP request or webhook delivery
+is implemented by these declarations.
+
+`90_platform.sql` owns flags and overrides, settings, notifications, preferences,
+audit and support records. All tables have RLS. Super admins manage platform
+configuration; other platform staff can inspect it. Retailers read only their own
+flag overrides and use `flag_on(key, org)` to evaluate a flag. The checked reader
+requires membership, platform staff rights or a service-role request. Unknown flags
+and unknown organisations return false. An organisation override wins first; otherwise
+the global enabled switch, organisation home-market filter and deterministic percentage
+rollout apply. Casting `hashtext` to bigint before `abs` avoids integer-minimum overflow.
+The bucket count is 100 because rollout values are percentages. Settings record the
+actual editor from the request, ignoring a supplied `updated_by` identity.
+
+Notifications are system-created and readable only by their recipient, including an
+anonymous Auth account. Clients may update only `read_at`. Organisation members
+manage their own notification preferences, without altering a colleague's preferences
+or attaching one to an unrelated organisation. A former member can still read and
+delete their own preference. Email sending and notification production are not installed.
+
+### Audit and support boundaries
+
+`private.audit_record()` runs after configuration changes to range and store prices,
+memberships, plans, flags and overrides, effect/product/show versions, QR targets,
+settings, integrations, endpoints, API keys and support sessions. It records the actual
+request identity, tenant, row identity, action and before/after snapshots in the same
+transaction. Store prices use their compound store/range-item key. Tenant ownership
+is retained directly from the row, including show versions. Timestamp-only updates
+produce no audit entry. Configuration-only changes remain recorded even when their
+values are redacted; changed field names identify the affected fields.
+
+Token hashes, API-key hashes, Vault identifiers, configuration payloads, email and
+large authored documents are omitted from audit snapshots. API clients cannot insert,
+update or delete audit rows. The backend can insert but cannot update or delete audit
+history. Platform staff can read all audit rows; organisation owners read only their
+own tenant's history. Historical actor and tenant UUIDs survive deletion of their
+source records. Events are not audited.
+
+`start_support_session` creates a view record for the current support user or super
+admin. For edit mode, a different super admin must make the approval request on behalf
+of the support user. The recorded approver comes from that request, never a client
+parameter. Sessions require a reason, a target organisation or profile, and an expiry
+later than the server-generated start. When both targets are given, the profile must
+belong to the organisation. `end_support_session` idempotently ends an owned record,
+or one ended by a super admin. Support users see only their own sessions; super admins
+can inspect all sessions. Direct client writes are unavailable.
+
+These records do not impersonate a user or extend retailer permissions. Audit
+`acting_as_support_session` remains null in the generic trigger: no trusted support
+execution context is installed, and caller-supplied session claims are not accepted.
+There are no nullable references to tables awaiting declaration.
+
+### Local integration and platform verification
+
+Using Node 24.18.0 and Corepack pnpm 12.3.4:
+
+- `corepack pnpm db:reset`: passed, applying the assembled baseline and explicit grants.
+- `corepack pnpm db:test`: passed twice consecutively, 26 suites and 2,074 assertions
+  per run, plus the two-connection job-claim test. Four added suites contain 197
+  assertions covering every new policy with allowed and denied cases, another
+  organisation, staff, owners, managers, suppliers, anonymous and signed-in shoppers,
+  credential boundaries, flag precedence and hashing, configuration audit coverage,
+  transaction rollback and independent support approval.
+- `corepack pnpm db:lint`: passed with no new issues. The three existing
+  `private.effect_facts` warnings remain.
+- `corepack pnpm exec supabase db diff --local --schema public,private`: passed with
+  grant-only differences and no application DDL drift. Those grant lines reflect the
+  separate hand-written privilege migrations; they must not be applied as a repair.
+- `corepack pnpm db:types`, then `corepack pnpm db:types --check`: passed.
+- `corepack pnpm format:check`, `corepack pnpm db:documents --check`,
+  `corepack pnpm test:database-tooling` (10 tests), `corepack pnpm lint`,
+  `corepack pnpm typecheck`, `corepack pnpm knip` and `git diff --check`: passed.
+  Knip retains its existing `.css` configuration hint.
+
+Two initial test failures were corrected in test setup: the platform fixture used
+incorrect market column names, and a history assertion ran as staff when it needed
+backend table-write access. No grants or policies were relaxed to pass them.
+Logs are `/tmp/showcrafter-platform-reset.log`, `/tmp/showcrafter-platform-tests.log`,
+`/tmp/showcrafter-platform-tests-repeat.log`, `/tmp/showcrafter-platform-db-lint.log`,
+`/tmp/showcrafter-platform-diff.sql`, `/tmp/showcrafter-platform-diff.log`,
+`/tmp/showcrafter-platform-types.log` and `/tmp/showcrafter-platform-types-check.log`.
+
+`pnpm check` and `pnpm test:browser` were deliberately not run under the database-lane
+restriction. No screens changed and no screenshots were taken. Full repository/build
+checks, CI and hosted/production verification remain separate gates. No hosted
+Supabase project or remote database was accessed. Denied internal function execution
+is checked through ACLs because of the documented local PostgreSQL crash; allowed
+RPCs and policy denials execute normally. Storage, schedules, launch seeds, external
+integrations, notification delivery and actual support impersonation are not included.

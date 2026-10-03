@@ -9,6 +9,94 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      api_keys: {
+        Row: {
+          created_at: string
+          id: string
+          key_hash: string
+          last_used_at: string | null
+          organisation_id: string
+          prefix: string
+          revoked_at: string | null
+          scopes: string[]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key_hash: string
+          last_used_at?: string | null
+          organisation_id: string
+          prefix: string
+          revoked_at?: string | null
+          scopes: string[]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key_hash?: string
+          last_used_at?: string | null
+          organisation_id?: string
+          prefix?: string
+          revoked_at?: string | null
+          scopes?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "api_keys_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_log: {
+        Row: {
+          acting_as_support_session: string | null
+          action: string
+          actor_id: string | null
+          at: string
+          diff: Json | null
+          id: number
+          organisation_id: string | null
+          row_id: string | null
+          table_name: string | null
+        }
+        Insert: {
+          acting_as_support_session?: string | null
+          action: string
+          actor_id?: string | null
+          at?: string
+          diff?: Json | null
+          id?: never
+          organisation_id?: string | null
+          row_id?: string | null
+          table_name?: string | null
+        }
+        Update: {
+          acting_as_support_session?: string | null
+          action?: string
+          actor_id?: string | null
+          at?: string
+          diff?: Json | null
+          id?: never
+          organisation_id?: string | null
+          row_id?: string | null
+          table_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_acting_as_support_session_fkey"
+            columns: ["acting_as_support_session"]
+            isOneToOne: false
+            referencedRelation: "support_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billing_accounts: {
         Row: {
           created_at: string
@@ -2700,6 +2788,75 @@ export type Database = {
         }
         Relationships: []
       }
+      feature_flags: {
+        Row: {
+          created_at: string
+          description: string | null
+          enabled: boolean
+          key: string
+          markets: string[] | null
+          rollout_pct: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          key: string
+          markets?: string[] | null
+          rollout_pct?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          enabled?: boolean
+          key?: string
+          markets?: string[] | null
+          rollout_pct?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      flag_overrides: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          flag_key: string
+          organisation_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled: boolean
+          flag_key: string
+          organisation_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          flag_key?: string
+          organisation_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flag_overrides_flag_key_fkey"
+            columns: ["flag_key"]
+            isOneToOne: false
+            referencedRelation: "feature_flags"
+            referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "flag_overrides_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       follows: {
         Row: {
           consent_text_version: string
@@ -2885,6 +3042,50 @@ export type Database = {
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      integrations: {
+        Row: {
+          config: Json
+          created_at: string
+          id: string
+          last_sync_at: string | null
+          organisation_id: string
+          provider: string
+          secret_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          id?: string
+          last_sync_at?: string | null
+          organisation_id: string
+          provider: string
+          secret_id?: string | null
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          id?: string
+          last_sync_at?: string | null
+          organisation_id?: string
+          provider?: string
+          secret_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "integrations_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
             referencedColumns: ["id"]
           },
         ]
@@ -3773,6 +3974,111 @@ export type Database = {
           },
         ]
       }
+      notification_preferences: {
+        Row: {
+          channel: string
+          created_at: string
+          enabled: boolean
+          kind: string
+          organisation_id: string
+          profile_id: string
+          updated_at: string
+        }
+        Insert: {
+          channel: string
+          created_at?: string
+          enabled: boolean
+          kind: string
+          organisation_id: string
+          profile_id: string
+          updated_at?: string
+        }
+        Update: {
+          channel?: string
+          created_at?: string
+          enabled?: boolean
+          kind?: string
+          organisation_id?: string
+          profile_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notification_preferences_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          at: string
+          body: string | null
+          created_at: string
+          href: string | null
+          id: number
+          kind: string
+          organisation_id: string | null
+          profile_id: string
+          read_at: string | null
+          title: string
+          tone: string | null
+          updated_at: string
+        }
+        Insert: {
+          at?: string
+          body?: string | null
+          created_at?: string
+          href?: string | null
+          id?: never
+          kind: string
+          organisation_id?: string | null
+          profile_id: string
+          read_at?: string | null
+          title: string
+          tone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          at?: string
+          body?: string | null
+          created_at?: string
+          href?: string | null
+          id?: never
+          kind?: string
+          organisation_id?: string | null
+          profile_id?: string
+          read_at?: string | null
+          title?: string
+          tone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organisation_markets: {
         Row: {
           created_at: string
@@ -4152,6 +4458,38 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      platform_settings: {
+        Row: {
+          created_at: string
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          created_at?: string
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value: Json
+        }
+        Update: {
+          created_at?: string
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       poster_renders: {
         Row: {
@@ -5685,6 +6023,134 @@ export type Database = {
           },
         ]
       }
+      support_sessions: {
+        Row: {
+          approved_by: string | null
+          created_at: string
+          ended_at: string | null
+          ends_at: string
+          id: string
+          mode: string
+          organisation_id: string | null
+          reason: string
+          staff_id: string
+          started_at: string
+          target_profile_id: string | null
+          ticket: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_by?: string | null
+          created_at?: string
+          ended_at?: string | null
+          ends_at: string
+          id?: string
+          mode: string
+          organisation_id?: string | null
+          reason: string
+          staff_id: string
+          started_at?: string
+          target_profile_id?: string | null
+          ticket?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_by?: string | null
+          created_at?: string
+          ended_at?: string | null
+          ends_at?: string
+          id?: string
+          mode?: string
+          organisation_id?: string | null
+          reason?: string
+          staff_id?: string
+          started_at?: string
+          target_profile_id?: string | null
+          ticket?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_sessions_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_sessions_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_sessions_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_sessions_target_profile_id_fkey"
+            columns: ["target_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sync_runs: {
+        Row: {
+          counts: Json
+          created_at: string
+          error: string | null
+          finished_at: string | null
+          id: string
+          integration_id: string
+          organisation_id: string
+          started_at: string
+          updated_at: string
+        }
+        Insert: {
+          counts?: Json
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          integration_id: string
+          organisation_id: string
+          started_at?: string
+          updated_at?: string
+        }
+        Update: {
+          counts?: Json
+          created_at?: string
+          error?: string | null
+          finished_at?: string | null
+          id?: string
+          integration_id?: string
+          organisation_id?: string
+          started_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sync_runs_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sync_runs_organisation_id_integration_id_fkey"
+            columns: ["organisation_id", "integration_id"]
+            isOneToOne: false
+            referencedRelation: "integrations"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
       video_analyses: {
         Row: {
           created_at: string
@@ -5751,6 +6217,47 @@ export type Database = {
             columns: ["supplier_product_id"]
             isOneToOne: false
             referencedRelation: "supplier_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_endpoints: {
+        Row: {
+          active: boolean
+          created_at: string
+          events: string[]
+          id: string
+          organisation_id: string
+          secret_id: string | null
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          events: string[]
+          id?: string
+          organisation_id: string
+          secret_id?: string | null
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          events?: string[]
+          id?: string
+          organisation_id?: string
+          secret_id?: string | null
+          updated_at?: string
+          url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_endpoints_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
             referencedColumns: ["id"]
           },
         ]
@@ -5919,6 +6426,7 @@ export type Database = {
         Returns: string
       }
       credit_balance: { Args: { organisation: string }; Returns: number }
+      end_support_session: { Args: { session: string }; Returns: undefined }
       fail_job: {
         Args: {
           attempt: number
@@ -5929,6 +6437,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      flag_on: { Args: { key: string; org: string }; Returns: boolean }
       grant_credits: {
         Args: { credits: number; idempotency_key: string; organisation: string }
         Returns: number
@@ -6033,6 +6542,18 @@ export type Database = {
           p_qr_code?: string
           p_solver: string
           p_store: string
+        }
+        Returns: string
+      }
+      start_support_session: {
+        Args: {
+          ends_at: string
+          mode: string
+          org: string
+          reason: string
+          staff: string
+          target: string
+          ticket: string
         }
         Returns: string
       }
