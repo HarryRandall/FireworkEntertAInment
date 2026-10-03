@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
   // Prevent `next dev` from appending a second managed instruction block.
   agentRules: false,
   allowedDevOrigins: ['127.0.0.1'],
+  // The floating dev indicator covers the workspace rail's profile button; build and
+  // runtime errors still open the dev overlay.
+  devIndicators: false,
   // Parallel renderer QA uses an isolated cache so it cannot disturb a
   // developer's existing Next process in this fast-moving worktree.
   distDir: configuredDistDir.length > 0 ? configuredDistDir : '.next',
