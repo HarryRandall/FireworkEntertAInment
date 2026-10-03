@@ -1,0 +1,23 @@
+-- Measured publication validates editor authority, exact snapshots and the phone budget atomically.
+select no_plan();
+select tests.create_catalogue_fixture();
+select ok(not has_function_privilege('anon','public.publish_measured_effect_version(uuid,jsonb,integer,numeric)','execute'), 'public callers cannot publish measured versions');
+select ok(not has_function_privilege('anon','private.publish_measured_effect_version(uuid,jsonb,integer,numeric)','execute'), 'public callers cannot bypass the wrapper');
+select tests.act_as('organisation_owner');
+select throws_ok($$select public.publish_measured_effect_version('50000000-0000-0000-0000-000000000002',tests.design_fixture(),100,1)$$,'42501',null,'retailer cannot publish');
+reset role;
+select tests.act_as('platform_staff');
+select throws_ok($$select public.publish_measured_effect_version('50000000-0000-0000-0000-000000000002',tests.design_fixture(),22001,1)$$,'23514',null,'over-budget measurement refused');
+select throws_ok($$select public.publish_measured_effect_version('50000000-0000-0000-0000-000000000002',tests.design_fixture(),-1,1)$$,'23514',null,'negative count refused');
+select throws_ok($$select public.publish_measured_effect_version('50000000-0000-0000-0000-000000000002',tests.design_fixture(),null,1)$$,'23514',null,'missing measurement refused');
+select throws_ok($$select public.publish_measured_effect_version('50000000-0000-0000-0000-000000000002',tests.design_fixture(),100,'NaN')$$,'23514',null,'invalid peak time refused');
+select throws_ok($$select public.publish_measured_effect_version('50000000-0000-0000-0000-000000000002',jsonb_set(tests.design_fixture(),'{seed}','42'),100,1)$$,'23514',null,'changed measured snapshot refused');
+select is((select status from public.effect_versions where id='50000000-0000-0000-0000-000000000002'),'draft','refusals preserve the draft');
+select lives_ok($$select public.publish_measured_effect_version('50000000-0000-0000-0000-000000000002',tests.design_fixture(),22000,1)$$,'budget boundary can publish');
+select is((select checks#>>'{particles,count}' from public.effect_versions where id='50000000-0000-0000-0000-000000000002'),'22000','measured count persisted in checks');
+select is((select checks#>>'{particles,source}' from public.effect_versions where id='50000000-0000-0000-0000-000000000002'),'simulation_sampled','measurement provenance persisted');
+select is((select status from public.effect_versions where id='50000000-0000-0000-0000-000000000002'),'published','matching draft published');
+select throws_ok($$select public.publish_measured_effect_version('50000000-0000-0000-0000-000000000002',tests.design_fixture(),100,1)$$,'23514',null,'published versions remain immutable');
+select is((select summary->>'particles_peak' from public.effect_versions where id='50000000-0000-0000-0000-000000000002'),'22000','measured peak replaces the authored summary estimate');
+select is((select summary->>'particles_peak_source' from public.effect_versions where id='50000000-0000-0000-0000-000000000002'),'simulation_sampled','summary distinguishes measured and nominal counts');
+select * from finish();

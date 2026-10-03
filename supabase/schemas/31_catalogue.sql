@@ -762,6 +762,7 @@ declare
   effect public.effects;
   facts jsonb;
   affected_product public.products;
+  particle_budget constant integer := 22000; -- Live particles, studio.html's phone budget.
 begin
   perform private.require_catalogue_editor();
   -- Serialises catalogue publication so effect refresh and product publication use one lock order.
@@ -774,6 +775,16 @@ begin
     raise exception using errcode = '23514', message = 'Current effect draft required';
   end if;
   facts := private.effect_facts(version.design);
+  -- Reuse only a measurement of this exact document; autosave may preserve older checks.
+  if version.checks#>>'{particles,source}' = 'simulation_sampled' and
+     version.checks#>>'{particles,design_hash}' = md5(version.design::text) then
+    if jsonb_typeof(version.checks#>'{particles,count}') is distinct from 'number' or
+       not ((version.checks#>>'{particles,count}')::numeric between 0 and particle_budget) then
+      raise exception using errcode = '23514', message = 'A valid within-budget particle measurement is required';
+    end if;
+    facts := facts || jsonb_build_object('particles_peak',version.checks#>'{particles,count}',
+      'particles_peak_source','simulation_sampled');
+  end if;
   update public.effect_versions set status = 'superseded' where id = effect.current_version_id;
   update public.effect_versions set status = 'published', summary = facts, published_at = now(), published_by = private.uid() where id = version.id;
   update public.effects set status = 'published', current_version_id = version.id, draft_version_id = null, archived_at = null,
@@ -1264,3 +1275,46 @@ returns uuid language sql security invoker set search_path = '' as $$
   select private.save_studio_library_part(p_name, p_category, p_design);
 $$;
 comment on function public.save_studio_library_part(text, text, jsonb) is 'Saves a reusable Studio part and returns its UUID.';
+
+-- Publishes only the exact draft snapshot measured by the editor boundary.
+create or replace function private.publish_measured_effect_version(p_version_id uuid, p_design jsonb, p_peak integer, p_peak_time_s numeric)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+#variable_conflict error
+declare
+  version public.effect_versions;
+  particle_budget constant integer := 22000; -- Live particles, studio.html's phone budget.
+  sample_rate_hz constant integer := 30; -- Frames per second, the Studio simulation measurement cadence.
+begin
+  perform private.require_catalogue_editor();
+  if p_peak is null or p_peak < 0 or p_peak > particle_budget or p_peak_time_s is null or
+     p_peak_time_s < 0 or p_peak_time_s::text in ('NaN','Infinity','-Infinity') then
+    raise exception using errcode = '23514', message = 'A valid within-budget particle measurement is required';
+  end if;
+  -- Match publication's lock order so measurement cannot race a draft save or another publish.
+  perform pg_advisory_xact_lock(hashtextextended('catalogue.publication',0));
+  select * into version from public.effect_versions where id = p_version_id;
+  if not found then raise exception using errcode = 'P0002', message = 'Effect version not found'; end if;
+  perform 1 from public.effects where id = version.effect_id for update;
+  select * into version from public.effect_versions where id = p_version_id for update;
+  if version.status <> 'draft' or version.design is distinct from p_design then
+    raise exception using errcode = '23514', message = 'The measured draft has changed. Reload and measure it again';
+  end if;
+  update public.effect_versions set checks = checks || jsonb_build_object('particles', jsonb_build_object(
+    'count', p_peak, 'time_s', p_peak_time_s, 'budget', particle_budget, 'sample_rate_hz', sample_rate_hz,
+    'source', 'simulation_sampled', 'design_hash', md5(version.design::text))) where id = version.id;
+  perform private.publish_effect_version(version.id);
+end;
+$$;
+comment on function private.publish_measured_effect_version(uuid,jsonb,integer,numeric) is 'Publishes an exact draft snapshot with an editor-supplied sampled live-particle count and firing-relative peak seconds; refuses over-budget counts and stale snapshots under catalogue locks. SQL does not simulate the design.';
+
+-- Thin caller wrapper for measured publication; staff authority is checked privately.
+create or replace function public.publish_measured_effect_version(p_version_id uuid, p_design jsonb, p_peak integer, p_peak_time_s numeric)
+returns void
+language sql
+set search_path = ''
+as $$ select private.publish_measured_effect_version(p_version_id,p_design,p_peak,p_peak_time_s); $$;
+comment on function public.publish_measured_effect_version(uuid,jsonb,integer,numeric) is 'Publishes an exact draft snapshot with an editor-supplied sampled live-particle count and firing-relative peak seconds; refuses over-budget counts and stale snapshots under catalogue locks. SQL does not simulate the design.';
