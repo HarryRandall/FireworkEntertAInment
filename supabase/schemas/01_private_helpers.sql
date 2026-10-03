@@ -40,3 +40,22 @@ end;
 $$;
 
 comment on function private.set_updated_at() is 'BEFORE UPDATE row trigger: replaces updated_at with the current transaction timestamp.';
+
+-- Returns the active caller's table-backed staff role; JWT role claims grant no staff rights.
+create or replace function private.staff_role()
+returns text
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  return (
+    select staff.role from public.staff_roles as staff
+    join public.profiles as profile on profile.id = staff.profile_id
+    where staff.profile_id = private.uid() and profile.status = 'active'
+      and not private.is_anon() and not profile.is_anonymous
+  );
+end;
+$$;
+comment on function private.staff_role() is 'Returns an active non-anonymous user staff role from staff_roles, or null.';

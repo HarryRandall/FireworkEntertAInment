@@ -3,6 +3,7 @@ import 'server-only';
 /** Service-role Supabase client that bypasses RLS; use only in trusted server code that has already been RBAC-gated upstream. */
 
 import { createClient } from '@supabase/supabase-js';
+import { type Database } from '@/lib/database.types';
 import { supabaseFetchLong } from '@/lib/supabase/fetch';
 
 /**
@@ -16,7 +17,7 @@ export function createServiceRoleSupabase() {
   const url = configuredUrl.replace(/\/+$/, '');
   if (url.length === 0 || key === undefined || key.length === 0) return null;
 
-  return createClient(url, key, {
+  return createClient<Database>(url, key, {
     global: { fetch: supabaseFetchLong },
     auth: { persistSession: false, autoRefreshToken: false },
   });

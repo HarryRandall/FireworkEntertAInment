@@ -1,6 +1,7 @@
 /** Server-side Supabase client bound to the current request cookies; call from Server Components, Route Handlers, and Server Actions. */
 
 import { createServerClient } from '@supabase/ssr';
+import { type Database } from '@/lib/database.types';
 import { type cookies } from 'next/headers';
 import { getSupabaseServerEnv } from '@/lib/supabase/env';
 import { supabaseFetch } from '@/lib/supabase/fetch';
@@ -17,7 +18,7 @@ export const createClient = (
     );
   }
 
-  return createServerClient(env.url, env.key, {
+  return createServerClient<Database>(env.url, env.key, {
     global: { fetch: fetchImpl },
     cookies: {
       getAll() {
