@@ -8,7 +8,8 @@ import { Preview } from '@/ui/shopper/preview';
 import { ShowCard } from '@/ui/shopper/show-card';
 import { StoreHeader, StoreFooter } from '@/ui/shopper/store-header';
 import { ProductShelf, CollectionShelves, SHELF_LAYOUT_CLASS } from '@/ui/shopper/shelves';
-import { ViewEvent } from '@/ui/shopper/view-events';
+import { Suspense } from 'react';
+import { ScanEvent, ViewEvent } from '@/ui/shopper/view-events';
 import { Button } from '@/ui/primitives/button';
 import { EmptyState } from '@/ui/kit/feedback';
 
@@ -28,9 +29,18 @@ export default async function Page({
   const featured = shows.find((show) => show !== null);
   return (
     <main className="min-w-0">
-      <ViewEvent kind="store_view" target={store.store.id} />
+      <ViewEvent type="store_view" store={store.store.id} target={store.store.id} />
+      <Suspense>
+        <ScanEvent store={store.store.id} />
+      </Suspense>
       <StoreHeader store={store} />
-      {featured ? <Preview shots={showShots(featured)} title={featured.name} /> : null}
+      {featured ? (
+        <Preview
+          shots={showShots(featured)}
+          title={featured.name}
+          event={{ store: store.store.id, context: { show_id: featured.id } }}
+        />
+      ) : null}
       <div className="mx-auto grid max-w-6xl min-w-0 gap-8 px-4 py-6">
         <section
           data-section="introduction"

@@ -1,7 +1,7 @@
 -- Append-only visit events and rerunnable UTC rollups for retailer insights.
 create table public.events (
   id bigint generated always as identity, occurred_at timestamptz not null default now(),
-  type text not null check (type in ('scan','play','watched_to_end','list_add','list_redeem','plan_start','plan_pick','edit','share','follow')),
+  type text not null check (type in ('scan','play','watched_to_end','list_add','list_redeem','plan_start','plan_pick','edit','share','follow','store_view','product_view','something_different','list_saved','till_code_shown')),
   organisation_id uuid references public.organisations(id), store_id uuid references public.stores(id),
   qr_code_id uuid references public.qr_codes(id), campaign_id uuid references public.campaigns(id),
   show_id uuid references public.shows(id), product_id uuid references public.products(id),
@@ -82,7 +82,7 @@ begin
   if not coalesce(private.owns_shopper(private.uid()),false) then
     raise exception using errcode = '42501',message = 'Active shopper required';
   end if;
-  if p_type is null or p_type not in ('scan','play','watched_to_end','list_add','list_redeem','plan_start','plan_pick','edit','share','follow')
+  if p_type is null or p_type not in ('scan','play','watched_to_end','list_add','list_redeem','plan_start','plan_pick','edit','share','follow','store_view','product_view','something_different','list_saved','till_code_shown')
     or p_context is null or jsonb_typeof(p_context) <> 'object' or p_props is null or jsonb_typeof(p_props) <> 'object'
     or (p_context - array['qr_code_id','show_id','product_id','plan_session_id']) <> '{}'
     or (p_props - 'list_id') <> '{}' or length(p_session_key) > v_session_key_limit then
@@ -116,6 +116,9 @@ begin
   elsif p_type = 'list_redeem' then
     raise exception using errcode = '23514',message = 'Redeemed list required';
   end if;
+  -- Activity refusal suppresses all tracking, independently of marketing consent.
+  if exists (select from public.follows where shopper_id = private.uid()
+    and organisation_id = v_organisation and not visible_to_shop) then return null; end if;
   if not private.consume_rate_limit('event:' || private.uid(),v_capacity,v_refill_per_second) then
     raise exception using errcode = 'P0001',message = 'Event rate limit exceeded';
   end if;
@@ -124,7 +127,7 @@ begin
   return v_id;
 end;
 $$;
-comment on function private.track_event(text,uuid,jsonb,text,jsonb) is 'Validates shopper and store references, derives tenancy and list value, consumes the event budget and appends a server-timestamped event; returns its ID.';
+comment on function private.track_event(text,uuid,jsonb,text,jsonb) is 'Validates shopper and store references, derives tenancy and list value, consumes the event budget and appends a server-timestamped event; returns its ID or NULL for an explicit activity opt-out.';
 create function public.track_event(type text,store uuid,context jsonb default '{}',session_key text default null,props jsonb default '{}')
 returns bigint language plpgsql set search_path = '' as $$
 #variable_conflict error
@@ -132,7 +135,7 @@ begin
   return private.track_event(type,store,context,session_key,props);
 end;
 $$;
-comment on function public.track_event(text,uuid,jsonb,text,jsonb) is 'Appends one validated owned-shopper event; context contains optional QR, show, product and session UUIDs, props only a list UUID. Raw IP and client geo are never accepted.';
+comment on function public.track_event(text,uuid,jsonb,text,jsonb) is 'Appends one validated owned-shopper event; context contains optional QR, show, product and session UUIDs, props only a list UUID. Explicit activity opt-out returns NULL without insertion. Raw IP and client geo are never accepted.';
 
 -- This projection keeps the event-to-metric mapping shared between both rollups.
 create function private.event_metrics(p_from timestamptz,p_until timestamptz)
@@ -141,7 +144,11 @@ language sql stable set search_path = '' as $$
   select event.occurred_at,event.organisation_id,event.store_id,event.qr_code_id,event.show_id,event.product_id,event.campaign_id,
     mapped.metric,mapped.value from public.events as event cross join lateral (
       select case event.type when 'scan' then 'scans' when 'play' then 'plays' when 'watched_to_end' then 'watched_to_end'
-        when 'list_add' then 'list_adds' when 'plan_start' then 'plans' when 'follow' then 'follows' end as metric,1::bigint as value
+        when 'list_add' then 'list_adds' when 'plan_start' then 'plans' when 'follow' then 'follows'
+        when 'store_view' then 'store_views' when 'product_view' then 'product_views'
+        when 'plan_pick' then 'plan_views' when 'edit' then 'edits'
+        when 'something_different' then 'alternatives' when 'list_saved' then 'list_saves'
+        when 'till_code_shown' then 'till_code_views' end as metric,1::bigint as value
       union all select 'list_value_minor',(event.props->>'list_value_minor')::bigint where event.type = 'list_redeem'
     ) as mapped where event.occurred_at >= p_from and event.occurred_at < p_until and event.organisation_id is not null and mapped.metric is not null;
 $$;

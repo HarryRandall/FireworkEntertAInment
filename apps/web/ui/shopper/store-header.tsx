@@ -1,4 +1,5 @@
 /** Public shop identity and safety footer outside the workspace shell. */
+import { StoreEventScope } from './view-events';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/ui/primitives/button';
@@ -21,6 +22,7 @@ export function StoreHeader({ store }: { store: StorePage }) {
       data-section="store-header"
       className="border-border bg-background flex items-center gap-3 border-b px-4 py-3"
     >
+      <StoreEventScope store={store.store.id} organisation={store.organisation.id} />
       <span
         style={{ borderColor: store.branding?.accent ?? undefined }}
         className="bg-highlight-soft text-highlight-foreground grid size-10 shrink-0 place-items-center rounded-xl border-2 text-xs font-bold"

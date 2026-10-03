@@ -1,41 +1,51 @@
-/** Explicit shopper view and playback boundary, independent of page rendering. */
+/** Mounted page and QR boundaries share the asynchronous shopper event queue. */
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
-
-/** Public view context, containing only the page's target and event kind. */
-export interface ShopperViewEvent {
-  kind:
-    | 'qr_scan'
-    | 'store_view'
-    | 'product_view'
-    | 'show_view'
-    | 'show_play'
-    | 'planner_started'
-    | 'plan_shown'
-    | 'something_different';
+import { registerEventStore, recordShopperEvent } from '@/lib/shopper/events/client';
+import type { ShopperEvent } from '@/lib/shopper/events/contracts';
+/** Records each displayed target once per mount, including candidate revision changes. */
+export function ViewEvent({
+  type,
+  store,
+  target,
+  revision,
+}: {
+  type: 'store_view' | 'product_view' | 'plan_pick' | 'till_code_shown' | 'list_saved';
+  store: string;
   target: string;
-}
-/** Dispatches a local integration event without persisting or sending shopper activity. */
-export function recordShopperView(event: ShopperViewEvent): void {
-  window.dispatchEvent(
-    new CustomEvent<ShopperViewEvent>('showcrafter:shopper-view', { detail: event }),
-  );
-}
-/** Announces a mounted public page through the shared view-event call site. */
-export function ViewEvent({ kind, target }: ShopperViewEvent) {
+  revision?: string;
+}) {
+  const previous = useRef('');
   useEffect(() => {
-    recordShopperView({ kind, target });
-  }, [kind, target]);
+    const key = JSON.stringify([type, store, target, revision]);
+    if (previous.current === key) return;
+    previous.current = key;
+    const event: ShopperEvent = { type, store, context: {}, props: {} };
+    if (type === 'product_view') event.context.product_id = target;
+    if (type === 'plan_pick') event.context.plan_session_id = target;
+    if (type === 'till_code_shown' || type === 'list_saved') event.props.list_id = target;
+    recordShopperEvent(event);
+  }, [type, store, target, revision]);
+  return null;
+}
+/** Records a resolved scan only after an authorised store target has mounted. */
+export function ScanEvent({ store }: { store: string }) {
+  const params = useSearchParams();
+  const qr = params.get('qr');
+  const previous = useRef<string | null>(null);
+  useEffect(() => {
+    if (qr === null || previous.current === qr) return;
+    previous.current = qr;
+    recordShopperEvent({ type: 'scan', store, context: { qr_code_id: qr }, props: {} });
+  }, [qr, store]);
   return null;
 }
 
-/** Announces a resolved QR scan after its server redirect reaches a public shop page. */
-export function ScanEvent() {
-  const params = useSearchParams();
-  const qr = params.get('qr');
+/** Connects store activity to the organisation-level privacy controls without rendering UI. */
+export function StoreEventScope({ store, organisation }: { store: string; organisation: string }) {
   useEffect(() => {
-    if (qr !== null) recordShopperView({ kind: 'qr_scan', target: qr });
-  }, [qr]);
+    registerEventStore(store, organisation);
+  }, [store, organisation]);
   return null;
 }

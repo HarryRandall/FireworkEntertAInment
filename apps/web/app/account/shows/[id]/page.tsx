@@ -17,9 +17,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   return (
     <div className="grid min-w-0 gap-6">
       <h1 className="text-2xl font-semibold">{saved.name}</h1>
-      {show ? (
+      {show && store ? (
         <Preview
           title={show.name}
+          event={{ store: store.store.id, context: { show_id: show.id } }}
           shots={showShots(show)}
           soundtrackUrl={show.soundtrack?.playback_url ?? undefined}
           soundtrackOffsetMs={show.soundtrack?.offset_ms}

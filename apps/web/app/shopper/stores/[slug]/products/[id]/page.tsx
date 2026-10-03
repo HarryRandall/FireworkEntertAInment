@@ -7,7 +7,8 @@ import { productShots } from '@/lib/shopper/playback';
 import { formatPrice, storePath } from '@/lib/shopper/paths';
 import { Preview } from '@/ui/shopper/preview';
 import { StoreHeader, StoreFooter } from '@/ui/shopper/store-header';
-import { ViewEvent } from '@/ui/shopper/view-events';
+import { Suspense } from 'react';
+import { ScanEvent, ViewEvent } from '@/ui/shopper/view-events';
 import { Badge, Callout } from '@/ui/kit/feedback';
 import { AddListButton } from '@/ui/shopper/add-list-button';
 import { Button } from '@/ui/primitives/button';
@@ -22,10 +23,14 @@ export default async function Page({ params }: { params: Promise<{ slug: string;
   const context = `?product=${encodeURIComponent(id)}`;
   return (
     <main className="min-w-0">
-      <ViewEvent kind="product_view" target={id} />
+      <ViewEvent type="product_view" store={store.store.id} target={id} />
+      <Suspense>
+        <ScanEvent store={store.store.id} />
+      </Suspense>
       <StoreHeader store={store} />
       <Preview
         title={product.name}
+        event={{ store: store.store.id, context: { product_id: id } }}
         shots={productShots(product.playback)}
         prop={product.kind === 'cake' ? 'cake' : undefined}
       />

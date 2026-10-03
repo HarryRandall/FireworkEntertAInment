@@ -4,20 +4,23 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { requestSoundtrack } from '@/lib/shopper/music/client';
 import { startPlanning, differentPlan } from '@/lib/shopper/planner/actions';
+import type { EditRequest } from '@/lib/shopper/planner/edit-contracts';
 import { editPlan } from '@/lib/shopper/planner/edit-actions';
 import type { SavedPlan, PlannerActionResult } from '@/lib/shopper/planner/contracts';
 import { currentCandidate, type PlannerProgress } from '@/lib/shopper/planner/progress';
 import { storePath } from '@/lib/shopper/paths';
-import { recordShopperView } from '@/ui/shopper/view-events';
+import { recordShopperEvent } from '@/lib/shopper/events/client';
 
 /** Coordinates one request at a time and preserves all draft input after a failed write. */
 export function usePlanner({
+  storeId,
   slug,
   initialPlan,
   progress,
   update,
   qr,
 }: {
+  storeId: string;
   slug: string;
   initialPlan: SavedPlan | null;
   progress: PlannerProgress | undefined;
@@ -36,7 +39,7 @@ export function usePlanner({
       return;
     }
     setPlan(result.plan);
-    recordShopperView({ kind: 'plan_shown', target: result.plan.id });
+
     if (progress) {
       update({ ...progress, session: result.plan.id });
     }
@@ -48,22 +51,39 @@ export function usePlanner({
     }
     const current = progress;
     const age = progress.age;
-    recordShopperView({ kind: 'planner_started', target: current.request });
-    run(() => startPlanning({ slug, request: current.request, answers: current.answers, age, qr }));
-  }
-  function alternative() {
-    if (!plan) {
-      return;
-    }
-    const current = plan;
-    recordShopperView({ kind: 'something_different', target: current.id });
     run(() =>
-      differentPlan({ session: current.id, rank: currentCandidate(current.plan_candidates).rank }),
+      trackPlanning(
+        startPlanning({ slug, request: current.request, answers: current.answers, age, qr }),
+        'plan_start',
+        storeId,
+      ),
     );
   }
+  function alternative() {
+    if (!plan) return;
+    run(() =>
+      trackPlanning(
+        differentPlan({ session: plan.id, rank: currentCandidate(plan.plan_candidates).rank }),
+        'something_different',
+        storeId,
+      ),
+    );
+  }
+
   const edit = usePlanEdit(plan, pending, run);
   const music = usePlanMusic(plan, pending, run);
   return { plan, message, unavailable, pending, generate, alternative, edit, music };
+}
+
+async function trackPlanning(
+  action: Promise<PlannerActionResult>,
+  type: 'plan_start' | 'something_different',
+  store: string,
+) {
+  const result = await action;
+  if (result.status === 'ok')
+    recordShopperEvent({ type, store, context: { plan_session_id: result.plan.id }, props: {} });
+  return result;
 }
 
 function usePlanMusic(
@@ -91,7 +111,7 @@ function usePlanEdit(
   pending: boolean,
   run: (action: () => Promise<PlannerActionResult>) => void,
 ) {
-  const retry = useRef<Parameters<typeof editPlan>[0]>(undefined);
+  const retry = useRef<EditRequest | undefined>(undefined);
   const signature = useRef('');
   return (source: 'chip' | 'rule', text: string, product?: string) => {
     if (!plan || pending) return;
@@ -112,7 +132,20 @@ function usePlanEdit(
       };
     }
     const request = retry.current;
-    run(() => editPlan(request));
+    run(async () => {
+      const result = await editPlan(request);
+      if (
+        result.status === 'ok' &&
+        result.plan.plan_edits.some((edit) => edit.id === request?.id && edit.outcome === 'applied')
+      )
+        recordShopperEvent({
+          type: 'edit',
+          store: plan.store_id,
+          context: { plan_session_id: plan.id },
+          props: {},
+        });
+      return result;
+    });
   };
 }
 

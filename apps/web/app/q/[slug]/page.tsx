@@ -10,19 +10,19 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   const result = await readQr(slug);
   if (!result)
     return (
-      <QrLanding title="This code is unavailable" target={slug}>
+      <QrLanding title="This code is unavailable">
         <QrRecovery />
       </QrLanding>
     );
   if ('pick_store' in result)
     return (
-      <QrLanding title="Choose your shop" target={result.qr_id}>
+      <QrLanding title="Choose your shop">
         <QrStoreChoices stores={result.stores} qr={result.qr_id} />
       </QrLanding>
     );
   if (result.fallback)
     return (
-      <QrLanding title="This code is unavailable" target={result.qr_id}>
+      <QrLanding title="This code is unavailable">
         <QrRecovery slug={result.store_slug} />
       </QrLanding>
     );
