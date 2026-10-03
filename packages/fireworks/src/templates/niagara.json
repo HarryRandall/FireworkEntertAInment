@@ -1,0 +1,41 @@
+{
+  "key": "niagara",
+  "name": "Niagara falls",
+  "group": "Display effects",
+  "design": {
+    "kind": "fountain",
+    "launch": null,
+    "breaks": [],
+    "ground": {
+      "kind": "fountain",
+      "fountain": {
+        "duration_s": 12,
+        "rate_per_s": 260,
+        "speed_m_s": 3,
+        "cone": 0.15,
+        "colour": "#fff3dc",
+        "life_s": 2.4,
+        "emitters": 30,
+        "spacing_m": 1.2,
+        "height_m": 6,
+        "direction": [0, -1, 0],
+        "streak": 2,
+        "gravity_m_s2": 6,
+        "drag_per_s": 1.2,
+        "size": 0.35,
+        "flicker": 0.3,
+        "glitter": 0,
+        "fork": 0,
+        "glow": 3,
+        "glow_alpha": 0.2
+      }
+    },
+    "sound": {
+      "lift": 0.7,
+      "break": 0.85,
+      "crackle": 0.6,
+      "whistle": 0
+    },
+    "seed": 11
+  }
+}

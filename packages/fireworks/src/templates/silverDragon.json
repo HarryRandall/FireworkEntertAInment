@@ -1,0 +1,46 @@
+{
+  "key": "silverDragon",
+  "name": "Silver dragon",
+  "group": "Rockets and candles",
+  "design": {
+    "kind": "comet",
+    "launch": null,
+    "breaks": [],
+    "ground": {
+      "kind": "comet",
+      "comets": {
+        "count": 6,
+        "pattern": "random",
+        "spread_deg": 44,
+        "height_m": 40,
+        "time_s": 2.4,
+        "colour": {
+          "mode": "alternate",
+          "stops": [
+            [0, "#ffffff"],
+            [1, "#ffffff"]
+          ]
+        },
+        "trail": "#eef2ff",
+        "size": 1.2,
+        "sparks": 200,
+        "tail_life_s": 0.7,
+        "glitter": 0.8,
+        "gap_s": 0.5,
+        "spin_rad_s": 30,
+        "spin_radius_m": 1,
+        "pop": false,
+        "split": null,
+        "halo": 1,
+        "whistle": false
+      }
+    },
+    "sound": {
+      "lift": 0.7,
+      "break": 0.85,
+      "crackle": 0.6,
+      "whistle": 0
+    },
+    "seed": 11
+  }
+}
