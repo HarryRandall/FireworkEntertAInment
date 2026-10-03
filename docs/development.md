@@ -1,150 +1,38 @@
 # Development
 
-Follow the [README](../README.md#development) to install Node 24, the pinned pnpm
-version and application dependencies. All commands below run from the repository
-root unless a working directory is shown.
-
-## Workspace
-
-`apps/web/package.json` owns web dependencies and app scripts. The root manifest
-owns formatting and forwards common commands to `@showcrafter/web`. Add a web
-dependency with `pnpm --filter @showcrafter/web add <package>`. Keep one
-`pnpm-lock.yaml`; use `pnpm install --frozen-lockfile` in clean checkouts and CI.
-
-Next.js reads environment files from `apps/web/`. Start with
-`apps/web/.env.example`; keep credentials in ignored local files. Service-role
-keys must never enter client code or `NEXT_PUBLIC_*` variables.
-
-`pnpm dev` uses the established Webpack development path. `pnpm dev:turbo` selects
-Next.js Turbopack for an explicit trial. Turbopack is the app bundler; Turborepo is
-a separate task orchestrator and is not part of this workspace.
-
-## Python services
-
-Each service uses Python 3.11 and its own virtual environment:
+Use Node 24 and the pinned pnpm version from the repository root:
 
 ```bash
-python3.11 -m venv services/music-analyser/.venv
-services/music-analyser/.venv/bin/python -m pip install -r services/music-analyser/requirements.txt
-python3.11 -m venv services/firework-import-worker/.venv
-services/firework-import-worker/.venv/bin/python -m pip install -r services/firework-import-worker/requirements.txt
+eval "$(fnm env)" && fnm use 24
+corepack enable
+pnpm install --frozen-lockfile
 ```
 
-Lint both services with `ruff check services` (config in the root `ruff.toml`; CI
-pins the version). The import worker also needs FFmpeg and Playwright Chromium. Its
-[service guide](../services/firework-import-worker/README.md) owns those details.
-`pnpm worker:firework-import` loads `apps/web/.env.local` (or `.env` as a fallback).
+## Local services
 
-## Verification
-
-Run focused checks during development and `pnpm check` before delivery. The web
-suite runs from `apps/web`, so runtime source paths and renderer fingerprints
-stay relative to the app. Cross-service tests use explicit repository paths.
+Supabase is local-only until switch-over. Start a clean local environment with:
 
 ```bash
-pnpm --filter @showcrafter/web exec node --experimental-strip-types --test tests/auth/auth-flow-correctness.test.mjs
-pnpm test:analyser
-pnpm test:worker
-pnpm test:import-contract
-SHOWCRAFTER_RUN_CROSS_LANGUAGE_CONTRACT=1 services/music-analyser/.venv/bin/python services/music-analyser/tests/test_schema_validation.py
+pnpm db:setup
+pnpm db:test
+pnpm dev
 ```
 
-`pnpm knip` reports unused files, exports and dependencies (CI runs it). Renderer
-fingerprinted sources and generated files are excluded in `knip.json`; exports
-kept only for tests are listed under `ignoreIssues`.
+Keep secrets in ignored local environment files. Do not link a hosted project or
+apply a schema change outside the eventual switch-over runbook.
 
-Use `pnpm audit:ui` when adding or moving pages/components. Candidates need review
-before deletion. Check rendered light/dark, mobile and interaction states when
-shared UI behaviour changes. Keep servers stopped while builds replace their
-output, or use an isolated `NEXT_DIST_DIR`.
+Modal workers are introduced in later rebuild stages. Configure and deploy them only
+when their stage defines the worker contract. A web check does not deploy a worker,
+change hosted Supabase or verify production.
 
-CI runs web checks, both Python suites, and the Python-to-Zod-to-planner contract.
-The import contract check runs actual worker output through strict app validation
-for every renderer geometry and simulates ground emissions. It uses the worker's
-local virtual environment when present, otherwise `python`; `PYTHON` overrides it.
-The scheduled analyser regression uses the checked-in real-audio fixtures.
+## Checks
 
-## Database
-
-Use [Database development and handover](database.md) for local setup, catalogue
-snapshots, schema migrations, SQL tests and fresh hosted installations.
-`pnpm db:setup` installs local content and synthetic accounts; `pnpm db:env`
-creates the app's local environment file without overwriting an existing one.
-
-The fresh database CI job pulls the pinned Supabase images from the official
-`ghcr.io/supabase` mirror using `SUPABASE_INTERNAL_IMAGE_REGISTRY=ghcr.io`.
-This avoids public ECR download limits on shared GitHub runners. Local commands
-retain the CLI's default registry unless that environment variable is set.
-
-## Deployment
-
-For Vercel, set the project Root Directory to `apps/web` and include files outside
-the root directory so the workspace lockfile and root formatting package are
-available. Use Node 24, install with `pnpm install --frozen-lockfile`, and build
-with `pnpm build`. The checked-in `apps/web/vercel.json` declares those commands.
-Set `ENABLE_EXPERIMENTAL_COREPACK=1` in Preview and Production so Vercel uses the
-pinned package manager from the root `package.json`.
-Environment variables remain configured in Vercel; local environment files are
-not uploaded. Changing the hosted project's Root Directory is required before
-releasing this layout; a local refactor does not update that setting.
-
-Modal services retain their existing deployment roots and manifests under
-`services/`. A web release does not deploy Python services or apply migrations.
-
-GitHub tags and releases are the public version source of truth. Use semantic
-versions, keep the README linked to the automatically resolved latest release,
-and create a release only from a fully merged, checked `main` commit. The private
-web package version is descriptive and must not become a competing release feed.
-
-The renderer fingerprint includes source paths and file bytes. Release the web
-app, import worker and database renderer contract together whenever it changes
-so all three agree on the current contract. Existing sealed evidence must be
-revalidated against a new fingerprint before publication.
-
-## Changes and reviews
-
-Use focused `feat:`, `fix:` or `refactor:` commits. Explain the changed behaviour,
-validation and any unresolved limitation. [Architecture](architecture.md) owns
-placement and UI conventions. Agent workflows live in `.agents/skills`; the root
-`AGENTS.md` supplies only routing and rules that apply to every task.
-
-## Music-analysis recovery
-
-Upload and Jamendo routes allow 300 seconds. Synchronous analyser requests stop
-at 240 seconds, leaving time to persist failure or retry state. In production,
-set `ANALYSER_DISPATCH_URL` to the lightweight Modal API URL plus `/runs` and
-configure the trusted `APP_ORIGIN`. The dispatch acknowledges within 30 seconds;
-Modal completes the leased job and POSTs validated output independently to
-`/api/internal/music-analysis/callback`. The existing analysis credit reservation
-is settled only by the guarded completion RPC. Stale or duplicate callbacks
-cannot replace a newer attempt or charge another credit.
-
-Deploy the analyser from its own service directory:
+Run focused behaviour or SQL tests while changing code, then run:
 
 ```bash
-cd services/music-analyser
-SHOWCRAFTER_APP_ORIGIN=https://your-production-domain.example modal deploy modal_app.py
+pnpm check
 ```
 
-The deployment origin is the only permitted callback destination. Both Modal
-and Vercel continue to use the existing `ANALYSER_SHARED_SECRET`; no database
-credential is sent to Modal. Keep `ANALYSER_URL` pointed at the synchronous
-`SongAnalyser.analyse` endpoint for warm-up and legacy show analysis.
-
-There is no recurring Modal recovery schedule. Normal jobs start through the
-API and save results through the callback. Admins with `admin.manage_imports`
-can use **Recover stalled jobs** under **Admin > Generation** to run one bounded
-pass: up to one claimable analysis and one ready cue job, plus finalisation of
-up to ten exhausted attempts of each type through the existing refund RPCs.
-Each click is independent; the control does not poll, repeat or keep Modal warm.
-Unexpired leases are left alone. Retryable failures wait for another manual pass
-once due; permanently failed jobs are not restarted. The admin POST endpoint is
-`/api/admin/analyser/reconcile`; it does not purge audio. The shared-secret
-`/api/internal/music-analysis/reconcile` API remains available for explicit
-trusted calls, with no timer invoking it.
-
-Removing the schedule requires redeploying the Modal analyser. A web release
-alone does not stop an already deployed schedule. Existing admin
-retention reconciliation remains a separate operation authorised by `CRON_SECRET`.
-Deploy the callback routes before enabling `ANALYSER_DISPATCH_URL`. Manual
-recovery requires the web routes and dispatch configuration to be ready.
+From the database foundations stage onwards, also run `pnpm db:reset && pnpm db:test`
+against local Supabase. For UI work, inspect the requested desktop and narrow layouts
+in light and dark themes and attach the screenshots to the PR.
