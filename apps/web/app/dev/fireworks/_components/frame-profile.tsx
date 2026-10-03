@@ -17,7 +17,8 @@ export function FrameProfileReadout({ profile }: { profile: FrameProfile | null 
   return (
     <div data-testid="phase-profile" className="grid gap-2 text-sm">
       <p>
-        Frame at {profile.time_s.toFixed(TIMING_DECIMALS)} s · GPU timers: {profile.gpuStatus}
+        Frame at {profile.time_s.toFixed(TIMING_DECIMALS)} s · GPU timers: {profile.gpuStatus} ·
+        Storage allocation calls: {profile.storageAllocations}
       </p>
       <table className="w-full text-left">
         <caption className="sr-only">One frame's CPU and GPU phase times</caption>

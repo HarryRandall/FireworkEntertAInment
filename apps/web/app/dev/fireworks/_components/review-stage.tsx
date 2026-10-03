@@ -63,7 +63,9 @@ export function ReviewStage({
         }}
       />
       <p className="text-muted-foreground text-sm">
-        {state.hdr ? 'HDR' : '8-bit'} output · {state.count.toLocaleString('en-GB')} particles ·{' '}
+        {state.hdr ? 'HDR' : '8-bit'} output ·{' '}
+        {(state.count - state.gpuCandidateCount).toLocaleString('en-GB')} CPU particles ·{' '}
+        {state.gpuCandidateCount.toLocaleString('en-GB')} GPU candidates ·{' '}
         {state.sprayMode.toUpperCase()} sprays
       </p>
       <StressControls viewer={viewer} ready={ready} state={state} selected={selected.design} />

@@ -77,6 +77,7 @@ function mirrorReadout(rig: Viewer, setState: ReviewSetters['setState']): () => 
       duration: v.duration,
       playing: v.playing,
       count: v.count,
+      gpuCandidateCount: v.gpuCandidateCount,
       hdr: v.output.hdr,
       sprayMode: v.sprayMode,
       shotCount: v.shots.length,

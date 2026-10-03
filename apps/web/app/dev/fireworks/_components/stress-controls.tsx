@@ -73,8 +73,9 @@ export function StressControls({
         Rolling window of the last {state.timing.window} visible playing frames, reset when the
         scene or spray path changes. CPU build and draw submission: {state.frameMs.toFixed(2)} ms
         (smoothed; excludes GPU completion). Run each path from Restart in the same window on your
-        machine. Browser automation can throttle frame cadence. Particle count includes GPU
-        candidates that the shader may hide.
+        machine. Browser automation can throttle frame cadence. CPU particles and GPU candidates are
+        separate populations. GPU candidates include inactive lanes that the shader hides; neither
+        readout is a visible on-screen spark count.
       </p>
     </section>
   );

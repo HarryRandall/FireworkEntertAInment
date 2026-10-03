@@ -6,6 +6,7 @@ export interface ReviewState {
   duration: number;
   playing: boolean;
   count: number;
+  gpuCandidateCount: number;
   hdr: boolean;
   sprayMode: 'cpu' | 'gpu';
   shotCount: number;

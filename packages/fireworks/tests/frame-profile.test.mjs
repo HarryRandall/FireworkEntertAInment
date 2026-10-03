@@ -63,6 +63,7 @@ test('profile accounts for nested spray work, restores upload APIs and waits for
   profiler.pass('output', () => {});
   assert.equal(gl.bufferData, original);
   assert.equal(gl.uploads, 1);
+  assert.equal(profiler.result.storageAllocations, 1);
   assert.equal(profiler.waiting, true);
   profiler.poll();
   assert.equal(profiler.result.gpuStatus, 'pending');
@@ -124,4 +125,24 @@ test('driver upload interception restores original descriptors after a thrown dr
   assert.equal(gl.bufferData, original);
   assert.equal(Object.hasOwn(gl, 'bufferData'), false);
   assert.equal(gl.uploads, 1);
+});
+
+test('storage counters distinguish allocations from updates and reset each sample', () => {
+  const gl = new Context();
+  const profiler = new FrameProfiler(gl);
+  profiler.begin(1);
+  profiler.pass('draw', () => {
+    gl.bufferData();
+    gl.texStorage2D();
+    gl.texImage2D();
+    gl.bufferSubData();
+    gl.texSubImage2D();
+  });
+  assert.equal(profiler.result.storageAllocations, 3);
+  profiler.begin(2);
+  profiler.pass('draw', () => {
+    gl.bufferSubData();
+    gl.texSubImage2D();
+  });
+  assert.equal(profiler.result.storageAllocations, 0);
 });

@@ -26,6 +26,7 @@ export function drawViewerFrame(
     | 'sprayMode'
     | 'layers'
     | 'count'
+    | 'gpuCandidateCount'
     | 'fillMs'
     | 'output'
     | 'renderer'
@@ -60,6 +61,7 @@ export function drawViewerFrame(
   sprays.upload();
   if (profiling && viewer.profiler.result)
     viewer.profiler.result.packingMs = performance.now() - simulated;
+  viewer.gpuCandidateCount = sprays.sources.count;
   viewer.count = frames.reduce((sum, frame) => sum + frame.kinds.length, sprays.sources.count);
   viewer.fillMs =
     viewer.fillMs * TIMING_OLD_WEIGHT + (performance.now() - start) * (1 - TIMING_OLD_WEIGHT);
@@ -69,10 +71,7 @@ export function drawViewerFrame(
     viewer.camera,
     profiling ? viewer.profiler : undefined,
   );
-  viewer.renderer.domElement.dataset.drawnTime = viewer.t.toFixed(DRAWN_TIME_DECIMALS);
-  viewer.renderer.domElement.dataset.drawPending = 'false';
-  viewer.frameMs =
-    viewer.frameMs * TIMING_OLD_WEIGHT + (performance.now() - start) * (1 - TIMING_OLD_WEIGHT);
+  recordFrameDiagnostics(viewer, performance.now() - start);
 }
 
 /** Applies non-accumulating rotational radians after controls restore the absolute camera pose. */
@@ -150,4 +149,18 @@ export function advanceViewerPlayback(
   viewer.t = viewer.duration;
   viewer.playing = false;
   return true;
+}
+
+// Record raw CPU submission separately from smoothed readouts and display cadence.
+function recordFrameDiagnostics(
+  viewer: Pick<Viewer, 'renderer' | 't' | 'count' | 'gpuCandidateCount' | 'frameMs'>,
+  elapsedMs: number,
+): void {
+  const diagnostics = viewer.renderer.domElement.dataset;
+  diagnostics.cpuFrameMs = String(elapsedMs);
+  diagnostics.cpuParticles = String(viewer.count - viewer.gpuCandidateCount);
+  diagnostics.gpuCandidates = String(viewer.gpuCandidateCount);
+  diagnostics.drawnTime = viewer.t.toFixed(DRAWN_TIME_DECIMALS);
+  diagnostics.drawPending = 'false';
+  viewer.frameMs = viewer.frameMs * TIMING_OLD_WEIGHT + elapsedMs * (1 - TIMING_OLD_WEIGHT);
 }

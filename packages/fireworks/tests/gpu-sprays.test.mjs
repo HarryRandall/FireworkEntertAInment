@@ -50,7 +50,7 @@ test('analytic source uploads refresh local clocks, grow safely and release GPU 
   assert.equal(joinWord(layer.sources.data, 8, 9), options.seed);
   layer.upload();
   const texture = layer.points.material.uniforms.uSources.value;
-  const positions = layer.points.geometry.getAttribute('position');
+  assert.equal(layer.points.geometry.getAttribute('position'), undefined);
   assert.equal(texture.image.width, SOURCE_TEXTURE_WIDTH);
   assert.equal(texture.image.height * SOURCE_TEXTURE_WIDTH * 4, layer.sources.data.length);
   assert.equal(layer.points.geometry.drawRange.count, layer.sources.count);
@@ -60,7 +60,7 @@ test('analytic source uploads refresh local clocks, grow safely and release GPU 
   assert.equal(layer.sources.dirty, true, 'Advancing time refreshes the reduced source clock');
   layer.upload();
   assert.equal(texture.version, version + 1);
-  assert.equal(layer.points.geometry.getAttribute('position'), positions);
+  assert.equal(layer.points.geometry.getAttribute('position'), undefined);
   assert.equal(layer.points.material.uniforms.uSourceTime.value, 0.5);
   let textureDisposals = 0;
   texture.addEventListener('dispose', () => textureDisposals++);
@@ -87,4 +87,37 @@ test('candidate budget is bounded and reset allows direct seek replay', () => {
   births.receive(slot, [0, 0, 0], [0, 0, 0], 1, 0.2, options);
   assert.equal(births.count, 17);
   assert.deepEqual([...births.indices.slice(0, 4)], [0, 0, 0, 1]);
+});
+
+test('source and clock upload ranges contain active texels and never cross rows', () => {
+  const layer = new GpuSprays({ uScale: { value: 1 }, uDpr: { value: 1 } });
+  const origin = [0, 10, 0];
+  for (const count of [100, 3, 0, 100]) {
+    layer.sources.reset(0.5);
+    for (let index = 0; index < count; index++)
+      layer.sources.receive({ kind: 'fixed', origin }, 0, 1, 0.5, options);
+    layer.upload();
+    if (!count) continue;
+    for (const [name, active] of [
+      ['uSources', layer.sources.dirty ? count * 268 : 0],
+      ['uSourceClocks', count * 4],
+    ]) {
+      const texture = layer.points.material.uniforms[name].value;
+      const ranges = texture.updateRanges;
+      assert.equal(
+        ranges.reduce((sum, range) => sum + range.count, 0),
+        active,
+      );
+      for (const range of ranges) {
+        assert.equal(
+          Math.floor(range.start / 4096),
+          Math.floor((range.start + range.count - 1) / 4096),
+        );
+        assert.equal(range.start % 4, 0);
+        assert.equal(range.count % 4, 0);
+      }
+      texture.clearUpdateRanges(); // The renderer consumes ranges after an upload.
+    }
+  }
+  layer.dispose();
 });
