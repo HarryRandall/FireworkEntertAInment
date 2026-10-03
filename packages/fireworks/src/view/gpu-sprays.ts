@@ -4,7 +4,8 @@ import { sprayKernel } from './spray-kernel';
 import { pointVertex, pointFragment } from './shaders';
 import { sprayDirections } from './spray-births';
 import { SpraySources } from './spray-sources';
-import { SOURCE_TEXTURE_WIDTH } from './source-layout';
+import { SOURCE_TEXTURE_WIDTH, SOURCE_SCALARS } from './source-layout';
+import { updateTexturePrefix } from './texture-updates';
 import { sourceBirthKernel } from './source-birth-kernel';
 
 // Prototype lookup has 4096 directions arranged as a square RGBA texture.
@@ -27,15 +28,24 @@ ${pointVertex.replace(
 `;
 /** Live vertex shader selects and samples births from source controls and reduced source clocks. */
 export const sourceSprayVertex = `${sourceBirthKernel}
-${pointVertex.replace(
-  'void main() {',
-  `void main() {
+${pointVertex
+  .replace(
+    'void main() {',
+    `void main() {
   Spark spark = evaluateSourceSpark(gl_VertexID);
   vec3 position = spark.position;
   vec3 color = spark.colour;
   float size = spark.size;
   float alpha = spark.alpha > BIRTH_ALPHA_CUTOFF ? spark.alpha : 0.0;`,
-)}
+  )
+  .replace(
+    'vColor = color;',
+    `vColor = color;
+  // Inactive lanes otherwise rasterise at the world origin and contend for one pixel.
+  // Clipping after varying assignment preserves transform-feedback appearance outputs.
+  // Negative homogeneous w lies outside the clip volume for every camera pose.
+  if (alpha == 0.0) gl_Position = vec4(0.0, 0.0, 0.0, -1.0);`,
+  )}
 `;
 /** Owns reusable analytic source textures and a candidate draw range in one points layer. */
 export class GpuSprays {
@@ -114,17 +124,10 @@ export class GpuSprays {
       );
       this.uniforms.uSources.value = this.texture;
     }
-    this.texture.needsUpdate = this.sources.dirty;
-    // The placeholder is allocated only when capacity grows. gl_VertexID supplies candidate identity;
-    // no candidate attribute is populated or uploaded per frame.
-    const positions = this.geometry.getAttribute('position');
-    if (!this.geometry.hasAttribute('position') || positions.count < this.sources.count) {
-      this.geometry.dispose();
-      this.geometry.setAttribute(
-        'position',
-        new THREE.BufferAttribute(new Float32Array(this.sources.count * 2), 1),
-      );
-    }
+    if (this.sources.dirty)
+      updateTexturePrefix(this.texture, this.sources.sources * SOURCE_SCALARS);
+    // The live shader generates every position from gl_VertexID. Three.js accepts a finite
+    // draw range without a position attribute, so candidate counts need no dummy GPU buffer.
     this.uploadClocks();
     this.uniforms.uSourceTime.value = this.sources.time;
     this.uniforms.uSourceCount.value = this.sources.sources;
@@ -142,7 +145,7 @@ export class GpuSprays {
       );
       this.uniforms.uSourceClocks.value = this.clockTexture;
     }
-    this.clockTexture.needsUpdate = true;
+    updateTexturePrefix(this.clockTexture, this.sources.sources * TEXEL_COMPONENTS);
   }
   /** Retires textures, geometry and shader material when the owning viewer is disposed. */
   dispose(): void {
