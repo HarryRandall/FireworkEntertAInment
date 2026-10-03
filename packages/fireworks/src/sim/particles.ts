@@ -2,6 +2,10 @@
 import type { Vec3 } from './colour';
 
 // Prototype rendering budgets and alpha cut-off; sizes are renderer-space pixels.
+// Packed RGB and XYZ vectors have three scalar components.
+const VECTOR_COMPONENTS = 3;
+// Additive flash discriminator shared with the quad shader.
+const FLASH_KIND = 3;
 const MAX_POINT_PARTICLES = 140000;
 const MAX_QUAD_PARTICLES = 24000;
 const ALPHA_CUTOFF = 0.004;
@@ -14,7 +18,7 @@ const MAX_SMOKE_PUFFS = 6000;
 // Prototype smoke visibility threshold, in normalised opacity.
 const SMOKE_ALPHA_CUTOFF = 0.003;
 /** Additive particle discriminators shared with the consuming view. */
-export const ParticleKind = { Spark: 0, Head: 1, Halo: 2, Flash: 3 } as const;
+export const ParticleKind = { Spark: 0, Head: 1, Halo: 2, Flash: FLASH_KIND } as const;
 /** One additive particle discriminator. */
 export type ParticleKind = (typeof ParticleKind)[keyof typeof ParticleKind];
 /** Tightly sized additive attributes plus a separate smoke frame. */
@@ -69,6 +73,7 @@ export class ParticleWriter {
   ) {}
   private puffs: Puff[] = [];
   /** Appends a puff at a centre in metres, with linear RGB, size in metres and age in seconds. */
+  // eslint-disable-next-line max-params -- Packed scalar lanes avoid an extra options allocation per particle.
   smoke(
     x: number,
     y: number,
@@ -97,6 +102,7 @@ export class ParticleWriter {
       this.points.push({ position, colour, size, alpha, kind: ParticleKind.Spark });
   }
   /** Appends an additive quad at a position in metres with renderer size and opacity. */
+  // eslint-disable-next-line max-params -- Packed scalar lanes avoid an extra options allocation per particle.
   glow(
     position: Vec3,
     colour: Vec3,
@@ -108,6 +114,7 @@ export class ParticleWriter {
       this.quads.push({ position, colour, size, alpha, kind });
   }
   /** Expands a head into a quad and optional halo from metre position and renderer size. */
+  // eslint-disable-next-line max-params -- Packed scalar lanes avoid an extra options allocation per particle.
   head(position: Vec3, colour: Vec3, size: number, alpha: number, halo = 1): void {
     if (halo > 0)
       this.glow(
@@ -123,14 +130,14 @@ export class ParticleWriter {
   finish(): Particles {
     const all = [...this.points, ...this.quads];
     const result: Particles = {
-      positions: new Float32Array(all.length * 3),
-      colours: new Float32Array(all.length * 3),
+      positions: new Float32Array(all.length * VECTOR_COMPONENTS),
+      colours: new Float32Array(all.length * VECTOR_COMPONENTS),
       sizes: new Float32Array(all.length),
       alphas: new Float32Array(all.length),
       kinds: new Uint8Array(all.length),
       smoke: {
-        positions: new Float32Array(this.puffs.length * 3),
-        colours: new Float32Array(this.puffs.length * 3),
+        positions: new Float32Array(this.puffs.length * VECTOR_COMPONENTS),
+        colours: new Float32Array(this.puffs.length * VECTOR_COMPONENTS),
         sizes: new Float32Array(this.puffs.length),
         alphas: new Float32Array(this.puffs.length),
         seeds: new Float32Array(this.puffs.length),
@@ -138,15 +145,15 @@ export class ParticleWriter {
       },
     };
     all.forEach((p, i) => {
-      result.positions.set(p.position, i * 3);
-      result.colours.set(p.colour, i * 3);
+      result.positions.set(p.position, i * VECTOR_COMPONENTS);
+      result.colours.set(p.colour, i * VECTOR_COMPONENTS);
       result.sizes[i] = p.size;
       result.alphas[i] = p.alpha;
       result.kinds[i] = p.kind;
     });
     this.puffs.forEach((p, i) => {
-      result.smoke.positions.set(p.position, i * 3);
-      result.smoke.colours.set(p.colour, i * 3);
+      result.smoke.positions.set(p.position, i * VECTOR_COMPONENTS);
+      result.smoke.colours.set(p.colour, i * VECTOR_COMPONENTS);
       result.smoke.sizes[i] = p.size;
       result.smoke.alphas[i] = p.alpha;
       result.smoke.seeds[i] = p.seed;
