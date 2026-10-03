@@ -1,5 +1,6 @@
 /** Browser journeys and representative review stills exercise the rendered WebGL surface. */
 import { test, expect, type Page } from '@playwright/test';
+import { waitForDrawnTime, captureRenderer } from './drawn-frame';
 import AxeBuilder from '@axe-core/playwright';
 
 // Desktop and owner-requested narrow viewport, in CSS pixels.
@@ -29,9 +30,10 @@ async function seek(page: Page, time_s: number): Promise<void> {
     element.dispatchEvent(new Event('input', { bubbles: true }));
     element.dispatchEvent(new Event('change', { bubbles: true }));
   }, time_s);
+  await waitForDrawnTime(page, time_s);
 }
 
-test('all templates share one context and selected playback supports exact scrubbing', async ({
+test('progressive catalogue posters allow selected playback and exact scrubbing', async ({
   page,
 }) => {
   const errors: string[] = [];
@@ -43,7 +45,6 @@ test('all templates share one context and selected playback supports exact scrub
   await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeEnabled();
   await expect(page.locator('[data-template]')).toHaveCount(REVIEW_CARD_COUNT);
   await expect(page.locator('canvas')).toHaveCount(1);
-  await expect(page.locator('[data-template] img')).toHaveCount(REVIEW_CARD_COUNT);
   await page.locator('[data-template="wheel"]').click();
   await expect(page.getByTestId('selected-name')).toHaveText('Wheel');
   await page.getByRole('button', { name: 'Pause', exact: true }).click();
@@ -68,7 +69,9 @@ test('all templates share one context and selected playback supports exact scrub
 
 for (const [viewportName, viewport] of Object.entries({ desktop: DESKTOP, mobile: MOBILE })) {
   for (const colourScheme of ['light', 'dark'] as const) {
-    test(`${viewportName} ${colourScheme} review frames and seek replay`, async ({ page }) => {
+    test(`${viewportName} ${colourScheme} review frames and seek replay`, async ({
+      page,
+    }, testInfo) => {
       const errors: string[] = [];
       page.on('pageerror', (error) => errors.push(error.message));
       page.on('console', (message) => {
@@ -82,30 +85,26 @@ for (const [viewportName, viewport] of Object.entries({ desktop: DESKTOP, mobile
         await page.locator(`[data-template="${key}"]`).click();
         await page.getByRole('button', { name: 'Pause', exact: true }).click();
         await seek(page, REVIEW_TIME_S);
-        // Two frames flush the demand-driven seek draw before reading the canvas.
-        await page.evaluate(
-          () =>
-            new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
-        );
-        const first = await page.locator('canvas').screenshot();
+        const first = await captureRenderer(page);
         await seek(page, OTHER_TIME_S);
         await seek(page, REVIEW_TIME_S);
-        await page.evaluate(
-          () =>
-            new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+        const replay = await captureRenderer(
+          page,
+          `output/playwright/${viewportName}-${colourScheme}-${key}.png`,
         );
-        const replay = await page
-          .locator('canvas')
-          .screenshot({ path: `output/playwright/${viewportName}-${colourScheme}-${key}.png` });
-        expect(replay.equals(first), 'Paused seek replay should produce identical pixels').toBe(
-          true,
-        );
+        if (!replay.equals(first)) {
+          await testInfo.attach(`${key}-first`, { body: first, contentType: 'image/png' });
+          await testInfo.attach(`${key}-replay`, { body: replay, contentType: 'image/png' });
+        }
+        expect(
+          replay.equals(first),
+          `${key}: paused seek replay should produce identical pixels`,
+        ).toBe(true);
       }
-      // A full-page capture of all cards at phone width exceeds Chromium's capture size,
-      // so phones capture the visible viewport only.
+      // A full-page capture of every card exceeds Chromium's capture size, so the page
+      // still is the visible viewport; the canvas stills above are the review evidence.
       await page.screenshot({
         path: `output/playwright/${viewportName}-${colourScheme}-page.png`,
-        fullPage: viewportName !== 'mobile',
       });
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(
         true,
@@ -124,15 +123,9 @@ test('8-bit output remains visible without half-float colour', async ({ page }) 
   await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeEnabled();
   await expect(page.getByText(/8-bit output/)).toBeVisible();
   await seek(page, 0);
-  await page.evaluate(
-    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
-  );
-  const before = await page.locator('canvas').screenshot();
+  const before = await captureRenderer(page);
   await seek(page, REVIEW_TIME_S);
-  await page.evaluate(
-    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
-  );
-  const after = await page.locator('canvas').screenshot({ path: 'output/playwright/ldr.png' });
+  const after = await captureRenderer(page, 'output/playwright/ldr.png');
   expect(
     after.equals(before),
     'Fallback must draw a changing firework rather than a black canvas',
@@ -150,6 +143,9 @@ test('paused and off-screen previews stop GPU draws and navigation releases the 
     const prototype = WebGL2RenderingContext.prototype;
     const original = prototype.drawArrays;
     prototype.drawArrays = function (mode, first, count) {
+      // The detached thumbnail context may still draw while the live stage is paused.
+      if (!(this.canvas instanceof HTMLCanvasElement) || !this.canvas.isConnected)
+        return original.call(this, mode, first, count);
       const root = document.documentElement;
       root.dataset.webglDraws = String(Number(root.dataset.webglDraws ?? 0) + 1);
       return original.call(this, mode, first, count);
@@ -158,9 +154,6 @@ test('paused and off-screen previews stop GPU draws and navigation releases the 
   await page.goto('/dev/fireworks');
   await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeEnabled();
   await seek(page, REVIEW_TIME_S);
-  await page.evaluate(
-    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
-  );
   const readDraws = () =>
     page.evaluate(() => Number(document.documentElement.dataset.webglDraws ?? 0));
   const paused = await readDraws();
@@ -169,12 +162,65 @@ test('paused and off-screen previews stop GPU draws and navigation releases the 
   await page.getByRole('button', { name: 'Play', exact: true }).click();
   await expect.poll(readDraws).toBeGreaterThan(paused);
   await page.locator('[data-template]').last().scrollIntoViewIfNeeded();
-  await page.evaluate(
-    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
-  );
+  await expect(page.locator('canvas')).not.toBeInViewport();
   const hidden = await readDraws();
   await page.waitForTimeout(IDLE_OBSERVATION_MS);
   expect(await readDraws()).toBe(hidden);
   await page.getByRole('link', { name: 'Developer routes', exact: true }).click();
   await expect(page.locator('canvas')).toHaveCount(0);
+});
+
+test('the finale compares CPU and GPU sprays in one context and resets frame samples', async ({
+  page,
+}) => {
+  const errors: string[] = [];
+  page.on('pageerror', (error) => errors.push(error.message));
+  page.on('console', (message) => {
+    if (message.type() === 'error') errors.push(message.text());
+  });
+  await page.goto('/dev/fireworks');
+  const gpu = page.getByRole('button', { name: 'GPU sprays', exact: true });
+  const cpu = page.getByRole('button', { name: 'CPU sprays', exact: true });
+  await expect(gpu).toBeEnabled();
+  await expect(gpu).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Run 40-shot finale' }).click();
+  await expect(page.getByTestId('selected-name')).toHaveText('40-shot finale');
+  await page.getByRole('button', { name: 'Pause', exact: true }).click();
+  await seek(page, 11.2);
+  await cpu.click();
+  await expect(cpu).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByTestId('frame-times')).toContainText('(0/120 playing frames)');
+  await expect(page.getByRole('slider', { name: 'Preview time' })).toHaveValue('11.2');
+  await gpu.click();
+  await expect(gpu).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('canvas')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Back to one firework' }).click();
+  await expect(page.getByTestId('selected-name')).not.toHaveText('40-shot finale');
+  expect(errors).toEqual([]);
+});
+
+test('drawn time retains completed live draws while repeated seeks are pending', async ({
+  page,
+}) => {
+  await page.goto('/dev/fireworks');
+  await expect(page.getByRole('button', { name: 'Play', exact: true })).toBeEnabled();
+  await seek(page, REVIEW_TIME_S);
+  for (const time_s of [REVIEW_TIME_S, 2.205142857, OTHER_TIME_S]) {
+    const previousTime = await page.locator('canvas').getAttribute('data-drawn-time');
+    const duringSeek = await page
+      .getByRole('slider', { name: 'Preview time' })
+      .evaluate((element, time) => {
+        if (!(element instanceof HTMLInputElement)) throw new Error('Expected native seek range');
+        element.value = String(time);
+        element.dispatchEvent(new Event('input', { bubbles: true }));
+        const canvas = document.querySelector('canvas');
+        return {
+          time: canvas?.getAttribute('data-drawn-time'),
+          pending: canvas?.getAttribute('data-draw-pending'),
+        };
+      }, time_s);
+    expect(duringSeek).toEqual({ time: previousTime, pending: 'true' });
+    await waitForDrawnTime(page, time_s);
+    await expect(page.getByRole('slider', { name: 'Preview time' })).toHaveValue(String(time_s));
+  }
 });

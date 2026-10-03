@@ -14,6 +14,10 @@
         "--output-dir",
         "/private/tmp/showcrafter-browser-claude"
       ]
+    },
+    "supabase-local": {
+      "type": "http",
+      "url": "http://127.0.0.1:55421/mcp?read_only=true&features=database"
     }
   }
 }

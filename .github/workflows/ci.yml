@@ -160,7 +160,7 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm test:database-tooling
-      - name: Verify an empty local database
+      - name: Verify local database foundations
         run: |
           pnpm db:start
           pnpm db:reset

@@ -1,8 +1,8 @@
-/** Template choices and shared-context thumbnails for renderer comparison. */
+/** Template choices and progressive thumbnails for renderer comparison. */
 'use client';
 import Image from 'next/image';
 import { entries } from './review-catalogue';
-import { THUMB_WIDTH_PX, THUMB_HEIGHT_PX } from './use-review-viewer';
+import { THUMB_WIDTH_PX, THUMB_HEIGHT_PX } from './review-viewer-lifecycle';
 /** Renders template choices; selecting a card reuses the main viewer. */
 export function TemplateLibrary({
   selected,
@@ -25,6 +25,7 @@ export function TemplateLibrary({
           key={entry.key}
           type="button"
           data-template={entry.key}
+          data-poster-status={(posters[entry.key] ?? '').length > 0 ? 'ready' : 'pending'}
           disabled={!ready}
           aria-pressed={selected.key === entry.key}
           aria-label={`Play ${entry.name}`}

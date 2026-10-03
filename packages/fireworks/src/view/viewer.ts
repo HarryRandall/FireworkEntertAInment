@@ -1,12 +1,29 @@
-/** Browser playback coordinates stateless CPU frames, scene resources and redraw scheduling. */
+/** Browser playback coordinates stateless source sampling, GPU sprays and redraw scheduling. */
+import { ViewerSound } from './sound/scheduler';
 import { prototypeOr } from '../sim/numeric';
 import * as THREE from 'three';
-import { resolveDesign, type Design } from '../schema/index';
-import { simulate, shotDuration } from '../sim/index';
+import type { Design } from '../schema/index';
+import { shotDuration, framingFor, shakeEvents, type Vec3 } from '../sim/index';
 import { ParticleLayers } from './buffers';
+import { GpuSprays } from './gpu-sprays';
+import { FrameProfiler } from './frame-profile';
+import { FrameTimes } from './frame-times';
 import { OutputPass } from './output';
-import { CAKE_TOP_M, cakeHole, makeProps } from './props';
+import { makeProps } from './props';
 import { disposeTree, makeWorld } from './world';
+import { StageControls } from './stage-controls';
+import { onSettings, onVisualSettings } from './settings';
+import { viewerInput, mountViewerSurface } from './viewer-input';
+import { buildPlayer } from './player';
+import {
+  drawViewerFrame,
+  advanceViewerPlayback,
+  applyViewerShake,
+  applyViewerSettings,
+  resetViewerReadout,
+  soundShots,
+  disposeViewerScene,
+} from './viewer-frame';
 import type { Shot, ViewerOptions } from './types';
 
 // Prototype projection settings, in degrees and metres.
@@ -15,17 +32,9 @@ const NEAR_M = 0.5;
 const FAR_M = 4000;
 // Prototype pixel-ratio cap limits fill rate on high-density displays.
 const MAX_DPR = 1.5;
-// Basic fixed view padding and floor, chosen for legible review frames in any aspect ratio.
-const FIT_PADDING = 1.3;
-const MIN_EXTENT_M = 4;
-const CAMERA_HEIGHT_FRACTION = 0.55;
-// Wall clock conversion; smoothing weights follow the prototype's performance readout.
+// Wall clock milliseconds per second.
 const MS_PER_SECOND = 1000;
-const FPS_OLD_WEIGHT = 0.92;
-const TIMING_OLD_WEIGHT = 0.9;
 const HALF_TURN_DEG = 180;
-// Particle positions store three Cartesian components per world-space vertex.
-const VECTOR_COMPONENTS = 3;
 
 /** Stateless firework playback in one owned WebGL context, with explicit resource cleanup. */
 export class Viewer {
@@ -33,7 +42,17 @@ export class Viewer {
   readonly scene = new THREE.Scene();
   readonly camera = new THREE.PerspectiveCamera(FOV_DEG, 1, NEAR_M, FAR_M);
   readonly output: OutputPass;
+  readonly profiler: FrameProfiler;
+  readonly controls: StageControls;
+  private readonly cleanups: (() => void)[] = [];
+  private readonly sound = new ViewerSound();
+  private cameraMoving = false;
+  private shake = shakeEvents([]);
+  private readonly shakeOffset: Vec3 = [0, 0, 0];
+  private readonly cameraPosition: Vec3 = [0, 0, 0];
   readonly layers = new ParticleLayers();
+  private readonly gpuSprays = new GpuSprays(this.layers.uniforms);
+  sprayMode: 'cpu' | 'gpu' = 'gpu';
   shots: readonly Shot[];
   t = 0;
   speed = 1;
@@ -42,6 +61,8 @@ export class Viewer {
   fillMs = 0;
   frameMs = 0;
   count = 0;
+  gpuCandidateCount = 0;
+  readonly frameTimes = new FrameTimes();
   duration = 0;
   private readonly world;
   private props = new THREE.Group();
@@ -65,40 +86,61 @@ export class Viewer {
       antialias: false,
       powerPreference: 'high-performance',
     });
+    this.profiler = new FrameProfiler(this.renderer.getContext());
     this.renderer.setPixelRatio(Math.min(MAX_DPR, prototypeOr(window.devicePixelRatio, 1)));
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.NoToneMapping;
-    this.renderer.domElement.style.cssText = 'display:block;width:100%;height:100%';
-    this.renderer.domElement.setAttribute('aria-label', 'Firework preview');
-    container.appendChild(this.renderer.domElement);
+    this.cleanups.push(mountViewerSurface(container, this.renderer.domElement));
+    this.controls = new StageControls(this.camera, this.renderer.domElement, () => {
+      this.invalidate();
+    });
+    this.controls.enabled = options.controls !== false;
+    this.cleanups.push(
+      viewerInput(this, container, this.renderer.domElement, options.clickToPause !== false),
+    );
     this.world = makeWorld(this.scene);
-    this.scene.add(this.layers.group);
+    this.scene.add(this.layers.group, this.gpuSprays.points);
     this.output = new OutputPass(this.renderer, options.forceLdr);
+    this.cleanups.push(
+      onVisualSettings(applyViewerSettings.bind(null, this, this.world)),
+      onSettings(() => {
+        this.sound.configure();
+        this.emit();
+      }),
+    );
     this.setShots(this.shots);
     this.t = Math.max(0, Math.min(this.duration, options.startAt ?? 0));
     this.playing =
       options.autoplay !== false && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (options.ui === true) this.cleanups.push(buildPlayer(this));
     this.resizeObserver = new ResizeObserver(() => {
       this.resize();
     });
     this.resizeObserver.observe(container);
-    this.intersectionObserver = new IntersectionObserver((entries) => {
-      this.onScreen = entries[0]?.isIntersecting ?? false;
-      this.last = 0;
-      if (!this.onScreen) this.cancelFrame();
-      else this.invalidate();
-    });
+    this.intersectionObserver = new IntersectionObserver(this.intersectionChanged.bind(this));
     this.intersectionObserver.observe(container);
     document.addEventListener('visibilitychange', this.visibilityChanged);
     this.resize();
+    this.sound.listen();
   }
 
+  private intersectionChanged(entries: IntersectionObserverEntry[]): void {
+    // This observer owns one stage; a batch can contain both its exit and re-entry.
+    // Use the latest queued state or an earlier exit can strand a dirty draw without a RAF.
+    const latest = entries.at(-1);
+    if (!latest || this.disposed) return;
+    this.onScreen = latest.isIntersecting;
+    this.last = 0;
+    if (!this.onScreen) this.cancelFrame();
+    else this.invalidate();
+  }
   private visibilityChanged = (): void => {
     this.last = 0;
     if (document.hidden) this.cancelFrame();
     else this.invalidate();
   };
   private cancelFrame(): void {
+    this.sound.hush();
     cancelAnimationFrame(this.raf);
     this.raf = 0;
   }
@@ -108,50 +150,33 @@ export class Viewer {
       this.raf === 0 &&
       this.onScreen &&
       !document.hidden &&
-      (this.dirty || this.playing)
+      (this.dirty || this.playing || this.profiler.waiting || this.cameraMoving)
     )
       this.raf = requestAnimationFrame(this.frame);
   }
-  private frame = (now: number): void => {
+  private frame = this.drawFrame.bind(this);
+  private drawFrame(now: number): void {
     this.raf = 0;
     if (this.disposed || !this.onScreen || document.hidden) return;
     const dt = this.last !== 0 ? (now - this.last) / MS_PER_SECOND : 0;
     this.last = now;
-    if (this.playing) this.advancePlayback(dt);
-    if (this.dirty || this.playing || dt > 0) {
-      this.draw();
+    if (this.playing) {
+      this.frameTimes.record(dt * MS_PER_SECOND);
+      this.advancePlayback(dt);
+    }
+    this.cameraMoving = this.controls.update(now);
+    this.sound.frame(this);
+    if (this.profiler.poll()) this.emit();
+    if (this.dirty || this.playing || this.cameraMoving) {
+      applyViewerShake(this, this.shake, this.shakeOffset, this.cameraPosition);
+      drawViewerFrame(this, this.gpuSprays);
       this.dirty = false;
       this.emit();
     }
     this.schedule();
-  };
-  private advancePlayback(dt: number): void {
-    if (dt > 0) this.fps = this.fps * FPS_OLD_WEIGHT + (1 / dt) * (1 - FPS_OLD_WEIGHT);
-    const next = this.t + dt * this.speed;
-    if (next > this.duration) {
-      if (this.options.loop !== false && this.duration > 0) this.t = next % this.duration;
-      else {
-        this.t = this.duration;
-        this.playing = false;
-      }
-    } else this.t = next;
   }
-  private draw(): void {
-    const start = performance.now();
-    const frames = this.shots.flatMap((shot, index) => {
-      const time = this.t - (shot.t0 ?? 0);
-      if (time < 0 || time > shotDuration(shot.design)) return [];
-      const placement =
-        this.options.prop === 'cake' ? { position: cakeHole(index), muzzle_m: CAKE_TOP_M } : {};
-      return [simulate(shot.design, time, { ...shot, ...placement })];
-    });
-    this.layers.upload(frames);
-    this.count = frames.reduce((sum, frame) => sum + frame.kinds.length, 0);
-    this.fillMs =
-      this.fillMs * TIMING_OLD_WEIGHT + (performance.now() - start) * (1 - TIMING_OLD_WEIGHT);
-    this.output.render(this.renderer, this.scene, this.camera);
-    this.frameMs =
-      this.frameMs * TIMING_OLD_WEIGHT + (performance.now() - start) * (1 - TIMING_OLD_WEIGHT);
+  private advancePlayback(dt: number): void {
+    if (advanceViewerPlayback(this, dt)) this.dirty = true;
   }
   private emit(): void {
     for (const listener of this.listeners) listener(this);
@@ -170,13 +195,29 @@ export class Viewer {
       (height * dpr) / (2 * Math.tan((FOV_DEG * Math.PI) / HALF_TURN_DEG / 2));
     this.layers.uniforms.uDpr.value = dpr;
     this.world.resize(height, dpr);
-    this.resetCamera();
+    if (!this.controls.touched) this.resetCamera(true);
+    else this.invalidate();
+  }
+
+  /** Captures phase timings for the next visible draw without changing show time. */
+  profileFrame(): void {
+    this.profiler.request();
+    this.invalidate();
+  }
+
+  /** Selects CPU reference or GPU sprays for developer comparisons and redraws the same instant. */
+  setSprayMode(mode: 'cpu' | 'gpu'): void {
+    this.sprayMode = mode;
+    resetViewerReadout(this);
+    this.last = 0;
+    this.invalidate();
   }
 
   /** Starts playback, restarting an ended, non-looping sequence. */
   play(): void {
     if (this.disposed) return;
     if (this.t >= this.duration) this.t = 0;
+    this.sound.reset(this.t);
     this.playing = true;
     this.last = 0;
     this.emit();
@@ -187,6 +228,10 @@ export class Viewer {
     if (this.disposed) return;
     this.playing = false;
     this.last = 0;
+    this.cancelFrame();
+    this.controls.stop();
+    this.cameraMoving = false;
+    this.invalidate();
     this.emit();
   }
   /** Toggles the current playback state. */
@@ -197,65 +242,64 @@ export class Viewer {
   /** Seeks to a clamped sequence time in seconds and requests an exact redraw. */
   seek(time_s: number): void {
     if (this.disposed) return;
+    if (!Number.isFinite(time_s)) throw new RangeError('Seek time must be finite');
     this.t = Math.max(0, Math.min(this.duration, time_s));
+    this.sound.reset(this.t);
     this.last = 0;
     this.invalidate();
     this.emit();
   }
-  /** Replaces the firing sequence, rebuilding and releasing launch hardware. */
-  setShots(shots: readonly Shot[]): void {
+  /** Sets a finite positive speed multiplier; one means real time. */
+  setSpeed(speed: number): void {
+    if (!Number.isFinite(speed) || speed <= 0)
+      throw new RangeError('Playback speed must be positive');
+    if (this.disposed) return;
+    this.sound.reset(this.t);
+    this.speed = speed;
+    this.emit();
+  }
+  /** Replaces firing-relative seconds and metre placements; keepCamera retains the user pose. */
+  setShots(shots: readonly Shot[], keepCamera = false): void {
     if (this.disposed) return;
     this.shots = shots;
+    this.sound.setShots(soundShots(this));
+    resetViewerReadout(this);
+    this.last = 0;
     this.duration = Math.max(0, ...shots.map((shot) => (shot.t0 ?? 0) + shotDuration(shot.design)));
     this.t = Math.min(this.t, this.duration);
     this.scene.remove(this.props);
     disposeTree(this.props);
     this.props = makeProps(shots, this.options.prop ?? 'mortar');
     this.scene.add(this.props);
-    this.resetCamera();
+    this.shake = shakeEvents(shots);
+    if (!keepCamera) this.resetCamera(true);
     this.invalidate();
     this.emit();
   }
   /** Replaces the sequence with one stored design; keepCamera preserves the projection. */
   setDesign(design: Design, keepCamera = false): void {
-    const position = this.camera.position.clone();
-    const rotation = this.camera.rotation.clone();
-    this.setShots([{ design }]);
-    if (keepCamera) {
-      this.camera.position.copy(position);
-      this.camera.rotation.copy(rotation);
-    }
+    this.setShots([{ design }], keepCamera);
   }
-  /** Restores a fixed review view fitted to sampled CPU particle bounds in world metres. */
-  resetCamera(): void {
+  /** Restores prototype framing in world metres; snap skips camera easing. */
+  resetCamera(snap = false): void {
     if (this.disposed) return;
-    let minX = -MIN_EXTENT_M;
-    let maxX = MIN_EXTENT_M;
-    let top = MIN_EXTENT_M;
-    for (const shot of this.shots) {
-      const design = resolveDesign(shot.design);
-      const preview = simulate(design, reviewTime(design), shot);
-      for (let i = 0; i < preview.positions.length; i += VECTOR_COMPONENTS) {
-        minX = Math.min(minX, preview.positions[i] ?? 0);
-        maxX = Math.max(maxX, preview.positions[i] ?? 0);
-        top = Math.max(top, preview.positions[i + 1] ?? 0);
-      }
-      top = Math.max(top, design.launch?.height_m ?? 0);
-    }
-    const targetY = top / 2;
-    const halfWidth = (maxX - minX) / 2;
-    // A perspective frustum grows by tan(fov/2); the larger dimension sets distance.
-    const distance =
-      (FIT_PADDING * Math.max(top / 2, halfWidth / this.camera.aspect)) /
-      Math.tan((FOV_DEG * Math.PI) / HALF_TURN_DEG / 2);
-    this.camera.position.set((minX + maxX) / 2, targetY * CAMERA_HEIGHT_FRACTION, distance);
-    this.camera.lookAt((minX + maxX) / 2, targetY, 0);
-    this.invalidate();
+    this.controls.frame(framingFor(this.shots, false, this.camera.aspect, this.camera.fov), snap);
+  }
+  /** Whether live drawing owns the frame budget; background posters yield throughout playback. */
+  get liveDrawPending(): boolean {
+    return (
+      !this.disposed &&
+      this.onScreen &&
+      !document.hidden &&
+      (this.dirty || this.playing || this.cameraMoving)
+    );
   }
   /** Marks externally changed data dirty and schedules a visible redraw. */
   invalidate(): void {
     if (this.disposed) return;
     this.dirty = true;
+    // Retain the last completed draw time; pending distinguishes repeated seeks from completed draws.
+    this.renderer.domElement.dataset.drawPending = 'true';
     this.schedule();
   }
   /** Subscribes to playback changes and returns an unsubscribe function. */
@@ -267,42 +311,19 @@ export class Viewer {
       this.listeners.delete(listener);
     };
   }
-  /** Draws a caller-selected still through this context and returns an encoded PNG. */
-  capture(width?: number, height?: number): string {
-    if (this.disposed) throw new Error('Viewer is disposed.');
-    if (width !== undefined && height !== undefined) this.resize(width, height);
-    try {
-      this.draw();
-      return this.renderer.domElement.toDataURL('image/png');
-    } finally {
-      if (width !== undefined && height !== undefined) this.resize();
-    }
-  }
   /** Cancels callbacks, disconnects observers and frees all scene, target and context resources. */
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.sound.dispose();
     this.cancelFrame();
     this.resizeObserver.disconnect();
     this.intersectionObserver.disconnect();
     document.removeEventListener('visibilitychange', this.visibilityChanged);
+    for (const cleanup of this.cleanups) cleanup();
+    this.controls.dispose();
     this.listeners.clear();
-    this.scene.remove(this.layers.group);
-    this.layers.dispose();
-    disposeTree(this.scene);
-    this.output.dispose();
-    this.renderer.dispose();
-    this.renderer.forceContextLoss();
+    disposeViewerScene(this, this.gpuSprays);
     this.renderer.domElement.remove();
   }
-}
-
-// Review stills show developed trails: half a second after apex, or half way through ground effects.
-const REVIEW_AFTER_APEX_S = 0.5;
-const GROUND_REVIEW_FRACTION = 0.4;
-/** Chooses a readable review time in seconds for a stored design. */
-export function reviewTime(design: Design): number {
-  return design.launch
-    ? design.launch.time_s + REVIEW_AFTER_APEX_S
-    : shotDuration(design) * GROUND_REVIEW_FRACTION;
 }

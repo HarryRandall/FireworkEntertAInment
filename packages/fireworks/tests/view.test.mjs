@@ -53,11 +53,58 @@ test('shared hardware resources dispose once and cake tubes wrap at their own to
   assert.equal(props.children.length, 1, 'Shared launch position owns one mortar');
   assert.deepEqual(cakeHole(0), cakeHole(25));
   const cake = makeProps([], 'cake');
-  assert.equal(cake.children.length, 27);
-  for (const hole of cake.children.slice(2)) assert.equal(hole.position.y, CAKE_TOP_M);
+  assert.equal(cake.children.length, 1, 'Cake box, lid and holes share one draw');
+  const vertices = cake.children[0].geometry.getAttribute('position');
+  assert.ok(
+    Array.from({ length: vertices.count }, (_, index) => vertices.getY(index)).some(
+      (height) => Math.abs(height - CAKE_TOP_M) < 1e-6,
+    ),
+    'Baked holes retain their muzzle height',
+  );
   let materialDisposals = 0;
-  cake.children[2].material.addEventListener('dispose', () => materialDisposals++);
+  cake.children[0].material.addEventListener('dispose', () => materialDisposals++);
   disposeTree(cake);
-  assert.equal(materialDisposals, 1, 'Shared hole material is freed once');
+  assert.equal(materialDisposals, 1, 'Batched hardware material is freed once');
   disposeTree(props);
+});
+
+test('direct packing retains every scalar lane and order across mixed frames and shrinking uploads', () => {
+  const layers = new ParticleLayers();
+  const frames = [simulate(peony, 0.7), simulate(peony, DEVELOPED_TIME_S), simulate(peony, 3.4)];
+  for (const input of [frames, frames.slice(1), [], frames]) {
+    layers.upload(input);
+    const [smoke, quads, points] = layers.group.children;
+    for (const [mesh, instanced] of [
+      [points, false],
+      [quads, true],
+    ]) {
+      const expected = { position: [], colour: [], size: [], alpha: [], shape: [] };
+      for (const frame of input) {
+        for (let index = 0; index < frame.kinds.length; index++) {
+          const kind = frame.kinds[index];
+          if ((kind !== 0) !== instanced) continue;
+          expected.position.push(...frame.positions.slice(index * 3, (index + 1) * 3));
+          expected.colour.push(...frame.colours.slice(index * 3, (index + 1) * 3));
+          expected.size.push(frame.sizes[index]);
+          expected.alpha.push(frame.alphas[index]);
+          expected.shape.push(kind === 3 ? 0 : kind);
+        }
+      }
+      for (const [key, attribute] of [
+        ['position', instanced ? 'iPos' : 'position'],
+        ['colour', instanced ? 'iColor' : 'color'],
+        ['size', instanced ? 'iSize' : 'size'],
+        ['alpha', instanced ? 'iAlpha' : 'alpha'],
+        ...(instanced ? [['shape', 'iShape']] : []),
+      ]) {
+        const values = mesh.geometry.getAttribute(attribute).array;
+        assert.deepEqual([...values.slice(0, expected[key].length)], expected[key], attribute);
+      }
+    }
+    assert.equal(
+      smoke.geometry.instanceCount,
+      input.reduce((sum, frame) => sum + frame.smoke.sizes.length, 0),
+    );
+  }
+  layers.dispose();
 });

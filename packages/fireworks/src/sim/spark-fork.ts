@@ -1,52 +1,37 @@
 /** Fork child geometry for the allocation-free CPU spray kernel. */
+import { sparkTuning } from './spark-tuning';
+
 import type { SprayOptions } from './spray';
 import { packedNumber, type SparkWorkspace } from './spark-state';
 import { hash } from './random';
 
-// Packed vector layout: three components per position or colour.
-const VECTOR_COMPONENTS = 3;
-// Packed reference row: x/verticalUnit/z/horizontalUnit/g/b/size/alpha, eight scalar values.
-const SPARK_STRIDE = 8;
-// Prototype deterministic seed partition: fork stream (dimensionless hash stream).
-const FORK_STREAM = 8;
-// Prototype deterministic seed partition: fork time stream (dimensionless hash stream).
-const FORK_TIME_STREAM = 5;
-// Prototype deterministic seed partition: fork key stride (dimensionless key multiplier).
-const FORK_KEY_STRIDE = 5;
-// Prototype deterministic seed partition: fork seed offset (dimensionless seed offset).
-const FORK_SEED_OFFSET = 7;
-// Prototype deterministic seed partition: fork vertical stream (dimensionless hash stream).
-const FORK_VERTICAL_STREAM = 31;
-// Prototype deterministic seed partition: fork azimuth stream (dimensionless hash stream).
-const FORK_AZIMUTH_STREAM = 32;
-// Prototype visual tuning: fork count (children per fork).
-const FORK_COUNT = 4;
-// Prototype visual tuning: fork speed m s (m/s).
-const FORK_SPEED_M_S = 3;
-// Prototype visual tuning: fork decay per s (1/s).
-const FORK_DECAY_PER_S = 3;
-// Prototype visual tuning: fork colour weight (linear RGB fraction).
-const FORK_COLOUR_WEIGHT = 0.5;
-// Prototype visual tuning: fork white weight (linear RGB fraction).
-const FORK_WHITE_WEIGHT = 0.5;
-// Prototype visual tuning: fork time min (life fraction).
-const FORK_TIME_MIN = 0.25;
-// Prototype visual tuning: fork time range (life fraction).
-const FORK_TIME_RANGE = 0.4;
-// Prototype visual tuning: fork life s (seconds).
-const FORK_LIFE_S = 0.12;
-// Prototype visual tuning: fork size factor (size multiplier).
-const FORK_SIZE_FACTOR = 0.2;
-// Prototype visual tuning: spark alpha max (opacity multiplier).
-const SPARK_ALPHA_MAX = 1.6;
-// Prototype visual tuning: fork tau rad (radians, rounded full turn).
-const FORK_TAU_RAD = 6.2832;
-// Packed x/verticalUnit/z/horizontalUnit/g/b/size/alpha offsets, scalar lanes in the CPU reference row.
-const COLOUR_OFFSET = 3;
+const {
+  VECTOR_COMPONENTS,
+  SPARK_STRIDE,
+  FORK_STREAM,
+  FORK_TIME_STREAM,
+  FORK_KEY_STRIDE,
+  FORK_SEED_OFFSET,
+  FORK_VERTICAL_STREAM,
+  FORK_AZIMUTH_STREAM,
+  FORK_COUNT,
+  FORK_SPEED_M_S,
+  FORK_DECAY_PER_S,
+  FORK_COLOUR_WEIGHT,
+  FORK_WHITE_WEIGHT,
+  FORK_TIME_MIN,
+  FORK_TIME_RANGE,
+  FORK_LIFE_S,
+  FORK_SIZE_FACTOR,
+  SPARK_ALPHA_MAX,
+  FORK_TAU_RAD,
+  COLOUR_OFFSET,
+  NO_FORK,
+} = sparkTuning;
+
+// Scalar lanes in the packed x/y/z/r/g/b/size/alpha reference output.
 const SIZE_OFFSET = 6;
 const ALPHA_OFFSET = 7;
-// Fork selector sentinel: -1 means the parent remains active; zero means it is spent.
-const NO_FORK = -1;
 
 /** Writes fork rows from initialised scratch on a finite source clock in seconds.
  * Returns -1 for an unforked parent, zero for spent children or the written child count.

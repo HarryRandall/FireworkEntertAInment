@@ -8,6 +8,7 @@ const EXPECT_TIMEOUT_MS = 30_000;
 const RETRIES = 1;
 export default defineConfig({
   testDir: './tests/browser',
+  snapshotPathTemplate: '{testDir}/../../packages/fireworks/tests/snapshots/{arg}{ext}',
   outputDir: './output/playwright/results',
   timeout: TEST_TIMEOUT_MS,
   expect: { timeout: EXPECT_TIMEOUT_MS },

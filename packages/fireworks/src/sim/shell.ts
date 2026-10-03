@@ -1,27 +1,25 @@
 /** Stateless simulation entry point for launches, shell breaks and ground effects. */
+import type { SimulationOptions } from './simulation-options';
+export type { SimulationOptions } from './simulation-options';
 import { prototypeOr } from './numeric';
 import { resolveDesign, type Design, type Fade } from '../schema/index';
 import { brightnessAt, colourAt, rgb, type Vec3 } from './colour';
 import { fillCore } from './core';
 import { directions } from './directions';
-import { fadeAlpha, starAppearance } from './fade';
-import { MUZZLE_M, launchPos, type ShotPlacement } from './launch';
+import { starAppearance } from './fade';
+import { fillStarTrail } from './shell-trail';
+import { MUZZLE_M, launchPos } from './launch';
 import { launchTailColour } from './launch-colour';
 import { LAUNCH_STYLES } from './launch-styles';
 import { fillGround } from './kinds/ground';
-import { fillModifierEvents, parentEnd, trailControls, type ModifierEventState } from './modifiers';
+import { fillModifierEvents, parentEnd, type ModifierEventState } from './modifiers';
 import { fillLaunchSpray } from './launch-spray';
 import { burstSmoke, SMOKE_RGB } from './smoke';
-import { spray, TRAIL_DENSITY, TRAIL_LIFE } from './spray';
 import { starPos } from './motion';
 import { ParticleWriter, type Particles } from './particles';
 
 // Prototype deterministic seed partition: layer direction seed scale (dimensionless seed multiplier).
 const LAYER_DIRECTION_SEED_SCALE = 13;
-// Prototype deterministic seed partition: trail seed scale (dimensionless seed multiplier).
-const TRAIL_SEED_SCALE = 1009;
-// Prototype deterministic seed partition: trail layer seed step (dimensionless seed offset).
-const TRAIL_LAYER_SEED_STEP = 131;
 // Prototype deterministic seed partition: flare smoke seed step (dimensionless seed offset).
 const FLARE_SMOKE_SEED_STEP = 0.7;
 // Prototype visual tuning: mine flash size range (renderer size).
@@ -64,29 +62,12 @@ const FLARE_GLOW_SIZE = 2.5;
 const FLARE_SIZE_THRESHOLD = 2.4;
 // Prototype visual tuning: star burn shrink (size multiplier).
 const STAR_BURN_SHRINK = 0.65;
-// Prototype visual tuning: strobe trail alpha (opacity).
-const STROBE_TRAIL_ALPHA = 0.25;
-// Prototype visual tuning: trail end life (life fraction).
-const TRAIL_END_LIFE = 0.92;
-// Prototype visual tuning: trail start s (seconds).
-const TRAIL_START_S = 0.02;
 // Prototype visual tuning: half turn deg (degrees, angle conversion).
 const HALF_TURN_DEG = 180;
 // Prototype deterministic seed partition: launch strobe seed phase (cycles per seed).
 const LAUNCH_STROBE_SEED_PHASE = 0.37;
 // Prototype visual tuning: mine flash s (seconds).
 const MINE_FLASH_S = 0.2;
-
-export interface SimulationOptions extends ShotPlacement {
-  /** Optional deterministic seed override; zero retains the stored seed fallback. */
-  seed?: number;
-  /** Whether to emit CPU spray points; enabled by default. */
-  sprays?: boolean;
-  /** Whether to emit smoke attributes; enabled by default. */
-  smoke?: boolean;
-  /** Whether to emit flame, blossoms and climb crackle; enabled by default. */
-  launchEffects?: boolean;
-}
 
 /**
  * Simulates fresh particle arrays for a design at a firing-relative time.
@@ -102,7 +83,14 @@ export function simulate(
 ): Particles {
   design = resolveDesign(design);
   if (!Number.isFinite(time_s)) throw new RangeError('Simulation time must be finite');
-  const writer = new ParticleWriter(options.sprays, options.smoke, options.launchEffects);
+  const writer = new ParticleWriter(
+    options.sprays,
+    options.smoke,
+    options.launchEffects,
+    options.sprayBirth,
+  );
+  writer.sprayPhase = options.sprayPhase;
+  writer.spraySource = options.spraySource;
   if (time_s < 0) return writer.finish();
   // Preserve the prototype's seed-zero fallback, including for a playback override.
   const seed = prototypeOr(options.seed ?? design.seed, 1);
@@ -250,43 +238,6 @@ function fillStars(writer: ParticleWriter, state: ShellLayerState): void {
     fillStarHead(writer, state);
     fillModifierEvents(writer, state);
   });
-}
-function fillStarTrail(writer: ParticleWriter, state: ShellLayerState): void {
-  const { layer, direction, seed, age, centre, life, fade } = state;
-  const index = state.layerIndex;
-  const starIndex = state.index;
-  const appearance = state.appearance;
-  const controls = trailControls(layer);
-  const strobe = layer.modifiers.some((m) => m.kind === 'strobe');
-  const twinkle = layer.modifiers.some((m) => m.kind === 'twinkle');
-  const tail =
-    layer.trail.colour === 'star'
-      ? appearance.base
-      : rgb(layer.trail.colour === 'house' ? '#ffe2a8' : layer.trail.colour);
-  spray(
-    writer,
-    (t) => starPos(layer, direction, t, centre),
-    TRAIL_START_S,
-    Math.min(parentEnd(layer, life), life * TRAIL_END_LIFE),
-    age,
-    {
-      count: Math.round(layer.trail.sparks * TRAIL_DENSITY),
-      life: layer.trail.length_s * TRAIL_LIFE,
-      spread: layer.trail.spread_m_s,
-      gravity: layer.trail.gravity_m_s2,
-      drag: layer.trail.drag_per_s,
-      size: layer.trail.size,
-      flicker: layer.trail.flicker,
-      glitter: controls.glitter,
-      glitterDelay: controls.glitter_delay_s,
-      fork: layer.trail.fork,
-      colour: tail,
-      seed: seed * TRAIL_SEED_SCALE + index * TRAIL_LAYER_SEED_STEP + starIndex,
-      alphaAt: strobe || twinkle ? undefined : (t) => fadeAlpha(fade, t, life),
-      alpha: strobe ? STROBE_TRAIL_ALPHA : 1,
-      inherit: 0,
-    },
-  );
 }
 function fillStarHead(writer: ParticleWriter, state: ShellLayerState): void {
   const { layer, direction, seed, age, life } = state;

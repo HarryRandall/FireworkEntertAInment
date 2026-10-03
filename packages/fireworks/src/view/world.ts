@@ -45,9 +45,9 @@ const float FINE_M = 5.0, COARSE_M = 25.0, FADE_START_M = 15.0, FADE_END_M = 140
 const float FINE_FADE_START_M = 20.0, FINE_FADE_END_M = 60.0;
 const float FINE_GAIN = 0.3, COARSE_GAIN = 0.9;
 const vec3 BASE = vec3(0.0022,0.0024,0.0032), GRID = vec3(0.005,0.008,0.014);
-varying vec3 vW;
+varying vec3 vW; uniform float uGrid;
 float line(vec2 p,float s){vec2 q=p/s;vec2 g=abs(fract(q-0.5)-0.5)/fwidth(q);return 1.0-min(min(g.x,g.y),1.0);}
-void main(){float d=length(vW.xz);float fade=1.0-smoothstep(FADE_START_M,FADE_END_M,d);float g=max(line(vW.xz,FINE_M)*FINE_GAIN*(1.0-smoothstep(FINE_FADE_START_M,FINE_FADE_END_M,d)),line(vW.xz,COARSE_M)*COARSE_GAIN);gl_FragColor=vec4(BASE+GRID*g*fade,1.0);}`;
+void main(){float d=length(vW.xz);float fade=1.0-smoothstep(FADE_START_M,FADE_END_M,d);float g=max(line(vW.xz,FINE_M)*FINE_GAIN*(1.0-smoothstep(FINE_FADE_START_M,FINE_FADE_END_M,d)),line(vW.xz,COARSE_M)*COARSE_GAIN);gl_FragColor=vec4(BASE+GRID*g*fade*uGrid,1.0);}`;
 const starVertex = `
 // Prototype star size, in CSS pixels, and magnitude gain (normalised).
 const float BASE_PX = 0.8, MAG_GAIN_PX = 1.4;
@@ -76,11 +76,19 @@ export function makeWorld(scene: THREE.Scene) {
   scene.add(stars);
   const ground = new THREE.Mesh(
     new THREE.CircleGeometry(GROUND_RADIUS_M, GROUND_SEGMENTS),
-    new THREE.ShaderMaterial({ vertexShader: groundVertex, fragmentShader: groundFragment }),
+    new THREE.ShaderMaterial({
+      uniforms: { uGrid: { value: 1 } },
+      vertexShader: groundVertex,
+      fragmentShader: groundFragment,
+    }),
   );
   ground.rotation.x = -Math.PI / 2;
   scene.add(ground);
   return {
+    setSettings(showStars: boolean, showGrid: boolean) {
+      stars.visible = showStars;
+      ground.material.uniforms.uGrid = { value: showGrid ? 1 : 0 };
+    },
     resize(height: number, dpr: number) {
       uniforms.uDpr.value = dpr;
       uniforms.uView.value = Math.max(

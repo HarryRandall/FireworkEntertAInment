@@ -7,7 +7,7 @@ import { launchTailColour } from './launch-colour';
 import { LAUNCH_STYLES, type LaunchStyle } from './launch-styles';
 import type { ParticleWriter } from './particles';
 import { hash } from './random';
-import { spray } from './spray';
+import { sourceSpray } from './spray-source';
 import { launchSmoke } from './smoke';
 
 // Prototype blossom quadratic fall coefficient, in m/s² (half the acceleration).
@@ -122,22 +122,30 @@ export function fillLaunchSpray(
   const star = rgb(palette?.[0] ?? '#ffe2a8');
   const tailColour = launchTailColour(style, star);
   const path = (time: number): Vec3 => launchPos(launch, seed, time, placement);
-  spray(writer, path, 0, climbTimeS, local, {
-    count: Math.round(launch.sparks * style.sparks),
-    life: style.life * LAUNCH_LIFE_FACTOR,
-    spread: launch.spread * style.spread,
-    gravity: style.gravity,
-    drag: style.drag ?? LAUNCH_DRAG_PER_S,
-    size: LAUNCH_SIZE_FACTOR * style.size,
-    flicker: style.flicker,
-    glitter: style.glitter,
-    glitterDelay: style.glitterDelay,
-    fork: style.fork,
-    colour: tailColour,
-    seed: seed * LAUNCH_SEED_SCALE + LAUNCH_SEED_OFFSET,
-    inherit: style.inherit ?? LAUNCH_INHERIT,
-    cluster: LAUNCH_CLUSTER,
-  });
+  sourceSpray(
+    writer,
+    path,
+    0,
+    climbTimeS,
+    local,
+    {
+      count: Math.round(launch.sparks * style.sparks),
+      life: style.life * LAUNCH_LIFE_FACTOR,
+      spread: launch.spread * style.spread,
+      gravity: style.gravity,
+      drag: style.drag ?? LAUNCH_DRAG_PER_S,
+      size: LAUNCH_SIZE_FACTOR * style.size,
+      flicker: style.flicker,
+      glitter: style.glitter,
+      glitterDelay: style.glitterDelay,
+      fork: style.fork,
+      colour: tailColour,
+      seed: seed * LAUNCH_SEED_SCALE + LAUNCH_SEED_OFFSET,
+      inherit: style.inherit ?? LAUNCH_INHERIT,
+      cluster: LAUNCH_CLUSTER,
+    },
+    () => ({ kind: 'launch', launch, seed, placement }),
+  );
   const context = { style, climbTimeS, local, path, seed, palette };
   fillMotorFlame(writer, context);
   fillClimbBlossoms(writer, context);

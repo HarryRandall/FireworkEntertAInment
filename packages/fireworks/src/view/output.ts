@@ -1,5 +1,6 @@
 /** One HDR scene target and one full-screen output draw compress and encode light. */
 import * as THREE from 'three';
+import type { FrameProfiler } from './frame-profile';
 
 const vertexShader = 'varying vec2 vUv; void main(){vUv=uv;gl_Position=vec4(position.xy,0.0,1.0);}';
 const fragmentShader = `
@@ -49,11 +50,24 @@ export class OutputPass {
     this.target.setSize(width, height);
   }
   /** Draws the scene into linear colour, then encodes it once into the canvas. */
-  render(renderer: THREE.WebGLRenderer, scene: THREE.Scene, camera: THREE.Camera): void {
+  render(
+    renderer: THREE.WebGLRenderer,
+    scene: THREE.Scene,
+    camera: THREE.Camera,
+    profiler?: FrameProfiler,
+  ): void {
     renderer.setRenderTarget(this.target);
-    renderer.render(scene, camera);
+    const draw = () => {
+      renderer.render(scene, camera);
+    };
+    if (profiler) profiler.pass('draw', draw);
+    else draw();
     renderer.setRenderTarget(null);
-    renderer.render(this.scene, this.camera);
+    const output = () => {
+      renderer.render(this.scene, this.camera);
+    };
+    if (profiler) profiler.pass('output', output);
+    else output();
   }
   /** Frees the colour target and full-screen geometry and material. */
   dispose(): void {

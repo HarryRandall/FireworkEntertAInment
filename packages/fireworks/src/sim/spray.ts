@@ -40,6 +40,8 @@ export const TRAIL_DENSITY = 2.2;
 export const TRAIL_LIFE = 1.35;
 // Prototype streak sample cap, in points per spark, bounds the reference kernel.
 const MAX_STREAK = 16;
+// GPU receivers do not need a reference output buffer; this empty sentinel is never written.
+const GPU_REFERENCE_OUTPUT = new Float64Array(0);
 
 // Packed x/y/z/r/g/b/size/alpha offsets, scalar lanes in the CPU reference row.
 const COLOUR_OFFSET = 3;
@@ -149,6 +151,18 @@ export function spraySlots(
   return slots;
 }
 
+/** Synchronous birth hand-off: seconds on the source clock, metre origin, inherited m/s.
+ * The receiver must copy reused velocity lanes before returning; controls are validated. */
+// eslint-disable-next-line max-params -- The synchronous sampled birth boundary keeps tuples and controls separate without a wrapper allocation.
+export type SprayBirthSink = (
+  slot: SpraySlot,
+  origin: Vec3,
+  inherited: Vec3,
+  alpha: number,
+  now: number,
+  options: SprayOptions,
+) => void;
+
 /** Appends live spray points by sampling source positions in metres at birth.
  * start, end and now are seconds on the source clock; options supplies tuning. */
 // eslint-disable-next-line max-params -- The source-clock API keeps its tested start/end/now scalars and existing controls without adding a source object in star loops.
@@ -161,48 +175,11 @@ export function spray(
   options: SprayOptions,
 ): void {
   if (!writer.sprays) return;
-  const velocity: Vec3 = [0, 0, 0];
-  const out = new Float64Array((MAX_STREAK + 1) * SPARK_STRIDE);
-  for (const slot of spraySlots(start, end, now, options)) {
-    const emissionTime = slot.emissionTime;
-    const alpha = options.alphaAt ? options.alphaAt(emissionTime) : (options.alpha ?? 1);
-    if (alpha <= BIRTH_ALPHA_CUTOFF) continue;
-    const origin = source(emissionTime);
-    sampleInheritedVelocity(
-      velocity,
-      source,
-      emissionTime,
-      end,
-      options.inherit ?? DEFAULT_INHERIT,
-    );
-    const count = sparkState(
-      slot.id,
-      slot.age,
-      slot.life,
-      now,
-      origin[0],
-      origin[1],
-      origin[2],
-      velocity[0],
-      velocity[1],
-      velocity[2],
-      alpha,
-      options,
-      out,
-    );
-    for (let i = 0; i < count; i++) {
-      const offset = i * SPARK_STRIDE;
-      writer.spark(
-        [packedNumber(out, offset), packedNumber(out, offset + 1), packedNumber(out, offset + 2)],
-        [
-          packedNumber(out, offset + COLOUR_OFFSET),
-          packedNumber(out, offset + COLOUR_OFFSET + 1),
-          packedNumber(out, offset + COLOUR_OFFSET + 2),
-        ],
-        packedNumber(out, offset + SIZE_OFFSET),
-        packedNumber(out, offset + ALPHA_OFFSET),
-      );
-    }
+  writer.sprayPhase?.(true);
+  try {
+    sampleSpray(writer, source, start, end, now, options);
+  } finally {
+    writer.sprayPhase?.(false);
   }
 }
 
@@ -230,4 +207,68 @@ function sampleInheritedVelocity(
   velocity[0] = velocityX;
   velocity[1] = velocityY;
   velocity[2] = velocityZ;
+}
+
+function appendReferenceSamples(writer: ParticleWriter, out: Float64Array, count: number): void {
+  for (let i = 0; i < count; i++) {
+    const offset = i * SPARK_STRIDE;
+    writer.spark(
+      [packedNumber(out, offset), packedNumber(out, offset + 1), packedNumber(out, offset + 2)],
+      [
+        packedNumber(out, offset + COLOUR_OFFSET),
+        packedNumber(out, offset + COLOUR_OFFSET + 1),
+        packedNumber(out, offset + COLOUR_OFFSET + 2),
+      ],
+      packedNumber(out, offset + SIZE_OFFSET),
+      packedNumber(out, offset + ALPHA_OFFSET),
+    );
+  }
+}
+
+// eslint-disable-next-line max-params -- Keep the source-clock scalars separate at this profiled kernel boundary, avoiding an options object allocation per emitting star.
+function sampleSpray(
+  writer: ParticleWriter,
+  source: (time: number) => Vec3,
+  start: number,
+  end: number,
+  now: number,
+  options: SprayOptions,
+): void {
+  const velocity: Vec3 = [0, 0, 0];
+  const out = writer.sprayBirth
+    ? GPU_REFERENCE_OUTPUT
+    : new Float64Array((MAX_STREAK + 1) * SPARK_STRIDE);
+  for (const slot of spraySlots(start, end, now, options)) {
+    const emissionTime = slot.emissionTime;
+    const alpha = options.alphaAt ? options.alphaAt(emissionTime) : (options.alpha ?? 1);
+    if (alpha <= BIRTH_ALPHA_CUTOFF) continue;
+    const origin = source(emissionTime);
+    sampleInheritedVelocity(
+      velocity,
+      source,
+      emissionTime,
+      end,
+      options.inherit ?? DEFAULT_INHERIT,
+    );
+    if (writer.sprayBirth) {
+      writer.sprayBirth(slot, origin, velocity, alpha, now, options);
+      continue;
+    }
+    const count = sparkState(
+      slot.id,
+      slot.age,
+      slot.life,
+      now,
+      origin[0],
+      origin[1],
+      origin[2],
+      velocity[0],
+      velocity[1],
+      velocity[2],
+      alpha,
+      options,
+      out,
+    );
+    appendReferenceSamples(writer, out, count);
+  }
 }

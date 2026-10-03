@@ -7,5 +7,22 @@ export { starPos } from './motion';
 export { hash } from './random';
 export { directions, unit, type StarDirection } from './directions';
 export { rgb, colourAt, brightnessAt, type Vec3 } from './colour';
-export { spraySlots, sparkState, type SprayOptions, type SpraySlot } from './spray';
+export {
+  spraySlots,
+  sparkState,
+  type SprayOptions,
+  type SpraySlot,
+  type SprayBirthSink,
+} from './spray';
 export { WIND } from './smoke';
+
+export { framingFor, EYE_HEIGHT_M, type Framing } from './framing';
+export { shakeAt, shakeEvents, soundLag, type ShakeEvent } from './shake';
+
+export {
+  soundEvents,
+  soundDistance,
+  type SoundEvent,
+  type SoundKind,
+  type SoundShot,
+} from './events';

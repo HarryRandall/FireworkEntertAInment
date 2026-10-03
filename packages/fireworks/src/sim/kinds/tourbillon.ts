@@ -4,7 +4,8 @@ import { rgb, type Vec3 } from '../colour';
 import { MUZZLE_M } from '../launch';
 
 import { type ParticleWriter } from '../particles';
-import { spray } from '../spray';
+import { sourceSpray } from '../spray-source';
+import { tourbillonTrajectory } from '../ground-sources';
 
 import type { GroundRuntime } from './ground';
 // Prototype visual tuning: sideways paths reach their full offset once a particle is 6 m clear.
@@ -63,30 +64,28 @@ export function fillTourbillon(
         positionZ + Math.sin(phaseRad) * tourbillon.radius_m * clearance,
       ];
     };
-    spray(writer, path, 0, tourbillon.time_s, age, {
-      count: tourbillon.sparks,
-      life: TOURBILLON_SPRAY_LIFE_S,
-      spread: TOURBILLON_SPREAD_M_S,
-      gravity: TOURBILLON_GRAVITY_M_S2,
-      drag: TOURBILLON_DRAG_PER_S,
-      size: TOURBILLON_SPRAY_SIZE,
-      flicker: TOURBILLON_FLICKER,
-      colour: rgb('#ffe2a8'),
-      seed: seed * TOURBILLON_SEED_SCALE + sourceIndex,
-    });
-    const climbProgress = Math.min(1, age / tourbillon.time_s);
-    const heightM = muzzle + (tourbillon.height_m - muzzle) * (1 - (1 - climbProgress) ** 2);
-    const phaseRad = age * tourbillon.spin_rad_s + sourceIndex;
-    const clearance = clear(heightM - muzzle);
+    sourceSpray(
+      writer,
+      path,
+      0,
+      tourbillon.time_s,
+      age,
+      {
+        count: tourbillon.sparks,
+        life: TOURBILLON_SPRAY_LIFE_S,
+        spread: TOURBILLON_SPREAD_M_S,
+        gravity: TOURBILLON_GRAVITY_M_S2,
+        drag: TOURBILLON_DRAG_PER_S,
+        size: TOURBILLON_SPRAY_SIZE,
+        flicker: TOURBILLON_FLICKER,
+        colour: rgb('#ffe2a8'),
+        seed: seed * TOURBILLON_SEED_SCALE + sourceIndex,
+      },
+      () => tourbillonTrajectory(tourbillon, [positionX, muzzle, positionZ], sourceIndex),
+    );
     if (age < tourbillon.time_s + TOURBILLON_TAIL_S)
       writer.head(
-        [
-          positionX +
-            (sourceIndex - (tourbillon.count - 1) / 2) * TOURBILLON_SPACING_M * climbProgress +
-            Math.cos(phaseRad) * tourbillon.radius_m * clearance,
-          heightM,
-          positionZ + Math.sin(phaseRad) * tourbillon.radius_m * clearance,
-        ],
+        path(age),
         rgb('#fff0c8'),
         TOURBILLON_HEAD_SIZE,
         age > tourbillon.time_s ? 1 - (age - tourbillon.time_s) / TOURBILLON_TAIL_S : 1,

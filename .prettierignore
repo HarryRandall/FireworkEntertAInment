@@ -19,3 +19,7 @@ supabase/bootstrap
 *.min.js
 *.min.css
 .vercel
+
+# Third-party SQL and licence retain their exact upstream bytes.
+supabase/vendor/basejump/supabase_test_helpers--0.0.6.sql
+supabase/vendor/basejump/LICENSE.md

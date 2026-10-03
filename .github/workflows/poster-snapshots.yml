@@ -1,0 +1,35 @@
+name: Poster snapshots
+
+on:
+  schedule:
+    - cron: '0 16 * * *'
+  workflow_dispatch:
+
+# Only compare the rebuild trunk; this workflow has no deployment steps.
+jobs:
+  posters:
+    name: Full poster catalogue
+    runs-on: ubuntu-latest
+    env:
+      POSTER_SNAPSHOTS_ALL: '1'
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: rebuild/main
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec tsc -p tests/browser/tsconfig.json
+      - run: pnpm exec playwright test tests/browser/posters.spec.ts
+      - name: Save numerical and image failure evidence
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: poster-differences
+          path: output/playwright/results

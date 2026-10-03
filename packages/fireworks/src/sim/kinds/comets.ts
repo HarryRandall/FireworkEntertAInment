@@ -4,7 +4,8 @@ import { colourAt, rgb, WHITE, type Vec3 } from '../colour';
 import { MUZZLE_M } from '../launch';
 import { crackle, crossette } from '../modifiers';
 import { type ParticleWriter } from '../particles';
-import { spray } from '../spray';
+import { sourceSpray } from '../spray-source';
+import { cometTrajectory } from '../ground-sources';
 import { cometSmoke } from '../smoke';
 import { hash } from '../random';
 
@@ -155,11 +156,7 @@ function fillCometSource(context: CometContext): void {
   const age = time - start;
   context.age = age;
   if (age < 0 || age > comets.time_s + COMET_SPRAY_TAIL_S) return;
-  const height =
-    comets.height_m *
-    (comets.pattern === 'sequence'
-      ? COMET_HEIGHT_MIN + COMET_HEIGHT_RANGE * hash(sourceIndex, seed, COMET_HEIGHT_STREAM)
-      : 1);
+  const height = cometHeight(comets, sourceIndex, seed);
   const path = (sourceTime: number): Vec3 => {
     const u = Math.min(1, Math.max(0, sourceTime / comets.time_s));
     const dist = height * (1 - (1 - u) ** 2);
@@ -180,20 +177,29 @@ function fillCometSource(context: CometContext): void {
   );
   const tail =
     comets.trail === 'star' ? original : rgb(comets.trail === 'house' ? '#ffe2a8' : comets.trail);
-  spray(writer, path, 0, comets.time_s, age, {
-    count: comets.sparks,
-    life: comets.tail_life_s,
-    spread: comets.spin_rad_s !== 0 ? COMET_SPIN_SPREAD_M_S : COMET_SPREAD_M_S,
-    gravity: COMET_GRAVITY_M_S2,
-    drag: COMET_DRAG_PER_S,
-    size: COMET_SPRAY_SIZE_FACTOR * comets.size,
-    flicker: comets.glitter !== 0 ? COMET_GLITTER_FLICKER : COMET_FLICKER,
-    glitter: comets.glitter,
-    colour: tail,
-    seed: seed * COMET_SEED_SCALE + sourceIndex,
-    inherit: comets.spin_rad_s !== 0 ? COMET_SPIN_INHERIT : COMET_INHERIT,
-    cluster: COMET_CLUSTER,
-  });
+  sourceSpray(
+    writer,
+    path,
+    0,
+    comets.time_s,
+    age,
+    {
+      count: comets.sparks,
+      life: comets.tail_life_s,
+      spread: comets.spin_rad_s !== 0 ? COMET_SPIN_SPREAD_M_S : COMET_SPREAD_M_S,
+      gravity: COMET_GRAVITY_M_S2,
+      drag: COMET_DRAG_PER_S,
+      size: COMET_SPRAY_SIZE_FACTOR * comets.size,
+      flicker: comets.glitter !== 0 ? COMET_GLITTER_FLICKER : COMET_FLICKER,
+      glitter: comets.glitter,
+      colour: tail,
+      seed: seed * COMET_SEED_SCALE + sourceIndex,
+      inherit: comets.spin_rad_s !== 0 ? COMET_SPIN_INHERIT : COMET_INHERIT,
+      cluster: COMET_CLUSTER,
+    },
+    () =>
+      cometTrajectory(comets, [positionX, muzzle, positionZ], { height, angle, yaw, sourceIndex }),
+  );
   cometSmoke(writer, seed, sourceIndex, positionX, positionZ, age);
   context.path = path;
   context.tail = tail;
@@ -306,4 +312,13 @@ function selectCometSource(context: CometContext): void {
       -spread / 2 + (spread * (row % 2 !== 0 ? SWEEP_ROW_SIZE - 1 - j : j)) / (SWEEP_ROW_SIZE - 1);
     context.start = sourceIndex * comets.gap_s;
   }
+}
+
+function cometHeight(comets: Comets, sourceIndex: number, seed: number): number {
+  return (
+    comets.height_m *
+    (comets.pattern === 'sequence'
+      ? COMET_HEIGHT_MIN + COMET_HEIGHT_RANGE * hash(sourceIndex, seed, COMET_HEIGHT_STREAM)
+      : 1)
+  );
 }

@@ -3,7 +3,8 @@ import type { Design } from '../../schema/index';
 import { rgb, type Vec3 } from '../colour';
 
 import { type ParticleWriter } from '../particles';
-import { spray } from '../spray';
+import { sourceSpray } from '../spray-source';
+import { spinnerTrajectory } from '../ground-sources';
 
 import { hash } from '../random';
 
@@ -91,19 +92,28 @@ export function fillSpinner(
       ];
     };
     const colour = rgb(spinner.colours[spinnerIndex % spinner.colours.length] ?? '#ffffff');
-    spray(writer, path, 0, spinner.duration_s, age, {
-      count: spinner.sparks,
-      life: SPINNER_SPRAY_LIFE_S,
-      spread: SPINNER_SPREAD_M_S,
-      gravity: SPINNER_GRAVITY_M_S2,
-      drag: SPINNER_DRAG_PER_S,
-      size: SPINNER_SPRAY_SIZE,
-      flicker: SPINNER_FLICKER,
-      colour,
-      seed: seed * SPINNER_SEED_SCALE + spinnerIndex,
-      inherit: SPINNER_INHERIT,
-      cluster: SPINNER_CLUSTER,
-    });
+    sourceSpray(
+      writer,
+      path,
+      0,
+      spinner.duration_s,
+      age,
+      {
+        count: spinner.sparks,
+        life: SPINNER_SPRAY_LIFE_S,
+        spread: SPINNER_SPREAD_M_S,
+        gravity: SPINNER_GRAVITY_M_S2,
+        drag: SPINNER_DRAG_PER_S,
+        size: SPINNER_SPRAY_SIZE,
+        flicker: SPINNER_FLICKER,
+        colour,
+        seed: seed * SPINNER_SEED_SCALE + spinnerIndex,
+        inherit: SPINNER_INHERIT,
+        cluster: SPINNER_CLUSTER,
+      },
+      () =>
+        spinnerTrajectory(spinner, [positionX, SPINNER_HEIGHT_M, positionZ], spinnerIndex, phase),
+    );
     if (age < spinner.duration_s) writer.head(path(age), colour, SPINNER_HEAD_SIZE, 1);
   }
 }

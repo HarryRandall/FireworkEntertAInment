@@ -2,6 +2,7 @@
 import * as THREE from 'three';
 import { resolveDesign } from '../schema/index';
 import type { Shot } from './types';
+import { batchProps } from './prop-batch';
 
 // Prototype cake geometry, in metres: five rows, tube spacing and lid height.
 const CAKE_ROWS = 5;
@@ -52,7 +53,7 @@ export function makeProps(shots: readonly Shot[], kind: 'mortar' | 'cake'): THRE
     fillCake(group);
     dark.dispose();
     rim.dispose();
-    return group;
+    return batchProps(group);
   }
 
   const seen = new Set<string>();
@@ -79,7 +80,7 @@ export function makeProps(shots: readonly Shot[], kind: 'mortar' | 'cake'): THRE
     group.add(tube);
   }
   disposeUnusedHardwareMaterials(group, shots, dark, rim);
-  return group;
+  return batchProps(group);
 }
 
 function fillCake(group: THREE.Group): void {

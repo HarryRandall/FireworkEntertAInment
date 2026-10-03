@@ -3,7 +3,8 @@ import type { Design } from '../../schema/index';
 import { rgb, WHITE, type Vec3 } from '../colour';
 
 import { type ParticleWriter } from '../particles';
-import { spray } from '../spray';
+import { sourceSpray } from '../spray-source';
+import { wheelTrajectory } from '../ground-sources';
 
 import type { GroundRuntime } from './ground';
 // Prototype visual tuning: wheel glow alpha (opacity).
@@ -53,9 +54,7 @@ export function fillWheel(
   const wheel = design.ground.wheel;
   if (time > wheel.duration_s + WHEEL_TAIL_S) return;
   const spinSpeedRadS = wheel.spin_hz * Math.PI * 2;
-  const spinPhaseRad = wheelPhase(time, spinSpeedRadS);
   for (let driverIndex = 0; driverIndex < wheel.drivers; driverIndex++) {
-    const phaseRad = spinPhaseRad + (driverIndex / wheel.drivers) * Math.PI * 2;
     const path = (sourceTime: number): Vec3 => {
       const spinPhaseRad = wheelPhase(sourceTime, spinSpeedRadS);
       const phaseRad = spinPhaseRad + (driverIndex / wheel.drivers) * Math.PI * 2;
@@ -65,31 +64,29 @@ export function fillWheel(
         positionZ,
       ];
     };
-    spray(writer, path, 0, wheel.duration_s, time, {
-      count: wheel.sparks,
-      life: WHEEL_SPRAY_LIFE_S,
-      spread: WHEEL_SPREAD_M_S,
-      gravity: WHEEL_GRAVITY_M_S2,
-      drag: WHEEL_DRAG_PER_S,
-      size: WHEEL_SPRAY_SIZE,
-      flicker: WHEEL_FLICKER,
-      glitter: wheel.glitter,
-      colour: rgb(wheel.colour),
-      seed: seed * WHEEL_SEED_SCALE + driverIndex,
-      inherit: 1,
-      cluster: WHEEL_CLUSTER,
-    });
-    if (time < wheel.duration_s)
-      writer.head(
-        [
-          positionX + Math.cos(phaseRad) * wheel.radius_m,
-          wheel.height_m + Math.sin(phaseRad) * wheel.radius_m,
-          positionZ,
-        ],
-        WHITE,
-        WHEEL_HEAD_SIZE_PX,
-        1,
-      );
+    sourceSpray(
+      writer,
+      path,
+      0,
+      wheel.duration_s,
+      time,
+      {
+        count: wheel.sparks,
+        life: WHEEL_SPRAY_LIFE_S,
+        spread: WHEEL_SPREAD_M_S,
+        gravity: WHEEL_GRAVITY_M_S2,
+        drag: WHEEL_DRAG_PER_S,
+        size: WHEEL_SPRAY_SIZE,
+        flicker: WHEEL_FLICKER,
+        glitter: wheel.glitter,
+        colour: rgb(wheel.colour),
+        seed: seed * WHEEL_SEED_SCALE + driverIndex,
+        inherit: 1,
+        cluster: WHEEL_CLUSTER,
+      },
+      () => wheelTrajectory(wheel, [positionX, wheel.height_m, positionZ], driverIndex),
+    );
+    if (time < wheel.duration_s) writer.head(path(time), WHITE, WHEEL_HEAD_SIZE_PX, 1);
   }
   if (time < wheel.duration_s)
     writer.glow(
