@@ -70,6 +70,163 @@ export type Database = {
           },
         ]
       }
+      campaigns: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          ends_on: string | null
+          id: string
+          name: string
+          organisation_id: string
+          sale_period_id: string | null
+          starts_on: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          ends_on?: string | null
+          id?: string
+          name: string
+          organisation_id: string
+          sale_period_id?: string | null
+          starts_on?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          ends_on?: string | null
+          id?: string
+          name?: string
+          organisation_id?: string
+          sale_period_id?: string | null
+          starts_on?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campaigns_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "campaigns_sale_period_id_fkey"
+            columns: ["sale_period_id"]
+            isOneToOne: false
+            referencedRelation: "sale_periods"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collection_items: {
+        Row: {
+          collection_id: string
+          created_at: string
+          organisation_id: string
+          product_id: string
+          sort: number
+          updated_at: string
+        }
+        Insert: {
+          collection_id: string
+          created_at?: string
+          organisation_id: string
+          product_id: string
+          sort?: number
+          updated_at?: string
+        }
+        Update: {
+          collection_id?: string
+          created_at?: string
+          organisation_id?: string
+          product_id?: string
+          sort?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collection_items_organisation_id_collection_id_fkey"
+            columns: ["organisation_id", "collection_id"]
+            isOneToOne: false
+            referencedRelation: "collections"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "collection_items_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_items_organisation_id_product_id_fkey"
+            columns: ["organisation_id", "product_id"]
+            isOneToOne: false
+            referencedRelation: "range_items"
+            referencedColumns: ["organisation_id", "product_id"]
+          },
+          {
+            foreignKeyName: "collection_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      collections: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          id: string
+          kind: string
+          name: string
+          organisation_id: string
+          rule: Json | null
+          slug: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          name: string
+          organisation_id: string
+          rule?: Json | null
+          slug: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          name?: string
+          organisation_id?: string
+          rule?: Json | null
+          slug?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "collections_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       design_candidates: {
         Row: {
           analysis_id: string
@@ -508,6 +665,64 @@ export type Database = {
             columns: ["organisation_id"]
             isOneToOne: false
             referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      label_batches: {
+        Row: {
+          copies: number
+          created_at: string
+          created_by: string | null
+          id: string
+          organisation_id: string
+          pdf_media_id: string | null
+          qr_code_ids: string[]
+          size: string
+          updated_at: string
+        }
+        Insert: {
+          copies?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organisation_id: string
+          pdf_media_id?: string | null
+          qr_code_ids: string[]
+          size: string
+          updated_at?: string
+        }
+        Update: {
+          copies?: number
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          organisation_id?: string
+          pdf_media_id?: string | null
+          qr_code_ids?: string[]
+          size?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "label_batches_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "label_batches_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "label_batches_pdf_media_id_fkey"
+            columns: ["pdf_media_id"]
+            isOneToOne: false
+            referencedRelation: "media"
             referencedColumns: ["id"]
           },
         ]
@@ -1303,6 +1518,137 @@ export type Database = {
           },
         ]
       }
+      qr_codes: {
+        Row: {
+          archived_at: string | null
+          campaign_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          label_text: string | null
+          organisation_id: string
+          placement: string | null
+          slug: string
+          status: string
+          store_id: string | null
+          target_id: string | null
+          target_type: string
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label_text?: string | null
+          organisation_id: string
+          placement?: string | null
+          slug: string
+          status?: string
+          store_id?: string | null
+          target_id?: string | null
+          target_type: string
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          campaign_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label_text?: string | null
+          organisation_id?: string
+          placement?: string | null
+          slug?: string
+          status?: string
+          store_id?: string | null
+          target_id?: string | null
+          target_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "qr_codes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_codes_organisation_id_campaign_id_fkey"
+            columns: ["organisation_id", "campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "qr_codes_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "qr_codes_organisation_id_store_id_fkey"
+            columns: ["organisation_id", "store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
+      range_items: {
+        Row: {
+          added_via: string | null
+          created_at: string
+          currency: string
+          hidden: boolean
+          id: string
+          organisation_id: string
+          price_minor: number
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          added_via?: string | null
+          created_at?: string
+          currency: string
+          hidden?: boolean
+          id?: string
+          organisation_id: string
+          price_minor: number
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          added_via?: string | null
+          created_at?: string
+          currency?: string
+          hidden?: boolean
+          id?: string
+          organisation_id?: string
+          price_minor?: number
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "range_items_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "range_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           created_at: string
@@ -1437,6 +1783,213 @@ export type Database = {
           },
         ]
       }
+      show_version_products: {
+        Row: {
+          organisation_id: string | null
+          owner_id: string | null
+          product_id: string
+          quantity: number
+          show_version_id: string
+        }
+        Insert: {
+          organisation_id?: string | null
+          owner_id?: string | null
+          product_id: string
+          quantity: number
+          show_version_id: string
+        }
+        Update: {
+          organisation_id?: string | null
+          owner_id?: string | null
+          product_id?: string
+          quantity?: number
+          show_version_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "show_version_products_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "show_version_products_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "show_version_products_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "show_version_products_show_version_id_fkey"
+            columns: ["show_version_id"]
+            isOneToOne: false
+            referencedRelation: "show_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      show_versions: {
+        Row: {
+          change_note: string | null
+          created_at: string
+          created_by: string | null
+          cues: Json
+          duration_ms: number
+          id: string
+          number: number
+          organisation_id: string | null
+          owner_id: string | null
+          plan_session_id: string | null
+          show_id: string
+          soundtrack_analysis_id: string | null
+          soundtrack_offset_ms: number
+        }
+        Insert: {
+          change_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          cues: Json
+          duration_ms: number
+          id?: string
+          number: number
+          organisation_id?: string | null
+          owner_id?: string | null
+          plan_session_id?: string | null
+          show_id: string
+          soundtrack_analysis_id?: string | null
+          soundtrack_offset_ms?: number
+        }
+        Update: {
+          change_note?: string | null
+          created_at?: string
+          created_by?: string | null
+          cues?: Json
+          duration_ms?: number
+          id?: string
+          number?: number
+          organisation_id?: string | null
+          owner_id?: string | null
+          plan_session_id?: string | null
+          show_id?: string
+          soundtrack_analysis_id?: string | null
+          soundtrack_offset_ms?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "show_versions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "show_versions_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "show_versions_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "show_versions_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "show_store_status"
+            referencedColumns: ["show_id"]
+          },
+          {
+            foreignKeyName: "show_versions_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "shows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shows: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          current_version_id: string | null
+          id: string
+          name: string
+          organisation_id: string | null
+          origin: string
+          owner_id: string | null
+          share_token: string | null
+          soundtrack_track_id: string | null
+          status: string
+          tags: string[]
+          updated_at: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          current_version_id?: string | null
+          id?: string
+          name: string
+          organisation_id?: string | null
+          origin: string
+          owner_id?: string | null
+          share_token?: string | null
+          soundtrack_track_id?: string | null
+          status?: string
+          tags?: string[]
+          updated_at?: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          current_version_id?: string | null
+          id?: string
+          name?: string
+          organisation_id?: string | null
+          origin?: string
+          owner_id?: string | null
+          share_token?: string | null
+          soundtrack_track_id?: string | null
+          status?: string
+          tags?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shows_current_version_fk"
+            columns: ["id", "current_version_id"]
+            isOneToOne: false
+            referencedRelation: "show_versions"
+            referencedColumns: ["show_id", "id"]
+          },
+          {
+            foreignKeyName: "shows_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shows_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       staff_roles: {
         Row: {
           created_at: string
@@ -1466,6 +2019,128 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      stock_movements: {
+        Row: {
+          at: string
+          delta: number
+          id: number
+          organisation_id: string
+          qty_after: number
+          range_item_id: string
+          ref: string | null
+          source: string
+          store_id: string
+        }
+        Insert: {
+          at?: string
+          delta: number
+          id?: never
+          organisation_id: string
+          qty_after: number
+          range_item_id: string
+          ref?: string | null
+          source: string
+          store_id: string
+        }
+        Update: {
+          at?: string
+          delta?: number
+          id?: never
+          organisation_id?: string
+          qty_after?: number
+          range_item_id?: string
+          ref?: string | null
+          source?: string
+          store_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_movements_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_movements_organisation_id_store_id_range_item_id_fkey"
+            columns: ["organisation_id", "store_id", "range_item_id"]
+            isOneToOne: false
+            referencedRelation: "store_items"
+            referencedColumns: ["organisation_id", "store_id", "range_item_id"]
+          },
+          {
+            foreignKeyName: "stock_movements_organisation_id_store_id_range_item_id_fkey"
+            columns: ["organisation_id", "store_id", "range_item_id"]
+            isOneToOne: false
+            referencedRelation: "store_prices"
+            referencedColumns: ["organisation_id", "store_id", "range_item_id"]
+          },
+        ]
+      }
+      store_items: {
+        Row: {
+          aisle: string | null
+          bay: string | null
+          created_at: string
+          hidden: boolean
+          low_stock_at: number
+          organisation_id: string
+          price_override_minor: number | null
+          range_item_id: string
+          store_id: string
+          till_sku: string | null
+          updated_at: string
+        }
+        Insert: {
+          aisle?: string | null
+          bay?: string | null
+          created_at?: string
+          hidden?: boolean
+          low_stock_at?: number
+          organisation_id: string
+          price_override_minor?: number | null
+          range_item_id: string
+          store_id: string
+          till_sku?: string | null
+          updated_at?: string
+        }
+        Update: {
+          aisle?: string | null
+          bay?: string | null
+          created_at?: string
+          hidden?: boolean
+          low_stock_at?: number
+          organisation_id?: string
+          price_override_minor?: number | null
+          range_item_id?: string
+          store_id?: string
+          till_sku?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_items_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_items_organisation_id_range_item_id_fkey"
+            columns: ["organisation_id", "range_item_id"]
+            isOneToOne: false
+            referencedRelation: "range_items"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "store_items_organisation_id_store_id_fkey"
+            columns: ["organisation_id", "store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["organisation_id", "id"]
           },
         ]
       }
@@ -1792,7 +2467,69 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      show_store_status: {
+        Row: {
+          available: boolean | null
+          currency: string | null
+          organisation_id: string | null
+          price_minor: number | null
+          show_id: string | null
+          store_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shows_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      store_prices: {
+        Row: {
+          currency: string | null
+          hidden: boolean | null
+          organisation_id: string | null
+          price_minor: number | null
+          product_id: string | null
+          range_item_id: string | null
+          stock_qty: number | null
+          stock_source: string | null
+          stock_updated_at: string | null
+          store_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "range_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_items_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "store_items_organisation_id_range_item_id_fkey"
+            columns: ["organisation_id", "range_item_id"]
+            isOneToOne: false
+            referencedRelation: "range_items"
+            referencedColumns: ["organisation_id", "id"]
+          },
+          {
+            foreignKeyName: "store_items_organisation_id_store_id_fkey"
+            columns: ["organisation_id", "store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["organisation_id", "id"]
+          },
+        ]
+      }
     }
     Functions: {
       accept_design_candidate: {
@@ -1853,6 +2590,17 @@ export type Database = {
         Args: { p_version_id: string }
         Returns: undefined
       }
+      record_stock: {
+        Args: {
+          p_delta: number
+          p_range_item: string
+          p_ref?: string
+          p_source: string
+          p_store: string
+        }
+        Returns: number
+      }
+      resolve_qr: { Args: { p_slug: string }; Returns: Json }
       save_effect_details: {
         Args: {
           p_effect_id: string
@@ -1895,6 +2643,23 @@ export type Database = {
         }
         Returns: undefined
       }
+      save_show: {
+        Args: {
+          p_change_note?: string
+          p_cues: Json
+          p_duration_ms: number
+          p_plan_session?: string
+          p_show: string
+          p_soundtrack_analysis?: string
+          p_soundtrack_offset_ms?: number
+        }
+        Returns: string
+      }
+      show_for_store: {
+        Args: { p_show: string; p_store: string }
+        Returns: Json
+      }
+      store_page: { Args: { p_store: string }; Returns: Json }
     }
     Enums: {
       [_ in never]: never
