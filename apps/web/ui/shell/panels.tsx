@@ -12,8 +12,9 @@ import {
 } from '@/ui/primitives/command';
 import { NotificationsInbox, type NotificationItem } from '@/ui/kit/notifications';
 import { KeyboardShortcuts } from '@/ui/kit/shortcuts';
+import { SignOut } from '@/ui/auth/sign-out';
 import { ShellDialog } from './shell-dialog';
-import type { AreaConfig, NavSection } from './config/types';
+import type { AreaConfig, NavSection, ShellIdentity } from './config/types';
 
 /** Panel names owned by the shared workspace chrome. */
 export type ShellPanel = 'command' | 'notifications' | 'shortcuts' | 'profile' | 'navigation';
@@ -50,12 +51,28 @@ function CommandMenu({
     </Command>
   );
 }
-/** Offers presentation preferences without pretending to have a signed-in identity. */
-function ProfilePanel() {
+/** Uses a meaningful profile name, then the Auth email, when naming the account. */
+function profileLabel(identity: ShellIdentity): string {
+  const name = identity.displayName?.trim();
+  if (name !== undefined && name.length > 0) return name;
+  return identity.email ?? 'Your account';
+}
+/** Describes account controls separately from the local preview utility panels. */
+function panelDescription(panel: ShellPanel, identity?: ShellIdentity): string {
+  if (panel === 'command') return 'Find a destination in this area. Use arrow keys and Enter.';
+  if (panel === 'profile' && identity) return 'Account and appearance preferences.';
+  return 'Local workspace preview.';
+}
+/** Presents the signed-in identity and session action, or an honest demo profile. */
+function ProfilePanel({ identity }: { identity?: ShellIdentity }) {
   const { setTheme } = useTheme();
   return (
     <div className="grid gap-3">
-      <p className="text-sm">Demo profile. Account actions are unavailable in this preview.</p>
+      {identity ? (
+        <p className="text-sm">{profileLabel(identity)}</p>
+      ) : (
+        <p className="text-sm">Demo profile. Account actions are unavailable in this preview.</p>
+      )}
       <fieldset>
         <legend className="mb-2 text-sm font-medium">Theme</legend>
         <div className="flex gap-2">
@@ -73,6 +90,7 @@ function ProfilePanel() {
           ))}
         </div>
       </fieldset>
+      {identity && <SignOut />}
     </div>
   );
 }
@@ -83,12 +101,14 @@ export function ShellPanels({
   config,
   sections,
   notifications,
+  identity,
 }: {
   panel: ShellPanel | null;
   close: () => void;
   config: AreaConfig;
   sections: readonly NavSection[];
   notifications: readonly NotificationItem[];
+  identity?: ShellIdentity;
 }) {
   const [readIds, setReadIds] = useState<readonly string[]>([]);
   const labels = {
@@ -98,16 +118,13 @@ export function ShellPanels({
     profile: 'Profile menu',
     navigation: 'Navigation',
   };
-  if (panel === null || panel === 'navigation') return null;
+  // Keep the Radix root mounted so the first click opens an existing controlled dialog.
+  const open = panel !== null && panel !== 'navigation';
   return (
     <ShellDialog
-      title={labels[panel]}
-      description={
-        panel === 'command'
-          ? 'Find a destination in this area. Use arrow keys and Enter.'
-          : 'Local workspace preview.'
-      }
-      open
+      title={labels[panel ?? 'profile']}
+      description={panelDescription(panel ?? 'profile', identity)}
+      open={open}
       onOpenChange={(open) => {
         if (!open) close();
       }}
@@ -133,7 +150,7 @@ export function ShellPanels({
           ]}
         />
       )}
-      {panel === 'profile' && <ProfilePanel />}
+      {panel === 'profile' && <ProfilePanel identity={identity} />}
     </ShellDialog>
   );
 }

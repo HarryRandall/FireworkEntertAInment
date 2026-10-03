@@ -1,8 +1,14 @@
-/** Route boundary for the shopper account workspace. */
+/** Server access boundary and workspace chrome for the shopper account area. */
 import type { ReactNode } from 'react';
+import { requireArea } from '@/lib/auth/server';
 import { WorkspaceShell } from '@/ui/shell/workspace-shell';
 
-/** Composes this area's shared chrome around route-owned content. */
-export default function Layout({ children }: { children: ReactNode }) {
-  return <WorkspaceShell area="account">{children}</WorkspaceShell>;
+/** Checks access on the server before composing the shared chrome around nested routes. */
+export default async function Layout({ children }: { children: ReactNode }) {
+  const identity = await requireArea('account');
+  return (
+    <WorkspaceShell area="account" identity={identity.workspace}>
+      {children}
+    </WorkspaceShell>
+  );
 }

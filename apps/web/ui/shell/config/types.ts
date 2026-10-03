@@ -1,4 +1,5 @@
 /** Navigation contracts shared by area configurations and the workspace chrome. */
+import type { WorkspaceIdentity } from '../../../lib/auth/workspace';
 import type { LucideIcon } from 'lucide-react';
 
 /** Area keys match the route and access-policy boundary. */
@@ -28,3 +29,6 @@ export interface ShellVisibility {
   area?: (area: WorkspaceArea) => boolean;
   item?: (item: NavItem, area: WorkspaceArea) => boolean;
 }
+
+/** Public identity presentation computed by the server, without tokens or membership records. */
+export type ShellIdentity = WorkspaceIdentity;

@@ -3,8 +3,15 @@ import { test, expect, type Page } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { areaConfigs } from '../../apps/web/ui/shell/config';
 import { currentItem } from '../../apps/web/ui/shell/navigation';
+import { signInAs } from './auth-helpers';
 
 const viewports = { desktop: { width: 1440, height: 1000 }, phone: { width: 390, height: 844 } };
+const areaPersonas = {
+  retailer: 'owner',
+  admin: 'admin',
+  supplier: 'supplier',
+  account: 'shopper',
+};
 
 /** Waits for installed client handlers before exercising server-rendered controls. */
 async function openWorkspace(page: Page, href: string) {
@@ -15,11 +22,12 @@ async function openWorkspace(page: Page, href: string) {
 /** Asserts that only the local tab content changes and the route remains in its area. */
 async function checkTabs(page: Page) {
   const url = page.url();
-  await page.getByRole('tab', { name: 'Activity', exact: true }).click();
-  await expect(page.getByRole('tab', { name: 'Activity', exact: true })).toHaveAttribute(
-    'aria-selected',
-    'true',
-  );
+  const activity = page.getByRole('tab', { name: 'Activity', exact: true });
+  // Page content can hydrate after the shell; retry the click until its handler is attached.
+  await expect(async () => {
+    await activity.click();
+    await expect(activity).toHaveAttribute('aria-selected', 'true', { timeout: 1_000 });
+  }).toPass();
   await expect(page.getByRole('tabpanel')).toHaveText('No activity has been loaded.');
   expect(page.url()).toBe(url);
   await page.getByRole('tab', { name: 'Overview', exact: true }).click();
@@ -27,6 +35,7 @@ async function checkTabs(page: Page) {
 
 for (const config of Object.values(areaConfigs)) {
   test(`${config.area} rail, destinations and shortcuts stay in their area`, async ({ page }) => {
+    await signInAs(page, areaPersonas[config.area]);
     await openWorkspace(page, config.href);
     for (const section of config.sections) {
       await page
@@ -152,6 +161,8 @@ for (const [name, viewport] of Object.entries(viewports)) {
 }
 
 test('retailer organisation, store and area menus select their context', async ({ page }) => {
+  // Staff can follow every area link after exercising the synthetic context choices.
+  await signInAs(page, 'admin');
   await openWorkspace(page, '/dev/shell');
   await page.getByRole('button', { name: 'Switch store', exact: true }).click();
   await page.getByRole('menuitem', { name: 'York, Clifton Moor', exact: true }).click();
@@ -167,12 +178,14 @@ test('retailer organisation, store and area menus select their context', async (
     await page.getByRole('button', { name: 'Switch area', exact: true }).click();
     await page.getByRole('menuitem', { name: config.label, exact: true }).click();
     await expect(page).toHaveURL(config.href);
+    await expect(page.locator('.sc-shell')).toHaveAttribute('data-hydrated', 'true');
   }
 });
 
 test('command selection, empty search, help focus, inbox read state and profile theme', async ({
   page,
 }) => {
+  await signInAs(page, 'owner');
   await openWorkspace(page, '/dev/shell');
   const trigger = page.getByRole('button', { name: 'Search workspace', exact: true });
   await trigger.focus();
@@ -195,6 +208,10 @@ test('command selection, empty search, help focus, inbox read state and profile 
   await expect(page.getByText('Read', { exact: true })).toBeVisible();
   await page.keyboard.press('Escape');
   await page.getByRole('button', { name: 'Profile menu', exact: true }).click();
+  await expect(page.getByRole('dialog', { name: 'Profile menu', exact: true })).toContainText(
+    'Demo profile.',
+  );
+  await expect(page.getByRole('button', { name: 'Sign out', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'dark', exact: true }).click();
   await expect(page.locator('html')).toHaveClass(/dark/);
   await page.keyboard.press('Escape');

@@ -265,6 +265,7 @@ create table public.invitations (
   invited_by uuid references public.profiles(id),
   expires_at timestamptz not null,
   accepted_at timestamptz,
+  accepted_by uuid references public.profiles(id),
   revoked_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -516,6 +517,65 @@ create policy branding_update on public.branding for update to authenticated
   with check (((select private.staff_role()) = 'super_admin' or private.can_store(organisation_id, store_id, 'qr.manage')));
 create policy branding_delete on public.branding for delete to authenticated
   using (((select private.staff_role()) = 'super_admin' or private.can_store(organisation_id, store_id, 'qr.manage')));
+
+-- Locks an invitation while validating Auth identity and creating its scoped membership.
+create or replace function private.accept_invitation(p_token text)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+#variable_conflict error
+declare
+  v_user_id uuid := private.uid();
+  v_email extensions.citext;
+  v_invitation public.invitations%rowtype;
+begin
+  select actor.email into v_email from auth.users as actor
+  join public.profiles as profile on profile.id = actor.id
+  where actor.id = v_user_id and actor.email_confirmed_at is not null
+    and not coalesce(actor.is_anonymous, false) and profile.status = 'active';
+  if v_email is null then
+    raise exception 'A verified email account is required' using errcode = '42501';
+  end if;
+  if p_token is null or p_token = '' then
+    raise exception 'Invitation is invalid' using errcode = '22023';
+  end if;
+  select invitation.* into v_invitation from public.invitations as invitation
+  where invitation.token_hash = pg_catalog.encode(extensions.digest(p_token, 'sha256'), 'hex')
+  for update;
+  if not found then
+    raise exception 'Invitation is invalid' using errcode = '22023';
+  end if;
+  if v_invitation.accepted_by = v_user_id then
+    return v_invitation.organisation_id;
+  end if;
+  if pg_catalog.lower(v_invitation.email::text) <> pg_catalog.lower(v_email::text) or v_invitation.accepted_at is not null
+    or v_invitation.revoked_at is not null or v_invitation.expires_at <= now() then
+    raise exception 'Invitation cannot be accepted by this account' using errcode = '42501';
+  end if;
+  -- Existing membership rights are never overwritten by an invitation.
+  insert into public.memberships (organisation_id, profile_id, role, store_ids)
+  values (v_invitation.organisation_id, v_user_id, v_invitation.role, v_invitation.store_ids)
+  on conflict (organisation_id, profile_id) do nothing;
+  update public.invitations as invitation set accepted_at = now(), accepted_by = v_user_id
+  where invitation.id = v_invitation.id;
+  return v_invitation.organisation_id;
+end;
+$$;
+comment on function private.accept_invitation(text) is 'Accepts a SHA-256 token for the active verified Auth email in one locked transaction; repeats by its accepting user return the organisation UUID.';
+
+-- The API wrapper delegates the fenced multi-row write without elevating itself.
+create or replace function public.accept_invitation(p_token text)
+returns uuid language sql set search_path = ''
+as $$ select private.accept_invitation(p_token); $$;
+comment on function public.accept_invitation(text) is 'Accepts an invitation using the signed-in verified email and returns its organisation UUID.';
+
+-- Exposes only the current caller's already fenced table-backed staff role to the API.
+create or replace function public.current_staff_role()
+returns text language sql stable set search_path = ''
+as $$ select private.staff_role(); $$;
+comment on function public.current_staff_role() is 'Returns the active caller staff role from staff_roles, never editable metadata or JWT staff claims.';
 
 -- Renderer documents, immutable effect history and media metadata.
 -- BEGIN GENERATED DESIGN SCHEMA

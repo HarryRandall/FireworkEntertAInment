@@ -3093,6 +3093,7 @@ export type Database = {
       invitations: {
         Row: {
           accepted_at: string | null
+          accepted_by: string | null
           created_at: string
           email: string
           expires_at: string
@@ -3107,6 +3108,7 @@ export type Database = {
         }
         Insert: {
           accepted_at?: string | null
+          accepted_by?: string | null
           created_at?: string
           email: string
           expires_at: string
@@ -3121,6 +3123,7 @@ export type Database = {
         }
         Update: {
           accepted_at?: string | null
+          accepted_by?: string | null
           created_at?: string
           email?: string
           expires_at?: string
@@ -3134,6 +3137,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "invitations_accepted_by_fkey"
+            columns: ["accepted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "invitations_invited_by_fkey"
             columns: ["invited_by"]
@@ -6338,6 +6348,7 @@ export type Database = {
         }
         Returns: string
       }
+      accept_invitation: { Args: { p_token: string }; Returns: string }
       archive_effect: { Args: { p_effect_id: string }; Returns: undefined }
       archive_product: { Args: { p_product_id: string }; Returns: undefined }
       claim_job: {
@@ -6426,6 +6437,7 @@ export type Database = {
         Returns: string
       }
       credit_balance: { Args: { organisation: string }; Returns: number }
+      current_staff_role: { Args: never; Returns: string }
       end_support_session: { Args: { session: string }; Returns: undefined }
       fail_job: {
         Args: {

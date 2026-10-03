@@ -18,22 +18,28 @@ clicks cannot silently precede the tab and navigation handlers.
 ## Inputs and access policy
 
 `WorkspaceShell` accepts an area key, children, optional organisation/store choices
-and notifications. The context selectors use local preview state. They do not
+and notifications, plus an optional serialisable signed-in identity containing
+permitted areas, display name and email. The context selectors use local preview state. They do not
 claim to load data, change tenancy on the server or persist a selection.
 
 `visibility.area(area)` and `visibility.item(item, area)` are optional presentation
 predicates applied to the area switcher, rail, sidebar, shortcuts and command menu.
 They are not access boundaries. Area keys match the auth contract's `Area` values:
 `retailer`, `admin`, `supplier`, `account`, with corresponding root hrefs.
-The auth integration can pass a predicate closing over `canAccessArea(area, identity)`
-inside a client composition boundary; server layouts enforce actual route access.
-Do not pass server functions across the React server/client boundary.
+Server layouts run `requireArea` and pass its public workspace identity. The server
+computes permitted areas through `canAccessArea`; the client intersects that list with
+any preview predicates before rendering navigation. Server layouts remain authoritative.
+Do not pass server functions or Auth user objects across the React server/client boundary.
 
 Command search is restricted to the current area's visible destinations. Cmd+K or
 Ctrl+K opens it; ? opens the shortcuts panel. Text fields and existing dialogs keep
 their own keyboard input. Radix traps panel focus and Escape dismisses it. Inbox
-read state is local; profile actions explicitly describe the demo identity and offer
-light, dark and system theme preferences.
+read state is local. The profile menu shows the signed-in user's display name, falling
+back to their Auth email, and reuses the shared Sign out action. It offers light, dark
+and system theme preferences. Without an identity, `/dev/shell` retains its demo profile
+and has no session action.
+Utility panels retain a mounted, controlled Radix dialog root while closed, so opening
+the first panel does not also create its root. Dismissal restores focus to the opener.
 
 ## Editor frame and review
 
@@ -51,6 +57,10 @@ tabs, area and context switchers, command keys and selection, notification read
 state, profile theme, visibility predicates, desktop/390 px layout, light/dark,
 axe and per-section screenshot captures. Browser execution and screenshots require
 the composer. No screenshot baseline is approved by the implementation alone.
+Protected destination journeys sign in through the shared browser Auth helper as the
+matching seeded persona. Preview-only chrome checks stay on `/dev/shell`; checks that
+follow its links into guarded routes sign in first. Auth journeys assert the exact
+permitted area choices and the real profile identity and Sign out action.
 
 ## Registry source
 
