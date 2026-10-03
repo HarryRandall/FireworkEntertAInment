@@ -24,6 +24,7 @@
     "@nivo/line": "0.99.0",
     "@nivo/pie": "0.99.0",
     "@showcrafter/fireworks": "workspace:*",
+    "@showcrafter/planner": "workspace:*",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.117.2",
     "@tanstack/react-table": "8.21.3",
