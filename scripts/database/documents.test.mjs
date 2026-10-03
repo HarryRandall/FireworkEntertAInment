@@ -28,12 +28,14 @@ function fixture(t) {
     '10_markets.sql',
     '20_people.sql',
     '32_imports.sql',
+    '40_range.sql',
   ]) {
     writeFileSync(join(root, 'supabase/schemas', file), '-- fixture domain\n');
   }
   for (const [name, file] of [
     ['DESIGN', '30_fireworks.sql'],
     ['COMPOSITION', '31_catalogue.sql'],
+    ['CUES', '50_shows_qr.sql'],
   ]) {
     writeFileSync(
       join(root, 'supabase/schemas', file),
@@ -43,6 +45,7 @@ function fixture(t) {
   writeFileSync(join(root, 'supabase/migrations/20261003000000_foundations.sql'), '');
   writeFileSync(join(root, 'packages/fireworks/schema/design.v1.json'), '{"type":"object"}');
   writeFileSync(join(root, 'supabase/documents/composition.v1.json'), '{"type":"array"}');
+  writeFileSync(join(root, 'supabase/documents/cues.v1.json'), '{"type":"array"}');
   return root;
 }
 

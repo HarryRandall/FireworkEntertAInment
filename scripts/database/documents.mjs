@@ -17,10 +17,13 @@ const files = [
   '30_fireworks.sql',
   '31_catalogue.sql',
   '32_imports.sql',
+  '40_range.sql',
+  '50_shows_qr.sql',
 ];
 const schemaSources = {
   design: 'packages/fireworks/schema/design.v1.json',
   composition: 'supabase/documents/composition.v1.json',
+  cues: 'supabase/documents/cues.v1.json',
 };
 
 function synchronise(path, expected) {
@@ -34,7 +37,7 @@ for (const [name, source] of Object.entries(schemaSources)) {
   const path = join(
     root,
     'supabase/schemas',
-    name === 'design' ? '30_fireworks.sql' : '31_catalogue.sql',
+    { design: '30_fireworks.sql', composition: '31_catalogue.sql', cues: '50_shows_qr.sql' }[name],
   );
   const schema = JSON.stringify(JSON.parse(readFileSync(join(root, source), 'utf8')));
   const start = `-- BEGIN GENERATED ${name.toUpperCase()} SCHEMA`;
