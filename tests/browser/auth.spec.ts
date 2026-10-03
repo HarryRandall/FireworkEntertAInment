@@ -2,11 +2,12 @@
 import { test, expect, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
+import { areas, type Area } from '../../apps/web/lib/auth/areas';
+import { signInAs } from './auth-helpers';
 
-const PASSWORD = 'LocalShowcrafter123!';
 const API = 'http://127.0.0.1:55421';
 const MAIL = 'http://127.0.0.1:55424';
-const personas = [
+const personas: readonly { email: string; allowed: readonly Area[]; denied: readonly Area[] }[] = [
   { email: 'admin', allowed: ['admin', 'retailer', 'supplier', 'account'], denied: [] },
   { email: 'owner', allowed: ['retailer', 'account'], denied: ['admin', 'supplier'] },
   { email: 'manager', allowed: ['retailer', 'account'], denied: ['admin', 'supplier'] },
@@ -18,15 +19,20 @@ for (const persona of personas) {
   test(`${persona.email} reaches permitted areas and is refused unrelated areas`, async ({
     page,
   }) => {
-    await page.goto('/auth/sign-in');
-    await page.getByLabel('Email', { exact: true }).fill(`${persona.email}@showcrafter.test`);
-    await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
-    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-    await expect(page).not.toHaveURL(/auth\/sign-in/);
+    await signInAs(page, persona.email);
     for (const area of persona.allowed) {
       await page.goto(`/${area}`);
       await expect(page).toHaveURL(new RegExp(`/${area}$`));
-      await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText(
+        area === 'supplier' ? 'Price lists' : 'Overview',
+      );
+      await expect(page.locator('.sc-shell')).toHaveAttribute('data-hydrated', 'true');
+      await page.getByRole('button', { name: 'Switch area', exact: true }).click();
+      const expectedLabels = Object.entries(areas)
+        .filter(([key]) => persona.allowed.some((allowed) => allowed === key))
+        .map(([, destination]) => destination.label);
+      await expect(page.getByRole('menu').getByRole('menuitem')).toHaveText(expectedLabels);
+      await page.keyboard.press('Escape');
     }
     for (const area of persona.denied) {
       await page.goto(`/${area}`);
@@ -138,6 +144,13 @@ test('anonymous shopper upgrades by email link with the same UUID and saved prof
   await expect(page.getByRole('status')).toContainText('Check your email');
   await page.goto(await magicLink(page, address, upgradeSent));
   await expect(page).toHaveURL(/\/account$/);
+  await expect(page.locator('.sc-shell')).toHaveAttribute('data-hydrated', 'true');
+  await page.getByRole('button', { name: 'Profile menu', exact: true }).click();
+  const profileMenu = page.getByRole('dialog', { name: 'Profile menu', exact: true });
+  await expect(profileMenu).toBeVisible();
+  await expect(profileMenu.getByText('Saved shopper preference', { exact: true })).toBeVisible();
+  await expect(profileMenu.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
   expect(await userId(page)).toBe(originalId);
   const profile = await page.request.get(`${profileUrl}&select=display_name,is_anonymous`, {
     headers: { ...headers, Authorization: `Bearer ${await accessToken(page)}` },
@@ -165,7 +178,19 @@ test('a permanent shopper can sign in by magic link and sign out', async ({ page
   await expect(page.getByRole('status')).toContainText('Check your email');
   await page.goto(await magicLink(page, 'shopper@showcrafter.test', linkSent));
   await expect(page).toHaveURL(/\/account$/);
-  await page.getByRole('button', { name: 'Sign out', exact: true }).click();
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText('Overview');
+  await expect(page.locator('.sc-shell')).toHaveAttribute('data-hydrated', 'true');
+  await page.getByRole('button', { name: 'Profile menu', exact: true }).click();
+  const profileMenu = page.getByRole('dialog', { name: 'Profile menu', exact: true });
+  await expect(profileMenu).toBeVisible();
+  await expect(profileMenu.getByText('shopper@showcrafter.test', { exact: true })).toBeVisible();
+  await expect(profileMenu.getByRole('button', { name: 'Sign out', exact: true })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(profileMenu).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Profile menu', exact: true })).toBeFocused();
+  await page.getByRole('button', { name: 'Profile menu', exact: true }).click();
+  await expect(profileMenu.getByText('shopper@showcrafter.test', { exact: true })).toBeVisible();
+  await profileMenu.getByRole('button', { name: 'Sign out', exact: true }).click();
   await expect(page).toHaveURL(/\/auth\/sign-in$/);
   await page.goto('/account');
   await expect(page).toHaveURL(/\/auth\/sign-in/);
