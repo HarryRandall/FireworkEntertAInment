@@ -454,6 +454,34 @@
         "apps/web/ui/kit/choices.tsx",
         "apps/web/ui/kit/segmented-control.tsx"
       ]
+    },
+    {
+      "provider": "reui",
+      "name": "data-grid",
+      "source": "https://raw.githubusercontent.com/keenthemes/reui/c0a29d7675761ed540eb29c0013793855d4e8282/public/r/styles/radix-vega/data-grid.json",
+      "version": "sha256:0f7af73088c5b84ff219214a53265b3aa0003dc3a10854f1c4a0efeb6327a019",
+      "upstreamRevision": "c0a29d7675761ed540eb29c0013793855d4e8282",
+      "retrieved": "2026-10-04",
+      "licence": "MIT",
+      "registry": "docs/vendor/ui/reui/data-grid/registry.json",
+      "raw": [
+        "docs/vendor/ui/reui/data-grid/0-data-grid-column-filter.tsx.txt",
+        "docs/vendor/ui/reui/data-grid/1-data-grid-column-header.tsx.txt",
+        "docs/vendor/ui/reui/data-grid/2-data-grid-column-visibility.tsx.txt",
+        "docs/vendor/ui/reui/data-grid/3-data-grid-pagination.tsx.txt",
+        "docs/vendor/ui/reui/data-grid/4-data-grid-scroll-area.tsx.txt",
+        "docs/vendor/ui/reui/data-grid/5-data-grid-table-dnd-rows.tsx.txt",
+        "docs/vendor/ui/reui/data-grid/6-data-grid-table-dnd.tsx.txt",
+        "docs/vendor/ui/reui/data-grid/7-data-grid-table-virtual.tsx.txt",
+        "docs/vendor/ui/reui/data-grid/8-data-grid-table.tsx.txt",
+        "docs/vendor/ui/reui/data-grid/9-data-grid.tsx.txt"
+      ],
+      "adapted": [
+        "apps/web/ui/kit/data-grid.tsx",
+        "apps/web/ui/kit/data-grid-table.tsx",
+        "apps/web/ui/kit/data-grid-controls.tsx"
+      ],
+      "notes": "Pinned TanStack v8-compatible Radix snapshot. Adapted non-virtual table, sorting, visibility, selection and pagination; omitted spreadsheet, resizing and drag-and-drop features. Existing Radix controls replace upstream control imports."
     }
   ]
 }

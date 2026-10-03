@@ -18,10 +18,15 @@
     "audit:ui": "node scripts/audit-ui.mjs"
   },
   "dependencies": {
+    "@nivo/bar": "0.99.0",
+    "@nivo/funnel": "0.99.0",
+    "@nivo/heatmap": "0.99.0",
     "@nivo/line": "0.99.0",
+    "@nivo/pie": "0.99.0",
     "@showcrafter/fireworks": "workspace:*",
     "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.57.0",
+    "@tanstack/react-table": "8.21.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "0.577.0",
