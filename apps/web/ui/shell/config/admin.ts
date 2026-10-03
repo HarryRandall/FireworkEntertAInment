@@ -23,6 +23,7 @@ export const adminConfig: AreaConfig = {
       icon: Flame,
       items: [
         { label: 'Effects', href: '/admin/catalogue' },
+        { label: 'Posters', href: '/admin/posters' },
         { label: 'Products', href: '/admin/products' },
         { label: 'Multishots', href: '/admin/multishots' },
         { label: 'Imports', href: '/admin/imports' },
