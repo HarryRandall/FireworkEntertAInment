@@ -2,7 +2,8 @@
 
 `@showcrafter/fireworks` owns the stored design format. PR 2.1 provides the v1
 JSON Schema, generated Zod validators and TypeScript types, version constants and
-`upgradeDesign(doc, fromVersion)`. PR 2.2 adds the DOM-free shell core. Other kinds, modifiers, sprays, WebGL, sound
+`upgradeDesign(doc, fromVersion)`. PR 2.2 adds the DOM-free shell core. PR 2.2a adds
+stored quick adjustments and their shared resolver. Other kinds, modifiers, sprays, WebGL, sound
 playback, posters and catalogue templates arrive in later renderer PRs.
 
 ```ts
@@ -27,6 +28,19 @@ same values. It does not mutate the document or apply defaults. Invalid document
 throw a Zod error containing property paths; unknown versions throw a range error.
 The version is stored externally as `design_schema`, not inside the document.
 `RENDERER_VERSION` starts at `0.1.0` for this initial renderer port.
+
+## Quick adjustments
+
+`adjustments` is an optional map of Finale-style levels from `-3` to `+3`, retained
+with the authored design. Keys are checked against the package registry. Shell keys
+cover launch height, tail and climb, and break flash and core ring. Layer keys use the
+stable layer id, for example `layer.l1.burn` or `layer.l1.trail.glitter`. Ground keys
+cover the compatible comet, tourbillon and fountain values.
+
+Use `resolveDesign(design)` before reading physical fields outside the renderer. The
+simulation and duration calculation resolve automatically. Height adjustments preserve
+climb speed by scaling climb time by the square root of the height factor. The resolver
+returns a new design and never mutates the saved document.
 
 Zod is generated with
 [json-schema-to-zod](https://github.com/StefanTerdell/json-schema-to-zod), pinned in
