@@ -34,6 +34,8 @@ function fixture(t) {
     '80_analytics.sql',
     '85_billing.sql',
     '86_ai_jobs.sql',
+    '87_integrations.sql',
+    '90_platform.sql',
   ]) {
     writeFileSync(join(root, 'supabase/schemas', file), '-- fixture domain\n');
   }
