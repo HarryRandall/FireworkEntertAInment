@@ -1,137 +1,34 @@
-# Architecture and UI conventions
+# Architecture
 
-ShowCrafter is a pnpm workspace with one Next.js application in `apps/web` and
-two independently deployed Python services. The repository root owns shared
-workflow configuration, documentation and the lockfile. App configuration stays
-with the app. Add packages only when independently owned or shared code justifies
-them; one app does not need a placeholder package hierarchy.
+ShowCrafter is a Next.js application backed by Supabase. Browser, server, public and
+service-role clients are separate typed boundaries. A client choice is part of the
+authorisation design, not a convenience.
 
-## Where code belongs
+## Areas and routes
 
-| Location              | Responsibility                                                                           |
-| --------------------- | ---------------------------------------------------------------------------------------- |
-| `app/`                | Routes, layouts, metadata, loading and error boundaries, API handlers and server actions |
-| `app/**/_components/` | UI used only by that route or its descendants                                            |
-| `ui/primitives/`      | Low-level shadcn/Radix primitives; respect generated-file headers                        |
-| `ui/patterns/`        | ShowCrafter's reusable controls and patterns, built from primitives                      |
-| `ui/<domain>/`        | Features shared by multiple routes, such as assortments, firework editing and replay     |
-| `ui/shell/`           | App, admin and My Store navigation, account controls and workspace chrome                |
-| `lib/`                | Domain transformations, validation, types and server integrations                        |
-| `ui/theme.css`        | Canonical light/dark colour values and theme tokens                                      |
-| `hooks/`              | Hooks shared across domains; feature-only hooks stay beside their feature                |
-| `lib/supabase/`       | Existing Supabase client factories and request/session adapters                          |
-| `services/`           | Independently deployed Python services with their own requirements                       |
-| `supabase/`           | Migrations, templates, catalogue tooling and database tests                              |
-| `tests/`              | Behaviour and contract tests grouped by domain                                           |
-| `docs/`               | Maintained architecture and development guidance                                         |
+The route map has four areas:
 
-Paths in this table are relative to `apps/web`, except `services`, `supabase`
-and `docs`, which are repository folders. App scripts, including the audit and
-ESLint rules, live together in `apps/web/scripts`. Project-specific agent
-workflows live in `.agents/skills`. Repository presentation media belongs in
-`.github/assets`; browser-capture working files remain ignored under `output/`.
+| Area     | Responsibility                                                             |
+| -------- | -------------------------------------------------------------------------- |
+| Shopper  | QR resolution, store and product viewing, planning, lists and music        |
+| Retailer | Organisation setup, range, stock, shows, QR, labels, insights and settings |
+| Supplier | Product, price-list and video submissions                                  |
+| Admin    | Catalogue, Studio, review, billing, platform settings and integrations     |
 
-Within `lib`, `auth` owns session, authenticated identity, redirect and recovery
-helpers; `access` owns current-profile, effective-permission and impersonation
-context; `supabase` owns client construction; `admin` owns reusable
-permission-checked management queries; and
-`cue-generation`, `fireworks`, `firework-import`, `assortments`, `show-templates`
-and `shows` own their domain logic. Public template reads stay in
-`show-templates`; route-specific admin show-preset reads stay beside the
-`app/(admin)/admin/show-presets` route.
-Import the owning module directly. Do not restore compatibility forwarding files
-or broad barrels that pull unrelated server and client modules into one API.
-Shared firework editor controls, history and fullscreen preview behaviour live in
-`ui/firework-editor`; the domain name reflects their reuse outside admin routes.
+Route-owned components belong below their route. Shared domain features live in
+`apps/web/ui/<domain>`. Keep rendering, planning and database contracts in their
+own packages or services rather than duplicating them in pages.
 
-Both Python services are active application dependencies. Music upload and
-generation call `ANALYSER_URL` through `lib/show-analysis-runner.server.ts`;
-video imports call `FIREWORK_IMPORT_URL` through
-`lib/firework-import/trigger.server.ts`. Their Modal entry points, local worker,
-browser smoke check and regression fixtures support those paths.
+## UI system
 
-Keep Supabase migration history, recovery email templates and SQL contract
-tests. Optional renderer QA data lives in `supabase/seeds/renderer-qa.sql`;
-it is a manual development fixture, not a production seed step.
+Use shadcn-compatible registry components, including ReUI where suitable, before
+building a bespoke table, filter or control. Shared colours and spacing use the
+theme tokens. Each page has one main landmark, a useful heading, keyboard access,
+visible focus and honest loading, empty and failure states.
 
-Dependencies flow from routes to features to reusable patterns to UI
-primitives. Shared components must not import a route's implementation. Move a
-feature to its domain when a second route needs it. Keep route-specific Server
-Actions beside their route and shared Server Actions in the owning `lib` domain;
-do not recreate a central `app/actions` folder. Server-only modules must remain
-outside client bundles. Use `./` or `../` for nearby files and the `@/` alias when
-an import would otherwise need multiple parent traversals. Keep permission and
-ownership checks at server boundaries.
+All workspace areas use one config-driven workspace shell. A route supplies its
+navigation and context through configuration; it does not introduce another shell.
 
-App, admin and My Store use `WorkspaceShell` and `WorkspaceContent` for the
-sidebar state, theme, skip target and scrolling frame. Each shell supplies its
-navigation and header. Admin and My Store share the assortment list and editor;
-their route modules supply the destination while server layouts enforce access.
+## Renderer and data
 
-Route groups organise layouts without changing URLs. Use `_components` for
-route-local React components; keep `page`, `layout`, `loading`, `error` and route
-handlers at their Next.js locations. The import-render harness remains a route
-while its reconstruction, review, authentication, metrics and renderer contract
-live in `lib/firework-import`. Fingerprinted source paths are part of sealed
-renderer evidence and must change only through a coordinated app, worker and
-database contract update. Shared features should take explicit inputs, such as
-an assortment destination, instead of inferring an admin persona.
-
-## Reuse and presentation
-
-Search existing callers before creating a control. Use the shared pattern Button
-for actions with links/loading, Input/Textarea for plain fields, Field for labels,
-SelectField for rich selects, Badge for status, SectionHeader for headings,
-DataTable/FilterBar/TablePagination for lists, and Feedback for empty, loading and
-failure states. Use raw UI primitives when composing a new pattern. A wrapper
-must add a real behaviour or composition; do not duplicate the underlying styles.
-
-Keep the established compact layout, Geist typography, neutral surfaces, thin
-borders and restrained shadows. Use green for ShowCrafter's primary actions and
-brand highlights. The `accent` token is the neutral hover/selection surface;
-`primary` is the brand action colour. Colours for success, warning, danger and
-information have semantic meanings. Firework/show palettes and marketing artwork
-are content, and may have their own colours.
-
-| Purpose                 | Tailwind tokens                                                                        |
-| ----------------------- | -------------------------------------------------------------------------------------- |
-| Page and panel surfaces | `bg-background`, `bg-card`, `bg-popover`, `bg-muted`                                   |
-| Text                    | `text-foreground`, `text-muted-foreground`                                             |
-| Lines and focus         | `border-border`, `border-input`, `ring-ring`                                           |
-| Primary action          | `bg-primary`, `text-primary-foreground`                                                |
-| Brand highlight         | `bg-hl`, `bg-hl-soft`, `text-hl-ink`                                                   |
-| Status                  | `text-status-success`, `text-status-warning`, `text-status-danger`, `text-status-info` |
-
-Maintain colour values and their light/dark counterparts together in
-`ui/theme.css`. Prefer semantic tokens over literal hex values and palette
-classes in application UI. Use the token classes above rather than
-`[color:var(--…)]` or Material-style names such as `text-on-surface`;
-`architecture/legacy-colours` enforces this. Check light, dark, mobile, focus, disabled/loading and
-reduced-motion states when changing a shared primitive.
-
-Use `SectionHeader as="h1"` for a page heading and its default `h2` for sections.
-Every page needs a meaningful heading, honest empty/error/loading states, and
-an intentional access boundary. A navigation item does not grant permission.
-Preview-only My Store metrics and credit top-ups must remain labelled as previews.
-Keep old redirect URLs working when consolidating pages.
-
-ESLint blocks imports from another route subtree, upward dependencies from UI
-primitives/patterns, and literal colour utilities in shared controls and shells.
-The tests exercise these boundaries, including relative and dynamic imports.
-
-## Reference and maintenance
-
-The structure follows the separation visible in [Dub's feature UI](https://github.com/dubinc/dub/tree/main/apps/web/ui),
-[shared UI package](https://github.com/dubinc/dub/tree/main/packages/ui) and
-[shared Tailwind configuration](https://github.com/dubinc/dub/blob/main/apps/web/tailwind.config.ts).
-Dub's components and neutral visual hierarchy inform the organisation; ShowCrafter
-keeps its own brand and the existing Radix/shadcn foundation.
-
-Next.js 16's version-matched project-structure documentation is installed at
-`apps/web/node_modules/next/dist/docs/01-app/01-getting-started/02-project-structure.md`.
-Read it before changing route conventions.
-
-Run `pnpm audit:ui` for the page inventory and import review, or add `-- --json`
-for machine-readable paths. The audit identifies candidates, not safe deletions:
-check runtime imports, re-exports and tests before removing a component. Use
-`pnpm check` for the delivery gate.
+`packages/fireworks` owns the renderer and its design JSON Schema. The schema is
