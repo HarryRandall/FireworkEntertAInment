@@ -175,6 +175,65 @@ export function spray(
   options: SprayOptions,
 ): void {
   if (!writer.sprays) return;
+  writer.sprayPhase?.(true);
+  try {
+    sampleSpray(writer, source, start, end, now, options);
+  } finally {
+    writer.sprayPhase?.(false);
+  }
+}
+
+// eslint-disable-next-line max-params -- A reused velocity tuple avoids allocating a context per spark for the source finite difference.
+function sampleInheritedVelocity(
+  velocity: Vec3,
+  source: (time: number) => Vec3,
+  emissionTime: number,
+  end: number,
+  inherit: number,
+): void {
+  let velocityX = 0;
+  let velocityY = 0;
+  let velocityZ = 0;
+
+  if (inherit !== 0) {
+    // Use the backward difference near source shut-off to avoid sampling beyond it.
+    const back = emissionTime + VELOCITY_STEP_S > end;
+    const before = source(back ? emissionTime - VELOCITY_STEP_S : emissionTime);
+    const after = source(back ? emissionTime : emissionTime + VELOCITY_STEP_S);
+    velocityX = ((after[0] - before[0]) / VELOCITY_STEP_S) * inherit;
+    velocityY = ((after[1] - before[1]) / VELOCITY_STEP_S) * inherit;
+    velocityZ = ((after[2] - before[2]) / VELOCITY_STEP_S) * inherit;
+  }
+  velocity[0] = velocityX;
+  velocity[1] = velocityY;
+  velocity[2] = velocityZ;
+}
+
+function appendReferenceSamples(writer: ParticleWriter, out: Float64Array, count: number): void {
+  for (let i = 0; i < count; i++) {
+    const offset = i * SPARK_STRIDE;
+    writer.spark(
+      [packedNumber(out, offset), packedNumber(out, offset + 1), packedNumber(out, offset + 2)],
+      [
+        packedNumber(out, offset + COLOUR_OFFSET),
+        packedNumber(out, offset + COLOUR_OFFSET + 1),
+        packedNumber(out, offset + COLOUR_OFFSET + 2),
+      ],
+      packedNumber(out, offset + SIZE_OFFSET),
+      packedNumber(out, offset + ALPHA_OFFSET),
+    );
+  }
+}
+
+// eslint-disable-next-line max-params -- Keep the source-clock scalars separate at this profiled kernel boundary, avoiding an options object allocation per emitting star.
+function sampleSpray(
+  writer: ParticleWriter,
+  source: (time: number) => Vec3,
+  start: number,
+  end: number,
+  now: number,
+  options: SprayOptions,
+): void {
   const velocity: Vec3 = [0, 0, 0];
   const out = writer.sprayBirth
     ? GPU_REFERENCE_OUTPUT
@@ -210,44 +269,6 @@ export function spray(
       options,
       out,
     );
-    for (let i = 0; i < count; i++) {
-      const offset = i * SPARK_STRIDE;
-      writer.spark(
-        [packedNumber(out, offset), packedNumber(out, offset + 1), packedNumber(out, offset + 2)],
-        [
-          packedNumber(out, offset + COLOUR_OFFSET),
-          packedNumber(out, offset + COLOUR_OFFSET + 1),
-          packedNumber(out, offset + COLOUR_OFFSET + 2),
-        ],
-        packedNumber(out, offset + SIZE_OFFSET),
-        packedNumber(out, offset + ALPHA_OFFSET),
-      );
-    }
+    appendReferenceSamples(writer, out, count);
   }
-}
-
-// eslint-disable-next-line max-params -- A reused velocity tuple avoids allocating a context per spark for the source finite difference.
-function sampleInheritedVelocity(
-  velocity: Vec3,
-  source: (time: number) => Vec3,
-  emissionTime: number,
-  end: number,
-  inherit: number,
-): void {
-  let velocityX = 0;
-  let velocityY = 0;
-  let velocityZ = 0;
-
-  if (inherit !== 0) {
-    // Use the backward difference near source shut-off to avoid sampling beyond it.
-    const back = emissionTime + VELOCITY_STEP_S > end;
-    const before = source(back ? emissionTime - VELOCITY_STEP_S : emissionTime);
-    const after = source(back ? emissionTime : emissionTime + VELOCITY_STEP_S);
-    velocityX = ((after[0] - before[0]) / VELOCITY_STEP_S) * inherit;
-    velocityY = ((after[1] - before[1]) / VELOCITY_STEP_S) * inherit;
-    velocityZ = ((after[2] - before[2]) / VELOCITY_STEP_S) * inherit;
-  }
-  velocity[0] = velocityX;
-  velocity[1] = velocityY;
-  velocity[2] = velocityZ;
 }

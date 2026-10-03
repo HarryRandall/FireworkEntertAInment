@@ -99,6 +99,7 @@ export function simulate(
     options.launchEffects,
     options.sprayBirth,
   );
+  writer.sprayPhase = options.sprayPhase;
   if (time_s < 0) return writer.finish();
   // Preserve the prototype's seed-zero fallback, including for a playback override.
   const seed = prototypeOr(options.seed ?? design.seed, 1);

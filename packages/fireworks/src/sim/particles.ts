@@ -74,6 +74,8 @@ export class ParticleWriter {
     /** Optional synchronous GPU birth receiver; suppresses CPU spray evaluation. */
     readonly sprayBirth?: SprayBirthSink,
   ) {}
+  /** Optional phase boundary observer, assigned once by the simulation entry point. */
+  sprayPhase: ((active: boolean) => void) | undefined;
   private puffs: Puff[] = [];
   /** Appends a puff at a centre in metres, with linear RGB, size in metres and age in seconds. */
   // eslint-disable-next-line max-params -- Packed scalar lanes avoid an extra options allocation per particle.
