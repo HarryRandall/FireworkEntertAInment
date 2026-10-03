@@ -179,6 +179,9 @@ importers:
       '@showcrafter/fireworks':
         specifier: workspace:*
         version: link:../../packages/fireworks
+      '@showcrafter/planner':
+        specifier: workspace:*
+        version: link:../../packages/planner
       '@supabase/ssr':
         specifier: ^0.8.0
         version: 0.8.0(@supabase/supabase-js@2.117.2)

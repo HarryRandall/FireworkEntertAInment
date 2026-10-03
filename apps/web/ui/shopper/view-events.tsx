@@ -5,7 +5,15 @@ import { useSearchParams } from 'next/navigation';
 
 /** Public view context, containing only the page's target and event kind. */
 export interface ShopperViewEvent {
-  kind: 'qr_scan' | 'store_view' | 'product_view' | 'show_view' | 'show_play';
+  kind:
+    | 'qr_scan'
+    | 'store_view'
+    | 'product_view'
+    | 'show_view'
+    | 'show_play'
+    | 'planner_started'
+    | 'plan_shown'
+    | 'something_different';
   target: string;
 }
 /** Dispatches a local integration event without persisting or sending shopper activity. */
