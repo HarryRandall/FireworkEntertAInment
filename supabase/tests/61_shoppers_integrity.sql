@@ -1,10 +1,13 @@
 -- Atomic starts and list snapshots, consent visibility and cross-owner constraints.
 select no_plan();
 select tests.create_shoppers_fixture();
+insert into public.credit_prices(action,credits) values ('plan_session',1);
+insert into public.credit_ledger(organisation_id,delta,reason,idempotency_key)
+  select id,10,'grant','fixture:' || id from public.organisations;
 select tests.act_as('signed_in_shopper');
 select lives_ok($$select public.start_plan_session('90000000-0000-0000-0000-000000000001','{"occasion":"fixture"}','fixture','fresh',null,now())$$,'signed-in shopper can start session');
 select is((select count(*) from public.plan_sessions where input_hash = 'fresh'),1::bigint,'session belongs to caller');
-select is((select count(*) from public.plan_sessions where credits_reservation_id is not null),0::bigint,'credit settlement hook leaves reservation empty');
+select is((select count(*) from public.plan_sessions where credits_reservation_id is not null),1::bigint,'session start records its credit settlement');
 select throws_ok($$select public.start_plan_session('90000000-0000-0000-0000-000000000001','{}','fixture','bad-qr','95000000-0000-0000-0000-000000000002',now())$$,'23514',null,'QR from another retailer refused');
 select throws_ok($$select public.start_plan_session('90000000-0000-0000-0000-000000000001','[]','fixture','bad-answers',null,now())$$,'23514',null,'answers must be an object');
 select throws_ok($$select public.start_plan_session('90000000-0000-0000-0000-000000000001','{}','fixture','no-age')$$,'23514',null,'omitted age confirmation refused');
