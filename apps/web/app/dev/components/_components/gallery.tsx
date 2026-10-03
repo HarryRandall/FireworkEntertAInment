@@ -10,6 +10,7 @@ import { NavigationExamples } from './navigation-examples';
 import { WorkspaceExamples } from './workspace-examples';
 import { ShopperExamples } from './shopper-examples';
 import { EditorExamples } from './editor-examples';
+import { DashboardExamples } from './dashboard-examples';
 import { MotionExamples } from './motion-examples';
 import { useGalleryPosters } from './use-gallery-posters';
 
@@ -22,6 +23,9 @@ const groups = [
   'Shopper',
   'Editor',
   'Motion',
+  'Dashboard',
+  'Data grid',
+  'Charts',
 ];
 /** Renders every shared kit family as the owner's light/dark and phone review surface. */
 export function Gallery() {
@@ -37,7 +41,7 @@ export function Gallery() {
           {groups.map((group) => (
             <a
               key={group}
-              href={`#${group.toLowerCase()}`}
+              href={`#${group.toLowerCase().replaceAll(' ', '-')}`}
               className="hover:bg-accent rounded-md px-3 py-2 text-sm"
             >
               {group}
@@ -87,6 +91,7 @@ export function Gallery() {
         <ShopperExamples products={products} />
         <EditorExamples />
         <MotionExamples />
+        <DashboardExamples />
       </main>
     </div>
   );
