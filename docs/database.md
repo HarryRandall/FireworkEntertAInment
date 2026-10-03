@@ -118,9 +118,16 @@ Organisation data is readable by members and platform staff. Stores and store
 branding also respect assigned store scopes. Owners manage organisation settings,
 extra markets, memberships and invitations; operational managers can manage their
 assigned stores and branding. Invitations and their token hashes are readable only
-by owners with unrestricted team rights or super admins. Invitation creation and
-revocation are single-row operations here; token delivery and acceptance workflows
-are not implemented. Organisations, stores and invitations have no client delete
+by owners with unrestricted team rights or super admins. Invitation creation and revocation are single-row operations.
+`accept_invitation(token)` hashes the raw token with SHA-256, locks its invitation,
+checks the active caller's verified Auth email, expiry and revocation, then creates
+the scoped membership and records acceptance in one transaction. Existing membership
+rights are preserved. Repeats by the accepting UUID return the organisation without
+rewriting membership rights, including after an email change. Raw tokens are not stored;
+token generation and delivery remain outside this capability.
+
+`current_staff_role()` exposes only the caller's existing private role lookup to the
+API. It reads `staff_roles` through the active-profile fence, never staff JWT claims. Organisations, stores and invitations have no client delete
 capability; use their status or revocation fields.
 
 The market policies need the table-backed staff helper before people tables are
