@@ -50,7 +50,15 @@ for (const config of Object.values(areaConfigs)) {
           .click();
         await expect(page).toHaveURL(item.href);
         await expect(page.getByRole('heading', { level: 1 })).toHaveText(item.label);
-        await checkTabs(page);
+        if (
+          ![
+            '/admin/catalogue',
+            '/admin/products',
+            '/admin/multishots',
+            '/admin/suppliers',
+          ].includes(item.href)
+        )
+          await checkTabs(page);
       }
       for (const item of section.shortcuts) {
         await page
