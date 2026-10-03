@@ -1,0 +1,81 @@
+/* Studio dimensions in CSS px follow the prototype's 240/300 px side panels.
+   The 980 px shell breakpoint stacks sections; 320 px is a phone-stage visual minimum. */
+.sc-studio {
+  --studio-layers-width: 240px;
+  --studio-inspector-width: 300px;
+  --studio-phone-stage-height: 320px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+}
+.sc-studio-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.sc-studio-panels {
+  display: grid;
+  grid-template-columns: var(--studio-layers-width) minmax(0, 1fr) var(--studio-inspector-width);
+  flex: 1;
+  min-height: 0;
+}
+.sc-studio-layers,
+.sc-studio-inspector {
+  padding: 16px;
+  min-width: 0;
+  overflow: auto;
+}
+.sc-studio-layers {
+  border-right: 1px solid var(--border);
+}
+.sc-studio-inspector {
+  border-left: 1px solid var(--border);
+}
+.sc-studio-stage {
+  position: relative;
+  min-width: 0;
+  min-height: var(--studio-phone-stage-height);
+  overflow: hidden;
+}
+/* Floating player insets and pill radius are visual tuning from studio.html. */
+.sc-studio-player {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  right: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--stage-foreground);
+  border-radius: 16px;
+  padding: 8px;
+}
+.sc-studio-player input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+}
+@media (max-width: 980px) {
+  .sc-studio {
+    height: auto;
+    min-height: 100%;
+  }
+  .sc-studio-panels {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sc-studio-stage {
+    grid-row: 1;
+    height: var(--studio-phone-stage-height);
+  }
+  .sc-studio-layers,
+  .sc-studio-inspector {
+    border: 0;
+    border-top: 1px solid var(--border);
+    overflow: visible;
+  }
+}
