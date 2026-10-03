@@ -1,27 +1,26 @@
 'use client';
 
-/**
- * Last-resort boundary for failures in the root layout. It replaces the whole
- * document, so it brings its own html/body and global styles.
- */
-
 import './globals.css';
-import { RouteError } from '@/ui/patterns/RouteError';
 
 export default function GlobalError({
-  retry,
+  reset,
 }: {
   error: Error & { digest?: string };
-  retry: () => void;
+  reset: () => void;
 }) {
   return (
     <html lang="en">
-      <body className="bg-background text-foreground font-sans">
-        <title>ShowCrafter | Something went wrong</title>
-        <main>
-          <RouteError title="ShowCrafter failed to load" onRetry={retry} className="min-h-screen">
-            Something went wrong while loading the app. Try again in a moment.
-          </RouteError>
+      <body>
+        <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-4 px-6">
+          <h1 className="text-3xl font-semibold">ShowCrafter failed to load.</h1>
+          <p className="text-muted-foreground">Try again in a moment.</p>
+          <button
+            className="bg-primary text-primary-foreground w-fit rounded-md px-4 py-2"
+            onClick={reset}
+            type="button"
+          >
+            Try again
+          </button>
         </main>
       </body>
     </html>
