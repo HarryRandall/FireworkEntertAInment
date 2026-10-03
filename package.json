@@ -18,7 +18,7 @@
     "audit:ui": "pnpm --filter @showcrafter/web audit:ui",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "check": "pnpm format:check && pnpm test:database-tooling && pnpm test:packages && pnpm knip && pnpm --filter @showcrafter/web check",
+    "check": "pnpm format:check && pnpm test:database-tooling && pnpm test:packages && pnpm knip && pnpm --filter @showcrafter/web check && pnpm test:browser",
     "test:analyser": "services/music-analyser/.venv/bin/python -m unittest discover -s services/music-analyser/tests -p '*test*.py'",
     "db:start": "node scripts/database/local.mjs start",
     "db:stop": "node scripts/database/local.mjs stop",
@@ -31,12 +31,16 @@
     "db:types": "node scripts/database/types.mjs",
     "db:setup": "pnpm db:start && pnpm db:reset",
     "test:packages": "pnpm --filter @showcrafter/fireworks check && node --import ./scripts/register-typescript.mjs --test packages/planner/tests/*.test.mjs",
-    "knip": "knip"
+    "knip": "knip",
+    "test:browser": "tsc -p tests/browser/tsconfig.json && playwright test"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.11.1",
+    "@playwright/test": "1.58.2",
     "knip": "^6.38.0",
     "prettier": "3.8.3",
     "prettier-plugin-tailwindcss": "0.8.0",
-    "supabase": "2.101.0"
+    "supabase": "2.101.0",
+    "typescript": "5.9.3"
   }
 }

@@ -2,7 +2,7 @@
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
     ".": {
-      "entry": ["scripts/**/*.{js,mjs,ts}"]
+      "entry": ["scripts/**/*.{js,mjs,ts}", "tests/browser/**/*.ts"]
     },
     "apps/web": {
       "entry": ["scripts/**/*.mjs"],
@@ -41,7 +41,7 @@
     "apps/web/lib/supabase/server-client.ts": ["files"],
     "apps/web/lib/supabase/server.ts": ["files"],
     "apps/web/lib/supabase/service-role.ts": ["files"],
-    "apps/web/lib/utils.ts": ["files"],
+    "apps/web/lib/utils.ts": ["files", "exports"],
     "apps/web/lib/supabase/env.ts": ["exports"],
     "apps/web/ui/theme/ThemePreferenceSync.tsx": ["files"]
   }

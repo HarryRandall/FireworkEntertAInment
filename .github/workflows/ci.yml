@@ -72,6 +72,12 @@ jobs:
       - name: Build application
         run: pnpm build
 
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Check renderer browser journeys
+        run: pnpm test:browser
+
   analyser:
     name: Python analyser tests
     runs-on: ubuntu-latest

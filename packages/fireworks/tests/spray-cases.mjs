@@ -1,5 +1,5 @@
 /** Small authored cases shared by the independent capture and spray parity tests. */
-import { readFileSync } from 'node:fs';
+import { reviewFixtureDesign } from '../src/fixtures/index.ts';
 import { kindCases } from './kind-cases.mjs';
 /** Returns fresh designs and evaluation times in seconds covering spray and smoke controls. */
 export function sprayCases() {
@@ -20,7 +20,7 @@ export function sprayCases() {
         'modifier-twist',
       ].includes(c.name),
   );
-  const peony = () => JSON.parse(readFileSync(new URL('./fixtures/peony.json', import.meta.url)));
+  const peony = () => reviewFixtureDesign('peony');
   for (const tail of [
     'gold',
     'silver',
@@ -66,7 +66,7 @@ export function sprayCases() {
     glitter: 0.4,
   });
   cases.push({ name: 'fountain-line', design: fountain, times: [0.53, 2.5, 7.5, 9] });
-  const multi = JSON.parse(readFileSync(new URL('./fixtures/multi-break.json', import.meta.url)));
+  const multi = reviewFixtureDesign('multi-break');
   // The prototype allows one modifier per layer. Composition is tested separately.
   multi.breaks[0].layers[0].modifiers = multi.breaks[0].layers[0].modifiers.slice(0, 1);
   cases.push({ name: 'multi-break-smoke', design: multi, times: [2.5, 3.1, 4.2, 6] });

@@ -36,3 +36,24 @@ pnpm check
 From the database foundations stage onwards, also run `pnpm db:reset && pnpm db:test`
 against local Supabase. For UI work, inspect the requested desktop and narrow layouts
 in light and dark themes and attach the screenshots to the PR.
+
+## Renderer review
+
+`http://localhost:3000/dev/fireworks` needs no local Supabase. It shows all built-in
+templates and three simulation fixtures as static previews produced by one WebGL
+context. Selecting a card plays it in that same context. The comparison link opens
+`http://localhost:8765/fireworks.html` in a separate tab so the owner can arrange the
+two pages alongside each other. The prototype must already be served from the
+read-only reference checkout.
+
+The view uses three.js 0.184.0 and a single output target and pass. Add `?ldr` to the
+review URL to exercise its 8-bit fallback. The fixed review camera fits sampled
+particle bounds; interactive camera controls and sound are separate concerns.
+
+Install the test browser once with `pnpm exec playwright install chromium`.
+`pnpm test:browser` runs Chromium journeys, accessibility checks, exact seek replay
+and representative template screenshots at desktop and 390 px widths in both
+colour schemes. It is included in `pnpm check`. Screenshots stay in ignored
+`output/playwright/`; they are review evidence, not approved visual baselines.
+Software GL measurements do not establish performance on a real device. The owner
+must review visual parity against the prototype before delivery is called verified.
