@@ -26,6 +26,8 @@ const files = [
   '86_ai_jobs.sql',
   '87_integrations.sql',
   '90_platform.sql',
+  '94_storage.sql',
+  '95_maintenance.sql',
 ];
 const schemaSources = {
   design: 'packages/fireworks/schema/design.v1.json',

@@ -282,8 +282,8 @@ create view public.show_store_status with (security_invoker = true) as
   group by show.id,show.organisation_id,store.id;
 
 -- Mark retailer shows with an unavailable product at every open store, and recover after replenishment.
-create function private.refresh_show_stock()
-returns trigger language plpgsql security definer set search_path = '' as $$
+create function private.recalculate_show_stock()
+returns void language plpgsql security definer set search_path = '' as $$
 #variable_conflict error
 begin
   with desired as (
@@ -299,10 +299,19 @@ begin
   )
   update public.shows as show set status = desired.status from desired
     where show.id = desired.id and show.status is distinct from desired.status;
+end;
+$$;
+comment on function private.recalculate_show_stock() is 'Recalculates live or stock_issue status from current range and stock for every retailer show; drafts and archived shows are untouched.';
+-- Statement triggers and scheduled reconciliation share the same stock calculation.
+create function private.refresh_show_stock()
+returns trigger language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+begin
+  perform private.recalculate_show_stock();
   return null;
 end;
 $$;
-comment on function private.refresh_show_stock() is 'Derives live or stock_issue status after stock or range changes; drafts and archived shows are untouched.';
+comment on function private.refresh_show_stock() is 'Delegates stock and range statement changes to the shared show stock calculation.';
 create trigger refresh_show_stock after insert on public.stock_movements
   for each statement execute function private.refresh_show_stock();
 create trigger refresh_show_stock after insert or update on public.store_items
