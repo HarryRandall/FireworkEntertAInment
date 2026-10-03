@@ -8,11 +8,21 @@ const PLAN_REFERENCE_PATTERNS = [
   /\buntil\s+(?:PR|stage)\b/iu,
 ];
 
+const LINT_DIRECTIVE = /^\s*eslint-disable-next-line\b/u;
+
+// A lint exception may sit between the doc comment and the declaration it documents.
 function hasPurposeComment(sourceCode, node) {
   const documentedNode = node.parent?.type.startsWith('Export') ? node.parent : node;
-  const comment = sourceCode.getCommentsBefore(documentedNode).at(-1);
+  const comments = sourceCode.getCommentsBefore(documentedNode);
+  let expectedEndLine = documentedNode.loc.start.line - 1;
+  let comment = comments.at(-1);
+  if (comment?.type === 'Line' && LINT_DIRECTIVE.test(comment.value)) {
+    if (comment.loc.end.line !== expectedEndLine) return false;
+    expectedEndLine = comment.loc.start.line - 1;
+    comment = comments.at(-2);
+  }
   if (!comment || comment.type !== 'Block' || !comment.value.startsWith('*')) return false;
-  return comment.loc.end.line === documentedNode.loc.start.line - 1;
+  return comment.loc.end.line === expectedEndLine;
 }
 
 function reportMissingPurposeComment(context, node) {

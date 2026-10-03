@@ -20,8 +20,13 @@ ruleTester.run('readability/export-doc', localRules.rules['export-doc'], {
     '/** Performs internal work exposed to callers. */\nfunction internalHelper() {}\nexport { internalHelper };',
     '/** Controls the viewer. */\nexport class Viewer {\n/** Starts playback. */\nplay() {}\n}',
     'export const DEFAULT_LIMIT = 10;',
+    '/** Fills a buffer. */\n// eslint-disable-next-line max-params -- hot loop\nexport function fill(a, b, c, d, e) {}',
   ],
   invalid: [
+    {
+      code: '// eslint-disable-next-line max-params -- hot loop\nexport function fill(a, b, c, d, e) {}',
+      errors: [{ messageId: 'missing' }],
+    },
     {
       code: 'export function launchTime() { return 0; }',
       errors: [{ messageId: 'missing' }],
