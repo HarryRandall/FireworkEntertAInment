@@ -58,6 +58,51 @@ colour schemes. It is included in `pnpm check`. Screenshots stay in ignored
 Software GL measurements do not establish performance on a real device. The owner
 must review visual parity against the prototype before delivery is called verified.
 
+## Spray parity and frame-time comparison
+
+The live view defaults to GPU sprays. Source-clock slots, birth positions, birth opacity
+and inherited source velocity remain on the CPU. The vertex shader computes spark
+motion, forks, glitter, cooling and streaks. The DOM-free CPU kernel remains the
+reference. Both kernels use the same named tuning values and hash stream selectors;
+the direction lookup retains the prototype's Float32 quantisation. Integer hash inputs
+are uploaded as two exact 16-bit limbs so large seeds cannot round or become NaNs.
+
+`tests/browser/spray-parity.spec.ts` reads the live shader with WebGL2 transform
+feedback and compares position, colour, size and alpha with the CPU at fixed times.
+The test states Float32/GLSL precision tolerances and covers directed gerbs, glitter,
+forks, inherited velocity, streak bounds, large seeds and direct-seek replay.
+Each fixed instant samples at most 128 evenly spaced source sparks, retaining all
+candidate fork/streak rows for each selected spark. Two source passes count and then
+sample the deterministic birth stream. Explicit modifier cases retain every synthetic
+birth and boundary age. All populated Float32 texture rows and candidate pairs are
+encoded once per case; the shader is compiled once and each instant is replayed on
+that context. One comparison pass reports the worst lane using the unchanged
+precision tolerances. No float render target is required for this parity harness.
+
+Time the same CPU builder, packing, payload encoding and comparison without Chromium:
+`node --import ./scripts/register-typescript.mjs --test packages/fireworks/tests/spray-parity-harness.test.mjs`.
+The logged simulation duration includes CPU expectation evaluation and birth packing;
+their separate durations are subsets. Node timings exclude page transfer, shader
+compilation and software GL, which the composer must verify in the browser gate.
+
+Run `corepack pnpm test:browser` to typecheck and execute it, or
+`corepack pnpm exec tsc -p tests/browser/tsconfig.json` to typecheck without launching
+Chromium. Full `pnpm check` includes the browser execution and needs Chromium.
+
+On your own machine, open `/dev/fireworks`, select **Run 40-shot finale**, and compare
+**CPU sprays** with **GPU sprays**. Restart each path from time zero using the same
+viewport, browser, build and foreground visibility. Record median and 95th-percentile
+frame intervals during the dense finale and note your device, build mode and viewport.
+Repeat each run to distinguish persistent lag from first-use shader compilation.
+The rolling readout covers the last 120 visible playing frames, uses a nearest-rank
+95th percentile and resets when the scene or path changes. Pause and off-screen gaps
+are excluded. The separate smoothed CPU build/submission duration does not measure
+GPU completion; frame intervals include browser scheduling and display cadence.
+Candidate counts include invisible GPU rows and are not a CPU/GPU visual count comparison.
+Browser automation throttles animation frames, so its timings do not prove an improvement
+on the owner's machine. Attach desktop and 390 px screenshots in both themes alongside
+the prototype, and obtain owner visual review before accepting renderer parity.
+
 ## Agent tooling
 
 Project skills are maintained once under `.agents/skills`. Claude uses relative links

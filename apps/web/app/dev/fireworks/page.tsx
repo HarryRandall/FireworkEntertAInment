@@ -1,4 +1,4 @@
-/** Developer review surface for stored designs and the CPU-backed WebGL view. */
+/** Developer review surface for stored designs and the GPU-backed WebGL view. */
 'use client';
 
 import Link from 'next/link';

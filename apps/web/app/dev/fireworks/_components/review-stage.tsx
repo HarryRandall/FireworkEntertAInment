@@ -5,6 +5,7 @@ import type { Viewer } from '@showcrafter/fireworks/view';
 import { Button } from '@/ui/primitives/button';
 import type { entries } from './review-catalogue';
 import type { ReviewState } from './review-state';
+import { StressControls } from './stress-controls';
 // Prototype review UI uses 0.01-second seek granularity.
 const SEEK_STEP_S = 0.01;
 interface StageProps {
@@ -36,7 +37,7 @@ export function ReviewStage({
     <section aria-label="Selected firework" className="grid gap-3">
       <div className="flex flex-wrap items-center gap-3">
         <h2 className="text-xl font-semibold" data-testid="selected-name">
-          {selected.name}
+          {state.shotCount > 1 ? '40-shot finale' : selected.name}
         </h2>
         <span className="text-muted-foreground">{selected.group}</span>
         <Button
@@ -63,9 +64,10 @@ export function ReviewStage({
       />
       <PlaybackControls viewer={viewer} ready={ready} state={state} />
       <p className="text-muted-foreground text-sm">
-        {state.hdr ? 'HDR' : '8-bit'} output · {state.count.toLocaleString('en-GB')} particles · CPU
-        sprays
+        {state.hdr ? 'HDR' : '8-bit'} output · {state.count.toLocaleString('en-GB')} particles ·{' '}
+        {state.sprayMode.toUpperCase()} sprays
       </p>
+      <StressControls viewer={viewer} ready={ready} state={state} selected={selected.design} />
     </section>
   );
 }
