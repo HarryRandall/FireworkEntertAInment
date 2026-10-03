@@ -1898,6 +1898,68 @@ set search_path = ''
 as $$ select private.save_effect_details(p_effect_id, p_name, p_family, p_is_template); $$;
 comment on function public.save_effect_details(uuid, text, text, boolean) is 'Updates effect library metadata without changing the renderer document, lifecycle or derived search facts.';
 
+-- Copies catalogue content into a new draft without carrying confirmed safety or publication.
+create or replace function private.duplicate_catalogue_item(p_kind text, p_id uuid)
+returns uuid language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  source_effect public.effects;
+  source_product public.products;
+  effect_version public.effect_versions;
+  product_version public.product_versions;
+  new_version uuid;
+  new_parent uuid;
+  bindings jsonb;
+  contents jsonb;
+  copy_slug text;
+begin
+  perform private.require_catalogue_editor();
+  -- Match catalogue publication's lock order before locking source parents or pack contents.
+  perform pg_advisory_xact_lock(hashtextextended('catalogue.publication',0));
+  copy_slug := 'copy-' || extensions.gen_random_uuid()::text;
+  if p_kind = 'effect' then
+    select * into source_effect from public.effects where id = p_id for update;
+    if not found then raise exception using errcode = 'P0002', message = 'Effect not found'; end if;
+    select * into effect_version from public.effect_versions
+      where id = coalesce(source_effect.draft_version_id, source_effect.current_version_id) for update;
+    if not found then raise exception using errcode = '23514', message = 'Effect has no version to duplicate'; end if;
+    new_version := private.create_effect_draft(null, copy_slug, source_effect.name || ' copy',
+      source_effect.family, effect_version.design, effect_version.renderer);
+    select effect_id into new_parent from public.effect_versions where id = new_version;
+  elsif p_kind = 'product' then
+    select * into source_product from public.products where id = p_id for update;
+    if not found then raise exception using errcode = 'P0002', message = 'Product not found'; end if;
+    if source_product.kind = 'pack' then
+      new_parent := private.create_pack(copy_slug, source_product.name || ' copy');
+      select coalesce(jsonb_agg(jsonb_build_object('item_id', item_id, 'quantity', quantity, 'sort', sort)), '[]')
+        into contents from public.pack_items where pack_id = p_id;
+      perform private.save_pack_items(new_parent, contents);
+    else
+      -- Lock the source draft so autosave cannot separate its composition from its letter bindings.
+      select * into product_version from public.product_versions
+        where id = coalesce(source_product.draft_version_id, source_product.current_version_id) for update;
+      if not found then raise exception using errcode = '23514', message = 'Product has no version to duplicate'; end if;
+      select coalesce(jsonb_object_agg(letter, effect_id), '{}') into bindings
+        from public.product_version_effects where product_version_id = product_version.id;
+      new_version := private.create_product_draft(null, copy_slug, source_product.name || ' copy',
+        source_product.kind, product_version.composition, bindings);
+      select product_id into new_parent from public.product_versions where id = new_version;
+    end if;
+  else
+    raise exception using errcode = '22023', message = 'Unknown catalogue kind';
+  end if;
+  return new_parent;
+end;
+$$;
+comment on function private.duplicate_catalogue_item(text, uuid) is 'Atomically duplicates the preferred draft or current version, including bindings or pack contents, as an unpublished parent with no confirmed safety.';
+
+-- Exposes atomic duplication only through the catalogue editor boundary.
+create or replace function public.duplicate_catalogue_item(p_kind text, p_id uuid)
+returns uuid language sql set search_path = '' as $$
+  select private.duplicate_catalogue_item(p_kind, p_id);
+$$;
+comment on function public.duplicate_catalogue_item(text, uuid) is 'Duplicates an effect or product into an independent draft and returns its parent UUID.';
+
 -- Supplier submissions, measured video evidence, proposed designs and client-append-only QA decisions.
 create table public.imports (
   id uuid primary key default gen_random_uuid(),
