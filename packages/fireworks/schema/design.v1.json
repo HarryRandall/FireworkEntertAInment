@@ -1,0 +1,1622 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://showcrafter.app/schema/design.v1.json",
+  "title": "ShowCrafter design v1",
+  "description": "Stored renderer input. Version 1 is recorded externally as design_schema; defaults are authoring annotations, never applied during validation. All stored fields are explicit.",
+  "definitions": {
+    "hexColour": {
+      "type": "string",
+      "pattern": "^#[0-9a-fA-F]{6}$",
+      "default": "#8f7bff"
+    },
+    "vectorM": {
+      "type": "array",
+      "items": [
+        {
+          "type": "number",
+          "minimum": -1000,
+          "maximum": 1000,
+          "default": 0,
+          "description": "Metres on the world x, y or z axis."
+        },
+        {
+          "type": "number",
+          "minimum": -1000,
+          "maximum": 1000,
+          "default": 0,
+          "description": "Metres on the world x, y or z axis."
+        },
+        {
+          "type": "number",
+          "minimum": -1000,
+          "maximum": 1000,
+          "default": 0,
+          "description": "Metres on the world x, y or z axis."
+        }
+      ],
+      "minItems": 3,
+      "maxItems": 3,
+      "additionalItems": false
+    },
+    "direction": {
+      "type": "array",
+      "items": [
+        {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "default": 0,
+          "description": "Direction component, not a position."
+        },
+        {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "default": 0,
+          "description": "Direction component, not a position."
+        },
+        {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "default": 0,
+          "description": "Direction component, not a position."
+        }
+      ],
+      "minItems": 3,
+      "maxItems": 3,
+      "additionalItems": false
+    },
+    "colourValue": {
+      "anyOf": [
+        {
+          "$ref": "#/definitions/hexColour"
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/hexColour"
+          },
+          "minItems": 1,
+          "maxItems": 16
+        }
+      ]
+    },
+    "colourStop": {
+      "type": "array",
+      "items": [
+        {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 2,
+          "default": 0,
+          "description": "Normalised star lifetime."
+        },
+        {
+          "$ref": "#/definitions/colourValue"
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2,
+      "additionalItems": false
+    },
+    "colour": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["solid", "alternate", "random", "per_star"],
+          "default": "solid"
+        },
+        "stops": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/colourStop"
+          },
+          "minItems": 2,
+          "maxItems": 32
+        },
+        "reignition": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["at", "duration", "amount"],
+          "properties": {
+            "at": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1,
+              "default": 0.55
+            },
+            "duration": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 1,
+              "default": 0.1
+            },
+            "amount": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 10,
+              "default": 0.5
+            }
+          }
+        }
+      },
+      "required": ["mode", "stops"],
+      "description": "Piecewise linear in linear RGB over normalised life; stops may extend past 1 for a late colour change. Each value is a hex colour or a palette. Select the same index at every stop: solid first, alternate cycles, random seeded, per_star explicit index. Duplicate times encode steps. Stops are ordered, begin at 0 and end at or beyond 1. Fade is applied separately."
+    },
+    "brightnessStop": {
+      "type": "array",
+      "items": [
+        {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0,
+          "description": "Normalised lifetime."
+        },
+        {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 1,
+          "description": "Brightness multiplier, independent of the burn fade."
+        }
+      ],
+      "minItems": 2,
+      "maxItems": 2,
+      "additionalItems": false
+    },
+    "brightness": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/brightnessStop"
+      },
+      "minItems": 2,
+      "maxItems": 32,
+      "description": "Ordered piecewise linear brightness multipliers, from time 0 to 1. Duplicate times encode steps. Multiplied by the fade envelope."
+    },
+    "head": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "size": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 1,
+          "description": "Relative head size."
+        },
+        "visible": {
+          "type": "boolean",
+          "default": true
+        },
+        "halo": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 4,
+          "default": 1,
+          "description": "Halo strength. If absent: 0 for strobe, otherwise 1."
+        }
+      },
+      "required": ["size", "visible"]
+    },
+    "trail": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "sparks": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000,
+          "default": 18,
+          "description": "Nominal live spark count before renderer density tuning."
+        },
+        "length_s": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 20,
+          "default": 0.5,
+          "description": "Base spark lifetime in seconds, before renderer tuning."
+        },
+        "spread_m_s": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 200,
+          "default": 1.4,
+          "description": "Spark ejection speed in metres per second."
+        },
+        "gravity_m_s2": {
+          "type": "number",
+          "minimum": -40,
+          "maximum": 100,
+          "default": 3,
+          "description": "Spark acceleration in metres per second squared."
+        },
+        "drag_per_s": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 30,
+          "default": 2.6,
+          "description": "Drag coefficient in inverse seconds."
+        },
+        "size": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 1,
+          "description": "Relative spark size."
+        },
+        "flicker": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.3,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "colour": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": ["house", "star"],
+              "default": "house"
+            },
+            {
+              "$ref": "#/definitions/hexColour"
+            }
+          ]
+        },
+        "glitter": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "glitter_delay_s": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 20,
+          "default": 0.35,
+          "description": "Seconds before glitter ignition."
+        },
+        "fork": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0,
+          "description": "Dimensionless multiplier or fraction."
+        }
+      },
+      "required": [
+        "sparks",
+        "length_s",
+        "spread_m_s",
+        "gravity_m_s2",
+        "drag_per_s",
+        "size",
+        "flicker",
+        "colour",
+        "glitter",
+        "glitter_delay_s",
+        "fork"
+      ]
+    },
+    "modifier": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "crackle",
+            "strobe",
+            "twinkle",
+            "crossette",
+            "ghost",
+            "fish",
+            "bees",
+            "flutter",
+            "pop",
+            "glitter",
+            "twist",
+            "split",
+            "whistle"
+          ]
+        },
+        "at": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.7,
+          "description": "Trigger as a fraction of each star lifetime."
+        },
+        "rate_hz": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 500,
+          "default": 12,
+          "description": "Strobe cycles or twinkle samples per second."
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 400,
+          "default": 8,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "amount": {
+          "type": "number",
+          "minimum": -20,
+          "maximum": 20,
+          "default": 1,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "spread": {
+          "type": "string",
+          "enum": ["burst", "continuous"],
+          "default": "burst"
+        },
+        "gap": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.12,
+          "description": "Ghost dark interval as a lifetime fraction."
+        },
+        "angular_speed_rad_s": {
+          "type": "number",
+          "minimum": -500,
+          "maximum": 500,
+          "default": 0,
+          "description": "Twist angular speed in radians per second."
+        },
+        "rate_rad_s": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 500,
+          "default": 12,
+          "description": "Fish wriggle angular speed in radians per second."
+        }
+      },
+      "required": [
+        "kind",
+        "at",
+        "rate_hz",
+        "count",
+        "amount",
+        "spread",
+        "gap",
+        "angular_speed_rad_s",
+        "rate_rad_s"
+      ]
+    },
+    "layer": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "default": "Stars"
+        },
+        "pattern": {
+          "type": "string",
+          "enum": [
+            "sphere",
+            "ring",
+            "double_ring",
+            "heart",
+            "spiral",
+            "random",
+            "fan",
+            "cone",
+            "straight",
+            "sequence",
+            "bottom"
+          ],
+          "default": "sphere"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000,
+          "default": 64,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "radius_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 500,
+          "default": 26,
+          "description": "Asymptotic travel radius in metres, not diameter."
+        },
+        "tilt": {
+          "type": "number",
+          "minimum": -1,
+          "maximum": 1,
+          "default": 0.4,
+          "description": "Prototype ring tilt control: angle = tilt * pi / 2 + 0.3 radians."
+        },
+        "speed_var": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.22,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "drag_per_s": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 30,
+          "default": 2.2,
+          "description": "Closed-form drag coefficient in inverse seconds, must be positive."
+        },
+        "gravity_m_s2": {
+          "type": "number",
+          "minimum": -40,
+          "maximum": 100,
+          "default": 6,
+          "description": "Acceleration in metres per second squared."
+        },
+        "life_s": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 120,
+          "default": 2.2,
+          "description": "Star burn lifetime in seconds."
+        },
+        "life_var": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.2,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "delay_s": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 120,
+          "default": 0,
+          "description": "Seconds after this break; prototype event delays move to break.at_s."
+        },
+        "offset_m": {
+          "$ref": "#/definitions/vectorM"
+        },
+        "flash": {
+          "type": "boolean",
+          "default": true
+        },
+        "hidden": {
+          "type": "boolean",
+          "default": false
+        },
+        "colour": {
+          "$ref": "#/definitions/colour"
+        },
+        "brightness": {
+          "$ref": "#/definitions/brightness"
+        },
+        "head": {
+          "$ref": "#/definitions/head"
+        },
+        "trail": {
+          "$ref": "#/definitions/trail"
+        },
+        "modifiers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/modifier"
+          },
+          "minItems": 0,
+          "maxItems": 16
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "pattern",
+        "count",
+        "radius_m",
+        "tilt",
+        "speed_var",
+        "drag_per_s",
+        "gravity_m_s2",
+        "life_s",
+        "life_var",
+        "delay_s",
+        "offset_m",
+        "flash",
+        "hidden",
+        "colour",
+        "brightness",
+        "head",
+        "trail",
+        "modifiers"
+      ]
+    },
+    "core": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "colour": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#ff3b2f"
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000,
+          "default": 110,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "radius": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 4,
+          "default": 0.5,
+          "description": "Fraction of layer radius, not metres."
+        },
+        "flash": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 1,
+          "description": "Flash and report strength."
+        },
+        "flash_on": {
+          "type": "boolean",
+          "default": true
+        },
+        "ring": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": ["enabled", "colour", "count", "radius", "flash", "flash_on", "ring"]
+    },
+    "fade": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "white_hot": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.03,
+          "description": "Lifetime fraction, multiplied by 0.5 + each star life hash."
+        },
+        "ember_at": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.8,
+          "description": "Lifetime fraction at which the warm shift starts."
+        },
+        "fade_at": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.72,
+          "description": "Lifetime fraction at which linear fade-out starts."
+        },
+        "prime_s": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 0.25,
+          "description": "Orange ignition ramp in seconds."
+        }
+      },
+      "required": ["white_hot", "ember_at", "fade_at", "prime_s"]
+    },
+    "break": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "at_s": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 120,
+          "default": 0,
+          "description": "Seconds after launch apex; for mines, after firing."
+        },
+        "core": {
+          "$ref": "#/definitions/core"
+        },
+        "fade": {
+          "$ref": "#/definitions/fade"
+        },
+        "layers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/layer"
+          },
+          "minItems": 1,
+          "maxItems": 32
+        }
+      },
+      "required": ["at_s", "core", "fade", "layers"]
+    },
+    "launch": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "height_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000,
+          "default": 60,
+          "description": "Apex height in metres above ground."
+        },
+        "time_s": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 120,
+          "default": 1.8,
+          "description": "Actual lift duration in seconds; no implicit height scaling."
+        },
+        "tilt_deg": {
+          "type": "number",
+          "minimum": -85,
+          "maximum": 85,
+          "default": 0,
+          "description": "Tilt from vertical in degrees."
+        },
+        "tail": {
+          "type": "string",
+          "enum": [
+            "gold",
+            "silver",
+            "glitter",
+            "comet",
+            "crackle",
+            "whistle",
+            "heli",
+            "rocket",
+            "tiger",
+            "willow",
+            "strobe",
+            "brocade",
+            "dark",
+            "flowers"
+          ],
+          "default": "gold"
+        },
+        "sparks": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000,
+          "default": 180,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "spread": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 20,
+          "default": 1.4,
+          "description": "Multiplier on the selected launch style ejection speed."
+        },
+        "smoke": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 4,
+          "default": 1,
+          "description": "Dimensionless multiplier or fraction."
+        }
+      },
+      "required": ["height_m", "time_s", "tilt_deg", "tail", "sparks", "spread", "smoke"]
+    },
+    "sound": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "lift": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.7,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "break": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.85,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "crackle": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.6,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "whistle": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0,
+          "description": "Dimensionless multiplier or fraction."
+        }
+      },
+      "required": ["lift", "break", "crackle", "whistle"]
+    },
+    "split": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 64,
+          "default": 4,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "distance_m": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 500,
+          "default": 10,
+          "description": "Child asymptotic reach in metres."
+        },
+        "life_s": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 30,
+          "default": 0.7,
+          "description": "Child lifetime in seconds."
+        }
+      },
+      "required": ["count", "distance_m", "life_s"]
+    },
+    "comets": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500,
+          "default": 1,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "pattern": {
+          "type": "string",
+          "enum": ["straight", "fan", "random", "sequence", "sweep"],
+          "default": "straight"
+        },
+        "spread_deg": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 180,
+          "default": 60,
+          "description": "Fan or random spread in degrees."
+        },
+        "height_m": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 1000,
+          "default": 50,
+          "description": "Travel height above the muzzle in metres."
+        },
+        "time_s": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 120,
+          "default": 2.2,
+          "description": "Climb duration in seconds."
+        },
+        "colour": {
+          "$ref": "#/definitions/colour"
+        },
+        "trail": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": ["house", "star"],
+              "default": "house"
+            },
+            {
+              "$ref": "#/definitions/hexColour"
+            }
+          ]
+        },
+        "size": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 1,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "sparks": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000,
+          "default": 200,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "tail_life_s": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 30,
+          "default": 1.4,
+          "description": "Tail spark lifetime in seconds."
+        },
+        "glitter": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "gap_s": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 120,
+          "default": 0.5,
+          "description": "Seconds between sequential or sweep shots."
+        },
+        "spin_rad_s": {
+          "type": "number",
+          "minimum": -500,
+          "maximum": 500,
+          "default": 0,
+          "description": "Corkscrew angular speed in radians per second."
+        },
+        "spin_radius_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 2.2,
+          "description": "Corkscrew radius in metres."
+        },
+        "pop": {
+          "type": "boolean",
+          "default": false
+        },
+        "split": {
+          "anyOf": [
+            {
+              "$ref": "#/definitions/split"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "halo": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 4,
+          "default": 1,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "whistle": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "required": [
+        "count",
+        "pattern",
+        "spread_deg",
+        "height_m",
+        "time_s",
+        "colour",
+        "trail",
+        "size",
+        "sparks",
+        "tail_life_s",
+        "glitter",
+        "gap_s",
+        "spin_rad_s",
+        "spin_radius_m",
+        "pop",
+        "split",
+        "halo",
+        "whistle"
+      ]
+    },
+    "fountain": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "duration_s": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 120,
+          "default": 7,
+          "description": "Emission duration in seconds."
+        },
+        "rate_per_s": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 20000,
+          "default": 1600,
+          "description": "Sparks per second before emitter density scaling."
+        },
+        "speed_m_s": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 200,
+          "default": 20,
+          "description": "Spark ejection speed in metres per second."
+        },
+        "cone": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 4,
+          "default": 0.1,
+          "description": "Direction-vector spread multiplier, not degrees."
+        },
+        "colour": {
+          "$ref": "#/definitions/hexColour"
+        },
+        "life_s": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 30,
+          "default": 1.2,
+          "description": "Spark lifetime in seconds."
+        },
+        "emitters": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500,
+          "default": 1,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "spacing_m": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 100,
+          "default": 1.2,
+          "description": "Emitter spacing in metres."
+        },
+        "height_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000,
+          "default": 0.6,
+          "description": "Emitter height above ground, not plume height."
+        },
+        "direction": {
+          "$ref": "#/definitions/direction"
+        },
+        "streak": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 16,
+          "default": 2,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "gravity_m_s2": {
+          "type": "number",
+          "minimum": -40,
+          "maximum": 100,
+          "default": 14,
+          "description": "Spark acceleration in metres per second squared."
+        },
+        "drag_per_s": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 30,
+          "default": 0.9,
+          "description": "Spark drag coefficient in inverse seconds."
+        },
+        "size": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 1,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "flicker": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0.3,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "glitter": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "fork": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "glow": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 20,
+          "default": 3,
+          "description": "Relative muzzle glow size."
+        },
+        "glow_alpha": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 4,
+          "default": 0.2,
+          "description": "Dimensionless multiplier or fraction."
+        }
+      },
+      "required": [
+        "duration_s",
+        "rate_per_s",
+        "speed_m_s",
+        "cone",
+        "colour",
+        "life_s",
+        "emitters",
+        "spacing_m",
+        "height_m",
+        "direction",
+        "streak",
+        "gravity_m_s2",
+        "drag_per_s",
+        "size",
+        "flicker",
+        "glitter",
+        "fork",
+        "glow",
+        "glow_alpha"
+      ]
+    },
+    "tourbillon": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "height_m": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 1000,
+          "default": 38,
+          "description": "Apex height above ground in metres."
+        },
+        "time_s": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 120,
+          "default": 2.4,
+          "description": "Climb duration in seconds."
+        },
+        "radius_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 1.2,
+          "description": "Helix radius in metres."
+        },
+        "spin_rad_s": {
+          "type": "number",
+          "minimum": -500,
+          "maximum": 500,
+          "default": 60,
+          "description": "Angular speed in radians per second."
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500,
+          "default": 5,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "sparks": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000,
+          "default": 110,
+          "description": "Dimensionless multiplier or fraction."
+        }
+      },
+      "required": ["height_m", "time_s", "radius_m", "spin_rad_s", "count", "sparks"]
+    },
+    "wheel": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "radius_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 3,
+          "description": "Rim radius in metres."
+        },
+        "height_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1000,
+          "default": 6,
+          "description": "Hub height above ground in metres."
+        },
+        "spin_hz": {
+          "type": "number",
+          "minimum": -100,
+          "maximum": 100,
+          "default": 2,
+          "description": "Revolutions per second."
+        },
+        "drivers": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100,
+          "default": 6,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "duration_s": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 120,
+          "default": 7,
+          "description": "Emission duration in seconds."
+        },
+        "colour": {
+          "$ref": "#/definitions/hexColour"
+        },
+        "sparks": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000,
+          "default": 240,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "glitter": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "default": 0,
+          "description": "Dimensionless multiplier or fraction."
+        }
+      },
+      "required": [
+        "radius_m",
+        "height_m",
+        "spin_hz",
+        "drivers",
+        "duration_s",
+        "colour",
+        "sparks",
+        "glitter"
+      ]
+    },
+    "spinner": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500,
+          "default": 4,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "duration_s": {
+          "type": "number",
+          "minimum": 0.001,
+          "maximum": 120,
+          "default": 4,
+          "description": "Emission duration per spinner in seconds."
+        },
+        "spin_rad_s": {
+          "type": "number",
+          "minimum": -500,
+          "maximum": 500,
+          "default": 70,
+          "description": "Angular speed in radians per second."
+        },
+        "wander_m": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 1,
+          "description": "Wandering amplitude in metres."
+        },
+        "sparks": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10000,
+          "default": 90,
+          "description": "Dimensionless multiplier or fraction."
+        },
+        "colours": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/hexColour"
+          },
+          "minItems": 1,
+          "maxItems": 16
+        }
+      },
+      "required": ["count", "duration_s", "spin_rad_s", "wander_m", "sparks", "colours"]
+    }
+  },
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "shell"
+        },
+        "launch": {
+          "$ref": "#/definitions/launch"
+        },
+        "breaks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/break"
+          },
+          "minItems": 1,
+          "maxItems": 64
+        },
+        "ground": {
+          "type": "null"
+        },
+        "sound": {
+          "$ref": "#/definitions/sound"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295,
+          "default": 11,
+          "description": "Unsigned 32-bit default seed; zero is valid."
+        }
+      },
+      "required": ["kind", "launch", "breaks", "ground", "sound", "seed"]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "mine"
+        },
+        "launch": {
+          "$ref": "#/definitions/launch"
+        },
+        "breaks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/break"
+          },
+          "minItems": 1,
+          "maxItems": 64
+        },
+        "ground": {
+          "type": "null"
+        },
+        "sound": {
+          "$ref": "#/definitions/sound"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295,
+          "default": 11,
+          "description": "Unsigned 32-bit default seed; zero is valid."
+        }
+      },
+      "required": ["kind", "launch", "breaks", "ground", "sound", "seed"]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "rocket"
+        },
+        "launch": {
+          "$ref": "#/definitions/launch"
+        },
+        "breaks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/break"
+          },
+          "minItems": 1,
+          "maxItems": 64
+        },
+        "ground": {
+          "type": "null"
+        },
+        "sound": {
+          "$ref": "#/definitions/sound"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295,
+          "default": 11,
+          "description": "Unsigned 32-bit default seed; zero is valid."
+        }
+      },
+      "required": ["kind", "launch", "breaks", "ground", "sound", "seed"]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "comet"
+        },
+        "launch": {
+          "type": "null"
+        },
+        "breaks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/break"
+          },
+          "minItems": 0,
+          "maxItems": 0
+        },
+        "ground": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "comet"
+            },
+            "comets": {
+              "$ref": "#/definitions/comets"
+            }
+          },
+          "required": ["kind", "comets"]
+        },
+        "sound": {
+          "$ref": "#/definitions/sound"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295,
+          "default": 11,
+          "description": "Unsigned 32-bit default seed; zero is valid."
+        }
+      },
+      "required": ["kind", "launch", "breaks", "ground", "sound", "seed"]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "candle"
+        },
+        "launch": {
+          "type": "null"
+        },
+        "breaks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/break"
+          },
+          "minItems": 0,
+          "maxItems": 0
+        },
+        "ground": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "candle"
+            },
+            "comets": {
+              "$ref": "#/definitions/comets"
+            }
+          },
+          "required": ["kind", "comets"]
+        },
+        "sound": {
+          "$ref": "#/definitions/sound"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295,
+          "default": 11,
+          "description": "Unsigned 32-bit default seed; zero is valid."
+        }
+      },
+      "required": ["kind", "launch", "breaks", "ground", "sound", "seed"]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "fountain"
+        },
+        "launch": {
+          "type": "null"
+        },
+        "breaks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/break"
+          },
+          "minItems": 0,
+          "maxItems": 0
+        },
+        "ground": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "fountain"
+            },
+            "fountain": {
+              "$ref": "#/definitions/fountain"
+            }
+          },
+          "required": ["kind", "fountain"]
+        },
+        "sound": {
+          "$ref": "#/definitions/sound"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295,
+          "default": 11,
+          "description": "Unsigned 32-bit default seed; zero is valid."
+        }
+      },
+      "required": ["kind", "launch", "breaks", "ground", "sound", "seed"]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "tourbillon"
+        },
+        "launch": {
+          "type": "null"
+        },
+        "breaks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/break"
+          },
+          "minItems": 0,
+          "maxItems": 0
+        },
+        "ground": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "tourbillon"
+            },
+            "tourbillon": {
+              "$ref": "#/definitions/tourbillon"
+            }
+          },
+          "required": ["kind", "tourbillon"]
+        },
+        "sound": {
+          "$ref": "#/definitions/sound"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295,
+          "default": 11,
+          "description": "Unsigned 32-bit default seed; zero is valid."
+        }
+      },
+      "required": ["kind", "launch", "breaks", "ground", "sound", "seed"]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "wheel"
+        },
+        "launch": {
+          "type": "null"
+        },
+        "breaks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/break"
+          },
+          "minItems": 0,
+          "maxItems": 0
+        },
+        "ground": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "wheel"
+            },
+            "wheel": {
+              "$ref": "#/definitions/wheel"
+            }
+          },
+          "required": ["kind", "wheel"]
+        },
+        "sound": {
+          "$ref": "#/definitions/sound"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295,
+          "default": 11,
+          "description": "Unsigned 32-bit default seed; zero is valid."
+        }
+      },
+      "required": ["kind", "launch", "breaks", "ground", "sound", "seed"]
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "const": "spinner"
+        },
+        "launch": {
+          "type": "null"
+        },
+        "breaks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/break"
+          },
+          "minItems": 0,
+          "maxItems": 0
+        },
+        "ground": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "spinner"
+            },
+            "spinner": {
+              "$ref": "#/definitions/spinner"
+            }
+          },
+          "required": ["kind", "spinner"]
+        },
+        "sound": {
+          "$ref": "#/definitions/sound"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 4294967295,
+          "default": 11,
+          "description": "Unsigned 32-bit default seed; zero is valid."
+        }
+      },
+      "required": ["kind", "launch", "breaks", "ground", "sound", "seed"]
+    }
+  ]
+}

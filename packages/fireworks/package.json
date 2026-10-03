@@ -1,0 +1,30 @@
+{
+  "name": "@showcrafter/fireworks",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema/index.ts",
+    "./schema/design.v1.json": "./schema/design.v1.json"
+  },
+  "scripts": {
+    "generate:schema": "node scripts/generate-schema.mjs",
+    "check:schema": "node scripts/generate-schema.mjs --check",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "test": "node --import ../../scripts/register-typescript.mjs --test tests/*.test.mjs",
+    "check": "pnpm check:schema && pnpm lint && pnpm typecheck && pnpm test"
+  },
+  "dependencies": {
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "ajv": "8.17.1",
+    "eslint": "^9.39.4",
+    "json-schema-to-zod": "2.6.1",
+    "prettier": "3.8.3",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "8.59.0"
+  }
+}

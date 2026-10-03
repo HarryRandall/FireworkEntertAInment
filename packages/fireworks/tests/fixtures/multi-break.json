@@ -1,0 +1,159 @@
+{
+  "kind": "shell",
+  "launch": {
+    "height_m": 70,
+    "time_s": 1.9442222095,
+    "tilt_deg": 0,
+    "tail": "gold",
+    "sparks": 180,
+    "spread": 1.4,
+    "smoke": 1
+  },
+  "breaks": [
+    {
+      "at_s": 0,
+      "core": {
+        "enabled": true,
+        "colour": "#ff3b2f",
+        "count": 110,
+        "radius": 0.5,
+        "flash": 1,
+        "flash_on": true,
+        "ring": false
+      },
+      "fade": { "white_hot": 0.03, "ember_at": 0.8, "fade_at": 0.72, "prime_s": 0.25 },
+      "layers": [
+        {
+          "id": "first-petals",
+          "name": "Gold petals with crackle and strobe",
+          "pattern": "sphere",
+          "count": 64,
+          "radius_m": 26,
+          "tilt": 0.4,
+          "speed_var": 0.22,
+          "drag_per_s": 2.2,
+          "gravity_m_s2": 6,
+          "life_s": 2.2,
+          "life_var": 0.2,
+          "delay_s": 0,
+          "offset_m": [0, 0, 0],
+          "flash": true,
+          "hidden": false,
+          "colour": {
+            "mode": "solid",
+            "stops": [
+              [0, "#ffd27a"],
+              [1, "#ffd27a"]
+            ]
+          },
+          "brightness": [
+            [0, 1],
+            [1, 1]
+          ],
+          "head": { "size": 1, "visible": true, "halo": 0 },
+          "trail": {
+            "sparks": 18,
+            "length_s": 0.5,
+            "spread_m_s": 1.4,
+            "gravity_m_s2": 3,
+            "drag_per_s": 2.6,
+            "size": 1,
+            "flicker": 0.3,
+            "colour": "house",
+            "glitter": 0,
+            "glitter_delay_s": 0.35,
+            "fork": 0
+          },
+          "modifiers": [
+            {
+              "kind": "crackle",
+              "at": 0.7,
+              "rate_hz": 12,
+              "rate_rad_s": 12,
+              "count": 8,
+              "amount": 1,
+              "spread": "continuous",
+              "gap": 0.12,
+              "angular_speed_rad_s": 0
+            },
+            {
+              "kind": "strobe",
+              "at": 0.3,
+              "rate_hz": 12,
+              "rate_rad_s": 12,
+              "count": 8,
+              "amount": 1,
+              "spread": "burst",
+              "gap": 0.12,
+              "angular_speed_rad_s": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "at_s": 0.8,
+      "core": {
+        "enabled": true,
+        "colour": "#ff3b2f",
+        "count": 110,
+        "radius": 0.5,
+        "flash": 0.8,
+        "flash_on": true,
+        "ring": false
+      },
+      "fade": { "white_hot": 0.03, "ember_at": 0.8, "fade_at": 0.72, "prime_s": 0.25 },
+      "layers": [
+        {
+          "id": "second-petals",
+          "name": "Blue to white petals",
+          "pattern": "sphere",
+          "count": 40,
+          "radius_m": 22,
+          "tilt": 0.4,
+          "speed_var": 0.22,
+          "drag_per_s": 2.2,
+          "gravity_m_s2": 6,
+          "life_s": 2.4,
+          "life_var": 0.2,
+          "delay_s": 0,
+          "offset_m": [0, 8, 0],
+          "flash": true,
+          "hidden": false,
+          "colour": {
+            "mode": "solid",
+            "stops": [
+              [0, "#3f7bff"],
+              [0.55, "#3f7bff"],
+              [0.63, "#ffffff"],
+              [1, "#ffffff"]
+            ],
+            "reignition": { "at": 0.55, "duration": 0.1, "amount": 0.5 }
+          },
+          "brightness": [
+            [0, 1.3],
+            [1, 1.3]
+          ],
+          "head": { "size": 1, "visible": true, "halo": 1 },
+          "trail": {
+            "sparks": 18,
+            "length_s": 0.5,
+            "spread_m_s": 1.4,
+            "gravity_m_s2": 3,
+            "drag_per_s": 2.6,
+            "size": 1,
+            "flicker": 0.3,
+            "colour": "house",
+            "glitter": 0,
+            "glitter_delay_s": 0.35,
+            "fork": 0
+          },
+          "modifiers": []
+        }
+      ]
+    }
+  ],
+  "ground": null,
+  "sound": { "lift": 0.7, "break": 0.85, "crackle": 0.6, "whistle": 0 },
+  "seed": 11
+}
