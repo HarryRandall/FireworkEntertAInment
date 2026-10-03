@@ -3918,6 +3918,7 @@ export type Database = {
           provider: string
           provider_track_id: string | null
           public_performance: string | null
+          source_audio_url: string | null
           status: string
           title: string
           updated_at: string
@@ -3940,6 +3941,7 @@ export type Database = {
           provider: string
           provider_track_id?: string | null
           public_performance?: string | null
+          source_audio_url?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -3962,6 +3964,7 @@ export type Database = {
           provider?: string
           provider_track_id?: string | null
           public_performance?: string | null
+          source_audio_url?: string | null
           status?: string
           title?: string
           updated_at?: string
@@ -4235,6 +4238,8 @@ export type Database = {
           revision: number
           scores: Json
           session_id: string
+          soundtrack_analysis_id: string | null
+          soundtrack_track_id: string | null
           total_minor: number
           updated_at: string
         }
@@ -4252,6 +4257,8 @@ export type Database = {
           revision?: number
           scores?: Json
           session_id: string
+          soundtrack_analysis_id?: string | null
+          soundtrack_track_id?: string | null
           total_minor: number
           updated_at?: string
         }
@@ -4269,6 +4276,8 @@ export type Database = {
           revision?: number
           scores?: Json
           session_id?: string
+          soundtrack_analysis_id?: string | null
+          soundtrack_track_id?: string | null
           total_minor?: number
           updated_at?: string
         }
@@ -4278,6 +4287,20 @@ export type Database = {
             columns: ["session_id"]
             isOneToOne: false
             referencedRelation: "plan_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_candidates_soundtrack_analysis_id_fkey"
+            columns: ["soundtrack_analysis_id"]
+            isOneToOne: false
+            referencedRelation: "music_analyses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_candidates_soundtrack_track_id_fkey"
+            columns: ["soundtrack_track_id"]
+            isOneToOne: false
+            referencedRelation: "music_tracks"
             referencedColumns: ["id"]
           },
         ]
@@ -6457,6 +6480,10 @@ export type Database = {
         Args: { credits: number; idempotency_key: string; organisation: string }
         Returns: number
       }
+      import_shopper_track: {
+        Args: { p_session: string; p_shopper: string; p_track: Json }
+        Returns: string
+      }
       install_music_result: {
         Args: {
           p_algorithm: string
@@ -6471,6 +6498,10 @@ export type Database = {
         }
         Returns: string
       }
+      music_track_analysis: {
+        Args: { p_session: string; p_track: string }
+        Returns: Json
+      }
       persist_plan_edit: {
         Args: {
           p_candidate: string
@@ -6482,6 +6513,21 @@ export type Database = {
           p_session: string
           p_shopper: string
           p_snapshot: Json
+        }
+        Returns: string
+      }
+      persist_plan_music: {
+        Args: {
+          p_analysis?: string
+          p_candidate: string
+          p_hash: string
+          p_next_hash?: string
+          p_result: Json
+          p_revision: number
+          p_session: string
+          p_shopper: string
+          p_snapshot: Json
+          p_track?: string
         }
         Returns: string
       }
@@ -6498,6 +6544,7 @@ export type Database = {
         }
         Returns: string
       }
+      plan_soundtrack: { Args: { p_session: string }; Returns: Json }
       planner_context: { Args: { p_store: string }; Returns: Json }
       product_for_store: {
         Args: { p_product: string; p_slug: string }
@@ -6624,6 +6671,10 @@ export type Database = {
       }
       shop_customers: { Args: { p_organisation: string }; Returns: Json }
       show_for_store: {
+        Args: { p_show: string; p_store: string }
+        Returns: Json
+      }
+      show_soundtrack: {
         Args: { p_show: string; p_store: string }
         Returns: Json
       }

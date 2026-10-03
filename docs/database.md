@@ -1152,3 +1152,32 @@ with their edit record; failed and clarification outcomes retain the current sho
 UUID replay is idempotent. The edit bucket permits six requests in a burst and
 refills one per minute. No credit settlement runs for edits. Shopper history reads
 continue through the existing ownership RLS, covered by the edit pgTAP suite.
+
+## Shopper soundtrack boundaries
+
+`import_shopper_track` is a service-only transaction for server-validated Jamendo
+metadata. It checks an active owned session, applies a six-request burst with one
+request restored per minute, upserts the shared provider identity and queues one
+active `music_analyse` job when no current analysis exists. Withdrawn tracks are not
+republished and the existing commercial-use constraint remains false.
+
+`persist_plan_music` serialises with alternatives and chip edits, checks the
+shopper, displayed candidate revision and snapshot hash, then writes the revised
+candidate and solver input together. It never writes the credit ledger. Candidate
+track/analysis foreign keys and a matching-track trigger preserve the precise
+features used for timing. Alternative candidates copy the preceding pin; edits
+retain the existing feature snapshot.
+
+`plan_soundtrack` and `music_track_analysis` expose music only within an owned
+session. `show_soundtrack` uses the existing store/show visibility fence and reads
+the saved version's analysis and offset. Playback media is resolved by the pinned
+analysis's content-addressed audio path, so a later analysis and track media pointer
+cannot replace historical audio. The server signs that private object after the
+RPC succeeds. No browser can import metadata, author a soundtrack solve or inspect
+another shopper's soundtrack through these functions.
+
+The soundtrack suite tests public denial, anonymous ownership, another shopper,
+import/job deduplication, pending and analysed solves, stale writes, immutable
+pins, historical audio, saved-show offsets, store visibility, withdrawn tracks
+and the one-credit invariant. Provider responses and audio are synthetic in the
+web and browser tests.
