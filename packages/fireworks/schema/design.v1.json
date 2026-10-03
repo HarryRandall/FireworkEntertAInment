@@ -720,6 +720,19 @@
       },
       "required": ["height_m", "time_s", "tilt_deg", "tail", "sparks", "spread", "smoke"]
     },
+    "adjustments": {
+      "type": "object",
+      "propertyNames": {
+        "pattern": "^(launch\\.(height|tail|climb)|break\\.(flash|core_ring)|ground\\.(height|count|fan|climb|star_size|spin|duration|density|spray)|layer\\.[A-Za-z0-9][A-Za-z0-9_-]*\\.(size|stars|brightness|burn|droop|spread|star_size|trail\\.(length|density|spray|glitter)|modifier\\.(amount|timing)))$"
+      },
+      "additionalProperties": {
+        "type": "integer",
+        "minimum": -3,
+        "maximum": 3
+      },
+      "default": {},
+      "description": "Finale-style quick adjustment levels. Layer keys use the stable layer id; values are resolved by the renderer registry."
+    },
     "sound": {
       "type": "object",
       "additionalProperties": false,
@@ -1259,6 +1272,9 @@
         "kind": {
           "const": "shell"
         },
+        "adjustments": {
+          "$ref": "#/definitions/adjustments"
+        },
         "launch": {
           "$ref": "#/definitions/launch"
         },
@@ -1292,6 +1308,9 @@
       "properties": {
         "kind": {
           "const": "mine"
+        },
+        "adjustments": {
+          "$ref": "#/definitions/adjustments"
         },
         "launch": {
           "$ref": "#/definitions/launch"
@@ -1327,6 +1346,9 @@
         "kind": {
           "const": "rocket"
         },
+        "adjustments": {
+          "$ref": "#/definitions/adjustments"
+        },
         "launch": {
           "$ref": "#/definitions/launch"
         },
@@ -1360,6 +1382,9 @@
       "properties": {
         "kind": {
           "const": "comet"
+        },
+        "adjustments": {
+          "$ref": "#/definitions/adjustments"
         },
         "launch": {
           "type": "null"
@@ -1405,6 +1430,9 @@
         "kind": {
           "const": "candle"
         },
+        "adjustments": {
+          "$ref": "#/definitions/adjustments"
+        },
         "launch": {
           "type": "null"
         },
@@ -1448,6 +1476,9 @@
       "properties": {
         "kind": {
           "const": "fountain"
+        },
+        "adjustments": {
+          "$ref": "#/definitions/adjustments"
         },
         "launch": {
           "type": "null"
@@ -1493,6 +1524,9 @@
         "kind": {
           "const": "tourbillon"
         },
+        "adjustments": {
+          "$ref": "#/definitions/adjustments"
+        },
         "launch": {
           "type": "null"
         },
@@ -1537,6 +1571,9 @@
         "kind": {
           "const": "wheel"
         },
+        "adjustments": {
+          "$ref": "#/definitions/adjustments"
+        },
         "launch": {
           "type": "null"
         },
@@ -1580,6 +1617,9 @@
       "properties": {
         "kind": {
           "const": "spinner"
+        },
+        "adjustments": {
+          "$ref": "#/definitions/adjustments"
         },
         "launch": {
           "type": "null"
