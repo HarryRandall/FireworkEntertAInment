@@ -9,7 +9,9 @@ export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code');
   if (code !== null && code.length > 0) {
     const { error } = await client.auth.exchangeCodeForSession(code);
-    if (!error)
+    // Expired or reused links are expected; anything else must stay visible in server logs.
+    if (error) console.error('Auth callback exchange failed', error.code, error.message);
+    else
       return NextResponse.redirect(
         new URL(
           safeDestination(request.nextUrl.searchParams.get('next'), '/auth/continue'),
