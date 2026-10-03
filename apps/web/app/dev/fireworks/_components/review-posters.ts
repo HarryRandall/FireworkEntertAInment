@@ -1,6 +1,7 @@
 /** Progressive, cancellable catalogue stills on one reusable thumbnail surface. */
 import type { PosterRenderer } from '@showcrafter/fireworks/view';
-import { reviewTime } from '@showcrafter/fireworks/view';
+import { developedTime } from '@showcrafter/fireworks/view';
+import { framingFor } from '@showcrafter/fireworks/sim';
 import { entries } from './review-catalogue';
 import type { ReviewSetters } from './review-viewer-lifecycle';
 
@@ -27,7 +28,16 @@ export function mountPosters(
       while (liveDrawPending() && !isCancelled()) await yieldTask(LIVE_RETRY_MS);
       if (isCancelled()) return;
       renderer ??= createPosters();
-      const blob = await renderer.capture(entry.design, reviewTime(entry.design));
+      // Prototype rocket templates are stored shells; catalogue metadata retains their climb intent.
+      const framing =
+        entry.group === 'Rockets and candles'
+          ? framingFor([{ design: entry.design }], false)
+          : undefined;
+      const blob = await renderer.capture(
+        entry.design,
+        developedTime(entry.design),
+        framing === undefined ? {} : { framing },
+      );
       if (isCancelled()) return;
       const url = URL.createObjectURL(blob);
       urls.push(url);

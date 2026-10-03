@@ -1,13 +1,13 @@
 /** One detached thumbnail canvas, reused without touching a mounted viewer. */
 import * as THREE from 'three';
 import { prototypeOr } from '../sim/numeric';
-import { framingFor } from '../sim/framing';
+import { posterFraming } from '../poster/framing';
+import type { Framing } from '../sim/framing';
 import type { Design } from '../schema/index';
 import { ParticleLayers } from './buffers';
 import { GpuSprays } from './gpu-sprays';
 import { OutputPass } from './output';
 import { FrameProfiler } from './frame-profile';
-import { StageControls } from './stage-controls';
 import { SETTINGS } from './settings';
 import { makeProps } from './props';
 import { makeWorld, disposeTree } from './world';
@@ -32,11 +32,10 @@ export class PosterRenderer {
   readonly layers = new ParticleLayers();
   readonly output: OutputPass;
   readonly profiler = new FrameProfiler(this.renderer.getContext());
-  readonly options = {};
+  options: { prop?: 'mortar' | 'cake' } = {};
   readonly sprayMode = 'gpu';
   private readonly sprays = new GpuSprays(this.layers.uniforms);
   private readonly world = makeWorld(this.scene);
-  private readonly controls: StageControls;
   private props = new THREE.Group();
   private disposed = false;
   shots: readonly Shot[] = [];
@@ -51,16 +50,23 @@ export class PosterRenderer {
     if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
       throw new RangeError('Poster dimensions must be positive and finite');
     }
-    const dpr = Math.min(MAX_DPR, prototypeOr(window.devicePixelRatio, 1));
-    this.renderer.setPixelRatio(dpr);
-    this.renderer.setSize(width, height, false);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.NoToneMapping;
     this.camera = new THREE.PerspectiveCamera(FOV_DEG, width / height, NEAR_M, FAR_M);
-    this.controls = new StageControls(this.camera, this.renderer.domElement, () => {});
-    this.controls.enabled = false;
     this.scene.add(this.layers.group, this.sprays.points);
     this.output = new OutputPass(this.renderer, forceLdr);
+    this.resize(width, height);
+  }
+
+  /** Resizes only the detached poster surface at positive CSS-pixel dimensions, never a live canvas. */
+  resize(width: number, height: number): void {
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0)
+      throw new RangeError('Poster dimensions must be positive and finite');
+    const dpr = Math.min(MAX_DPR, prototypeOr(window.devicePixelRatio, 1));
+    this.renderer.setPixelRatio(dpr);
+    this.renderer.setSize(width, height, false);
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
     this.output.resize(Math.round(width * dpr), Math.round(height * dpr));
     this.layers.uniforms.uScale.value =
       (height * dpr) / (2 * Math.tan((FOV_DEG * Math.PI) / HALF_TURN_DEG / 2));
@@ -68,20 +74,28 @@ export class PosterRenderer {
     this.world.resize(height, dpr);
   }
 
-  /** Samples design-relative seconds without mutation, reads the small canvas once and encodes PNG asynchronously. */
-  capture(design: Design, time_s: number): Promise<Blob> {
+  /** Samples non-negative sequence seconds from the first firing, without mutating validated designs.
+   * Applies optional world-metre framing and encodes the detached canvas as PNG asynchronously. */
+  capture(design: Design, time_s: number, options: PosterCaptureOptions = {}): Promise<Blob> {
     if (this.disposed) throw new Error('Poster renderer is disposed');
     if (!Number.isFinite(time_s) || time_s < 0)
       throw new RangeError('Poster time must be non-negative and finite');
-    this.shots = [{ design }];
+    this.shots = options.shots ?? [{ design }];
+    this.options = { prop: options.prop ?? 'mortar' };
     this.t = time_s;
     this.scene.remove(this.props);
     disposeTree(this.props);
-    this.props = makeProps(this.shots, 'mortar');
+    this.props = makeProps(this.shots, this.options.prop ?? 'mortar');
     this.scene.add(this.props);
     this.world.setSettings(SETTINGS.stars, SETTINGS.grid);
-    this.controls.setFree(SETTINGS.free);
-    this.controls.frame(framingFor(this.shots, false, this.camera.aspect, this.camera.fov), true);
+    const framing =
+      options.framing ?? posterFraming(this.shots, this.camera.aspect, this.camera.fov);
+    if (![...framing.position, ...framing.target].every(Number.isFinite))
+      throw new RangeError('Poster framing must contain finite world metres');
+    // Apply the absolute poster camera without audience interaction clamps or easing.
+    this.camera.position.fromArray(framing.position);
+    this.camera.lookAt(...framing.target);
+    this.camera.updateMatrixWorld();
     drawViewerFrame(this, this.sprays);
     // Invoke before returning to the event loop: the non-preserved drawing buffer is still valid.
     return new Promise((resolve, reject) => {
@@ -96,7 +110,6 @@ export class PosterRenderer {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    this.controls.dispose();
     this.scene.remove(this.layers.group, this.sprays.points);
     this.sprays.dispose();
     this.layers.dispose();
@@ -106,4 +119,11 @@ export class PosterRenderer {
     this.renderer.dispose();
     this.renderer.forceContextLoss();
   }
+}
+
+/** Optional sequence, world-metre camera and prop overrides for a still capture. */
+export interface PosterCaptureOptions {
+  shots?: readonly Shot[];
+  framing?: Framing;
+  prop?: 'mortar' | 'cake';
 }

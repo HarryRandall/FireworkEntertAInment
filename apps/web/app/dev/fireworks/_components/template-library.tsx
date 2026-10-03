@@ -25,6 +25,7 @@ export function TemplateLibrary({
           key={entry.key}
           type="button"
           data-template={entry.key}
+          data-poster-status={(posters[entry.key] ?? '').length > 0 ? 'ready' : 'pending'}
           disabled={!ready}
           aria-pressed={selected.key === entry.key}
           aria-label={`Play ${entry.name}`}

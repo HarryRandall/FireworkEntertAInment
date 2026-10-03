@@ -8,3 +8,11 @@ export type { Shot, ViewerOptions } from './types';
 
 export { SETTINGS, setSetting, setVolume, type ViewerSettings } from './settings';
 export type { FrameProfile } from './frame-profile';
+
+export {
+  poster,
+  posterAll,
+  disposePosters,
+  developedTime,
+  type PosterOptions,
+} from '../poster/index';

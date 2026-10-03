@@ -140,3 +140,28 @@ test('paused live packed output survives interleaved poster captures and backwar
     assert.deepEqual(packedFrame(live), first, `${key}: repeated live evaluation`);
   }
 });
+
+test('poster capture honours explicit metre framing, sequence clocks and cake props', async () => {
+  const rig = surface();
+  const framing = { position: [12, 30, 100], target: [5, 50, 0] };
+  const shots = [{ design: peony, t0: 1, seed: 71, position: [5, 0] }];
+  const capture = rig.poster.capture(peony, 2.2, { shots, framing, prop: 'cake' });
+  assert.equal(rig.poster.shots, shots);
+  assert.deepEqual(rig.poster.camera.position.toArray(), framing.position);
+  assert.deepEqual(rig.poster.options, { prop: 'cake' });
+  const direction = rig.poster.camera.getWorldDirection(new THREE.Vector3());
+  const expected = new THREE.Vector3(...framing.target)
+    .sub(new THREE.Vector3(...framing.position))
+    .normalize();
+  assert.ok(direction.distanceTo(expected) < 1e-12);
+  rig.encoders.shift()(new Blob(['PNG'], { type: 'image/png' }));
+  await capture;
+  assert.throws(() => rig.poster.capture(peony, -1), /time/);
+  assert.throws(
+    () =>
+      rig.poster.capture(peony, 0, {
+        framing: { position: [NaN, 0, 0], target: [0, 0, 0] },
+      }),
+    /finite world metres/,
+  );
+});
