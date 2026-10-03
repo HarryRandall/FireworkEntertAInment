@@ -1,8 +1,9 @@
 /** Browser playback coordinates stateless source sampling, GPU sprays and redraw scheduling. */
+import { ViewerSound } from './sound/scheduler';
 import { prototypeOr } from '../sim/numeric';
 import * as THREE from 'three';
 import type { Design } from '../schema/index';
-import { shotDuration } from '../sim/index';
+import { shotDuration, type Vec3 } from '../sim/index';
 import { ParticleLayers } from './buffers';
 import { GpuSprays } from './gpu-sprays';
 import { FrameProfiler } from './frame-profile';
@@ -12,16 +13,18 @@ import { makeProps } from './props';
 import { disposeTree, makeWorld } from './world';
 import { framingFor } from '../sim/framing';
 import { shakeEvents } from '../sim/shake';
-import type { Vec3 } from '../sim/colour';
 import { StageControls } from './stage-controls';
-import { onSettings } from './settings';
+import { onSettings, onVisualSettings } from './settings';
 import { viewerInput, mountViewerSurface } from './viewer-input';
 import { buildPlayer } from './player';
 import {
   drawViewerFrame,
+  advanceViewerPlayback,
   applyViewerShake,
   applyViewerSettings,
   resetViewerReadout,
+  soundShots,
+  disposeViewerScene,
 } from './viewer-frame';
 import type { Shot, ViewerOptions } from './types';
 
@@ -31,9 +34,8 @@ const NEAR_M = 0.5;
 const FAR_M = 4000;
 // Prototype pixel-ratio cap limits fill rate on high-density displays.
 const MAX_DPR = 1.5;
-// Wall clock conversion; smoothing weights follow the prototype's performance readout.
+// Wall clock milliseconds per second.
 const MS_PER_SECOND = 1000;
-const FPS_OLD_WEIGHT = 0.92;
 const HALF_TURN_DEG = 180;
 
 /** Stateless firework playback in one owned WebGL context, with explicit resource cleanup. */
@@ -45,6 +47,7 @@ export class Viewer {
   readonly profiler: FrameProfiler;
   readonly controls: StageControls;
   private readonly cleanups: (() => void)[] = [];
+  private readonly sound = new ViewerSound();
   private cameraMoving = false;
   private shake = shakeEvents([]);
   private readonly shakeOffset: Vec3 = [0, 0, 0];
@@ -100,8 +103,9 @@ export class Viewer {
     this.scene.add(this.layers.group, this.gpuSprays.points);
     this.output = new OutputPass(this.renderer, options.forceLdr);
     this.cleanups.push(
+      onVisualSettings(applyViewerSettings.bind(null, this, this.world)),
       onSettings(() => {
-        applyViewerSettings(this, this.world);
+        this.sound.configure();
         this.emit();
       }),
     );
@@ -114,23 +118,30 @@ export class Viewer {
       this.resize();
     });
     this.resizeObserver.observe(container);
-    this.intersectionObserver = new IntersectionObserver((entries) => {
-      this.onScreen = entries[0]?.isIntersecting ?? false;
-      this.last = 0;
-      if (!this.onScreen) this.cancelFrame();
-      else this.invalidate();
-    });
+    this.intersectionObserver = new IntersectionObserver(this.intersectionChanged.bind(this));
     this.intersectionObserver.observe(container);
     document.addEventListener('visibilitychange', this.visibilityChanged);
     this.resize();
+    this.sound.listen();
   }
 
+  private intersectionChanged(entries: IntersectionObserverEntry[]): void {
+    // This observer owns one stage; a batch can contain both its exit and re-entry.
+    // Use the latest queued state or an earlier exit can strand a dirty draw without a RAF.
+    const latest = entries.at(-1);
+    if (!latest || this.disposed) return;
+    this.onScreen = latest.isIntersecting;
+    this.last = 0;
+    if (!this.onScreen) this.cancelFrame();
+    else this.invalidate();
+  }
   private visibilityChanged = (): void => {
     this.last = 0;
     if (document.hidden) this.cancelFrame();
     else this.invalidate();
   };
   private cancelFrame(): void {
+    this.sound.hush();
     cancelAnimationFrame(this.raf);
     this.raf = 0;
   }
@@ -144,7 +155,8 @@ export class Viewer {
     )
       this.raf = requestAnimationFrame(this.frame);
   }
-  private frame = (now: number): void => {
+  private frame = this.drawFrame.bind(this);
+  private drawFrame(now: number): void {
     this.raf = 0;
     if (this.disposed || !this.onScreen || document.hidden) return;
     const dt = this.last !== 0 ? (now - this.last) / MS_PER_SECOND : 0;
@@ -154,6 +166,7 @@ export class Viewer {
       this.advancePlayback(dt);
     }
     this.cameraMoving = this.controls.update(now);
+    this.sound.frame(this);
     if (this.profiler.poll()) this.emit();
     if (this.dirty || this.playing || this.cameraMoving) {
       applyViewerShake(this, this.shake, this.shakeOffset, this.cameraPosition);
@@ -162,18 +175,9 @@ export class Viewer {
       this.emit();
     }
     this.schedule();
-  };
+  }
   private advancePlayback(dt: number): void {
-    if (dt > 0) this.fps = this.fps * FPS_OLD_WEIGHT + (1 / dt) * (1 - FPS_OLD_WEIGHT);
-    const next = this.t + dt * this.speed;
-    if (next > this.duration) {
-      if (this.options.loop !== false && this.duration > 0) this.t = next % this.duration;
-      else {
-        this.t = this.duration;
-        this.playing = false;
-        this.dirty = true;
-      }
-    } else this.t = next;
+    if (advanceViewerPlayback(this, dt)) this.dirty = true;
   }
   private emit(): void {
     for (const listener of this.listeners) listener(this);
@@ -214,6 +218,7 @@ export class Viewer {
   play(): void {
     if (this.disposed) return;
     if (this.t >= this.duration) this.t = 0;
+    this.sound.reset(this.t);
     this.playing = true;
     this.last = 0;
     this.emit();
@@ -224,6 +229,9 @@ export class Viewer {
     if (this.disposed) return;
     this.playing = false;
     this.last = 0;
+    this.cancelFrame();
+    this.controls.stop();
+    this.cameraMoving = false;
     this.invalidate();
     this.emit();
   }
@@ -237,6 +245,7 @@ export class Viewer {
     if (this.disposed) return;
     if (!Number.isFinite(time_s)) throw new RangeError('Seek time must be finite');
     this.t = Math.max(0, Math.min(this.duration, time_s));
+    this.sound.reset(this.t);
     this.last = 0;
     this.invalidate();
     this.emit();
@@ -246,6 +255,7 @@ export class Viewer {
     if (!Number.isFinite(speed) || speed <= 0)
       throw new RangeError('Playback speed must be positive');
     if (this.disposed) return;
+    this.sound.reset(this.t);
     this.speed = speed;
     this.emit();
   }
@@ -253,6 +263,7 @@ export class Viewer {
   setShots(shots: readonly Shot[], keepCamera = false): void {
     if (this.disposed) return;
     this.shots = shots;
+    this.sound.setShots(soundShots(this));
     resetViewerReadout(this);
     this.last = 0;
     this.duration = Math.max(0, ...shots.map((shot) => (shot.t0 ?? 0) + shotDuration(shot.design)));
@@ -275,10 +286,21 @@ export class Viewer {
     if (this.disposed) return;
     this.controls.frame(framingFor(this.shots, false, this.camera.aspect, this.camera.fov), snap);
   }
+  /** Whether live drawing owns the frame budget; background posters yield throughout playback. */
+  get liveDrawPending(): boolean {
+    return (
+      !this.disposed &&
+      this.onScreen &&
+      !document.hidden &&
+      (this.dirty || this.playing || this.cameraMoving)
+    );
+  }
   /** Marks externally changed data dirty and schedules a visible redraw. */
   invalidate(): void {
     if (this.disposed) return;
     this.dirty = true;
+    // Retain the last completed draw time; pending distinguishes repeated seeks from completed draws.
+    this.renderer.domElement.dataset.drawPending = 'true';
     this.schedule();
   }
   /** Subscribes to playback changes and returns an unsubscribe function. */
@@ -290,22 +312,11 @@ export class Viewer {
       this.listeners.delete(listener);
     };
   }
-  /** Draws a caller-selected still through this context and returns an encoded PNG. */
-  capture(width?: number, height?: number): string {
-    if (this.disposed) throw new Error('Viewer is disposed.');
-    if (width !== undefined && height !== undefined) this.resize(width, height);
-    try {
-      this.controls.update();
-      drawViewerFrame(this, this.gpuSprays);
-      return this.renderer.domElement.toDataURL('image/png');
-    } finally {
-      if (width !== undefined && height !== undefined) this.resize();
-    }
-  }
   /** Cancels callbacks, disconnects observers and frees all scene, target and context resources. */
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
+    this.sound.dispose();
     this.cancelFrame();
     this.resizeObserver.disconnect();
     this.intersectionObserver.disconnect();
@@ -313,15 +324,7 @@ export class Viewer {
     for (const cleanup of this.cleanups) cleanup();
     this.controls.dispose();
     this.listeners.clear();
-    this.scene.remove(this.layers.group);
-    this.scene.remove(this.gpuSprays.points);
-    this.gpuSprays.dispose();
-    this.layers.dispose();
-    disposeTree(this.scene);
-    this.profiler.dispose();
-    this.output.dispose();
-    this.renderer.dispose();
-    this.renderer.forceContextLoss();
+    disposeViewerScene(this, this.gpuSprays);
     this.renderer.domElement.remove();
   }
 }

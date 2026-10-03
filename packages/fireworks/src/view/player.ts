@@ -1,12 +1,13 @@
 /** Small framework-independent viewer transport and settings, shared by browser consumers. */
+import { mountSoundControls } from './sound/controls';
 import type { Viewer } from './viewer';
 import { SETTINGS, setSetting, type ViewerSettings } from './settings';
-// Developer scrubbing granularity, in seconds, retains the existing exact-seek controls.
+// Keyboard nudges, in show seconds; the range itself must retain arbitrary exact instants.
 const SEEK_STEP_S = 0.01;
 // Prototype quarter-speed multiplier, dimensionless.
 const QUARTER_SPEED = 0.25;
 const SPEEDS = [QUARTER_SPEED, 0.5, 1, 2];
-const ROWS: readonly [keyof ViewerSettings, string][] = [
+const ROWS: readonly [Exclude<keyof ViewerSettings, 'volume'>, string][] = [
   ['stats', 'Frame rate and particles'],
   ['smoke', 'Smoke'],
   ['stars', 'Stars in the sky'],
@@ -60,10 +61,7 @@ function settings(signal: AbortSignal): HTMLDivElement {
 export function buildPlayer(viewer: Viewer): () => void {
   const abort = new AbortController();
   const signal = abort.signal;
-  const root = document.createElement('div');
-  root.className = 'sc-player';
-  const style = document.createElement('style');
-  style.textContent = CSS;
+  const root = playerRoot();
   const bar = document.createElement('div');
   bar.className = 'sc-player-bar';
   bar.setAttribute('role', 'group');
@@ -75,22 +73,7 @@ export function buildPlayer(viewer: Viewer): () => void {
     },
     signal,
   );
-  const range = document.createElement('input');
-  range.type = 'range';
-  range.min = '0';
-  range.max = String(viewer.duration);
-  range.step = String(SEEK_STEP_S);
-  range.setAttribute('aria-label', 'Preview time');
-  range.addEventListener(
-    'input',
-    () => {
-      // Pause emits synchronously and paints the old time back into an unfocused range.
-      const time_s = Number(range.value);
-      viewer.pause();
-      viewer.seek(time_s);
-    },
-    { signal },
-  );
+  const range = seekRange(viewer, signal);
   const speed = speedSelect(viewer, signal);
   const time = document.createElement('output');
   time.setAttribute('aria-label', 'Playback time');
@@ -104,19 +87,58 @@ export function buildPlayer(viewer: Viewer): () => void {
     signal,
   );
   gear.setAttribute('aria-expanded', 'false');
-  const stats = document.createElement('span');
-  stats.className = 'sc-player-stats';
+  const stats = statsElement();
   wireTransport(viewer, signal, { root, bar, play, range, speed, panel, gear, time });
-  root.append(style, bar, panel, stats);
+  const removeSound = mountSoundControls(bar);
+  root.append(bar, panel, stats);
   viewer.container.append(root);
   const unsubscribe = viewer.on(() => {
     paint(viewer, { play, range, speed, panel, stats, time });
   });
   return () => {
+    removeSound();
     unsubscribe();
     abort.abort();
     root.remove();
   };
+}
+function seekRange(viewer: Viewer, signal: AbortSignal): HTMLInputElement {
+  const range = document.createElement('input');
+  range.type = 'range';
+  range.min = '0';
+  range.max = String(viewer.duration);
+  // Native step sanitisation would round both playback readouts and authored seeks.
+  range.step = 'any';
+  range.setAttribute('aria-label', 'Preview time');
+  range.addEventListener(
+    'keydown',
+    (event) => {
+      const direction = seekDirection(event.key);
+      if (direction === 0) return;
+      event.preventDefault();
+      const time_s = viewer.t + direction * SEEK_STEP_S;
+      viewer.pause();
+      viewer.seek(time_s);
+      range.value = String(viewer.t);
+    },
+    { signal },
+  );
+  range.addEventListener(
+    'input',
+    () => {
+      // Pause emits synchronously and paints the old time back into an unfocused range.
+      const time_s = Number(range.value);
+      viewer.pause();
+      viewer.seek(time_s);
+    },
+    { signal },
+  );
+  return range;
+}
+function seekDirection(key: string): number {
+  if (key === 'ArrowRight' || key === 'ArrowUp') return 1;
+  if (key === 'ArrowLeft' || key === 'ArrowDown') return -1;
+  return 0;
 }
 function speedSelect(viewer: Viewer, signal: AbortSignal): HTMLSelectElement {
   const select = document.createElement('select');
@@ -160,7 +182,8 @@ function paint(
   for (const input of Array.from(elements.panel.querySelectorAll('input[data-setting]'))) {
     if (!(input instanceof HTMLInputElement)) continue;
     const key = input.dataset.setting;
-    if (key !== undefined && key in SETTINGS) input.checked = SETTINGS[key as keyof ViewerSettings];
+    if (key !== undefined && key in SETTINGS)
+      input.checked = SETTINGS[key as Exclude<keyof ViewerSettings, 'volume'>];
   }
 }
 
@@ -212,4 +235,18 @@ function wireTransport(
     ),
     gear,
   );
+}
+
+function statsElement(): HTMLSpanElement {
+  const element = document.createElement('span');
+  element.className = 'sc-player-stats';
+  return element;
+}
+function playerRoot(): HTMLDivElement {
+  const element = document.createElement('div');
+  element.className = 'sc-player';
+  const style = document.createElement('style');
+  style.textContent = CSS;
+  element.append(style);
+  return element;
 }

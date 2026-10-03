@@ -6,11 +6,35 @@ import { SETTINGS } from './settings';
 import { shakeAt, type ShakeEvent } from '../sim/shake';
 import type { Vec3 } from '../sim/colour';
 import type { Viewer } from './viewer';
+import { disposeTree } from './world';
+import type { SoundShot } from '../sim/events';
 import type { GpuSprays } from './gpu-sprays';
 // Prototype smoothing weight for displayed milliseconds, dimensionless.
 const TIMING_OLD_WEIGHT = 0.9;
+// Prototype exponential smoothing weight for displayed frame rate, dimensionless.
+const FPS_OLD_WEIGHT = 0.92;
+// Completed draw diagnostics use microsecond precision in show seconds, never transport input.
+const DRAWN_TIME_DECIMALS = 6;
 /** Samples a viewer's current sequence seconds, packs attributes and submits unchanged GPU passes. */
-export function drawViewerFrame(viewer: Viewer, sprays: GpuSprays): void {
+export function drawViewerFrame(
+  viewer: Pick<
+    Viewer,
+    | 'profiler'
+    | 't'
+    | 'shots'
+    | 'options'
+    | 'sprayMode'
+    | 'layers'
+    | 'count'
+    | 'fillMs'
+    | 'output'
+    | 'renderer'
+    | 'scene'
+    | 'camera'
+    | 'frameMs'
+  >,
+  sprays: GpuSprays,
+): void {
   const profiling = viewer.profiler.requested;
   if (profiling) viewer.profiler.begin(viewer.t);
   const start = performance.now();
@@ -45,6 +69,8 @@ export function drawViewerFrame(viewer: Viewer, sprays: GpuSprays): void {
     viewer.camera,
     profiling ? viewer.profiler : undefined,
   );
+  viewer.renderer.domElement.dataset.drawnTime = viewer.t.toFixed(DRAWN_TIME_DECIMALS);
+  viewer.renderer.domElement.dataset.drawPending = 'false';
   viewer.frameMs =
     viewer.frameMs * TIMING_OLD_WEIGHT + (performance.now() - start) * (1 - TIMING_OLD_WEIGHT);
 }
@@ -83,4 +109,45 @@ export function resetViewerReadout(viewer: Viewer): void {
   viewer.profiler.reset();
   viewer.fillMs = 0;
   viewer.frameMs = 0;
+}
+
+/** Returns acoustic placements in world metres, matching particle cake holes when enabled. */
+export function soundShots(viewer: Viewer): SoundShot[] {
+  return viewer.shots.map((shot, index) =>
+    viewer.options.prop === 'cake'
+      ? { ...shot, position: cakeHole(index), muzzle_m: CAKE_TOP_M }
+      : shot,
+  );
+}
+/** Frees the viewer's scene, output target and WebGL context after transport cleanup. */
+export function disposeViewerScene(viewer: Viewer, sprays: GpuSprays): void {
+  viewer.scene.remove(viewer.layers.group);
+  viewer.scene.remove(sprays.points);
+  sprays.dispose();
+  viewer.layers.dispose();
+  disposeTree(viewer.scene);
+  viewer.profiler.dispose();
+  viewer.output.dispose();
+  viewer.renderer.dispose();
+  viewer.renderer.forceContextLoss();
+}
+
+/** Advances show seconds by wall-clock seconds times speed; returns whether the final frame needs drawing. */
+export function advanceViewerPlayback(
+  viewer: Pick<Viewer, 'fps' | 't' | 'speed' | 'duration' | 'options' | 'playing'>,
+  dt: number,
+): boolean {
+  if (dt > 0) viewer.fps = viewer.fps * FPS_OLD_WEIGHT + (1 / dt) * (1 - FPS_OLD_WEIGHT);
+  const next = viewer.t + dt * viewer.speed;
+  if (next <= viewer.duration) {
+    viewer.t = next;
+    return false;
+  }
+  if (viewer.options.loop !== false && viewer.duration > 0) {
+    viewer.t = next % viewer.duration;
+    return false;
+  }
+  viewer.t = viewer.duration;
+  viewer.playing = false;
+  return true;
 }
