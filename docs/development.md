@@ -40,15 +40,17 @@ in light and dark themes and attach the screenshots to the PR.
 ## Renderer review
 
 `http://localhost:3000/dev/fireworks` needs no local Supabase. It shows all built-in
-templates and three simulation fixtures as static previews produced by one WebGL
-context. Selecting a card plays it in that same context. The comparison link opens
+templates and three simulation fixtures as progressive posters produced by one shared,
+detached WebGL context. Selecting a card plays it in the independent live context.
+Readiness does not wait for the poster catalogue; PNG work yields to pending live draws. The comparison link opens
 `http://localhost:8765/fireworks.html` in a separate tab so the owner can arrange the
 two pages alongside each other. The prototype must already be served from the
 read-only reference checkout.
 
 The view uses three.js 0.184.0 and a single output target and pass. Add `?ldr` to the
-review URL to exercise its 8-bit fallback. The fixed review camera fits sampled
-particle bounds; interactive camera controls and sound are separate concerns.
+review URL to exercise its 8-bit fallback. Poster cameras frame shell bursts tightly and retain the climb for other kinds. Each
+poster samples its own developed moment. The live audience camera and transport stay
+independent from thumbnail rendering.
 
 Install the test browser once with `pnpm exec playwright install chromium`.
 `pnpm test:browser` runs Chromium journeys, accessibility checks, exact seek replay
@@ -135,3 +137,27 @@ All handwritten TypeScript packages pass these rules without a lint baseline.
 Registry primitives are exempt only from export purpose comments so they can stay
 close to upstream. Allocation-sensitive numeric kernels retain narrow, explained
 parameter-count exceptions; size, complexity and numeric checks still apply.
+
+## Browser posters
+
+Import `poster`, `posterAll`, `developedTime` and `disposePosters` from
+`@showcrafter/fireworks/poster` (also re-exported from `/view`).
+`await poster(canvas, design, options)` copies a PNG into a 2D canvas and returns its
+Blob for uploading. Pass `null` as the canvas to request only the Blob. The stored v1
+design must already be validated. Options include sequence `shots`, sequence time `t`
+in seconds, `prop`, positive CSS-pixel `width`/`height`, `forceLdr` and a world-metre
+`framing: { position, target }` override. Default time is the first shot's firing time
+plus its developed moment. The design's stored seed is used unless a shot overrides it.
+
+`await posterAll(root, options)` fills `canvas[data-poster]` elements whose attribute
+names a built-in template, in DOM order. Unknown keys and encoding failures reject.
+The public API serialises captures and waits for PNG encoding before reusing its one
+detached renderer. Size changes affect only this surface. Call `await disposePosters()`
+when finished to release the context after queued encoders; the next capture allocates
+lazily. The review page owns and revokes its progressive blob URLs on teardown.
+
+Snapshot generation, perceptual tolerances and approval instructions are in
+[the poster snapshot guide](../packages/fireworks/tests/snapshots/README.md).
+The browser tests are part of `pnpm check`; the full catalogue also has a nightly
+workflow. Browser execution and approved baseline images are required before this gate
+can pass. Typechecking alone does not verify pixels, readiness time or device performance.
