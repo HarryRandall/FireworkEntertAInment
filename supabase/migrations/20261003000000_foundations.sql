@@ -3130,7 +3130,7 @@ create policy privacy_requests_read on public.privacy_requests for select to aut
 create policy privacy_requests_insert on public.privacy_requests for insert to authenticated
   with check (private.owns_shopper(shopper_id) and status = 'pending' and result_media_id is null);
 
--- A single atomic start boundary owns the credit-charge integration point.
+-- Session creation and its credit settlement share a transaction.
 create function private.start_plan_session(p_store uuid,p_answers jsonb,p_solver text,p_input_hash text,p_qr_code uuid,p_age_confirmed_at timestamptz)
 returns uuid language plpgsql security definer set search_path = '' as $$
 #variable_conflict error
@@ -3154,12 +3154,11 @@ begin
   end if;
   insert into public.plan_sessions(shopper_id,store_id,qr_code_id,answers,solver,input_hash,age_confirmed_at)
     values (private.uid(),p_store,p_qr_code,p_answers,p_solver,p_input_hash,p_age_confirmed_at) returning id into v_session;
-  -- CREDIT CHARGE HOOK: settle one charge keyed by v_session in this transaction.
-  -- The reservation remains null because no credit ledger is installed.
+  perform private.charge_plan_session(v_session);
   return v_session;
 end;
 $$;
-comment on function private.start_plan_session(uuid,jsonb,text,text,uuid,timestamptz) is 'Starts an owned planning session atomically after store, QR and age confirmation checks; returns its UUID. Credit settlement integration point.';
+comment on function private.start_plan_session(uuid,jsonb,text,text,uuid,timestamptz) is 'Starts an owned planning session atomically after store, QR and age confirmation checks; returns its UUID. Includes one credit settlement.';
 create function public.start_plan_session(p_store uuid,p_answers jsonb,p_solver text,p_input_hash text,
   p_qr_code uuid default null,p_age_confirmed_at timestamptz default null)
 returns uuid language sql set search_path = '' as $$
@@ -3470,3 +3469,629 @@ $$;
 comment on function private.preserve_music_track_identity() is 'Preserves the shared provider identity while allowing metadata and availability updates.';
 create trigger preserve_track_identity before update on public.music_tracks
   for each row execute function private.preserve_music_track_identity();
+
+-- Append-only visit events and rerunnable UTC rollups for retailer insights.
+create table public.events (
+  id bigint generated always as identity, occurred_at timestamptz not null default now(),
+  type text not null check (type in ('scan','play','watched_to_end','list_add','list_redeem','plan_start','plan_pick','edit','share','follow')),
+  organisation_id uuid references public.organisations(id), store_id uuid references public.stores(id),
+  qr_code_id uuid references public.qr_codes(id), campaign_id uuid references public.campaigns(id),
+  show_id uuid references public.shows(id), product_id uuid references public.products(id),
+  plan_session_id uuid references public.plan_sessions(id) on delete set null,
+  shopper_id uuid references public.profiles(id) on delete set null,
+  session_key text, device text, os text, browser text, country char(2), city text,
+  props jsonb not null default '{}' check (jsonb_typeof(props) = 'object'),
+  primary key (id,occurred_at)
+) partition by range (occurred_at);
+create index events_organisation_time_idx on public.events(organisation_id,occurred_at);
+create index events_store_idx on public.events(store_id);
+create index events_shopper_idx on public.events(shopper_id);
+create index events_session_idx on public.events(plan_session_id);
+
+-- Nullable dimensions cannot be a primary key: NULLS NOT DISTINCT supplies one bucket.
+create table public.metrics_daily (
+  day date not null, organisation_id uuid not null references public.organisations(id),
+  store_id uuid references public.stores(id), qr_code_id uuid references public.qr_codes(id),
+  show_id uuid references public.shows(id), product_id uuid references public.products(id), campaign_id uuid references public.campaigns(id),
+  metric text not null, value bigint not null,
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
+  unique nulls not distinct (day,organisation_id,metric,store_id,qr_code_id,show_id,product_id,campaign_id)
+);
+create table public.metrics_hourly (
+  hour timestamptz not null, organisation_id uuid not null references public.organisations(id),
+  store_id uuid references public.stores(id), qr_code_id uuid references public.qr_codes(id),
+  show_id uuid references public.shows(id), product_id uuid references public.products(id), campaign_id uuid references public.campaigns(id),
+  metric text not null, value bigint not null,
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
+  unique nulls not distinct (hour,organisation_id,metric,store_id,qr_code_id,show_id,product_id,campaign_id)
+);
+create index metrics_daily_organisation_idx on public.metrics_daily(organisation_id,day);
+create index metrics_daily_store_idx on public.metrics_daily(store_id);
+create index metrics_hourly_organisation_idx on public.metrics_hourly(organisation_id,hour);
+create index metrics_hourly_store_idx on public.metrics_hourly(store_id);
+create table public.saved_reports (
+  id uuid primary key default gen_random_uuid(), organisation_id uuid not null references public.organisations(id) on delete cascade,
+  name text not null check (name <> ''), query jsonb not null check (jsonb_typeof(query) = 'object'),
+  schedule text, recipients text[], created_at timestamptz not null default now(), updated_at timestamptz not null default now()
+);
+create index saved_reports_organisation_idx on public.saved_reports(organisation_id);
+create trigger metrics_daily_updated before update on public.metrics_daily for each row execute function private.set_updated_at();
+create trigger metrics_hourly_updated before update on public.metrics_hourly for each row execute function private.set_updated_at();
+create trigger saved_reports_updated before update on public.saved_reports for each row execute function private.set_updated_at();
+alter table public.events enable row level security;
+alter table public.metrics_daily enable row level security;
+alter table public.metrics_hourly enable row level security;
+alter table public.saved_reports enable row level security;
+create policy events_live_read on public.events for select to authenticated using (
+  occurred_at >= now() - interval '1 hour' and private.can_store(organisation_id,store_id,'insights.view'));
+comment on policy events_live_read on public.events is 'Retailer live feed is restricted to the last wall-clock hour and permitted stores.';
+create policy metrics_daily_read on public.metrics_daily for select to authenticated using (private.can_store(organisation_id,store_id,'insights.view'));
+create policy metrics_hourly_read on public.metrics_hourly for select to authenticated using (private.can_store(organisation_id,store_id,'insights.view'));
+create policy saved_reports_read on public.saved_reports for select to authenticated using (private.can(organisation_id,'insights.view'));
+create policy saved_reports_insert on public.saved_reports for insert to authenticated with check (private.can(organisation_id,'insights.view'));
+create policy saved_reports_update on public.saved_reports for update to authenticated using (private.can(organisation_id,'insights.view')) with check (private.can(organisation_id,'insights.view'));
+create policy saved_reports_delete on public.saved_reports for delete to authenticated using (private.can(organisation_id,'insights.view'));
+
+create function private.track_event(p_type text,p_store uuid,p_context jsonb,p_session_key text,p_props jsonb)
+returns bigint language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  -- Initial abuse budget: burst of 60 events per shopper, refilling one token per second.
+  v_capacity constant numeric := 60;
+  v_refill_per_second constant numeric := 1;
+  -- Visit keys are bounded opaque random identifiers, never personal data.
+  v_session_key_limit constant integer := 128;
+  v_organisation uuid;
+  v_qr uuid := (p_context->>'qr_code_id')::uuid;
+  v_campaign uuid;
+  v_show uuid := (p_context->>'show_id')::uuid;
+  v_product uuid := (p_context->>'product_id')::uuid;
+  v_plan uuid := (p_context->>'plan_session_id')::uuid;
+  v_list uuid := (p_props->>'list_id')::uuid;
+  v_props jsonb := '{}'::jsonb;
+  v_id bigint;
+begin
+  if not coalesce(private.owns_shopper(private.uid()),false) then
+    raise exception using errcode = '42501',message = 'Active shopper required';
+  end if;
+  if p_type is null or p_type not in ('scan','play','watched_to_end','list_add','list_redeem','plan_start','plan_pick','edit','share','follow')
+    or p_context is null or jsonb_typeof(p_context) <> 'object' or p_props is null or jsonb_typeof(p_props) <> 'object'
+    or (p_context - array['qr_code_id','show_id','product_id','plan_session_id']) <> '{}'
+    or (p_props - 'list_id') <> '{}' or length(p_session_key) > v_session_key_limit then
+    raise exception using errcode = '23514',message = 'Known event type and bounded context required';
+  end if;
+  select store.organisation_id into v_organisation from public.stores as store join public.organisations as organisation on organisation.id = store.organisation_id
+    where store.id = p_store and store.status = 'open' and organisation.status not in ('suspended','closed');
+  if v_organisation is null then raise exception using errcode = '23514',message = 'Open store required'; end if;
+  if v_qr is not null then
+    select code.campaign_id into v_campaign from public.qr_codes as code where code.id = v_qr and code.organisation_id = v_organisation
+      and (code.store_id is null or code.store_id = p_store) and code.status = 'live';
+    if not found then raise exception using errcode = '23514',message = 'Matching live QR code required'; end if;
+  end if;
+  if v_show is not null and not exists (select from public.shows as show where show.id = v_show and (
+    (show.organisation_id = v_organisation and show.status in ('live','stock_issue')) or show.owner_id = private.uid())) then
+    raise exception using errcode = '23514',message = 'Visible matching show required';
+  end if;
+  if v_product is not null and not exists (select from public.store_prices as price where price.store_id = p_store and price.product_id = v_product and not price.hidden) then
+    raise exception using errcode = '23514',message = 'Visible store product required';
+  end if;
+  if v_plan is not null and not exists (select from public.plan_sessions as session where session.id = v_plan and session.store_id = p_store and session.shopper_id = private.uid()) then
+    raise exception using errcode = '23514',message = 'Owned matching session required';
+  end if;
+  if v_list is not null then
+    if not exists (select from public.lists as list where list.id = v_list and list.store_id = p_store and list.shopper_id = private.uid()
+      and (p_type <> 'list_redeem' or list.status = 'redeemed')) then
+      raise exception using errcode = '23514',message = 'Owned matching list required';
+    end if;
+    select jsonb_build_object('list_id',v_list,'list_value_minor',coalesce(sum(item.quantity * item.unit_price_minor),0)) into v_props
+      from public.list_items as item where item.list_id = v_list;
+  elsif p_type = 'list_redeem' then
+    raise exception using errcode = '23514',message = 'Redeemed list required';
+  end if;
+  if not private.consume_rate_limit('event:' || private.uid(),v_capacity,v_refill_per_second) then
+    raise exception using errcode = 'P0001',message = 'Event rate limit exceeded';
+  end if;
+  insert into public.events(type,organisation_id,store_id,qr_code_id,campaign_id,show_id,product_id,plan_session_id,shopper_id,session_key,props)
+    values (p_type,v_organisation,p_store,v_qr,v_campaign,v_show,v_product,v_plan,private.uid(),p_session_key,v_props) returning id into v_id;
+  return v_id;
+end;
+$$;
+comment on function private.track_event(text,uuid,jsonb,text,jsonb) is 'Validates shopper and store references, derives tenancy and list value, consumes the event budget and appends a server-timestamped event; returns its ID.';
+create function public.track_event(type text,store uuid,context jsonb default '{}',session_key text default null,props jsonb default '{}')
+returns bigint language plpgsql set search_path = '' as $$
+#variable_conflict error
+begin
+  return private.track_event(type,store,context,session_key,props);
+end;
+$$;
+comment on function public.track_event(text,uuid,jsonb,text,jsonb) is 'Appends one validated owned-shopper event; context contains optional QR, show, product and session UUIDs, props only a list UUID. Raw IP and client geo are never accepted.';
+
+-- This projection keeps the event-to-metric mapping shared between both rollups.
+create function private.event_metrics(p_from timestamptz,p_until timestamptz)
+returns table(occurred_at timestamptz,organisation_id uuid,store_id uuid,qr_code_id uuid,show_id uuid,product_id uuid,campaign_id uuid,metric text,value bigint)
+language sql stable set search_path = '' as $$
+  select event.occurred_at,event.organisation_id,event.store_id,event.qr_code_id,event.show_id,event.product_id,event.campaign_id,
+    mapped.metric,mapped.value from public.events as event cross join lateral (
+      select case event.type when 'scan' then 'scans' when 'play' then 'plays' when 'watched_to_end' then 'watched_to_end'
+        when 'list_add' then 'list_adds' when 'plan_start' then 'plans' when 'follow' then 'follows' end as metric,1::bigint as value
+      union all select 'list_value_minor',(event.props->>'list_value_minor')::bigint where event.type = 'list_redeem'
+    ) as mapped where event.occurred_at >= p_from and event.occurred_at < p_until and event.organisation_id is not null and mapped.metric is not null;
+$$;
+comment on function private.event_metrics(timestamptz,timestamptz) is 'Projects count metrics and snapshotted minor-unit list value from the half-open UTC event interval for trusted rollups.';
+
+create function private.rollup_events(p_from timestamptz,p_until timestamptz)
+returns void language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  v_from timestamptz;
+  v_until timestamptz;
+  -- Stable advisory key serialises replacement of overlapping aggregate buckets.
+  v_rollup_lock constant bigint := 800001;
+  -- Hourly heatmaps keep 90 days; daily aggregates retain the full history.
+  v_hourly_retention constant interval := interval '90 days';
+  -- Rebuilding a period whose raw partitions were dropped would erase retained facts.
+  v_raw_retention constant interval := interval '25 months';
+begin
+  if p_from is null or p_until is null or p_from >= p_until then
+    raise exception using errcode = '23514',message = 'Increasing rollup interval required';
+  end if;
+  if p_from < date_trunc('month',now() - v_raw_retention,'UTC') then
+    raise exception using errcode = '23514',message = 'Rollup interval exceeds raw event retention';
+  end if;
+  perform pg_advisory_xact_lock(v_rollup_lock);
+  -- Expand to whole UTC days so partial windows cannot overwrite a complete bucket.
+  v_from := date_trunc('day',p_from,'UTC');
+  v_until := date_trunc('day',p_until,'UTC');
+  if v_until < p_until then v_until := v_until + interval '1 day'; end if;
+  delete from public.metrics_daily as metric where metric.day >= (v_from at time zone 'UTC')::date and metric.day < (v_until at time zone 'UTC')::date;
+  insert into public.metrics_daily(day,organisation_id,store_id,qr_code_id,show_id,product_id,campaign_id,metric,value)
+    select (source.occurred_at at time zone 'UTC')::date,source.organisation_id,source.store_id,source.qr_code_id,source.show_id,source.product_id,source.campaign_id,source.metric,sum(source.value)
+    from private.event_metrics(v_from,v_until) as source group by 1,2,3,4,5,6,7,8;
+  delete from public.metrics_hourly as metric where metric.hour >= v_from and metric.hour < v_until;
+  insert into public.metrics_hourly(hour,organisation_id,store_id,qr_code_id,show_id,product_id,campaign_id,metric,value)
+    select date_trunc('hour',source.occurred_at,'UTC'),source.organisation_id,source.store_id,source.qr_code_id,source.show_id,source.product_id,source.campaign_id,source.metric,sum(source.value)
+    from private.event_metrics(greatest(v_from,date_trunc('hour',now() - v_hourly_retention,'UTC')),v_until) as source group by 1,2,3,4,5,6,7,8;
+  delete from public.metrics_hourly as metric where metric.hour < date_trunc('hour',now() - v_hourly_retention,'UTC');
+end;
+$$;
+comment on function private.rollup_events(timestamptz,timestamptz) is 'Atomically rebuilds complete UTC day/hour buckets touching a half-open wall-clock interval; reruns replace counts, and hourly retention is 90 days.';
+
+-- The default is evaluated before the function's empty search path takes effect.
+create function private.maintain_event_partitions(p_caller_search_path text default current_setting('search_path'))
+returns void language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  v_partition regclass;
+begin
+  perform partman.run_maintenance(p_parent_table := 'public.events',p_analyze := false,p_jobmon := false);
+  -- Partitions are never API entry points, including ones created during maintenance.
+  for v_partition in select child.inhrelid::regclass from pg_catalog.pg_inherits as child where child.inhparent = 'public.events'::regclass loop
+    execute format('alter table %s enable row level security',v_partition);
+    execute format('revoke all on %s from public, anon, authenticated',v_partition);
+  end loop;
+  -- pg_partman uses session SET internally; restore the caller path explicitly.
+  perform set_config('search_path',p_caller_search_path,false);
+exception when others then
+  perform set_config('search_path',p_caller_search_path,false);
+  raise;
+end;
+$$;
+comment on function private.maintain_event_partitions(text) is 'Premakes monthly event partitions, drops raw data past the configured 25-month retention and seals direct API partition access.';
+
+-- Declarative setup also runs in the diff shadow database, keeping partitions in step.
+do $$
+#variable_conflict error
+declare
+  -- Four premade months is pg_partman''s default operational buffer.
+  v_premake constant integer := 4;
+  -- Raw event retention from the analytics contract; daily rollups are kept separately.
+  v_retention constant text := '25 months';
+begin
+  perform partman.create_parent(p_parent_table := 'public.events',p_control := 'occurred_at',p_interval := '1 month',
+    p_premake := v_premake,p_start_partition := date_trunc('month',now() - v_retention::interval)::text,
+    p_default_table := false,p_jobmon := false);
+  update partman.part_config as configuration set retention = v_retention,retention_keep_table = false,retention_keep_index = false,
+    infinite_time_partitions = true where configuration.parent_table = 'public.events';
+  perform private.maintain_event_partitions();
+end;
+$$;
+
+create function private.protect_event_history()
+returns trigger language plpgsql set search_path = '' as $$
+#variable_conflict error
+begin
+  -- Foreign-key deletion may unlink personal records, leaving aggregate facts intact.
+  if tg_op = 'UPDATE' and (new.shopper_id is not distinct from old.shopper_id or new.shopper_id is null)
+    and (new.plan_session_id is not distinct from old.plan_session_id or new.plan_session_id is null)
+    and (to_jsonb(new) - array['shopper_id','plan_session_id']) = (to_jsonb(old) - array['shopper_id','plan_session_id']) then
+    return new;
+  end if;
+  raise exception using errcode = '23514',message = 'Event history is append-only';
+end;
+$$;
+comment on function private.protect_event_history() is 'Rejects raw event rewrites and deletion; personal foreign keys can be cleared when accounts are deleted. Retention drops whole partitions.';
+create trigger events_immutable before update or delete on public.events for each row execute function private.protect_event_history();
+
+-- Retailer entitlements and append-only credits, granted by platform finance staff.
+create table public.plans (
+  key text primary key, name text not null, max_stores smallint check (max_stores > 0),
+  monthly_credits integer not null check (monthly_credits >= 0), stripe_price_ids jsonb not null default '{}',
+  features jsonb not null default '{}' check (jsonb_typeof(features) = 'object'), active boolean not null default true,
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now()
+);
+create table public.billing_accounts (
+  organisation_id uuid primary key references public.organisations(id) on delete cascade,
+  stripe_customer_id text unique, plan_key text references public.plans(key), subscription_status text,
+  current_period_end timestamptz, store_quantity smallint check (store_quantity > 0),
+  monthly_ai_cap_minor bigint check (monthly_ai_cap_minor >= 0),
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now()
+);
+comment on column public.billing_accounts.monthly_ai_cap_minor is 'Optional spend cap in the organisation billing currency, in minor units.';
+create table public.credit_packs (
+  key text primary key, credits integer not null check (credits > 0), stripe_price_ids jsonb not null default '{}',
+  active boolean not null default true, created_at timestamptz not null default now(), updated_at timestamptz not null default now()
+);
+create table public.credit_prices (
+  action text primary key, credits integer not null check (credits >= 0),
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
+  constraint plan_session_one_credit check (action <> 'plan_session' or credits = 1)
+);
+create table public.credit_ledger (
+  id bigint generated always as identity primary key,
+  organisation_id uuid not null references public.organisations(id), delta integer not null check (delta <> 0),
+  reason text not null check (reason in ('plan_allowance','pack','grant','spend','refund','expiry')),
+  action text references public.credit_prices(action), ref_type text, ref_id uuid,
+  idempotency_key text not null unique check (idempotency_key <> ''), actor_id uuid references public.profiles(id) on delete set null,
+  at timestamptz not null default now(),
+  check ((reason in ('spend','expiry') and delta < 0) or (reason not in ('spend','expiry') and delta > 0))
+);
+create index credit_ledger_organisation_idx on public.credit_ledger(organisation_id);
+create unique index credit_ledger_session_idx on public.credit_ledger(ref_id) where reason = 'spend' and ref_type = 'plan_session';
+create table public.credit_reservations (
+  id uuid primary key default gen_random_uuid(), organisation_id uuid not null references public.organisations(id),
+  credits integer not null check (credits > 0), action text not null references public.credit_prices(action),
+  status text not null check (status in ('held','settled','released')), expires_at timestamptz not null,
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now()
+);
+create index credit_reservations_organisation_idx on public.credit_reservations(organisation_id);
+alter table public.plan_sessions add constraint plan_sessions_credit_reservation_fk
+  foreign key (credits_reservation_id) references public.credit_reservations(id);
+create unique index plan_sessions_credit_reservation_idx on public.plan_sessions(credits_reservation_id);
+create trigger plans_updated before update on public.plans for each row execute function private.set_updated_at();
+create trigger billing_accounts_updated before update on public.billing_accounts for each row execute function private.set_updated_at();
+create trigger credit_packs_updated before update on public.credit_packs for each row execute function private.set_updated_at();
+create trigger credit_prices_updated before update on public.credit_prices for each row execute function private.set_updated_at();
+create trigger credit_reservations_updated before update on public.credit_reservations for each row execute function private.set_updated_at();
+alter table public.plans enable row level security;
+alter table public.billing_accounts enable row level security;
+alter table public.credit_packs enable row level security;
+alter table public.credit_prices enable row level security;
+alter table public.credit_ledger enable row level security;
+alter table public.credit_reservations enable row level security;
+create policy plans_read on public.plans for select to authenticated using (active or (select private.staff_role()) is not null);
+create policy credit_packs_read on public.credit_packs for select to authenticated using (active or (select private.staff_role()) is not null);
+create policy credit_prices_read on public.credit_prices for select to authenticated using (true);
+create policy billing_accounts_read on public.billing_accounts for select to authenticated
+  using ((select private.staff_role()) is not null or organisation_id in (select private.org_ids('staff')));
+create policy credit_ledger_read on public.credit_ledger for select to authenticated
+  using ((select private.staff_role()) is not null or organisation_id in (select private.org_ids('staff')));
+create policy credit_reservations_read on public.credit_reservations for select to authenticated
+  using ((select private.staff_role()) is not null or organisation_id in (select private.org_ids('staff')));
+
+create function private.credit_balance(p_organisation uuid)
+returns bigint language sql stable security definer set search_path = '' as $$
+  select coalesce((select sum(entry.delta) from public.credit_ledger as entry where entry.organisation_id = p_organisation),0)
+    - coalesce((select sum(reservation.credits) from public.credit_reservations as reservation
+      where reservation.organisation_id = p_organisation and reservation.status = 'held' and reservation.expires_at > now()),0);
+$$;
+comment on function private.credit_balance(uuid) is 'Returns ledger credits less unexpired held credits for a trusted organisation, without mutating the balance.';
+create function private.read_credit_balance(p_organisation uuid)
+returns bigint language plpgsql stable security definer set search_path = '' as $$
+#variable_conflict error
+begin
+  if not coalesce(private.staff_role() is not null or p_organisation in (select private.org_ids('staff')),false) then
+    raise exception using errcode = '42501',message = 'Organisation membership required';
+  end if;
+  return private.credit_balance(p_organisation);
+end;
+$$;
+comment on function private.read_credit_balance(uuid) is 'Checks the caller organisation or staff access and returns available credits.';
+create function public.credit_balance(organisation uuid)
+returns bigint language plpgsql stable set search_path = '' as $$
+#variable_conflict error
+begin
+  return private.read_credit_balance(organisation);
+end;
+$$;
+comment on function public.credit_balance(uuid) is 'Returns available credits only for a caller organisation or platform staff.';
+
+create function private.grant_credits(p_organisation uuid,p_credits integer,p_key text)
+returns bigint language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  v_entry public.credit_ledger;
+begin
+  if not coalesce(private.staff_role() in ('super_admin','finance'),false) then
+    raise exception using errcode = '42501',message = 'Finance staff required';
+  end if;
+  if p_credits is null or p_credits <= 0 or p_key is null or btrim(p_key) = '' then
+    raise exception using errcode = '23514',message = 'Positive credits and idempotency key required';
+  end if;
+  -- A shared organisation lock serialises grants, spending and reservation changes.
+  perform organisation.id from public.organisations as organisation where organisation.id = p_organisation for update;
+  if not found then raise exception using errcode = '23503',message = 'Organisation required'; end if;
+  insert into public.credit_ledger(organisation_id,delta,reason,idempotency_key,actor_id)
+    values (p_organisation,p_credits,'grant','grant:' || p_key,private.uid()) on conflict (idempotency_key) do nothing;
+  select entry.* into v_entry from public.credit_ledger as entry where entry.idempotency_key = 'grant:' || p_key;
+  if v_entry.organisation_id <> p_organisation or v_entry.delta <> p_credits or v_entry.reason <> 'grant' then
+    raise exception using errcode = '23514',message = 'Idempotency key already used for a different grant';
+  end if;
+  return v_entry.id;
+end;
+$$;
+comment on function private.grant_credits(uuid,integer,text) is 'Appends a positive finance-authorised grant once per key; an inconsistent replay fails atomically and a consistent replay returns the original ledger ID.';
+create function public.grant_credits(organisation uuid,credits integer,idempotency_key text)
+returns bigint language plpgsql set search_path = '' as $$
+#variable_conflict error
+begin
+  return private.grant_credits(organisation,credits,idempotency_key);
+end;
+$$;
+comment on function public.grant_credits(uuid,integer,text) is 'Grants integer credits through the append-only ledger for super admins and finance staff.';
+
+create function private.charge_plan_session(p_session uuid)
+returns uuid language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  -- A planning session costs one credit; edits and alternative candidates reuse it.
+  v_session_credits constant integer := 1;
+  v_session public.plan_sessions;
+  v_reservation uuid;
+  v_organisation uuid;
+begin
+  select session.* into v_session from public.plan_sessions as session where session.id = p_session for update;
+  if v_session.id is null then raise exception using errcode = '23503',message = 'Planning session required'; end if;
+  select store.organisation_id into v_organisation from public.stores as store where store.id = v_session.store_id;
+  perform organisation.id from public.organisations as organisation where organisation.id = v_organisation for update;
+  if v_session.credits_reservation_id is not null then return v_session.credits_reservation_id; end if;
+  if not exists (select from public.credit_prices as price where price.action = 'plan_session' and price.credits = v_session_credits) then
+    raise exception using errcode = '23514',message = 'Planning credit price required';
+  end if;
+  if private.credit_balance(v_organisation) < v_session_credits then
+    raise exception using errcode = '23514',message = 'Insufficient planning credits';
+  end if;
+  -- Settlement is immediate: no held charge remains to subtract a second time.
+  insert into public.credit_reservations(organisation_id,credits,action,status,expires_at)
+    values (v_organisation,v_session_credits,'plan_session','settled',now()) returning id into v_reservation;
+  insert into public.credit_ledger(organisation_id,delta,reason,action,ref_type,ref_id,idempotency_key)
+    values (v_organisation,-v_session_credits,'spend','plan_session','plan_session',p_session,'plan_session:' || p_session);
+  update public.plan_sessions as session set credits_reservation_id = v_reservation where session.id = p_session;
+  return v_reservation;
+end;
+$$;
+comment on function private.charge_plan_session(uuid) is 'Settles exactly one integer credit per existing planning session under an organisation lock; returns the reservation UUID and leaves replayed sessions unchanged.';
+
+create function private.release_expired_credit_reservations()
+returns bigint language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare v_count bigint;
+begin
+  update public.credit_reservations as reservation set status = 'released' where reservation.status = 'held' and reservation.expires_at <= now();
+  get diagnostics v_count = row_count;
+  return v_count;
+end;
+$$;
+comment on function private.release_expired_credit_reservations() is 'Releases wall-clock-expired held reservations and returns the number changed; no ledger mutation is required.';
+
+create function private.protect_credit_ledger()
+returns trigger language plpgsql set search_path = '' as $$
+#variable_conflict error
+begin
+  -- Auth deletion may clear attribution but cannot rewrite the financial fact.
+  if tg_op = 'UPDATE' and old.actor_id is not null and new.actor_id is null
+    and (to_jsonb(new) - 'actor_id') = (to_jsonb(old) - 'actor_id') then return new; end if;
+  raise exception using errcode = '23514',message = 'Credit ledger is append-only';
+end;
+$$;
+comment on function private.protect_credit_ledger() is 'Rejects ledger rewrites and deletions, permitting only actor anonymisation for account deletion.';
+create trigger credit_ledger_immutable before update or delete on public.credit_ledger for each row execute function private.protect_credit_ledger();
+
+create function private.validate_plan_credit_reference()
+returns trigger language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+begin
+  if tg_op = 'UPDATE' and old.credits_reservation_id is not null
+    and new.credits_reservation_id is distinct from old.credits_reservation_id then
+    raise exception using errcode = '23514',message = 'Planning credit settlement cannot change';
+  end if;
+  if new.credits_reservation_id is not null and not exists (
+    select from public.credit_reservations as reservation join public.stores as store on store.id = new.store_id
+      where reservation.id = new.credits_reservation_id and reservation.organisation_id = store.organisation_id
+        and reservation.action = 'plan_session' and reservation.credits = 1 and reservation.status = 'settled') then
+    raise exception using errcode = '23514',message = 'Matching settled planning credit required';
+  end if;
+  return new;
+end;
+$$;
+comment on function private.validate_plan_credit_reference() is 'Keeps the one-credit settlement in the session store organisation and prevents replacing recorded financial provenance.';
+create trigger plan_credit_reference before insert or update on public.plan_sessions for each row execute function private.validate_plan_credit_reference();
+
+-- Reviewed prompt metadata, system-owned call records and leased background work.
+create table public.prompt_versions (
+  key text not null, version integer not null check (version > 0), model text not null,
+  status text not null check (status in ('live','test','retired')),
+  traffic_pct smallint not null default 100 check (traffic_pct between 0 and 100),
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
+  primary key (key,version)
+);
+comment on column public.prompt_versions.traffic_pct is 'Percentage of eligible calls routed to this prompt, from the prompt registry contract.';
+create table public.llm_calls (
+  id bigint generated always as identity primary key,
+  purpose text not null, prompt_key text, prompt_version integer, model text not null, provider text,
+  organisation_id uuid references public.organisations(id), plan_session_id uuid references public.plan_sessions(id) on delete set null,
+  ref_id uuid, tokens_in integer check (tokens_in >= 0), tokens_out integer check (tokens_out >= 0),
+  cost_usd numeric(10,6) check (cost_usd >= 0), latency_ms integer check (latency_ms >= 0),
+  ok boolean not null, error text, at timestamptz not null default now(),
+  foreign key (prompt_key,prompt_version) references public.prompt_versions(key,version) match full
+);
+comment on column public.llm_calls.cost_usd is 'Provider usage cost in US dollars, with microdollar precision; not a retailer invoice amount.';
+create index llm_calls_organisation_idx on public.llm_calls(organisation_id);
+create index llm_calls_session_idx on public.llm_calls(plan_session_id);
+alter table public.plan_edits add constraint plan_edits_llm_call_fk foreign key (llm_call_id) references public.llm_calls(id);
+create table public.jobs (
+  id uuid primary key default gen_random_uuid(), kind text not null check (kind <> ''),
+  payload jsonb not null check (jsonb_typeof(payload) = 'object'),
+  status text not null default 'queued' check (status in ('queued','running','done','failed','dead')),
+  priority smallint not null default 0, attempts smallint not null default 0 check (attempts >= 0),
+  max_attempts smallint not null default 3 check (max_attempts > 0),
+  run_after timestamptz not null default now(), lease_until timestamptz, worker text,
+  result jsonb, error text, cost jsonb, organisation_id uuid references public.organisations(id),
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
+  check (attempts <= max_attempts),
+  check ((status = 'running') = (lease_until is not null and worker is not null))
+);
+comment on column public.jobs.max_attempts is 'Default three worker attempts per job, the queue contract retry budget.';
+create index jobs_claim_idx on public.jobs(kind,status,run_after) where status in ('queued','running','failed');
+create index jobs_organisation_idx on public.jobs(organisation_id);
+create table public.rate_limit_buckets (
+  key text primary key, tokens numeric not null check (tokens >= 0), refilled_at timestamptz not null,
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now()
+);
+create trigger prompt_versions_updated before update on public.prompt_versions for each row execute function private.set_updated_at();
+create trigger jobs_updated before update on public.jobs for each row execute function private.set_updated_at();
+create trigger rate_limit_buckets_updated before update on public.rate_limit_buckets for each row execute function private.set_updated_at();
+alter table public.prompt_versions enable row level security;
+alter table public.llm_calls enable row level security;
+alter table public.jobs enable row level security;
+alter table public.rate_limit_buckets enable row level security;
+create policy prompt_versions_read on public.prompt_versions for select to authenticated using ((select private.staff_role()) is not null);
+create policy llm_calls_read on public.llm_calls for select to authenticated using ((select private.staff_role()) is not null);
+create policy jobs_read on public.jobs for select to authenticated using ((select private.staff_role()) is not null);
+
+-- Row locking makes refill and consumption one operation; callers supply a trusted budget.
+create function private.consume_rate_limit(p_key text,p_capacity numeric,p_refill_per_second numeric,p_cost numeric default 1)
+returns boolean language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  v_bucket public.rate_limit_buckets;
+  v_now timestamptz := clock_timestamp();
+  v_tokens numeric;
+begin
+  if p_key is null or p_key = '' or p_capacity is null or p_capacity <= 0
+    or p_refill_per_second is null or p_refill_per_second <= 0 or p_cost is null or p_cost <= 0 or p_cost > p_capacity then
+    raise exception using errcode = '23514', message = 'Valid token bucket budget required';
+  end if;
+  insert into public.rate_limit_buckets(key,tokens,refilled_at) values (p_key,p_capacity,v_now) on conflict (key) do nothing;
+  select bucket.* into v_bucket from public.rate_limit_buckets as bucket where bucket.key = p_key for update;
+  v_now := clock_timestamp();
+  -- Elapsed seconds earn fractional tokens; cap idle accumulation at the burst budget.
+  v_tokens := least(p_capacity,v_bucket.tokens + greatest(0,extract(epoch from v_now - v_bucket.refilled_at)) * p_refill_per_second);
+  update public.rate_limit_buckets as bucket set tokens = v_tokens - case when v_tokens >= p_cost then p_cost else 0 end,
+    refilled_at = v_now where bucket.key = p_key;
+  return v_tokens >= p_cost;
+end;
+$$;
+comment on function private.consume_rate_limit(text,numeric,numeric,numeric) is 'Atomically consumes tokens from a trusted keyed budget, refilling in tokens per elapsed wall-clock second; returns false when exhausted.';
+
+create function private.claim_job(p_kinds text[],p_worker text)
+returns public.jobs language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  -- Five minutes is the initial queue lease budget; long workers renew before expiry.
+  v_lease constant interval := interval '5 minutes';
+  v_job public.jobs;
+begin
+  if p_worker is null or btrim(p_worker) = '' or coalesce(cardinality(p_kinds),0) = 0 then
+    raise exception using errcode = '23514', message = 'Worker identity and job kinds required';
+  end if;
+  -- Exhausted crashed workers are terminal, rather than stranded as running jobs.
+  update public.jobs as job set status = 'dead', worker = null, lease_until = null,
+    error = coalesce(job.error,'Worker lease expired')
+    where job.kind = any(p_kinds) and job.status = 'running' and job.lease_until <= clock_timestamp() and job.attempts >= job.max_attempts;
+  select job.* into v_job from public.jobs as job
+    where job.kind = any(p_kinds) and job.attempts < job.max_attempts and (
+      (job.status in ('queued','failed') and job.run_after <= clock_timestamp())
+      or (job.status = 'running' and job.lease_until <= clock_timestamp()))
+    order by job.priority desc,job.run_after,job.id for update skip locked limit 1;
+  if v_job.id is null then return null; end if;
+  update public.jobs as job set status = 'running', attempts = job.attempts + 1,
+    worker = p_worker, lease_until = clock_timestamp() + v_lease, error = null
+    where job.id = v_job.id returning job.* into v_job;
+  return v_job;
+end;
+$$;
+comment on function private.claim_job(text[],text) is 'Claims one due job with SKIP LOCKED, increments attempts and issues a five-minute wall-clock lease; returns null when none is available.';
+create function public.claim_job(kinds text[],worker text)
+returns public.jobs language plpgsql set search_path = '' as $$
+#variable_conflict error
+begin
+  return private.claim_job(kinds,worker);
+end;
+$$;
+comment on function public.claim_job(text[],text) is 'Returns one exclusively leased job for a trusted worker, or null when no requested kind is due.';
+
+-- Attempt number fences a reclaimed lease even when the worker name is reused.
+create function private.finish_job(p_id uuid,p_worker text,p_attempt smallint,p_result jsonb,p_error text,p_cost jsonb)
+returns void language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  -- Retry delay starts at 30 seconds and doubles per failed attempt, capped at one hour.
+  v_backoff_seconds constant integer := 30;
+  v_backoff_cap_seconds constant integer := 3600;
+  v_job public.jobs;
+begin
+  select job.* into v_job from public.jobs as job where job.id = p_id for update;
+  if v_job.id is null or v_job.status <> 'running' or v_job.worker is distinct from p_worker
+    or v_job.attempts is distinct from p_attempt or v_job.lease_until <= clock_timestamp() then
+    raise exception using errcode = '23514', message = 'Current worker lease required';
+  end if;
+  update public.jobs as job set
+    status = case when p_error is null then 'done' when job.attempts >= job.max_attempts then 'dead' else 'failed' end,
+    result = p_result,error = p_error,cost = p_cost,worker = null,lease_until = null,
+    run_after = case when p_error is null then job.run_after else clock_timestamp()
+      + make_interval(secs => least(v_backoff_cap_seconds,v_backoff_seconds * power(2::numeric,job.attempts - 1))::double precision) end
+    where job.id = p_id;
+end;
+$$;
+comment on function private.finish_job(uuid,text,smallint,jsonb,text,jsonb) is 'Completes or fails the current fenced lease atomically, scheduling exponential retry delay in seconds or marking the exhausted job dead.';
+create function public.complete_job(id uuid,worker text,attempt smallint,result jsonb default null,cost jsonb default null)
+returns void language plpgsql set search_path = '' as $$
+#variable_conflict error
+begin
+  perform private.finish_job(id,worker,attempt,result,null,cost);
+end;
+$$;
+comment on function public.complete_job(uuid,text,smallint,jsonb,jsonb) is 'Records a trusted worker result only for its unexpired matching lease and attempt.';
+create function public.fail_job(id uuid,worker text,attempt smallint,failure_reason text,cost jsonb default null)
+returns void language plpgsql set search_path = '' as $$
+#variable_conflict error
+begin
+  if failure_reason is null or failure_reason = '' then raise exception using errcode = '23514',message = 'Failure reason required'; end if;
+  perform private.finish_job(id,worker,attempt,null,failure_reason,cost);
+end;
+$$;
+comment on function public.fail_job(uuid,text,smallint,text,jsonb) is 'Records a non-empty worker failure and retries with backoff until the attempt budget is exhausted.';
+create function private.renew_job_lease(p_id uuid,p_worker text,p_attempt smallint)
+returns timestamptz language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  v_until timestamptz;
+  -- Same five-minute queue lease budget as initial claim.
+  v_lease constant interval := interval '5 minutes';
+begin
+  update public.jobs as job set lease_until = clock_timestamp() + v_lease
+    where job.id = p_id and job.status = 'running' and job.worker = p_worker and job.attempts = p_attempt
+      and job.lease_until > clock_timestamp() returning lease_until into v_until;
+  if v_until is null then raise exception using errcode = '23514',message = 'Current worker lease required'; end if;
+  return v_until;
+end;
+$$;
+comment on function private.renew_job_lease(uuid,text,smallint) is 'Extends an unexpired fenced lease by the five-minute worker budget and returns its wall-clock expiry.';
+create function public.renew_job_lease(id uuid,worker text,attempt smallint)
+returns timestamptz language plpgsql set search_path = '' as $$
+#variable_conflict error
+begin
+  return private.renew_job_lease(id,worker,attempt);
+end;
+$$;
+comment on function public.renew_job_lease(uuid,text,smallint) is 'Renews the current trusted worker attempt and returns its lease expiry.';
