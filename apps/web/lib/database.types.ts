@@ -6468,6 +6468,10 @@ export type Database = {
         }
         Returns: string
       }
+      product_for_store: {
+        Args: { p_product: string; p_slug: string }
+        Returns: Json
+      }
       publish_effect_version: {
         Args: { p_version_id: string }
         Returns: undefined
@@ -6616,6 +6620,7 @@ export type Database = {
         Returns: string
       }
       store_page: { Args: { p_store: string }; Returns: Json }
+      store_page_by_slug: { Args: { p_slug: string }; Returns: Json }
       track_event: {
         Args: {
           context?: Json

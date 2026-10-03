@@ -379,7 +379,7 @@ language sql stable security definer set search_path = '' as $$
   join public.products as product on product.id = price.product_id and product.status = 'published'
   join public.product_markets as listing on listing.product_id = product.id and listing.market = store.market
   where store.id = p_store and store.status = 'open' and organisation.status in ('active','trial')
-    and listing.confirmed_at is not null and price.currency = market.currency;
+    and listing.confirmed_at is not null and listing.allowed and price.currency = market.currency;
 $$;
 comment on function private.shopper_store_products(uuid) is 'Returns visible published store products with confirmed market safety, minor-unit prices and movement-derived stock units; excludes private retailer fields.';
 
@@ -393,6 +393,10 @@ declare
 begin
   select jsonb_build_object('id',product.id,'name',product.name,'kind',product.kind,
     'version_id',version.id,'composition',version.composition,
+    'poster',(select jsonb_build_object('path',poster.path,'renderer',poster.renderer)
+      from public.poster_renders as poster where poster.product_version_id = version.id
+        and poster.status = 'ready' and poster.framing = 'card'
+      order by poster.created_at desc,poster.id limit 1),
     'effects',coalesce((select jsonb_agg(jsonb_build_object('letter',binding.letter,
       'effect_id',effect.id,'version_id',design.id,'design',design.design,'renderer',design.renderer) order by binding.letter)
       from public.product_version_effects as binding
@@ -438,7 +442,13 @@ returns jsonb language sql stable security definer set search_path = '' as $$
     'slug',store.slug,'market',store.market,'address',store.address,'postcode',store.postcode,
     'timezone',store.timezone,'opening_hours',store.opening_hours),
     'organisation',jsonb_build_object('id',organisation.id,'name',organisation.name),
-    'products',coalesce((select jsonb_agg(to_jsonb(product) order by product.name,product.product_id)
+    'branding',(select jsonb_build_object('accent',brand.accent,'welcome',brand.welcome,'footer',brand.footer,
+      'logo_path',(select media.path from public.media as media where media.id = brand.logo_media_id
+        and media.bucket = 'brand' and media.kind = 'image' and media.organisation_id = store.organisation_id))
+      from public.branding as brand where brand.organisation_id = store.organisation_id
+        and (brand.store_id = store.id or brand.store_id is null)
+      order by brand.store_id nulls last limit 1),
+    'products',coalesce((select jsonb_agg(to_jsonb(product) || jsonb_build_object('playback',private.product_playback(product.product_id)) order by product.name,product.product_id)
       from private.shopper_store_products(p_store) as product),'[]'::jsonb),
     'collections',coalesce((select jsonb_agg(jsonb_build_object('id',collection.id,'name',collection.name,
       'slug',collection.slug,'kind',collection.kind,'rule',collection.rule,
@@ -455,6 +465,27 @@ comment on function private.store_page(uuid) is 'Returns the open store public p
 create function public.store_page(p_store uuid)
 returns jsonb language sql stable set search_path = '' as $$ select private.store_page(p_store); $$;
 comment on function public.store_page(uuid) is 'Reads a restricted public store page through the privileged reader; returns null when unavailable.';
+
+-- Slug lookups expose the same restricted contract without granting raw store access.
+create function private.store_page_by_slug(p_slug text)
+returns jsonb language sql stable security definer set search_path = '' as $$
+  select private.store_page(store.id) from public.stores as store where store.slug = p_slug;
+$$;
+comment on function private.store_page_by_slug(text) is 'Looks up a store slug through the restricted public page reader; unavailable stores return null.';
+create function public.store_page_by_slug(p_slug text)
+returns jsonb language sql stable set search_path = '' as $$ select private.store_page_by_slug(p_slug); $$;
+comment on function public.store_page_by_slug(text) is 'Reads only visible published store-page data for a public slug.';
+
+create function private.product_for_store(p_slug text,p_product uuid)
+returns jsonb language sql stable security definer set search_path = '' as $$
+  select to_jsonb(product) || jsonb_build_object('playback',private.product_playback(product.product_id))
+  from public.stores as store join private.shopper_store_products(store.id) as product on true
+  where store.slug = p_slug and product.product_id = p_product;
+$$;
+comment on function private.product_for_store(text,uuid) is 'Returns published playback, poster reference, minor-unit price and stock for a visible in-market product at an open store; unavailable products return null.';
+create function public.product_for_store(p_slug text,p_product uuid)
+returns jsonb language sql stable set search_path = '' as $$ select private.product_for_store(p_slug,p_product); $$;
+comment on function public.product_for_store(text,uuid) is 'Reads the restricted product-page contract by store slug and product UUID.';
 
 -- Missing, hidden or foreign-store products prevent playback rather than leaking their documents.
 create function private.show_for_store(p_show uuid,p_store uuid)
@@ -518,7 +549,7 @@ begin
   if v_code.id is null then return null; end if;
   if v_code.store_id is null then
     return jsonb_build_object('qr_id',v_code.id,'organisation_id',v_code.organisation_id,'pick_store',true,
-      'stores',coalesce((select jsonb_agg(jsonb_build_object('id',store.id,'name',store.name,
+      'stores',coalesce((select jsonb_agg(jsonb_build_object('id',store.id,'name',store.name,'slug',store.slug,
         'target_type',case when v_code.status = 'live' and private.qr_target_visible(v_code.target_type,v_code.target_id,store.id)
           then v_code.target_type else 'store' end,
         'target_id',case when v_code.status = 'live' and private.qr_target_visible(v_code.target_type,v_code.target_id,store.id)
@@ -532,6 +563,8 @@ begin
   v_target_valid := private.qr_target_visible(v_target_type,v_target_id,v_code.store_id);
   if v_code.status <> 'live' or not v_target_valid then v_target_type := 'store'; v_target_id := null; end if;
   return jsonb_build_object('qr_id',v_code.id,'store_id',v_code.store_id,
+    'store_slug',(select store.slug from public.stores as store where store.id = v_code.store_id),
+    'fallback',v_code.status <> 'live' or not v_target_valid,
     'target_type',v_target_type,'target_id',v_target_id,'label_text',v_code.label_text);
 end;
 $$;
