@@ -9,6 +9,57 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      billing_accounts: {
+        Row: {
+          created_at: string
+          current_period_end: string | null
+          monthly_ai_cap_minor: number | null
+          organisation_id: string
+          plan_key: string | null
+          store_quantity: number | null
+          stripe_customer_id: string | null
+          subscription_status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          current_period_end?: string | null
+          monthly_ai_cap_minor?: number | null
+          organisation_id: string
+          plan_key?: string | null
+          store_quantity?: number | null
+          stripe_customer_id?: string | null
+          subscription_status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          current_period_end?: string | null
+          monthly_ai_cap_minor?: number | null
+          organisation_id?: string
+          plan_key?: string | null
+          store_quantity?: number | null
+          stripe_customer_id?: string | null
+          subscription_status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_accounts_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: true
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "billing_accounts_plan_key_fkey"
+            columns: ["plan_key"]
+            isOneToOne: false
+            referencedRelation: "plans"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       branding: {
         Row: {
           accent: string | null
@@ -220,6 +271,163 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "collections_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_ledger: {
+        Row: {
+          action: string | null
+          actor_id: string | null
+          at: string
+          delta: number
+          id: number
+          idempotency_key: string
+          organisation_id: string
+          reason: string
+          ref_id: string | null
+          ref_type: string | null
+        }
+        Insert: {
+          action?: string | null
+          actor_id?: string | null
+          at?: string
+          delta: number
+          id?: never
+          idempotency_key: string
+          organisation_id: string
+          reason: string
+          ref_id?: string | null
+          ref_type?: string | null
+        }
+        Update: {
+          action?: string | null
+          actor_id?: string | null
+          at?: string
+          delta?: number
+          id?: never
+          idempotency_key?: string
+          organisation_id?: string
+          reason?: string
+          ref_id?: string | null
+          ref_type?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_ledger_action_fkey"
+            columns: ["action"]
+            isOneToOne: false
+            referencedRelation: "credit_prices"
+            referencedColumns: ["action"]
+          },
+          {
+            foreignKeyName: "credit_ledger_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "credit_ledger_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_packs: {
+        Row: {
+          active: boolean
+          created_at: string
+          credits: number
+          key: string
+          stripe_price_ids: Json
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          credits: number
+          key: string
+          stripe_price_ids?: Json
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          credits?: number
+          key?: string
+          stripe_price_ids?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      credit_prices: {
+        Row: {
+          action: string
+          created_at: string
+          credits: number
+          updated_at: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          credits: number
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          credits?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      credit_reservations: {
+        Row: {
+          action: string
+          created_at: string
+          credits: number
+          expires_at: string
+          id: string
+          organisation_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          credits: number
+          expires_at: string
+          id?: string
+          organisation_id: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          credits?: number
+          expires_at?: string
+          id?: string
+          organisation_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_reservations_action_fkey"
+            columns: ["action"]
+            isOneToOne: false
+            referencedRelation: "credit_prices"
+            referencedColumns: ["action"]
+          },
+          {
+            foreignKeyName: "credit_reservations_organisation_id_fkey"
             columns: ["organisation_id"]
             isOneToOne: false
             referencedRelation: "organisations"
@@ -467,6 +675,2030 @@ export type Database = {
             referencedColumns: ["effect_id", "id"]
           },
         ]
+      }
+      events: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "events_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_plan_session_id_fkey"
+            columns: ["plan_session_id"]
+            isOneToOne: false
+            referencedRelation: "plan_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_qr_code_id_fkey"
+            columns: ["qr_code_id"]
+            isOneToOne: false
+            referencedRelation: "qr_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_shopper_id_fkey"
+            columns: ["shopper_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "show_store_status"
+            referencedColumns: ["show_id"]
+          },
+          {
+            foreignKeyName: "events_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "shows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "show_store_status"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "events_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      events_p20240901: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20241001: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20241101: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20241201: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20250101: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20250201: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20250301: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20250401: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20250501: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20250601: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20250701: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20250801: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20250901: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20251001: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20251101: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20251201: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20260101: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20260201: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20260301: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20260401: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20260501: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20260601: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20260701: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20260801: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20260901: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20261001: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20261101: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20261201: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20270101: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      events_p20270201: {
+        Row: {
+          browser: string | null
+          campaign_id: string | null
+          city: string | null
+          country: string | null
+          device: string | null
+          id: number
+          occurred_at: string
+          organisation_id: string | null
+          os: string | null
+          plan_session_id: string | null
+          product_id: string | null
+          props: Json
+          qr_code_id: string | null
+          session_key: string | null
+          shopper_id: string | null
+          show_id: string | null
+          store_id: string | null
+          type: string
+        }
+        Insert: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type: string
+        }
+        Update: {
+          browser?: string | null
+          campaign_id?: string | null
+          city?: string | null
+          country?: string | null
+          device?: string | null
+          id?: never
+          occurred_at?: string
+          organisation_id?: string | null
+          os?: string | null
+          plan_session_id?: string | null
+          product_id?: string | null
+          props?: Json
+          qr_code_id?: string | null
+          session_key?: string | null
+          shopper_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          type?: string
+        }
+        Relationships: []
       }
       follows: {
         Row: {
@@ -717,6 +2949,71 @@ export type Database = {
           },
         ]
       }
+      jobs: {
+        Row: {
+          attempts: number
+          cost: Json | null
+          created_at: string
+          error: string | null
+          id: string
+          kind: string
+          lease_until: string | null
+          max_attempts: number
+          organisation_id: string | null
+          payload: Json
+          priority: number
+          result: Json | null
+          run_after: string
+          status: string
+          updated_at: string
+          worker: string | null
+        }
+        Insert: {
+          attempts?: number
+          cost?: Json | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind: string
+          lease_until?: string | null
+          max_attempts?: number
+          organisation_id?: string | null
+          payload: Json
+          priority?: number
+          result?: Json | null
+          run_after?: string
+          status?: string
+          updated_at?: string
+          worker?: string | null
+        }
+        Update: {
+          attempts?: number
+          cost?: Json | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          kind?: string
+          lease_until?: string | null
+          max_attempts?: number
+          organisation_id?: string | null
+          payload?: Json
+          priority?: number
+          result?: Json | null
+          run_after?: string
+          status?: string
+          updated_at?: string
+          worker?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jobs_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       label_batches: {
         Row: {
           copies: number
@@ -898,6 +3195,85 @@ export type Database = {
           },
         ]
       }
+      llm_calls: {
+        Row: {
+          at: string
+          cost_usd: number | null
+          error: string | null
+          id: number
+          latency_ms: number | null
+          model: string
+          ok: boolean
+          organisation_id: string | null
+          plan_session_id: string | null
+          prompt_key: string | null
+          prompt_version: number | null
+          provider: string | null
+          purpose: string
+          ref_id: string | null
+          tokens_in: number | null
+          tokens_out: number | null
+        }
+        Insert: {
+          at?: string
+          cost_usd?: number | null
+          error?: string | null
+          id?: never
+          latency_ms?: number | null
+          model: string
+          ok: boolean
+          organisation_id?: string | null
+          plan_session_id?: string | null
+          prompt_key?: string | null
+          prompt_version?: number | null
+          provider?: string | null
+          purpose: string
+          ref_id?: string | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+        }
+        Update: {
+          at?: string
+          cost_usd?: number | null
+          error?: string | null
+          id?: never
+          latency_ms?: number | null
+          model?: string
+          ok?: boolean
+          organisation_id?: string | null
+          plan_session_id?: string | null
+          prompt_key?: string | null
+          prompt_version?: number | null
+          provider?: string | null
+          purpose?: string
+          ref_id?: string | null
+          tokens_in?: number | null
+          tokens_out?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "llm_calls_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "llm_calls_plan_session_id_fkey"
+            columns: ["plan_session_id"]
+            isOneToOne: false
+            referencedRelation: "plan_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "llm_calls_prompt_key_prompt_version_fkey"
+            columns: ["prompt_key", "prompt_version"]
+            isOneToOne: false
+            referencedRelation: "prompt_versions"
+            referencedColumns: ["key", "version"]
+          },
+        ]
+      }
       markets: {
         Row: {
           code: string
@@ -1060,6 +3436,204 @@ export type Database = {
             columns: ["profile_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      metrics_daily: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          day: string
+          metric: string
+          organisation_id: string
+          product_id: string | null
+          qr_code_id: string | null
+          show_id: string | null
+          store_id: string | null
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          day: string
+          metric: string
+          organisation_id: string
+          product_id?: string | null
+          qr_code_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          updated_at?: string
+          value: number
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          day?: string
+          metric?: string
+          organisation_id?: string
+          product_id?: string | null
+          qr_code_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metrics_daily_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metrics_daily_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metrics_daily_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metrics_daily_qr_code_id_fkey"
+            columns: ["qr_code_id"]
+            isOneToOne: false
+            referencedRelation: "qr_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metrics_daily_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "show_store_status"
+            referencedColumns: ["show_id"]
+          },
+          {
+            foreignKeyName: "metrics_daily_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "shows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metrics_daily_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "show_store_status"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "metrics_daily_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      metrics_hourly: {
+        Row: {
+          campaign_id: string | null
+          created_at: string
+          hour: string
+          metric: string
+          organisation_id: string
+          product_id: string | null
+          qr_code_id: string | null
+          show_id: string | null
+          store_id: string | null
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          campaign_id?: string | null
+          created_at?: string
+          hour: string
+          metric: string
+          organisation_id: string
+          product_id?: string | null
+          qr_code_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          updated_at?: string
+          value: number
+        }
+        Update: {
+          campaign_id?: string | null
+          created_at?: string
+          hour?: string
+          metric?: string
+          organisation_id?: string
+          product_id?: string | null
+          qr_code_id?: string | null
+          show_id?: string | null
+          store_id?: string | null
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "metrics_hourly_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metrics_hourly_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metrics_hourly_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metrics_hourly_qr_code_id_fkey"
+            columns: ["qr_code_id"]
+            isOneToOne: false
+            referencedRelation: "qr_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metrics_hourly_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "show_store_status"
+            referencedColumns: ["show_id"]
+          },
+          {
+            foreignKeyName: "metrics_hourly_show_id_fkey"
+            columns: ["show_id"]
+            isOneToOne: false
+            referencedRelation: "shows"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "metrics_hourly_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "show_store_status"
+            referencedColumns: ["store_id"]
+          },
+          {
+            foreignKeyName: "metrics_hourly_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
             referencedColumns: ["id"]
           },
         ]
@@ -1440,6 +4014,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "plan_edits_llm_call_fk"
+            columns: ["llm_call_id"]
+            isOneToOne: false
+            referencedRelation: "llm_calls"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "plan_edits_session_id_candidate_id_fkey"
             columns: ["session_id", "candidate_id"]
             isOneToOne: false
@@ -1500,6 +4081,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "plan_sessions_credit_reservation_fk"
+            columns: ["credits_reservation_id"]
+            isOneToOne: false
+            referencedRelation: "credit_reservations"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "plan_sessions_qr_code_id_fkey"
             columns: ["qr_code_id"]
             isOneToOne: false
@@ -1528,6 +4116,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      plans: {
+        Row: {
+          active: boolean
+          created_at: string
+          features: Json
+          key: string
+          max_stores: number | null
+          monthly_credits: number
+          name: string
+          stripe_price_ids: Json
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          features?: Json
+          key: string
+          max_stores?: number | null
+          monthly_credits: number
+          name: string
+          stripe_price_ids?: Json
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          features?: Json
+          key?: string
+          max_stores?: number | null
+          monthly_credits?: number
+          name?: string
+          stripe_price_ids?: Json
+          updated_at?: string
+        }
+        Relationships: []
       }
       poster_renders: {
         Row: {
@@ -2068,6 +4692,36 @@ export type Database = {
           },
         ]
       }
+      prompt_versions: {
+        Row: {
+          created_at: string
+          key: string
+          model: string
+          status: string
+          traffic_pct: number
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          key: string
+          model: string
+          status: string
+          traffic_pct?: number
+          updated_at?: string
+          version: number
+        }
+        Update: {
+          created_at?: string
+          key?: string
+          model?: string
+          status?: string
+          traffic_pct?: number
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
       qr_codes: {
         Row: {
           archived_at: string | null
@@ -2198,6 +4852,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rate_limit_buckets: {
+        Row: {
+          created_at: string
+          key: string
+          refilled_at: string
+          tokens: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          key: string
+          refilled_at: string
+          tokens: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          key?: string
+          refilled_at?: string
+          tokens?: number
+          updated_at?: string
+        }
+        Relationships: []
       }
       reviews: {
         Row: {
@@ -2330,6 +5008,47 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "markets"
             referencedColumns: ["code"]
+          },
+        ]
+      }
+      saved_reports: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          organisation_id: string
+          query: Json
+          recipients: string[] | null
+          schedule: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          organisation_id: string
+          query: Json
+          recipients?: string[] | null
+          schedule?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          organisation_id?: string
+          query?: Json
+          recipients?: string[] | null
+          schedule?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_reports_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -3114,6 +5833,43 @@ export type Database = {
       }
       archive_effect: { Args: { p_effect_id: string }; Returns: undefined }
       archive_product: { Args: { p_product_id: string }; Returns: undefined }
+      claim_job: {
+        Args: { kinds: string[]; worker: string }
+        Returns: {
+          attempts: number
+          cost: Json | null
+          created_at: string
+          error: string | null
+          id: string
+          kind: string
+          lease_until: string | null
+          max_attempts: number
+          organisation_id: string | null
+          payload: Json
+          priority: number
+          result: Json | null
+          run_after: string
+          status: string
+          updated_at: string
+          worker: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "jobs"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      complete_job: {
+        Args: {
+          attempt: number
+          cost?: Json
+          id: string
+          result?: Json
+          worker: string
+        }
+        Returns: undefined
+      }
       confirm_product_safety: {
         Args: {
           p_calibre_mm?: number
@@ -3162,6 +5918,21 @@ export type Database = {
         }
         Returns: string
       }
+      credit_balance: { Args: { organisation: string }; Returns: number }
+      fail_job: {
+        Args: {
+          attempt: number
+          cost?: Json
+          failure_reason: string
+          id: string
+          worker: string
+        }
+        Returns: undefined
+      }
+      grant_credits: {
+        Args: { credits: number; idempotency_key: string; organisation: string }
+        Returns: number
+      }
       publish_effect_version: {
         Args: { p_version_id: string }
         Returns: undefined
@@ -3180,6 +5951,10 @@ export type Database = {
           p_store: string
         }
         Returns: number
+      }
+      renew_job_lease: {
+        Args: { attempt: number; id: string; worker: string }
+        Returns: string
       }
       resolve_qr: { Args: { p_slug: string }; Returns: Json }
       save_effect_details: {
@@ -3262,6 +6037,16 @@ export type Database = {
         Returns: string
       }
       store_page: { Args: { p_store: string }; Returns: Json }
+      track_event: {
+        Args: {
+          context?: Json
+          props?: Json
+          session_key?: string
+          store: string
+          type: string
+        }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

@@ -149,7 +149,7 @@ create policy privacy_requests_read on public.privacy_requests for select to aut
 create policy privacy_requests_insert on public.privacy_requests for insert to authenticated
   with check (private.owns_shopper(shopper_id) and status = 'pending' and result_media_id is null);
 
--- A single atomic start boundary owns the credit-charge integration point.
+-- Session creation and its credit settlement share a transaction.
 create function private.start_plan_session(p_store uuid,p_answers jsonb,p_solver text,p_input_hash text,p_qr_code uuid,p_age_confirmed_at timestamptz)
 returns uuid language plpgsql security definer set search_path = '' as $$
 #variable_conflict error
@@ -173,12 +173,11 @@ begin
   end if;
   insert into public.plan_sessions(shopper_id,store_id,qr_code_id,answers,solver,input_hash,age_confirmed_at)
     values (private.uid(),p_store,p_qr_code,p_answers,p_solver,p_input_hash,p_age_confirmed_at) returning id into v_session;
-  -- CREDIT CHARGE HOOK: settle one charge keyed by v_session in this transaction.
-  -- The reservation remains null because no credit ledger is installed.
+  perform private.charge_plan_session(v_session);
   return v_session;
 end;
 $$;
-comment on function private.start_plan_session(uuid,jsonb,text,text,uuid,timestamptz) is 'Starts an owned planning session atomically after store, QR and age confirmation checks; returns its UUID. Credit settlement integration point.';
+comment on function private.start_plan_session(uuid,jsonb,text,text,uuid,timestamptz) is 'Starts an owned planning session atomically after store, QR and age confirmation checks; returns its UUID. Includes one credit settlement.';
 create function public.start_plan_session(p_store uuid,p_answers jsonb,p_solver text,p_input_hash text,
   p_qr_code uuid default null,p_age_confirmed_at timestamptz default null)
 returns uuid language sql set search_path = '' as $$
