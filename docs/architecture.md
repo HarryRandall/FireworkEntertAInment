@@ -51,3 +51,19 @@ context selectors and the `/dev/shell` review surface.
 ## Renderer and data
 
 `packages/fireworks` owns the renderer and its design JSON Schema. The schema is
+
+## Authentication boundaries
+
+`apps/web/lib/auth/areas.ts` owns area destinations and access rules. The workspace
+configuration consumes that policy; navigation never decides access. Active permanent
+retailer members reach Retailer, supplier members reach Supplier, and table-backed
+platform staff can inspect Admin, Retailer and Supplier. Every active permanent
+identity can use its own shopper account. Unknown roles, suspended identities and
+anonymous users fail closed at workspace layouts.
+
+`proxy.ts` refreshes session cookies and creates anonymous sessions for public
+`/shopper` visits. Server layouts independently verify Auth identity and read profile,
+staff and membership facts under RLS. Authentication callbacks exchange PKCE codes
+and accept only same-origin destinations. Email upgrade calls `updateUser` on the
+anonymous session; it never signs in as a newly created email user. Invitation
+acceptance delegates the multi-row write to its fenced database RPC.

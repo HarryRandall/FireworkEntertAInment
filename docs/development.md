@@ -205,7 +205,14 @@ All email accounts use the password `LocalShowcrafter123!`:
 
 An anonymous shopper profile is also seeded without an email or password. The
 actual shopper flow uses Supabase anonymous sign-in to establish a session.
-Use Auth directly for now; the application sign-in screens are not included here.
+Use `/auth/sign-in` for password, magic-link and password-reset sign-in. Public
+`/shopper` establishes an anonymous session and offers email upgrade on that same UUID.
+Open email links in the requesting browser so the PKCE verifier remains available.
+Local email is captured at `http://127.0.0.1:55424`. If anonymous sign-in reports
+`anonymous_provider_disabled`, the running Auth container does not match the checked-in
+`enable_anonymous_sign_ins` setting; the composer must restart the local services with
+that configuration before running the upgrade journey. Email confirmation is enabled
+for link-based upgrades; seeded email personas are already confirmed.
 
 Demo QR slugs are `hartley-leeds` (store), `hartley-york` (planner),
 `hartley-family` (show) and `hartley-garden` (collection). The demo has four
