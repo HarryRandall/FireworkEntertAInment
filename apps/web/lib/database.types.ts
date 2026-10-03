@@ -6438,6 +6438,10 @@ export type Database = {
       }
       credit_balance: { Args: { organisation: string }; Returns: number }
       current_staff_role: { Args: never; Returns: string }
+      duplicate_catalogue_item: {
+        Args: { p_id: string; p_kind: string }
+        Returns: string
+      }
       end_support_session: { Args: { session: string }; Returns: undefined }
       fail_job: {
         Args: {
