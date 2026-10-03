@@ -2665,8 +2665,8 @@ create view public.show_store_status with (security_invoker = true) as
   group by show.id,show.organisation_id,store.id;
 
 -- Mark retailer shows with an unavailable product at every open store, and recover after replenishment.
-create function private.refresh_show_stock()
-returns trigger language plpgsql security definer set search_path = '' as $$
+create function private.recalculate_show_stock()
+returns void language plpgsql security definer set search_path = '' as $$
 #variable_conflict error
 begin
   with desired as (
@@ -2682,10 +2682,19 @@ begin
   )
   update public.shows as show set status = desired.status from desired
     where show.id = desired.id and show.status is distinct from desired.status;
+end;
+$$;
+comment on function private.recalculate_show_stock() is 'Recalculates live or stock_issue status from current range and stock for every retailer show; drafts and archived shows are untouched.';
+-- Statement triggers and scheduled reconciliation share the same stock calculation.
+create function private.refresh_show_stock()
+returns trigger language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+begin
+  perform private.recalculate_show_stock();
   return null;
 end;
 $$;
-comment on function private.refresh_show_stock() is 'Derives live or stock_issue status after stock or range changes; drafts and archived shows are untouched.';
+comment on function private.refresh_show_stock() is 'Delegates stock and range statement changes to the shared show stock calculation.';
 create trigger refresh_show_stock after insert on public.stock_movements
   for each statement execute function private.refresh_show_stock();
 create trigger refresh_show_stock after insert or update on public.store_items
@@ -4509,3 +4518,132 @@ create trigger audit_record after insert or update or delete on public.api_keys
   for each row execute function private.audit_record();
 create trigger audit_record after insert or update or delete on public.support_sessions
   for each row execute function private.audit_record();
+
+-- Storage authorisation checks an existing owning identity, never client metadata.
+create function private.storage_path_owner(p_name text)
+returns uuid language plpgsql immutable set search_path = '' as $$
+#variable_conflict error
+declare
+  v_parts text[] := string_to_array(p_name,'/');
+begin
+  if cardinality(v_parts) < 2 or v_parts && array['','.','..']
+    or v_parts[1] !~ '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$' then
+    return null;
+  end if;
+  return v_parts[1]::uuid;
+end;
+$$;
+comment on function private.storage_path_owner(text) is 'Returns the owning UUID from a canonical lower-case UUID folder path; malformed or traversal paths return null.';
+
+create function private.storage_access(p_bucket text,p_name text,p_write boolean)
+returns boolean language plpgsql stable security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  v_owner uuid := private.storage_path_owner(p_name);
+  v_staff text := private.staff_role();
+begin
+  if v_owner is null then return false; end if;
+  case p_bucket
+    when 'posters' then
+      return v_staff in ('super_admin','catalogue_editor') and (
+        exists (select from public.effect_versions as version where version.id = v_owner)
+        or exists (select from public.product_versions as version where version.id = v_owner));
+    when 'brand' then
+      return v_owner in (select private.org_ids('manager')) and exists (
+        select from public.memberships as member where member.organisation_id = v_owner
+          and member.profile_id = private.uid() and member.store_ids is null);
+    when 'catalogue-media', 'imports' then
+      return (v_staff is not null and (
+        exists (select from public.suppliers as supplier where supplier.id = v_owner)
+        or exists (select from public.organisations as organisation where organisation.id = v_owner)
+        or exists (select from public.staff_roles as owner_staff where owner_staff.profile_id = v_owner)))
+        or v_owner in (select private.supplier_ids())
+        or (not p_write and p_bucket = 'catalogue-media' and v_owner in (select private.org_ids('staff')));
+    when 'audio' then
+      return v_staff is not null and exists (select from public.music_tracks as track where track.id = v_owner);
+    when 'exports' then
+      return not p_write and (private.owns_shopper(v_owner) or private.can(v_owner,'billing.manage'));
+    else return false;
+  end case;
+end;
+$$;
+comment on function private.storage_access(text,text,boolean) is 'Checks existing version, organisation, supplier, track or profile ownership for private reads and client writes; exports are backend-write-only and brand writes require unrestricted managers.';
+
+-- Trusted SQL maintenance for shopper retention and expired lifecycle records.
+create function private.expire_lists()
+returns bigint language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  v_changed bigint;
+begin
+  update public.lists as list set status = 'expired'
+    where list.status = 'open' and list.valid_until < (now() at time zone 'UTC')::date;
+  get diagnostics v_changed = row_count;
+  return v_changed;
+end;
+$$;
+comment on function private.expire_lists() is 'Expires open lists before today in UTC, preserving redeemed lists and the inclusive validity date; returns rows changed.';
+
+create function private.expire_invitations()
+returns bigint language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  v_changed bigint;
+begin
+  update public.invitations as invitation set revoked_at = now()
+    where invitation.expires_at <= now() and invitation.accepted_at is null and invitation.revoked_at is null;
+  get diagnostics v_changed = row_count;
+  return v_changed;
+end;
+$$;
+comment on function private.expire_invitations() is 'Revokes expired unaccepted invitations at transaction time, preserving accepted or previously revoked invitations; returns rows changed.';
+
+-- History foreign keys deliberately retain identities, even when they have no lists.
+create function private.profile_has_retained_references(p_profile uuid)
+returns boolean language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  v_reference record;
+  v_exists boolean;
+begin
+  for v_reference in
+    select constraint_row.conrelid::regclass as relation, attribute.attname as column_name
+    from pg_catalog.pg_constraint as constraint_row
+    join pg_catalog.pg_attribute as attribute on attribute.attrelid = constraint_row.conrelid
+      and attribute.attnum = constraint_row.conkey[1]
+    where constraint_row.contype = 'f' and constraint_row.confrelid = 'public.profiles'::regclass
+      and constraint_row.confdeltype in ('a','r') and cardinality(constraint_row.conkey) = 1
+  loop
+    execute format('select exists (select from %s where %I = $1)',v_reference.relation,v_reference.column_name)
+      into v_exists using p_profile;
+    if v_exists then return true; end if;
+  end loop;
+  return false;
+end;
+$$;
+comment on function private.profile_has_retained_references(uuid) is 'Checks non-cascading single-column profile foreign keys before anonymous cleanup, preserving history and privacy requests.';
+
+create function private.purge_inactive_anonymous_users()
+returns bigint language plpgsql security definer set search_path = '' as $$
+#variable_conflict error
+declare
+  -- Anonymous inactivity retention is 30 days from the storage and schedule contract.
+  v_inactivity_retention constant interval := interval '30 days';
+  v_changed bigint;
+begin
+  delete from auth.users as account using public.profiles as profile
+    where account.id = profile.id and account.is_anonymous and profile.is_anonymous
+      and greatest(account.created_at,account.last_sign_in_at,profile.created_at,profile.last_seen_at) < now() - v_inactivity_retention
+      and not exists (select from public.lists as list where list.shopper_id = account.id)
+      and not exists (select from public.follows as follow where follow.shopper_id = account.id)
+      and not exists (select from public.staff_roles as staff where staff.profile_id = account.id)
+      and not exists (select from public.memberships as member where member.profile_id = account.id)
+      and not exists (select from public.supplier_members as member where member.profile_id = account.id)
+      and not exists (select from storage.objects as object where object.owner_id = account.id::text
+        or (storage.foldername(object.name))[1] = account.id::text)
+      and not private.profile_has_retained_references(account.id);
+  get diagnostics v_changed = row_count;
+  return v_changed;
+end;
+$$;
+comment on function private.purge_inactive_anonymous_users() is 'Deletes anonymous Auth accounts inactive for over 30 wall-clock days with no lists, follows, assets, privileged memberships or retained references; cascades disposable sessions and returns accounts deleted.';
