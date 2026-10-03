@@ -1,4 +1,5 @@
 /** Shared shopper and workspace list detail, including a payment-free till pass. */
+import { StoreEventScope, ViewEvent } from './view-events';
 import Link from 'next/link';
 import type { ShopperAccount, ShopperList } from '@/lib/shopper/lists/contracts';
 import { TillBarcode } from './till-barcode';
@@ -20,6 +21,8 @@ export function ListView({
   const number = list.till_code.match(/.{4}/g)?.join(' ');
   return (
     <div className="grid min-w-0 gap-6">
+      <StoreEventScope store={list.store_id} organisation={list.organisation_id} />
+      <ViewEvent type="till_code_shown" store={list.store_id} target={list.id} />
       <div>
         <h1 className="text-3xl font-bold">My list</h1>
         <p>{list.store_name}</p>

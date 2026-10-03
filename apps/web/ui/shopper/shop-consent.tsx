@@ -2,6 +2,7 @@
 'use client';
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { setActivityConsent } from '@/lib/shopper/events/client';
 import { saveConsent } from '@/lib/shopper/lists/actions';
 import { CONSENT_VERSION } from '@/lib/shopper/lists/contracts';
 import { CheckboxCards } from '@/ui/kit/choices';
@@ -37,7 +38,10 @@ export function ShopConsent({
               marketing: offers,
             });
             setMessage(outcome.status === 'ok' ? 'Shop choices saved.' : outcome.message);
-            if (outcome.status === 'ok') router.refresh();
+            if (outcome.status === 'ok') {
+              setActivityConsent(organisation, activity);
+              router.refresh();
+            }
           } catch {
             setMessage('Your choices could not be saved. Please try again.');
           }

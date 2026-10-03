@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { addToList } from '@/lib/shopper/lists/actions';
+import { recordShopperEvent } from '@/lib/shopper/events/client';
 import { Button } from '@/ui/primitives/button';
 /** Saves one product or displayed candidate, then opens its owned till list. */
 export function AddListButton({
@@ -46,6 +47,18 @@ export function AddListButton({
                 return;
               }
               if (outcome.id === undefined) throw new Error('Saved list is missing');
+              recordShopperEvent({
+                type: 'list_add',
+                store,
+                context: product !== undefined ? { product_id: product } : {},
+                props: { list_id: outcome.id },
+              });
+              recordShopperEvent({
+                type: 'list_saved',
+                store,
+                context: {},
+                props: { list_id: outcome.id },
+              });
               router.push(`/shopper/stores/${encodeURIComponent(slug)}/list?id=${outcome.id}`);
             } catch {
               setMessage('Your list could not be saved. Please try again.');
