@@ -36,7 +36,10 @@ export function ShellHeader({
       </nav>
       {editorFrame !== undefined && (
         <div className="ml-auto flex shrink-0 gap-2">
-          <Button disabled={editorFrame.saving} onClick={editorFrame.onSave}>
+          <Button
+            disabled={editorFrame.saving === true || editorFrame.saveDisabled === true}
+            onClick={editorFrame.onSave}
+          >
             {editorFrame.saving === true ? 'Saving...' : 'Save'}
           </Button>
           <ActionMenu

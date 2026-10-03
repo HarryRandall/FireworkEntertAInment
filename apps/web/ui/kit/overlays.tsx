@@ -13,16 +13,22 @@ export function Modal({
   trigger,
   children,
   side = false,
+  open,
+  onOpenChange,
+  wide = false,
 }: {
   title: string;
   description: string;
-  trigger: ReactNode;
+  trigger?: ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  wide?: boolean;
   children: ReactNode;
   side?: boolean;
 }) {
   return (
-    <Dialog.Root>
-      <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>
+    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+      {trigger !== undefined && <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>}
       <Dialog.Portal>
         <Dialog.Overlay className="bg-stage/60 fixed inset-0 z-40" />
         <Dialog.Content
@@ -31,6 +37,7 @@ export function Modal({
             side
               ? 'inset-y-0 right-0 w-full max-w-sm content-start overflow-auto'
               : 'top-1/2 left-1/2 max-h-[90vh] w-[calc(100%_-_2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-auto rounded-xl',
+            wide && !side && 'max-w-3xl',
           )}
         >
           <Dialog.Title className="pr-8 text-lg font-semibold">{title}</Dialog.Title>

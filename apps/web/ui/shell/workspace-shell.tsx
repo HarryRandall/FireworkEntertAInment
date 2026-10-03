@@ -20,7 +20,8 @@ export interface EditorFrameOptions {
   title: string;
   onSave: () => void;
   saving?: boolean;
-  actions: readonly { label: string; onSelect: () => void }[];
+  saveDisabled?: boolean;
+  actions: readonly { label: string; onSelect: () => void; disabled?: boolean }[];
 }
 /** Config-driven route chrome; visibility controls presentation and never authorisation. */
 export function WorkspaceShell({
