@@ -30,6 +30,9 @@
   --color-warning-soft: var(--warning-soft);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
+  --color-label-paper: var(--label-paper);
+  --color-label-ink: var(--label-ink);
+  --color-label-accent: var(--label-accent);
   --color-stage: var(--stage);
   --color-stage-foreground: var(--stage-foreground);
   --shadow-card: var(--surface-shadow);
@@ -41,6 +44,10 @@
 }
 
 :root {
+  /* Printed labels keep the prototype white paper and dark brand ink in both themes. */
+  --label-paper: #ffffff;
+  --label-ink: #111111;
+  --label-accent: #0f7a52;
   --background: #ffffff;
   --foreground: #24242a;
   --card: #ffffff;
