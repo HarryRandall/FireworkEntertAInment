@@ -57,6 +57,10 @@ prevents the camera entering the ground. Visual tuning sets wheel response to 0.
 pixel delta (0.16 per line) and pinch response to a power of 2, so ordinary gestures
 cover the useful range in a few steps.
 
+`Viewer` starts at the framed distance by default. Set `startDistance: 'farthest'` for a
+whole-show view to begin, and return via Reset view, at the furthest normal orbit distance.
+It keeps the same framing target and pitch; posters do not use this browser-view option.
+
 ## Quick adjustments
 
 `adjustments` is an optional map of Finale-style levels from `-3` to `+3`, retained

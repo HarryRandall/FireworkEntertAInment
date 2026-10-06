@@ -127,6 +127,7 @@ function ShowReplayPreviewSurface({
         elapsed={elapsed}
         playbackRef={elapsedRef}
         playing={active}
+        startDistance="farthest"
         interactive={false}
         muted
         maxDevicePixelRatio={2}

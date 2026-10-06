@@ -283,10 +283,14 @@ export class Viewer {
   setDesign(design: Design, keepCamera = false): void {
     this.setShots([{ design }], keepCamera);
   }
-  /** Restores prototype framing in world metres; snap skips camera easing. */
+  /** Restores the configured starting framing in world metres; snap skips camera easing. */
   resetCamera(snap = false): void {
     if (this.disposed) return;
-    this.controls.frame(framingFor(this.shots, false, this.camera.aspect, this.camera.fov), snap);
+    this.controls.frame(
+      framingFor(this.shots, false, this.camera.aspect, this.camera.fov),
+      snap,
+      this.options.startDistance ?? 'framed',
+    );
   }
   /** Whether live drawing owns the frame budget; background posters yield throughout playback. */
   get liveDrawPending(): boolean {

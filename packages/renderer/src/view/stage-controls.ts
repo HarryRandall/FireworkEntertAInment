@@ -149,13 +149,12 @@ export class StageControls {
     this.panGoal.addScaledVector(this.right, -dx * scale).addScaledVector(this.up, dy * scale);
     this.panGoal.y = Math.max(-this.target.y + PAN_FLOOR_M, this.panGoal.y);
   }
-  private range(): [number, number] {
+  private range(free = this.free): [number, number] {
     const halfFov = (this.camera.fov * Math.PI) / HALF_TURN_DEG / 2;
     const limitingAngle = Math.min(halfFov, Math.atan(Math.tan(halfFov) * this.camera.aspect));
     const closeSafety = this.focusRadiusM * CLOSE_ORBIT_SPHERE_MARGIN;
     const fit = this.sphericalFocus ? closeSafety : closeSafety / Math.tan(limitingAngle);
-    if (this.free)
-      return [Math.max(this.base * FREE_NEAR, fit), Math.max(this.base * FREE_FAR, fit)];
+    if (free) return [Math.max(this.base * FREE_NEAR, fit), Math.max(this.base * FREE_FAR, fit)];
     return [
       Math.max(this.base * MIN_ORBIT_DISTANCE_SCALE, fit),
       Math.max(this.base * FAR_SCALE, fit),
@@ -188,7 +187,7 @@ export class StageControls {
     this.invalidate();
   }
   /** Fits metre framing, clearing user pan; snap applies it without easing. */
-  frame(framing: Framing, snap = false): void {
+  frame(framing: Framing, snap = false, startDistance: 'framed' | 'farthest' = 'framed'): void {
     this.target.fromArray(framing.target);
     this.focusRadiusM = framing.focus?.radius_m ?? 0;
     this.sphericalFocus = framing.focus?.spherical ?? true;
@@ -199,6 +198,8 @@ export class StageControls {
       pitch: Math.atan2(offset.y, Math.hypot(offset.x, offset.z)),
       dist: this.base,
     };
+    // Reset starts at the normal-mode cap even if free camera is currently enabled.
+    if (startDistance === 'farthest') this.goal.dist = this.range(false)[1];
     this.panGoal.set(0, 0, 0);
     this.touched = false;
     if (snap) {

@@ -18,6 +18,8 @@ type Props = {
   playbackRef?: MutableRefObject<number>;
   launchPositions?: Show['launchPositions'];
   prop?: 'mortar' | 'cake';
+  /** Starts and resets whole-show playback at the normal zoom-out cap when requested. */
+  startDistance?: 'framed' | 'farthest';
   muted?: boolean;
   /** Whether the external playhead advances, independent of sound muting. */
   playing?: boolean;
@@ -94,6 +96,7 @@ export function ShowRendererCanvas(props: Props) {
         autoplay: false,
         loop: false,
         prop: props.prop,
+        startDistance: props.startDistance,
       });
     } catch {
       setError('The firework viewer could not start. Please check WebGL support and reload.');
@@ -132,7 +135,7 @@ export function ShowRendererCanvas(props: Props) {
       instance.dispose();
       viewer.current = null;
     };
-  }, [valid, props.interactive, props.prop]);
+  }, [valid, props.interactive, props.prop, props.startDistance]);
 
   useEffect(() => {
     clock.current?.wake();

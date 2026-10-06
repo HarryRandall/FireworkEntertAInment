@@ -410,6 +410,7 @@ export function TemplateReplayPreview({
               elapsed={elapsed}
               playbackRef={elapsedRef}
               playing={active}
+              startDistance="farthest"
               scrubbing={isScrubbing}
               interactive={isDetail}
               muted={isDetail ? !isPlaying : true}

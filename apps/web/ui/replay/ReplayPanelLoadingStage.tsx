@@ -34,6 +34,7 @@ export function ReplayPanelLoadingStage({ className }: { className?: string }) {
         <LazyFireworkReplayCanvas
           cues={[]}
           elapsed={0}
+          startDistance="farthest"
           muted
           interactive={false}
           controlsVisible={false}

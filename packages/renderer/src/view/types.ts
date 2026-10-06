@@ -22,6 +22,8 @@ export interface ViewerOptions {
   autoplay?: boolean;
   loop?: boolean;
   startAt?: number;
+  /** Starts and resets at the framed view or the furthest normal orbit distance. */
+  startDistance?: 'framed' | 'farthest';
   /** Forces the portable 8-bit output target, useful for fallback verification. */
   forceLdr?: boolean;
 }

@@ -807,6 +807,7 @@ export function FireworkReplayViewer({
                 elapsed={elapsed}
                 playbackRef={elapsedRef}
                 playing={isPlaying}
+                startDistance="farthest"
                 scrubbing={isScrubbing}
                 launchPositions={launchPositions}
                 muted={!isPlaying}

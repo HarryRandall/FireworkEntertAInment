@@ -200,6 +200,7 @@ export function ShowPreviewPanel({
               elapsed={elapsed}
               playbackRef={playbackRef}
               playing={active}
+              startDistance="farthest"
               interactive={false}
               allowWheelZoom={false}
               controlsVisible={false}

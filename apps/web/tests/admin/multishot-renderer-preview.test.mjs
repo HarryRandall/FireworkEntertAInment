@@ -116,6 +116,35 @@ test('active preview surfaces all load the stored-design adapter', () => {
   }
 });
 
+test('whole-show playback starts at the normal zoom-out cap while product previews stay framed', () => {
+  const wholeShowSurfaces = [
+    'app/(app)/shows/_components/ShowReplayPreviewContext.tsx',
+    'app/(admin)/admin/multishots/[id]/_components/MultishotPreviewStage.tsx',
+    'app/(admin)/admin/show-presets/[id]/_components/ShowPresetEditor.tsx',
+    'ui/marketing/landing/ShowPreviewPanel.tsx',
+    'ui/replay/FireworkReplayViewer.tsx',
+    'ui/replay/ReplayPanelLoadingStage.tsx',
+    'ui/replay/TemplateReplayPreview.tsx',
+  ];
+  for (const path of wholeShowSurfaces)
+    assert.match(readFileSync(path, 'utf8'), /startDistance="farthest"/, path);
+
+  const canvas = readFileSync('ui/replay/ShowRendererCanvas.tsx', 'utf8');
+  assert.match(canvas, /startDistance: props\.startDistance/);
+  assert.match(canvas, /startDistance\?: 'framed' \| 'farthest'/);
+  assert.doesNotMatch(
+    readFileSync('ui/catalogue/FireworkBrowsePreviewContext.tsx', 'utf8'),
+    /startDistance=/,
+  );
+  assert.doesNotMatch(
+    readFileSync(
+      'app/(admin)/admin/show-presets/[id]/_components/ShowPresetProductPicker.tsx',
+      'utf8',
+    ),
+    /startDistance=/,
+  );
+});
+
 test('the legacy canvas is restricted to video imports and the comparison harness', () => {
   const allowed = new Set([
     'app/internal/import-render/ImportRenderHarness.tsx',

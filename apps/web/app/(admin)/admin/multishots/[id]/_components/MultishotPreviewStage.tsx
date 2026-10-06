@@ -174,6 +174,7 @@ export function PreviewStage({
                 playbackRef={playbackRef}
                 playing={isPlaying}
                 muted={!isPlaying}
+                startDistance="farthest"
                 interactive
                 controlsVisible={!loading}
                 cameraMenuActions={previewMenuActions}

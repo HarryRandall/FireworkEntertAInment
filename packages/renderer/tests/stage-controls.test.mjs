@@ -64,6 +64,32 @@ test('normal and free zoom-out limits restore the framed-distance caps', () => {
   }
 });
 
+test('framed and farthest starts preserve the target and pitch, and reset to their selected start', () => {
+  for (const [startDistance, factor] of [
+    ['framed', 1],
+    ['farthest', FAR_SCALE],
+  ]) {
+    const r = rig(shots);
+    try {
+      r.controls.frame(r.framing, true, startDistance);
+      const target = vector(r.framing.target);
+      const initialDirection = r.camera.position.clone().sub(target).normalize();
+      const base = vector(r.framing.position).distanceTo(target);
+      assert.ok(Math.abs(r.camera.position.distanceTo(target) - base * factor) < 1e-6);
+
+      r.controls.zoom(0.2);
+      r.settle();
+      r.controls.frame(r.framing, true, startDistance);
+      assert.ok(Math.abs(r.camera.position.distanceTo(target) - base * factor) < 1e-6);
+      assert.ok(
+        r.camera.position.clone().sub(target).normalize().distanceTo(initialDirection) < 1e-10,
+      );
+    } finally {
+      r.controls.dispose();
+    }
+  }
+});
+
 test('zoom is a straight dolly that preserves target, pitch and yaw', () => {
   for (const entry of effectTemplates.filter((e) => e.design.kind === 'shell')) {
     for (const aspect of [1.6, 390 / 844]) {

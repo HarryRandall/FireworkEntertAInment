@@ -424,6 +424,7 @@ export function ShowPresetEditor({
               elapsed={elapsed}
               playbackRef={playbackRef}
               muted={!isPlaying}
+              startDistance="farthest"
               interactive
               controlsVisible={isReplayReady}
               primeSnapshots
