@@ -122,10 +122,20 @@ select lives_ok($$select public.save_firework_editor('firework',
   '94000000-0000-4000-8000-000000000013',
   (select updated_at from public.fireworks where id='94000000-0000-4000-8000-000000000013'),
   '{"name":"Saved legacy firework"}',gen_random_uuid())$$, 'Legacy firework RPC still saves');
+select is((select design from public.firework_effects where id='94000000-0000-4000-8000-000000000011'),
+  pg_temp.valid_design(), 'Effect save that omits design preserves the stored design');
+select is((select design from public.fireworks where id='94000000-0000-4000-8000-000000000013'),
+  pg_temp.valid_design(), 'Firework save that omits design preserves the stored design');
+select lives_ok($$select public.save_firework_editor('effect',
+  '94000000-0000-4000-8000-000000000011',
+  (select updated_at from public.firework_effects where id='94000000-0000-4000-8000-000000000011'),
+  jsonb_build_object('design',pg_temp.valid_design()),gen_random_uuid())$$,
+  'Editor allowlist accepts validated effect designs');
 select throws_ok($$select public.save_firework_editor('effect',
   '94000000-0000-4000-8000-000000000011',
   (select updated_at from public.firework_effects where id='94000000-0000-4000-8000-000000000011'),
-  '{"design":null}',gen_random_uuid())$$, '22023', 'Unsupported editor field.', 'Editor design allowlist remains unchanged');
+  '{"design_schema":1}',gen_random_uuid())$$, '22023', 'Unsupported editor field.',
+  'Editor allowlist still rejects design schema changes');
 select throws_ok($$update public.firework_effects set template_key='test-comet'
 where id='94000000-0000-4000-8000-000000000012'$$, '23505', null, 'Duplicate template keys rejected');
 select lives_ok($$update public.catalogue_items set finale_product_id='CS642401 D',finale_effect_name='Silver Chrysanthemum Crackle'
