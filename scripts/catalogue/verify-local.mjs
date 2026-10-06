@@ -90,6 +90,28 @@ function verifyPrevious(directory) {
   );
   executeSql(LOCAL_TARGET, migration);
   verifyInstalledDesigns();
+  // Conversion must leave old-renderer evidence and product specifications intact.
+  const sourceColumns = [
+    'slug',
+    'render_snapshot_json',
+    'render_overrides_json',
+    'primary_color',
+    'secondary_color',
+    'color_palette',
+    'caliber',
+    'duration_seconds',
+    'height_meters',
+  ];
+  for (const { source: row } of query(
+    LOCAL_TARGET,
+    `select to_jsonb(source) as source from (select ${sourceColumns.join(', ')} from public.fireworks where slug not like 'renderer-%') source`,
+  )) {
+    const original = previous.tables.fireworks.find((candidate) => candidate.slug === row.slug);
+    assert.deepEqual(
+      row,
+      Object.fromEntries(sourceColumns.map((column) => [column, original[column]])),
+    );
+  }
   const before = digest();
   executeSql(LOCAL_TARGET, migration);
   assert.deepEqual(digest(), before);
@@ -108,7 +130,7 @@ function verifyPrevious(directory) {
     }
   }
   console.log(
-    'Previous bootstrap migration passed twice with identical full-table hashes. Admin designs, template keys, live colours/heights and different UUIDs passed.',
+    'Previous bootstrap migration passed twice with identical full-table hashes. Old snapshots/specifications, admin designs, template keys, live colours/heights and different UUIDs passed.',
   );
 }
 
