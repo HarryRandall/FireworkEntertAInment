@@ -9,7 +9,7 @@
       "templateKind": "shell",
       "templatePatterns": ["sphere"],
       "templateModifiers": [],
-      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+      "review": "Template provides the family silhouette; firework snapshots supply individual star tuning. Motion units use documented visual calibration."
     },
     {
       "slug": "horsetail",
@@ -20,7 +20,7 @@
       "templateKind": "shell",
       "templatePatterns": ["bottom"],
       "templateModifiers": [],
-      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+      "review": "Template provides the family silhouette; firework snapshots supply individual star tuning. Motion units use documented visual calibration."
     },
     {
       "slug": "willow",
@@ -31,7 +31,7 @@
       "templateKind": "shell",
       "templatePatterns": ["sphere"],
       "templateModifiers": [],
-      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+      "review": "Template provides the family silhouette; firework snapshots supply individual star tuning. Motion units use documented visual calibration."
     },
     {
       "slug": "whirl",
@@ -53,7 +53,7 @@
       "templateKind": "comet",
       "templatePatterns": [],
       "templateModifiers": [],
-      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+      "review": "Template provides the family silhouette; firework snapshots supply individual star tuning. Motion units use documented visual calibration."
     },
     {
       "slug": "mine",
@@ -64,7 +64,7 @@
       "templateKind": "mine",
       "templatePatterns": ["sphere"],
       "templateModifiers": [],
-      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+      "review": "Template provides the family silhouette; firework snapshots supply individual star tuning. Motion units use documented visual calibration."
     },
     {
       "slug": "waterfall",
@@ -86,7 +86,7 @@
       "templateKind": "shell",
       "templatePatterns": ["sphere", "sphere"],
       "templateModifiers": [],
-      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+      "review": "Template provides the family silhouette; firework snapshots supply individual star tuning. Motion units use documented visual calibration."
     },
     {
       "slug": "pearls",
@@ -108,7 +108,7 @@
       "templateKind": "shell",
       "templatePatterns": ["sphere"],
       "templateModifiers": ["crackle"],
-      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+      "review": "Template provides the family silhouette; firework snapshots supply individual star tuning. Motion units use documented visual calibration."
     },
     {
       "slug": "fountain",
@@ -119,7 +119,7 @@
       "templateKind": "fountain",
       "templatePatterns": [],
       "templateModifiers": [],
-      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+      "review": "Template provides the family silhouette; firework snapshots supply individual star tuning. Motion units use documented visual calibration."
     },
     {
       "slug": "kamuro",
@@ -130,7 +130,7 @@
       "templateKind": "shell",
       "templatePatterns": ["sphere"],
       "templateModifiers": [],
-      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+      "review": "Template provides the family silhouette; firework snapshots supply individual star tuning. Motion units use documented visual calibration."
     },
     {
       "slug": "saturn",
@@ -141,7 +141,7 @@
       "templateKind": "shell",
       "templatePatterns": ["sphere", "ring"],
       "templateModifiers": [],
-      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+      "review": "Template provides the family silhouette; firework snapshots supply individual star tuning. Motion units use documented visual calibration."
     },
     {
       "slug": "bowtie",
@@ -152,7 +152,7 @@
       "templateKind": "shell",
       "templatePatterns": ["bowtie"],
       "templateModifiers": [],
-      "review": "Old bowtie enables splitting. The template preserves a planar silhouette without those splits."
+      "review": "Old bowtie splitting is retained; the v1 planar silhouette approximates the old opposed lobes."
     },
     {
       "slug": "double_break",
@@ -174,7 +174,7 @@
       "templateKind": "shell",
       "templatePatterns": ["sphere"],
       "templateModifiers": [],
-      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+      "review": "Template provides the family silhouette; firework snapshots supply individual star tuning. Motion units use documented visual calibration."
     },
     {
       "slug": "crossette",
@@ -185,7 +185,7 @@
       "templateKind": "shell",
       "templatePatterns": ["sphere"],
       "templateModifiers": ["crossette"],
-      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+      "review": "Template provides the family silhouette; firework snapshots supply individual star tuning. Motion units use documented visual calibration."
     },
     {
       "slug": "nishiki",
@@ -196,7 +196,7 @@
       "templateKind": "shell",
       "templatePatterns": ["sphere"],
       "templateModifiers": [],
-      "review": "Brocade-family visual approximation: 5-second stars, 105 trail sparks, 2.6-second trails and maximum glitter strength. Not a measured reconstruction."
+      "review": "Brocade-family silhouette with individual old star and trail tuning. Motion and sprite units are visually calibrated approximations."
     },
     {
       "slug": "brocade",
@@ -207,7 +207,7 @@
       "templateKind": "shell",
       "templatePatterns": ["sphere"],
       "templateModifiers": [],
-      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+      "review": "Template provides the family silhouette; firework snapshots supply individual star tuning. Motion units use documented visual calibration."
     },
     {
       "slug": "outlined-star-shell",
@@ -218,7 +218,7 @@
       "templateKind": "shell",
       "templatePatterns": ["star"],
       "templateModifiers": [],
-      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+      "review": "Template provides the family silhouette; firework snapshots supply individual star tuning. Motion units use documented visual calibration."
     },
     {
       "slug": "ring",
@@ -229,7 +229,7 @@
       "templateKind": "shell",
       "templatePatterns": ["ring", "sphere"],
       "templateModifiers": [],
-      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+      "review": "Template provides the family silhouette; firework snapshots supply individual star tuning. Motion units use documented visual calibration."
     },
     {
       "slug": "heart-shell",
@@ -240,7 +240,7 @@
       "templateKind": "shell",
       "templatePatterns": ["heart"],
       "templateModifiers": [],
-      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+      "review": "Template provides the family silhouette; firework snapshots supply individual star tuning. Motion units use documented visual calibration."
     },
     {
       "slug": "roman_candle",
@@ -251,7 +251,7 @@
       "templateKind": "comet",
       "templatePatterns": [],
       "templateModifiers": [],
-      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+      "review": "Template provides the family silhouette; firework snapshots supply individual star tuning. Motion units use documented visual calibration."
     },
     {
       "slug": "strobe",
@@ -262,7 +262,7 @@
       "templateKind": "shell",
       "templatePatterns": ["sphere"],
       "templateModifiers": ["strobe"],
-      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+      "review": "Template provides the family silhouette; firework snapshots supply individual star tuning. Motion units use documented visual calibration."
     },
     {
       "slug": "peony",
@@ -273,7 +273,7 @@
       "templateKind": "shell",
       "templatePatterns": ["sphere"],
       "templateModifiers": [],
-      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+      "review": "Template provides the family silhouette; firework snapshots supply individual star tuning. Motion units use documented visual calibration."
     },
     {
       "slug": "silverFish",
@@ -284,7 +284,7 @@
       "templateKind": "shell",
       "templatePatterns": ["sphere"],
       "templateModifiers": ["fish"],
-      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+      "review": "Template provides the family silhouette; firework snapshots supply individual star tuning. Motion units use documented visual calibration."
     }
   ],
   "fireworks": [
@@ -292,1072 +292,1103 @@
       "slug": "test-ckav",
       "name": "test",
       "templateKey": "chrysanthemum",
-      "unmatchedSettings": [],
-      "notes": []
+      "source": "render_snapshot_json",
+      "notes": [
+        "Continuous old random hues use six fixed saturated v1 hue samples.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "horsetail-crimson",
       "name": "Horsetail Crimson",
       "templateKey": "horsetail",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "mine-azure",
       "name": "Mine Azure",
       "templateKey": "mine",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "willow-crimson",
       "name": "Willow Crimson",
       "templateKey": "willow",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "ring-azure",
       "name": "Ring Azure",
       "templateKey": "ring",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "test-e8rx",
       "name": "test",
       "templateKey": "peony",
-      "unmatchedSettings": [],
-      "notes": []
+      "source": "render_snapshot_json",
+      "notes": [
+        "Continuous old random hues use six fixed saturated v1 hue samples.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "brocade-crimson",
       "name": "Brocade Crimson",
       "templateKey": "brocade",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "nishiki-crimson",
       "name": "Nishiki Crimson",
       "templateKey": "nishiki",
-      "unmatchedSettings": [],
+      "source": "render_snapshot_json",
       "notes": [
-        "Brocade-family visual approximation: 5-second stars, 105 trail sparks, 2.6-second trails and maximum glitter strength. Not a measured reconstruction.",
-        "Secondary colour and its ratio have no automatic layer assignment."
+        "Brocade-family silhouette with individual old star and trail tuning. Motion and sprite units are visually calibrated approximations.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
       ]
     },
     {
       "slug": "pistil-crimson",
       "name": "Pistil Crimson",
       "templateKey": "pistil",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "comet-default",
       "name": "Comet Default",
       "templateKey": "comet",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Ground comet sequences retain template heights and timing; old aerial geometry and inner stars cannot be represented by this ground kind."
+      ]
     },
     {
       "slug": "roman_candle-default",
       "name": "Roman Candle Default",
       "templateKey": "romanCandle",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Ground comet sequences retain template heights and timing; old aerial geometry and inner stars cannot be represented by this ground kind."
+      ]
     },
     {
       "slug": "horsetail-default",
       "name": "Horsetail Default",
       "templateKey": "horsetail",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "fountain-azure",
       "name": "Fountain Azure",
       "templateKey": "fountain",
-      "unmatchedSettings": [],
+      "source": "render_snapshot_json",
       "notes": [
-        "v1 fountain colour accepts one hex colour only. Primary colour retained; alternate palette needs renderer support.",
-        "Secondary colour and its ratio have no automatic layer assignment."
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "v1 fountain colour accepts one hex colour only. Primary colour retained; alternate palettes and life-relative colour fades need renderer support."
       ]
     },
     {
       "slug": "ring-crimson",
       "name": "Ring Crimson",
       "templateKey": "ring",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "pearls-crimson",
       "name": "Pearls Crimson",
       "templateKey": "pearls",
-      "unmatchedSettings": [],
+      "source": "render_snapshot_json",
       "notes": [
         "Old pearls geometry is an aerial cluster. String of pearls is a ground-fired comet sequence.",
-        "Secondary colour and its ratio have no automatic layer assignment."
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Ground comet sequences retain template heights and timing; old aerial geometry and inner stars cannot be represented by this ground kind."
       ]
     },
     {
       "slug": "peony-green-vfwp",
       "name": "Peony Green",
       "templateKey": "peony",
-      "unmatchedSettings": [
-        { "path": "stars.outer.color.b", "value": 0.33725490196078434 },
-        { "path": "stars.outer.color.g", "value": 0.9882352941176471 },
-        { "path": "stars.outer.color.r", "value": 0.0784313725490196 },
-        { "path": "stars.outer.colourPattern.axis", "value": "vertical" },
-        { "path": "stars.outer.colourPattern.mode", "value": "solid" },
-        { "path": "stars.outer.colourPattern.count", "value": 1 },
-        {
-          "path": "stars.outer.colourPattern.colours",
-          "value": [
-            {
-              "color": {
-                "b": 0.33725490196078434,
-                "g": 0.9882352941176471,
-                "r": 0.0784313725490196
-              },
-              "weight": 100
-            }
-          ]
-        }
-      ],
-      "notes": []
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "comet-crimson",
       "name": "Comet Crimson",
       "templateKey": "comet",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Ground comet sequences retain template heights and timing; old aerial geometry and inner stars cannot be represented by this ground kind."
+      ]
     },
     {
       "slug": "crackle-azure",
       "name": "Crackle Azure",
       "templateKey": "crackle",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "arthur-rozzi-silver-crackle",
       "name": "Arthur Rozzi Silver Crysanthemum Crackle",
       "templateKey": "chrysanthemum",
-      "unmatchedSettings": [
-        { "path": "stars.outer.color.b", "value": 0.9803921568627451 },
-        { "path": "stars.outer.color.g", "value": 0.9686274509803922 },
-        { "path": "stars.outer.color.r", "value": 0.9607843137254902 },
-        { "path": "stars.outer.colourPattern.axis", "value": "vertical" },
-        { "path": "stars.outer.colourPattern.mode", "value": "random" },
-        { "path": "stars.outer.colourPattern.count", "value": 2 },
-        {
-          "path": "stars.outer.colourPattern.colours",
-          "value": [
-            {
-              "color": {
-                "b": 0.9803921568627451,
-                "g": 0.9686274509803922,
-                "r": 0.9607843137254902
-              },
-              "weight": 78
-            },
-            { "color": { "b": 1, "g": 1, "r": 1 }, "weight": 22 }
-          ]
-        },
-        { "path": "secondaryColorRatio", "value": 0.22 }
-      ],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Weighted colour-pattern entries use an unweighted v1 palette.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "silverFish-azure",
       "name": "Silver Fish Azure",
       "templateKey": "fish",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "peony-default",
       "name": "Peony Default",
       "templateKey": "peony",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "double_break-crimson",
       "name": "Double Break Crimson",
       "templateKey": "multiBreak",
-      "unmatchedSettings": [],
+      "source": "render_snapshot_json",
       "notes": [
         "Old split-cross stars split into fragments. Multi-break uses three independent timed breaks, not two secondary splits.",
-        "Secondary colour and its ratio have no automatic layer assignment."
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "v1 split children retain fragment count and trigger; child life, head size and trail life use renderer defaults.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
       ]
     },
     {
       "slug": "kamuro-azure",
       "name": "Kamuro Azure",
       "templateKey": "kamuro",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "silverFish-crimson",
       "name": "Silver Fish Crimson",
       "templateKey": "fish",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "crossette-default",
       "name": "Crossette Default",
       "templateKey": "crossette",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "v1 split children retain fragment count and trigger; child life, head size and trail life use renderer defaults.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "peony-crimson",
       "name": "Peony Crimson",
       "templateKey": "peony",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "palm-crimson",
       "name": "Palm Crimson",
       "templateKey": "palm",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "whirl-crimson",
       "name": "Whirl Crimson",
       "templateKey": "whirlwind",
-      "unmatchedSettings": [],
+      "source": "render_snapshot_json",
       "notes": [
         "Both swirl; the template uses a ring and a spin modifier rather than the old whirl geometry.",
-        "Secondary colour and its ratio have no automatic layer assignment."
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
       ]
     },
     {
       "slug": "pearls-default",
       "name": "Pearls Default",
       "templateKey": "pearls",
-      "unmatchedSettings": [],
+      "source": "render_snapshot_json",
       "notes": [
         "Old pearls geometry is an aerial cluster. String of pearls is a ground-fired comet sequence.",
-        "Secondary colour and its ratio have no automatic layer assignment."
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Ground comet sequences retain template heights and timing; old aerial geometry and inner stars cannot be represented by this ground kind."
       ]
     },
     {
       "slug": "peony-white-nqow",
       "name": "Peony White",
       "templateKey": "peony",
-      "unmatchedSettings": [
-        { "path": "stars.outer.color.b", "value": 1 },
-        { "path": "stars.outer.color.g", "value": 1 },
-        { "path": "stars.outer.color.r", "value": 1 },
-        { "path": "stars.outer.colourPattern.axis", "value": "vertical" },
-        { "path": "stars.outer.colourPattern.mode", "value": "solid" },
-        { "path": "stars.outer.colourPattern.count", "value": 1 },
-        {
-          "path": "stars.outer.colourPattern.colours",
-          "value": [{ "color": { "b": 1, "g": 1, "r": 1 }, "weight": 100 }]
-        }
-      ],
-      "notes": []
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "arthur-rozzi-gold-willow-green-purple",
       "name": "Arthur Rozzi Gold Willow to Green and Purple",
       "templateKey": "willow",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "bowtie-default",
       "name": "Bow Tie Default",
       "templateKey": "bowtie",
-      "unmatchedSettings": [],
+      "source": "render_snapshot_json",
       "notes": [
-        "Old bowtie enables splitting. The template preserves a planar silhouette without those splits.",
-        "Secondary colour and its ratio have no automatic layer assignment."
+        "Old bowtie splitting is retained; the v1 planar silhouette approximates the old opposed lobes.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "v1 split children retain fragment count and trigger; child life, head size and trail life use renderer defaults.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
       ]
     },
     {
       "slug": "arthur-rozzi-indigo-crackle-red",
       "name": "Arthur Rozzi Indigo Crackle to Red",
       "templateKey": "crackle",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "palm-azure",
       "name": "Palm Azure",
       "templateKey": "palm",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "arthur-rozzi-palm-red-green-crackle",
       "name": "Arthur Rozzi Red and Green Palm Crackle",
       "templateKey": "palm",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "strobe-crimson",
       "name": "Strobe Crimson",
       "templateKey": "strobe",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "v1 strobe retains frequency; duty cycle, dim phase, desynchronisation and strobing fraction use renderer defaults.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "waterfall-azure",
       "name": "Waterfall Azure",
       "templateKey": "waterfall",
-      "unmatchedSettings": [],
+      "source": "render_snapshot_json",
       "notes": [
         "Both fall downwards; the template uses an aerial bottom hemisphere rather than the old wide falling scatter.",
-        "Secondary colour and its ratio have no automatic layer assignment."
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Waterfall width becomes a bottom hemisphere radius; scatter, drop-start and drift cannot be reproduced exactly.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
       ]
     },
     {
       "slug": "saturn-default",
       "name": "Saturn Default",
       "templateKey": "saturn",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "pearls-azure",
       "name": "Pearls Azure",
       "templateKey": "pearls",
-      "unmatchedSettings": [],
+      "source": "render_snapshot_json",
       "notes": [
         "Old pearls geometry is an aerial cluster. String of pearls is a ground-fired comet sequence.",
-        "Secondary colour and its ratio have no automatic layer assignment."
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Ground comet sequences retain template heights and timing; old aerial geometry and inner stars cannot be represented by this ground kind."
       ]
     },
     {
       "slug": "kamuro-crimson",
       "name": "Kamuro Crimson",
       "templateKey": "kamuro",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "chrysanthemum-crimson",
       "name": "Chrysanthemum Crimson",
       "templateKey": "chrysanthemum",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "saturn-azure",
       "name": "Saturn Azure",
       "templateKey": "saturn",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "brocade-default",
       "name": "Brocade Default",
       "templateKey": "brocade",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "blue-steel-base-4igm",
       "name": "Blue Steel Base",
       "templateKey": "chrysanthemum",
-      "unmatchedSettings": [],
-      "notes": []
+      "source": "render_snapshot_json",
+      "notes": [
+        "Continuous old random hues use six fixed saturated v1 hue samples.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "arthur-rozzi-gold-willow-blue",
       "name": "Arthur Rozzi Gold Willow to Blue",
       "templateKey": "willow",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "arthur-rozzi-chrysanthemum-rgb-crackle",
       "name": "Arthur Rozzi Red Green Blue Crackling Chrysanthemum",
       "templateKey": "chrysanthemum",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "crackle-crimson",
       "name": "Crackle Crimson",
       "templateKey": "crackle",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "crossette-azure",
       "name": "Crossette Azure",
       "templateKey": "crossette",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "v1 split children retain fragment count and trigger; child life, head size and trail life use renderer defaults.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "mine-default",
       "name": "Mine Default",
       "templateKey": "mine",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "chrysanthemum-default",
       "name": "Chrysanthemum Default",
       "templateKey": "chrysanthemum",
-      "unmatchedSettings": [
-        { "path": "stars.outer.color.b", "value": 0.33725490196078434 },
-        { "path": "stars.outer.color.g", "value": 0.9882352941176471 },
-        { "path": "stars.outer.color.r", "value": 0.0784313725490196 },
-        { "path": "stars.outer.colourPattern.axis", "value": "vertical" },
-        { "path": "stars.outer.colourPattern.mode", "value": "random" },
-        { "path": "stars.outer.colourPattern.count", "value": 2 },
-        {
-          "path": "stars.outer.colourPattern.colours",
-          "value": [
-            {
-              "color": {
-                "b": 0.33725490196078434,
-                "g": 0.9882352941176471,
-                "r": 0.0784313725490196
-              },
-              "weight": 78
-            },
-            { "color": { "b": 1, "g": 0, "r": 0.7843137254901961 }, "weight": 22 }
-          ]
-        },
-        {
-          "path": "burstTrail.stops",
-          "value": [
-            {
-              "size": 1.05,
-              "density": 1.5,
-              "position": 0,
-              "shapeWeights": { "circle": 25, "square": 50, "triangle": 25 },
-              "sizeVariation": 28
-            },
-            {
-              "size": 0.9,
-              "density": 1.15,
-              "position": 32,
-              "shapeWeights": { "circle": 25, "square": 50, "triangle": 25 },
-              "sizeVariation": 30
-            },
-            {
-              "size": 0.5,
-              "density": 0.34,
-              "position": 100,
-              "shapeWeights": { "circle": 25, "square": 50, "triangle": 25 },
-              "sizeVariation": 34
-            }
-          ]
-        },
-        { "path": "burstTrail.width.tail", "value": 30 },
-        { "path": "burstTrail.width.curve", "value": 1 },
-        { "path": "burstTrail.width.front", "value": 0 },
-        { "path": "burstTrail.motion.drag", "value": 1.4 },
-        { "path": "burstTrail.motion.spin", "value": 0 },
-        { "path": "burstTrail.motion.driftX", "value": 0 },
-        { "path": "burstTrail.motion.driftY", "value": -0.012 },
-        { "path": "burstTrail.motion.driftZ", "value": 0 },
-        { "path": "burstTrail.motion.gravity", "value": -0.02 },
-        { "path": "burstTrail.motion.turbulence", "value": 0.045 },
-        { "path": "burstTrail.motion.inheritedVelocity", "value": 0.02 },
-        { "path": "burstTrail.preset", "value": "custom" },
-        { "path": "burstTrail.closing.size.enabled", "value": false },
-        { "path": "burstTrail.closing.size.endPercent", "value": 0 },
-        { "path": "burstTrail.closing.size.shrinkPercent", "value": 22 },
-        { "path": "burstTrail.closing.colour.color.b", "value": 0 },
-        { "path": "burstTrail.closing.colour.color.g", "value": 0.16470588235294117 },
-        { "path": "burstTrail.closing.colour.color.r", "value": 0.5843137254901961 },
-        { "path": "burstTrail.closing.colour.enabled", "value": false },
-        { "path": "burstTrail.closing.colour.fadePercent", "value": 22 },
-        { "path": "burstTrail.closing.spreadFade.enabled", "value": true },
-        { "path": "burstTrail.closing.spreadFade.startAngle", "value": 60 },
-        { "path": "burstTrail.closing.spreadFade.endOpacityPercent", "value": 36 },
-        { "path": "burstTrail.enabled", "value": true },
-        { "path": "burstTrail.flicker.chance", "value": 0 },
-        { "path": "burstTrail.flicker.strength", "value": 0.9 },
-        { "path": "burstTrail.flicker.lifetimeMultiplier", "value": 0.45 },
-        { "path": "burstTrail.opening.size.startPercent", "value": 1 },
-        { "path": "burstTrail.opening.visibility.revealPercent", "value": 25 },
-        { "path": "burstTrail.opening.visibility.particlesPercent", "value": 100 },
-        { "path": "burstTrail.opening.visibility.brightnessPercent", "value": 39 },
-        { "path": "burstTrail.spacing.curve", "value": 4 },
-        { "path": "burstTrail.spacing.jitterPercent", "value": 100 },
-        { "path": "burstTrail.version", "value": 2 },
-        { "path": "burstTrail.lifetime.mode", "value": "dynamic" },
-        { "path": "burstTrail.lifetime.percent", "value": 1 },
-        { "path": "burstTrail.lifetime.baseSeconds", "value": 1.7 },
-        { "path": "burstTrail.lifetime.afterglowSeconds", "value": 0.32 },
-        { "path": "burstTrail.lifetime.variationPercent", "value": 0 },
-        { "path": "burstTrail.intensity.brightness", "value": 1.15 },
-        { "path": "burstTrail.intensity.fadeSoftness", "value": 3.2 },
-        { "path": "burstTrail.placement.headGapPercent", "value": 0 },
-        { "path": "burstTrail.colourMode", "value": "ember" },
-        { "path": "burstTrail.frontClump", "value": 0.55 },
-        { "path": "burstTrail.particleSize.base", "value": 4.63 },
-        { "path": "burstTrail.particleSize.headScale", "value": 1.25 },
-        { "path": "burstTrail.particleSize.tailScale", "value": 0.3 },
-        { "path": "burstTrail.particleSize.variationPercent", "value": 28 },
-        { "path": "burstTrail.particlesPerStar", "value": 280 },
-        { "path": "secondaryColorRatio", "value": 0.22 }
-      ],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Weighted colour-pattern entries use an unweighted v1 palette.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "roman_candle-crimson",
       "name": "Roman Candle Crimson",
       "templateKey": "romanCandle",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Ground comet sequences retain template heights and timing; old aerial geometry and inner stars cannot be represented by this ground kind."
+      ]
     },
     {
       "slug": "silverFish-default",
       "name": "Silver Fish Default",
       "templateKey": "fish",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "saturn-crimson",
       "name": "Saturn Crimson",
       "templateKey": "saturn",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "arthur-rozzi-chrysanthemum-silver-red",
       "name": "Arthur Rozzi Silver Chrysanthemum to Red",
       "templateKey": "chrysanthemum",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "brocade-azure",
       "name": "Brocade Azure",
       "templateKey": "brocade",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "arthur-rozzi-brocade-glitter-red",
       "name": "Arthur Rozzi Glittering Brocade to Red",
       "templateKey": "brocade",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "arthur-rozzi-brocade-red-green-blue",
       "name": "Arthur Rozzi Brocade to Red Green and Blue",
       "templateKey": "brocade",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "test-firework-6rkv",
       "name": "test firework",
       "templateKey": "brocade",
-      "unmatchedSettings": [],
-      "notes": []
+      "source": "render_snapshot_json",
+      "notes": [
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "crackle-default",
       "name": "Crackle Default",
       "templateKey": "crackle",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "comet-azure",
       "name": "Comet Azure",
       "templateKey": "comet",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Ground comet sequences retain template heights and timing; old aerial geometry and inner stars cannot be represented by this ground kind."
+      ]
     },
     {
       "slug": "palm-default",
       "name": "Palm Default",
       "templateKey": "palm",
-      "unmatchedSettings": [
-        { "path": "stars.outer.color.b", "value": 0.4 },
-        { "path": "stars.outer.color.g", "value": 0.8196078431372549 },
-        { "path": "stars.outer.color.r", "value": 1 },
-        { "path": "stars.outer.colourPattern.axis", "value": "vertical" },
-        { "path": "stars.outer.colourPattern.mode", "value": "random" },
-        { "path": "stars.outer.colourPattern.count", "value": 2 },
-        {
-          "path": "stars.outer.colourPattern.colours",
-          "value": [
-            { "color": { "b": 0.4, "g": 0.8196078431372549, "r": 1 }, "weight": 78 },
-            { "color": { "b": 0.23921568627450981, "g": 0.6823529411764706, "r": 1 }, "weight": 22 }
-          ]
-        },
-        { "path": "geometryTuning.radialArms.arms", "value": 6 },
-        { "path": "geometryTuning.radialArms.lift", "value": 2 },
-        { "path": "geometryTuning.radialArms.angleJitter", "value": 1 },
-        { "path": "geometryTuning.radialArms.dragPercent", "value": 10 },
-        { "path": "geometryTuning.radialArms.countPercent", "value": 100 },
-        { "path": "geometryTuning.radialArms.liftVariation", "value": 2 },
-        { "path": "secondaryColorRatio", "value": 0.22 }
-      ],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Weighted colour-pattern entries use an unweighted v1 palette.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "nishiki-azure",
       "name": "Nishiki Azure",
       "templateKey": "nishiki",
-      "unmatchedSettings": [],
+      "source": "render_snapshot_json",
       "notes": [
-        "Brocade-family visual approximation: 5-second stars, 105 trail sparks, 2.6-second trails and maximum glitter strength. Not a measured reconstruction.",
-        "Secondary colour and its ratio have no automatic layer assignment."
+        "Brocade-family silhouette with individual old star and trail tuning. Motion and sprite units are visually calibrated approximations.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
       ]
     },
     {
       "slug": "roman_candle-azure",
       "name": "Roman Candle Azure",
       "templateKey": "romanCandle",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Ground comet sequences retain template heights and timing; old aerial geometry and inner stars cannot be represented by this ground kind."
+      ]
     },
     {
       "slug": "chrysanthemum-azure",
       "name": "Chrysanthemum Azure",
       "templateKey": "chrysanthemum",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "crossette-crimson",
       "name": "Crossette Crimson",
       "templateKey": "crossette",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "v1 split children retain fragment count and trigger; child life, head size and trail life use renderer defaults.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "bowtie-crimson",
       "name": "Bow Tie Crimson",
       "templateKey": "bowtie",
-      "unmatchedSettings": [],
+      "source": "render_snapshot_json",
       "notes": [
-        "Old bowtie enables splitting. The template preserves a planar silhouette without those splits.",
-        "Secondary colour and its ratio have no automatic layer assignment."
+        "Old bowtie splitting is retained; the v1 planar silhouette approximates the old opposed lobes.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "v1 split children retain fragment count and trigger; child life, head size and trail life use renderer defaults.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
       ]
     },
     {
       "slug": "willow-default",
       "name": "Willow Default",
       "templateKey": "willow",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "strobe-azure",
       "name": "Strobe Azure",
       "templateKey": "strobe",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "v1 strobe retains frequency; duty cycle, dim phase, desynchronisation and strobing fraction use renderer defaults.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "fountain-default",
       "name": "Fountain Default",
       "templateKey": "fountain",
-      "unmatchedSettings": [],
+      "source": "render_snapshot_json",
       "notes": [
-        "v1 fountain colour accepts one hex colour only. Primary colour retained; alternate palette needs renderer support.",
-        "Secondary colour and its ratio have no automatic layer assignment."
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "v1 fountain colour accepts one hex colour only. Primary colour retained; alternate palettes and life-relative colour fades need renderer support."
       ]
     },
     {
       "slug": "mine-crimson",
       "name": "Mine Crimson",
       "templateKey": "mine",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "arthur-rozzi-brocade-magenta-green",
       "name": "Arthur Rozzi Brocade Magenta to Green",
       "templateKey": "brocade",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "horsetail-azure",
       "name": "Horsetail Azure",
       "templateKey": "horsetail",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "bowtie-azure",
       "name": "Bow Tie Azure",
       "templateKey": "bowtie",
-      "unmatchedSettings": [
-        { "path": "stars.outer.head.opening.colour.enabled", "value": true },
-        { "path": "stars.outer.head.opening.colour.fadePercent", "value": 10 },
-        { "path": "stars.outer.head.glowSize", "value": 180 },
-        { "path": "stars.outer.head.coreSoftness", "value": 48.4 },
-        { "path": "stars.outer.head.glowSoftness", "value": 96 },
-        { "path": "stars.outer.head.coreBrightness", "value": 31 },
-        { "path": "stars.outer.head.coreOpacityFalloff", "value": 73.2 },
-        { "path": "stars.outer.head.whiteCoreBlurPercent", "value": 11.4 },
-        { "path": "stars.outer.head.whiteCoreSizePercent", "value": 23.2 },
-        { "path": "stars.outer.burst.speed", "value": [9.2, 10.4] },
-        { "path": "stars.outer.color.b", "value": 1 },
-        { "path": "stars.outer.color.g", "value": 0.4980392156862745 },
-        { "path": "stars.outer.color.r", "value": 0.11764705882352941 },
-        { "path": "stars.outer.count", "value": 40 },
-        { "path": "stars.outer.colourPattern.axis", "value": "vertical" },
-        { "path": "stars.outer.colourPattern.mode", "value": "random" },
-        { "path": "stars.outer.colourPattern.count", "value": 2 },
-        {
-          "path": "stars.outer.colourPattern.colours",
-          "value": [
-            {
-              "color": { "b": 1, "g": 0.4980392156862745, "r": 0.11764705882352941 },
-              "weight": 48
-            },
-            { "color": { "b": 1, "g": 0, "r": 0.7843137254901961 }, "weight": 52 }
-          ]
-        },
-        {
-          "path": "burstTrail.stops",
-          "value": [
-            {
-              "size": 1.05,
-              "density": 1.5,
-              "position": 0,
-              "shapeWeights": { "circle": 4, "square": 88, "triangle": 8 },
-              "sizeVariation": 28
-            },
-            {
-              "size": 0.9,
-              "density": 1.15,
-              "position": 32,
-              "shapeWeights": { "circle": 5, "square": 86, "triangle": 9 },
-              "sizeVariation": 30
-            },
-            {
-              "size": 0.5,
-              "density": 0.34,
-              "position": 100,
-              "shapeWeights": { "circle": 8, "square": 84, "triangle": 8 },
-              "sizeVariation": 34
-            }
-          ]
-        },
-        { "path": "burstTrail.width.tail", "value": 56 },
-        { "path": "burstTrail.width.curve", "value": 1 },
-        { "path": "burstTrail.width.front", "value": 39 },
-        { "path": "burstTrail.motion.drag", "value": 1.4 },
-        { "path": "burstTrail.motion.spin", "value": 0 },
-        { "path": "burstTrail.motion.driftX", "value": 0 },
-        { "path": "burstTrail.motion.driftY", "value": -0.012 },
-        { "path": "burstTrail.motion.driftZ", "value": 0 },
-        { "path": "burstTrail.motion.gravity", "value": -0.02 },
-        { "path": "burstTrail.motion.turbulence", "value": 0.045 },
-        { "path": "burstTrail.motion.inheritedVelocity", "value": 0.02 },
-        { "path": "burstTrail.preset", "value": "custom" },
-        { "path": "burstTrail.closing.size.enabled", "value": true },
-        { "path": "burstTrail.closing.size.endPercent", "value": 46 },
-        { "path": "burstTrail.closing.size.shrinkPercent", "value": 22 },
-        { "path": "burstTrail.closing.colour.color.b", "value": 0.08 },
-        { "path": "burstTrail.closing.colour.color.g", "value": 0.34 },
-        { "path": "burstTrail.closing.colour.color.r", "value": 1 },
-        { "path": "burstTrail.closing.colour.enabled", "value": false },
-        { "path": "burstTrail.closing.colour.fadePercent", "value": 22 },
-        { "path": "burstTrail.closing.spreadFade.enabled", "value": true },
-        { "path": "burstTrail.closing.spreadFade.startAngle", "value": 60 },
-        { "path": "burstTrail.closing.spreadFade.endOpacityPercent", "value": 55 },
-        { "path": "burstTrail.enabled", "value": true },
-        { "path": "burstTrail.flicker.chance", "value": 0.08 },
-        { "path": "burstTrail.flicker.strength", "value": 0.9 },
-        { "path": "burstTrail.flicker.lifetimeMultiplier", "value": 0.45 },
-        { "path": "burstTrail.opening.size.startPercent", "value": 100 },
-        { "path": "burstTrail.opening.visibility.revealPercent", "value": 24 },
-        { "path": "burstTrail.opening.visibility.particlesPercent", "value": 100 },
-        { "path": "burstTrail.opening.visibility.brightnessPercent", "value": 100 },
-        { "path": "burstTrail.spacing.curve", "value": 1 },
-        { "path": "burstTrail.spacing.jitterPercent", "value": 5 },
-        { "path": "burstTrail.version", "value": 2 },
-        { "path": "burstTrail.lifetime.mode", "value": "dynamic" },
-        { "path": "burstTrail.lifetime.percent", "value": 0.4 },
-        { "path": "burstTrail.lifetime.baseSeconds", "value": 1.7 },
-        { "path": "burstTrail.lifetime.afterglowSeconds", "value": 0.32 },
-        { "path": "burstTrail.lifetime.variationPercent", "value": 47 },
-        { "path": "burstTrail.intensity.brightness", "value": 1.15 },
-        { "path": "burstTrail.intensity.fadeSoftness", "value": 1 },
-        { "path": "burstTrail.placement.headGapPercent", "value": 0 },
-        { "path": "burstTrail.colourMode", "value": "ember" },
-        { "path": "burstTrail.frontClump", "value": 0.55 },
-        { "path": "burstTrail.particleSize.base", "value": 1 },
-        { "path": "burstTrail.particleSize.headScale", "value": 1 },
-        { "path": "burstTrail.particleSize.tailScale", "value": 0.55 },
-        { "path": "burstTrail.particleSize.variationPercent", "value": 28 },
-        { "path": "burstTrail.particlesPerStar", "value": 981 },
-        { "path": "liftVelocity", "value": 15 },
-        { "path": "secondaryColorRatio", "value": 0.52 }
-      ],
+      "source": "render_snapshot_json",
       "notes": [
-        "Old bowtie enables splitting. The template preserves a planar silhouette without those splits.",
-        "Secondary colour and its ratio have no automatic layer assignment."
+        "Old bowtie splitting is retained; the v1 planar silhouette approximates the old opposed lobes.",
+        "Weighted colour-pattern entries use an unweighted v1 palette.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "v1 split children retain fragment count and trigger; child life, head size and trail life use renderer defaults.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
       ]
     },
     {
       "slug": "pistil-default",
       "name": "Pistil Default",
       "templateKey": "pistil",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "fountain-crimson",
       "name": "Fountain Crimson",
       "templateKey": "fountain",
-      "unmatchedSettings": [],
+      "source": "render_snapshot_json",
       "notes": [
-        "v1 fountain colour accepts one hex colour only. Primary colour retained; alternate palette needs renderer support.",
-        "Secondary colour and its ratio have no automatic layer assignment."
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "v1 fountain colour accepts one hex colour only. Primary colour retained; alternate palettes and life-relative colour fades need renderer support."
       ]
     },
     {
       "slug": "double_break-default",
       "name": "Double Break Default",
       "templateKey": "multiBreak",
-      "unmatchedSettings": [],
+      "source": "render_snapshot_json",
       "notes": [
         "Old split-cross stars split into fragments. Multi-break uses three independent timed breaks, not two secondary splits.",
-        "Secondary colour and its ratio have no automatic layer assignment."
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "v1 split children retain fragment count and trigger; child life, head size and trail life use renderer defaults.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
       ]
     },
     {
       "slug": "whirl-azure",
       "name": "Whirl Azure",
       "templateKey": "whirlwind",
-      "unmatchedSettings": [],
+      "source": "render_snapshot_json",
       "notes": [
         "Both swirl; the template uses a ring and a spin modifier rather than the old whirl geometry.",
-        "Secondary colour and its ratio have no automatic layer assignment."
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
       ]
     },
     {
       "slug": "willow-azure",
       "name": "Willow Azure",
       "templateKey": "willow",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "strobe-default",
       "name": "Blue and Red Strobe",
       "templateKey": "strobe",
-      "unmatchedSettings": [
-        { "path": "stars.core.head.size", "value": 223 },
-        { "path": "stars.core.head.closing.size.enabled", "value": false },
-        { "path": "stars.core.head.closing.size.endPercent", "value": 0 },
-        { "path": "stars.core.head.closing.size.shrinkPercent", "value": 22 },
-        { "path": "stars.core.head.closing.colour.color.b", "value": 0.4 },
-        { "path": "stars.core.head.closing.colour.color.g", "value": 0.84 },
-        { "path": "stars.core.head.closing.colour.color.r", "value": 1 },
-        { "path": "stars.core.head.closing.colour.enabled", "value": false },
-        { "path": "stars.core.head.closing.colour.fadePercent", "value": 22 },
-        { "path": "stars.core.head.opening.size.enabled", "value": false },
-        { "path": "stars.core.head.opening.size.growPercent", "value": 22 },
-        { "path": "stars.core.head.opening.size.startPercent", "value": 35 },
-        { "path": "stars.core.head.opening.colour.color.b", "value": 0.08 },
-        { "path": "stars.core.head.opening.colour.color.g", "value": 0.42 },
-        { "path": "stars.core.head.opening.colour.color.r", "value": 1 },
-        { "path": "stars.core.head.opening.colour.enabled", "value": false },
-        { "path": "stars.core.head.opening.colour.fadePercent", "value": 24 },
-        { "path": "stars.core.head.visible", "value": true },
-        { "path": "stars.core.head.glowBlur", "value": 45 },
-        { "path": "stars.core.head.glowSize", "value": 90 },
-        { "path": "stars.core.head.glowPadding", "value": 150 },
-        { "path": "stars.core.head.coreSoftness", "value": 55 },
-        { "path": "stars.core.head.glowSoftness", "value": 100 },
-        { "path": "stars.core.head.glowStrength", "value": 1.5 },
-        { "path": "stars.core.head.coreBrightness", "value": 50 },
-        { "path": "stars.core.head.coreOpacityFalloff", "value": 60 },
-        { "path": "stars.core.head.glowOpacityFalloff", "value": 100 },
-        { "path": "stars.core.head.whiteCoreBlurPercent", "value": 15 },
-        { "path": "stars.core.head.whiteCoreSizePercent", "value": 20 },
-        { "path": "stars.core.head.brightnessHoldPercent", "value": 82 },
-        { "path": "stars.core.head.backgroundGlowSoftness", "value": 50 },
-        { "path": "stars.core.head.brightnessHoldExponent", "value": 0.8 },
-        { "path": "stars.core.head.backgroundGlowOpacityFalloff", "value": 75 },
-        { "path": "stars.core.burst.life", "value": [0.31, 5.33] },
-        { "path": "stars.core.burst.speed", "value": [0.89, 1.99] },
-        { "path": "stars.core.burst.gravity", "value": [-0.24, -0.02] },
-        { "path": "stars.core.burst.flairColorMode", "value": "mixed" },
-        { "path": "stars.core.count", "value": 38 },
-        { "path": "stars.core.enabled", "value": false },
-        { "path": "stars.outer.head.size", "value": 200 },
-        { "path": "stars.outer.head.closing.size.enabled", "value": false },
-        { "path": "stars.outer.head.closing.size.endPercent", "value": 0 },
-        { "path": "stars.outer.head.closing.size.shrinkPercent", "value": 22 },
-        { "path": "stars.outer.head.closing.colour.color.b", "value": 0.4 },
-        { "path": "stars.outer.head.closing.colour.color.g", "value": 0.84 },
-        { "path": "stars.outer.head.closing.colour.color.r", "value": 1 },
-        { "path": "stars.outer.head.closing.colour.enabled", "value": false },
-        { "path": "stars.outer.head.closing.colour.fadePercent", "value": 22 },
-        { "path": "stars.outer.head.opening.size.enabled", "value": false },
-        { "path": "stars.outer.head.opening.size.growPercent", "value": 22 },
-        { "path": "stars.outer.head.opening.size.startPercent", "value": 35 },
-        { "path": "stars.outer.head.opening.colour.color.b", "value": 0.08 },
-        { "path": "stars.outer.head.opening.colour.color.g", "value": 0.42 },
-        { "path": "stars.outer.head.opening.colour.color.r", "value": 1 },
-        { "path": "stars.outer.head.opening.colour.enabled", "value": false },
-        { "path": "stars.outer.head.opening.colour.fadePercent", "value": 24 },
-        { "path": "stars.outer.head.visible", "value": true },
-        { "path": "stars.outer.head.glowBlur", "value": 45 },
-        { "path": "stars.outer.head.glowSize", "value": 90 },
-        { "path": "stars.outer.head.glowPadding", "value": 150 },
-        { "path": "stars.outer.head.coreSoftness", "value": 55 },
-        { "path": "stars.outer.head.glowSoftness", "value": 100 },
-        { "path": "stars.outer.head.glowStrength", "value": 1.5 },
-        { "path": "stars.outer.head.coreBrightness", "value": 50 },
-        { "path": "stars.outer.head.coreOpacityFalloff", "value": 60 },
-        { "path": "stars.outer.head.glowOpacityFalloff", "value": 100 },
-        { "path": "stars.outer.head.whiteCoreBlurPercent", "value": 15 },
-        { "path": "stars.outer.head.whiteCoreSizePercent", "value": 20 },
-        { "path": "stars.outer.head.brightnessHoldPercent", "value": 82 },
-        { "path": "stars.outer.head.backgroundGlowSoftness", "value": 50 },
-        { "path": "stars.outer.head.brightnessHoldExponent", "value": 0.8 },
-        { "path": "stars.outer.head.backgroundGlowOpacityFalloff", "value": 75 },
-        { "path": "stars.outer.burst.life", "value": [2.5, 4] },
-        { "path": "stars.outer.burst.speed", "value": [1, 1.8] },
-        { "path": "stars.outer.burst.gravity", "value": [-0.4, 0] },
-        { "path": "stars.outer.burst.flairColorMode", "value": "bombColor" },
-        { "path": "stars.outer.color.b", "value": 0.00784313725490196 },
-        { "path": "stars.outer.color.g", "value": 0.00784313725490196 },
-        { "path": "stars.outer.color.r", "value": 0.7803921568627451 },
-        { "path": "stars.outer.count", "value": 70 },
-        { "path": "stars.outer.enabled", "value": true },
-        { "path": "stars.outer.colourPattern.axis", "value": "vertical" },
-        { "path": "stars.outer.colourPattern.mode", "value": "random" },
-        { "path": "stars.outer.colourPattern.count", "value": 2 },
-        {
-          "path": "stars.outer.colourPattern.colours",
-          "value": [
-            {
-              "color": {
-                "b": 0.00784313725490196,
-                "g": 0.00784313725490196,
-                "r": 0.7803921568627451
-              },
-              "weight": 51
-            },
-            { "color": { "b": 0.8705882352941177, "g": 0.34901960784313724, "r": 0 }, "weight": 49 }
-          ]
-        },
-        { "path": "liftVelocity", "value": 15 },
-        { "path": "secondaryColorRatio", "value": 0.49 }
-      ],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Weighted colour-pattern entries use an unweighted v1 palette.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "v1 strobe retains frequency; duty cycle, dim phase, desynchronisation and strobing fraction use renderer defaults.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "pistil-azure",
       "name": "Pistil Azure",
       "templateKey": "pistil",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "kamuro-default",
       "name": "Kamuro Default",
       "templateKey": "kamuro",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "waterfall-crimson",
       "name": "Waterfall Crimson",
       "templateKey": "waterfall",
-      "unmatchedSettings": [],
+      "source": "render_snapshot_json",
       "notes": [
         "Both fall downwards; the template uses an aerial bottom hemisphere rather than the old wide falling scatter.",
-        "Secondary colour and its ratio have no automatic layer assignment."
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Waterfall width becomes a bottom hemisphere radius; scatter, drop-start and drift cannot be reproduced exactly.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
       ]
     },
     {
       "slug": "arthur-rozzi-brocade-crackling-palm-red-green",
       "name": "Arthur Rozzi Brocade Crackling Palm Red and Green",
       "templateKey": "brocade",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "arthur-rozzi-brocade-blue-green",
       "name": "Arthur Rozzi Brocade to Blue with Green Strobe",
       "templateKey": "brocade",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "waterfall-default",
       "name": "Waterfall Default",
       "templateKey": "waterfall",
-      "unmatchedSettings": [],
+      "source": "render_snapshot_json",
       "notes": [
         "Both fall downwards; the template uses an aerial bottom hemisphere rather than the old wide falling scatter.",
-        "Secondary colour and its ratio have no automatic layer assignment."
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Waterfall width becomes a bottom hemisphere radius; scatter, drop-start and drift cannot be reproduced exactly.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
       ]
     },
     {
       "slug": "ring-default",
       "name": "Ring Default",
       "templateKey": "ring",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "peony-azure",
       "name": "Peony Azure",
       "templateKey": "peony",
-      "unmatchedSettings": [],
-      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+      "source": "render_snapshot_json",
+      "notes": [
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
+      ]
     },
     {
       "slug": "double_break-azure",
       "name": "Double Break Azure",
       "templateKey": "multiBreak",
-      "unmatchedSettings": [],
+      "source": "render_snapshot_json",
       "notes": [
         "Old split-cross stars split into fragments. Multi-break uses three independent timed breaks, not two secondary splits.",
-        "Secondary colour and its ratio have no automatic layer assignment."
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "v1 split children retain fragment count and trigger; child life, head size and trail life use renderer defaults.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
       ]
     },
     {
       "slug": "nishiki-default",
       "name": "Nishiki Default",
       "templateKey": "nishiki",
-      "unmatchedSettings": [],
+      "source": "render_snapshot_json",
       "notes": [
-        "Brocade-family visual approximation: 5-second stars, 105 trail sparks, 2.6-second trails and maximum glitter strength. Not a measured reconstruction.",
-        "Secondary colour and its ratio have no automatic layer assignment."
+        "Brocade-family silhouette with individual old star and trail tuning. Motion and sprite units are visually calibrated approximations.",
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
       ]
     },
     {
       "slug": "whirl-default",
       "name": "Whirl Default",
       "templateKey": "whirlwind",
-      "unmatchedSettings": [],
+      "source": "render_snapshot_json",
       "notes": [
         "Both swirl; the template uses a ring and a spin modifier rather than the old whirl geometry.",
-        "Secondary colour and its ratio have no automatic layer assignment."
+        "Trail width curves, sprite shapes, placement and particle-life colour fades use v1 density, size and spread approximations.",
+        "Old gravity ranges, terminal velocity, head softness and animated head size use mean gravity, halo and brightness curves; motion is an approximation.",
+        "Old star life range exceeds v1 life variation; the mean is retained and variation capped.",
+        "Launch tracer #fff3ce uses nearest gold tail; v1 has no custom tracer or smoke colour. Old lift/fuse tuning is omitted to retain existing template lift time and height logic."
       ]
     }
   ],
-  "newRowsPerTable": 76
+  "newRowsPerTable": 76,
+  "variety": {
+    "baseline": {
+      "sourceCommit": "466b2aae",
+      "fireworks": 90,
+      "distinctDesigns": 88,
+      "distinctDesignsIgnoringSeed": 88,
+      "identicalApartFromColourPairsIgnoringSeed": 94
+    },
+    "converted": {
+      "fireworks": 90,
+      "distinctDesigns": 90,
+      "distinctDesignsIgnoringSeed": 88,
+      "identicalApartFromColourPairsIgnoringSeed": 88
+    },
+    "method": "Canonical key ordering. Colour-only unordered pairs exclude colour controls and seed; distinct designs are also reported without seed."
+  }
 }

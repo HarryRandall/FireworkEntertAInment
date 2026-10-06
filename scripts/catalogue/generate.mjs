@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url';
 import { format } from 'prettier';
 import { effectTemplates, upgradeDesign, shotDuration } from '../../packages/renderer/src/index.ts';
 import { FireworkDesignSchema } from '../../packages/fireworks/src/model/design-schema.ts';
-import { unmatchedRendererSettings } from '../../apps/web/lib/renderer-compare.ts';
 import { catalogueDesign, templateSlug } from './designs.mjs';
+import { measureVariety } from './variety.mjs';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const BOOTSTRAP = join(ROOT, 'supabase/bootstrap');
@@ -26,13 +26,13 @@ const CAUTIONS = {
   pearls:
     'Old pearls geometry is an aerial cluster. String of pearls is a ground-fired comet sequence.',
   bowtie:
-    'Old bowtie enables splitting. The template preserves a planar silhouette without those splits.',
+    'Old bowtie splitting is retained; the v1 planar silhouette approximates the old opposed lobes.',
   waterfall:
     'Both fall downwards; the template uses an aerial bottom hemisphere rather than the old wide falling scatter.',
   whirl:
     'Both swirl; the template uses a ring and a spin modifier rather than the old whirl geometry.',
   nishiki:
-    'Brocade-family visual approximation: 5-second stars, 105 trail sparks, 2.6-second trails and maximum glitter strength. Not a measured reconstruction.',
+    'Brocade-family silhouette with individual old star and trail tuning. Motion and sprite units are visually calibrated approximations.',
 };
 
 function read(table) {
@@ -104,28 +104,24 @@ export function buildCatalogue() {
       ),
       review:
         CAUTIONS[effect.pattern_key] ??
-        'Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required.',
+        'Template provides the family silhouette; firework snapshots supply individual star tuning. Motion units use documented visual calibration.',
     };
   });
   const review = fireworks.map((firework) => {
     const effect = effectById.get(firework.firework_effect_id);
     if (!effect) throw new Error(`Missing effect for ${firework.slug}`);
-    firework.design = catalogueDesign(effect.design, firework);
+    const notes = [];
+    firework.design = catalogueDesign(effect.design, firework, effect.model_json, notes);
     return {
       slug: firework.slug,
       name: firework.name,
       templateKey: effect.template_key,
-      unmatchedSettings: unmatchedRendererSettings(firework.render_overrides_json),
+      source: firework.render_snapshot_json ? 'render_snapshot_json' : 'compileFireworkDesign',
       notes: [
-        ...(CAUTIONS[effect.pattern_key] ? [CAUTIONS[effect.pattern_key]] : []),
-        ...(firework.design.kind === 'fountain' && firework.color_palette.length >= 2
-          ? [
-              'v1 fountain colour accepts one hex colour only. Primary colour retained; alternate palette needs renderer support.',
-            ]
-          : []),
-        ...(firework.secondary_color
-          ? ['Secondary colour and its ratio have no automatic layer assignment.']
-          : []),
+        ...new Set([
+          ...(CAUTIONS[effect.pattern_key] ? [CAUTIONS[effect.pattern_key]] : []),
+          ...notes,
+        ]),
       ],
     };
   });
@@ -224,8 +220,13 @@ export function buildCatalogue() {
   // Match live effects by slug as well as fireworks. Never assume the exported UUIDs exist.
   for (const firework of fireworks.slice(0, review.length)) {
     const effect = effectById.get(firework.firework_effect_id);
+    const mapped = catalogueDesign(
+      effect.design,
+      { ...firework, height_meters: null },
+      effect.model_json,
+    );
     sql.push(
-      `update public.fireworks f set design = pg_temp.catalogue_design(${literal(effect.design)}, f.color_palette, f.primary_color, f.height_meters, f.render_overrides_json)\nwhere f.slug = '${firework.slug.replaceAll("'", "''")}' and f.design is null\nand exists (select 1 from public.firework_effects e where e.id = f.firework_effect_id and e.slug = '${effect.slug.replaceAll("'", "''")}');`,
+      `update public.fireworks f set design = pg_temp.catalogue_design(${literal(mapped)}, f.color_palette, f.primary_color, f.height_meters, ${literal(firework.color_palette)}, ${firework.primary_color ? "'" + firework.primary_color + "'" : 'null'})\nwhere f.slug = '${firework.slug.replaceAll("'", "''")}' and f.design is null\nand exists (select 1 from public.firework_effects e where e.id = f.firework_effect_id and e.slug = '${effect.slug.replaceAll("'", "''")}');`,
     );
   }
   for (const { effect, firework, item } of additions) {
@@ -250,7 +251,7 @@ on conflict do nothing;`);
   sql.push(
     'end if;',
     'end $catalogue$;',
-    'drop function pg_temp.catalogue_design(jsonb, text[], text, numeric, jsonb);',
+    'drop function pg_temp.catalogue_design(jsonb, text[], text, numeric, jsonb, text);',
     'commit;',
   );
   return {
@@ -261,7 +262,23 @@ on conflict do nothing;`);
       firework_preview_images: previews,
     },
     migration: sql.join('\n\n') + '\n',
-    report: { effectMappings, fireworks: review, newRowsPerTable: additions.length },
+    report: {
+      effectMappings,
+      fireworks: review,
+      newRowsPerTable: additions.length,
+      variety: {
+        baseline: {
+          sourceCommit: '466b2aae',
+          fireworks: 90,
+          distinctDesigns: 88,
+          distinctDesignsIgnoringSeed: 88,
+          identicalApartFromColourPairsIgnoringSeed: 94,
+        },
+        converted: measureVariety(fireworks),
+        method:
+          'Canonical key ordering. Colour-only unordered pairs exclude colour controls and seed; distinct designs are also reported without seed.',
+      },
+    },
   };
 }
 
