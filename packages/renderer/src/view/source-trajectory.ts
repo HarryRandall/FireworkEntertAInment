@@ -95,7 +95,9 @@ function packStar(
   writeSourceLane(data, offset, sourceLane.trajectory, [SourceKind.Star]);
   writeSourceLane(data, offset, sourceLane.origin, centre);
   writeSourceLane(data, offset, sourceLane.travel, [
-    layer.radius_m * (1 - layer.speed_var + layer.speed_var * direction.h),
+    layer.radius_m *
+      (direction.radius ?? 1) *
+      (1 - layer.speed_var + layer.speed_var * direction.h),
     layer.drag_per_s,
     layer.gravity_m_s2,
     layer.radius_m,

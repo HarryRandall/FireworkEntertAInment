@@ -91,6 +91,8 @@ export const layerSchema = z
       'ring',
       'double_ring',
       'heart',
+      'bowtie',
+      'star',
       'spiral',
       'random',
       'fan',
