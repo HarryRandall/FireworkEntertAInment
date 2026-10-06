@@ -72,7 +72,7 @@ test('missing persisted and session-only posters backfill sequentially through o
   assert.match(source, /for \(const target of targets\)/);
   assert.match(source, /queuePosterCapture:/);
   assert.match(source, /unqueuePosterCapture:/);
-  assert.match(source, /persist: true,\s*background: true/);
+  assert.match(source, /persist = true/);
   assert.match(source, /const persist = target\.persist \?\? true/);
   assert.match(source, /const displayPoster = target\.displayPoster \?\? false/);
   assert.match(source, /displayPoster && posterUrlCache\.has\(target\.previewUrl\)/);
@@ -88,8 +88,8 @@ test('missing persisted and session-only posters backfill sequentially through o
   assert.match(source, /void activatePreview\(nextTarget\)/);
   assert.match(source, /void capture\.then\(\(success\) => finishBackgroundCapture/);
   assert.match(source, /Direct interaction always takes priority over sequential backfill/);
-  assert.match(effectsBrowser, /persist: false/);
-  assert.match(effectsBrowser, /displayPoster: true/);
+  assert.match(effectsBrowser, /<FireworkBrowsePreviewProvider>/);
+  assert.doesNotMatch(effectsBrowser, /posterBackfillTargets/);
   assert.equal(source.match(/<LazyFireworkReplayCanvas/g)?.length, 1);
 });
 
@@ -143,7 +143,7 @@ test('browse cards provide link and button activation without nesting their body
     source,
     /persistPoster &&\s*\(!persistedPosterUrl \|\| failedPosterUrl === persistedPosterUrl\)/,
   );
-  assert.match(source, /if \(!shouldPersistPoster \|\| !mediaRef\.current\) return/);
+  assert.match(source, /new IntersectionObserver/);
   assert.doesNotMatch(source, /!persistPoster \|\| sessionPosterUrl/);
   assert.equal(source.match(/persist: shouldPersistPoster/g)?.length, 2);
   assert.match(source, /<Skeleton className="absolute inset-0 h-full w-full rounded-none"/);

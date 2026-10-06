@@ -71,8 +71,8 @@ test('style defaults use real non-persisted renderer previews and visual cards',
   assert.match(browser, /<FireworkBrowseCard/);
   assert.match(browser, /filteredDefaults\.map/);
   assert.match(browser, /\/api\/admin\/firework-previews\/style-default\//);
-  assert.match(browser, /persist: false/);
-  assert.match(browser, /displayPoster: true/);
+  const defaultCards = browser.slice(browser.indexOf('filteredDefaults.map'));
+  assert.doesNotMatch(defaultCards, /\bpersistPoster\b/);
   assert.doesNotMatch(browser, /<DataTableShell|<table/);
   assert.match(styleDefaults, /export function compileStyleDefaultPreviewDesign/);
   assert.match(styleDefaults, /kind === 'launch' \|\| kind === 'smoke'/);

@@ -96,7 +96,12 @@ type FireworkBrowsePreviewContextValue = {
     element: HTMLElement,
     options?: { persist?: boolean },
   ) => void;
-  queuePosterCapture: (id: string, previewUrl: string, element: HTMLElement) => void;
+  queuePosterCapture: (
+    id: string,
+    previewUrl: string,
+    element: HTMLElement,
+    persist?: boolean,
+  ) => void;
   unqueuePosterCapture: (id: string) => void;
 };
 
@@ -333,20 +338,23 @@ export function FireworkBrowsePreviewProvider({
     setFailedId(id);
   }, []);
 
-  const queuePosterCapture = useCallback((id: string, previewUrl: string, element: HTMLElement) => {
-    if (persistedPosterCaptures.has(previewUrl)) return;
-    const current = posterQueueRef.current.get(id);
-    if (current?.previewUrl === previewUrl && current.element === element) return;
-    posterQueueRef.current.set(id, {
-      id,
-      previewUrl,
-      element,
-      persist: true,
-      background: true,
-      displayPoster: true,
-    });
-    setPosterQueueVersion((version) => version + 1);
-  }, []);
+  const queuePosterCapture = useCallback(
+    (id: string, previewUrl: string, element: HTMLElement, persist = true) => {
+      if (persistedPosterCaptures.has(previewUrl)) return;
+      const current = posterQueueRef.current.get(id);
+      if (current?.previewUrl === previewUrl && current.element === element) return;
+      posterQueueRef.current.set(id, {
+        id,
+        previewUrl,
+        element,
+        persist,
+        background: true,
+        displayPoster: true,
+      });
+      setPosterQueueVersion((version) => version + 1);
+    },
+    [],
+  );
 
   const unqueuePosterCapture = useCallback((id: string) => {
     if (!posterQueueRef.current.delete(id)) return;
@@ -474,9 +482,14 @@ export function FireworkBrowsePreviewProvider({
         if (persistedPosterCaptures.has(target.previewUrl)) return true;
         if (!preview.persistence) return false;
         return persistPosterBlob(target.previewUrl, preview.persistence, blob);
-      })().finally(() => {
-        pendingPosterCaptures.delete(target.previewUrl);
-      });
+      })()
+        .catch((cause: unknown) => {
+          console.error('[firework-browse-preview] poster capture failed:', cause);
+          return false;
+        })
+        .finally(() => {
+          pendingPosterCaptures.delete(target.previewUrl);
+        });
 
       pendingPosterCaptures.set(target.previewUrl, task);
       return task;
@@ -609,6 +622,10 @@ export function FireworkBrowsePreviewProvider({
       const cached = cachedPreview(target.previewUrl);
       if (cached) {
         const canvasAlreadyMounted = mountedPreviewRef.current?.previewUrl === target.previewUrl;
+        if (target.background && cached.renderer !== 'legacy-editor') {
+          completePreviewFrame(target, cached, serial);
+          return;
+        }
         installPreview(target, cached);
         if (canvasAlreadyMounted) {
           scheduleMountedCanvasReady(target, cached, serial);
@@ -648,7 +665,11 @@ export function FireworkBrowsePreviewProvider({
           return;
         }
         positionOverlay(target);
-        installPreview(target, loaded);
+        if (target.background && loaded.renderer !== 'legacy-editor') {
+          completePreviewFrame(target, loaded, serial);
+        } else {
+          installPreview(target, loaded);
+        }
       } catch (error) {
         if (controller.signal.aborted || requestSerialRef.current !== serial) return;
         console.error('[firework-browse-preview] preview load failed:', error);
@@ -665,6 +686,7 @@ export function FireworkBrowsePreviewProvider({
     [
       clearIntentTimer,
       clearReadyFrames,
+      completePreviewFrame,
       finishBackgroundCapture,
       installPreview,
       positionOverlay,

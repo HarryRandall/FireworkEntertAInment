@@ -197,7 +197,7 @@ test('admin preview API returns a non-retryable 422 with record and renderer dia
   assert.deepEqual(response.body.diagnostics, [issue]);
 });
 
-test('invalid cards hide cached images and remain repairable, while valid cards retain their cached poster', async () => {
+test('invalid cards hide cached images and remain repairable, while valid cards prefer stored posters and fall back to cached posters', async () => {
   const React = await import('react');
   const runtime = await import('react/jsx-runtime');
   const { renderToStaticMarkup } = await import('react-dom/server');
@@ -238,7 +238,11 @@ test('invalid cards hide cached images and remain repairable, while valid cards 
   );
   assert.match(invalidButton, /<button[^>]+disabled=""/);
   const valid = renderToStaticMarkup(React.createElement(FireworkBrowseCard, props));
-  assert.match(valid, /src="\/cached.webp"/);
+  assert.match(valid, /src="\/saved.webp"/);
+  const fallback = renderToStaticMarkup(
+    React.createElement(FireworkBrowseCard, { ...props, persistedPosterUrl: null }),
+  );
+  assert.match(fallback, /src="\/cached.webp"/);
   assert.doesNotMatch(valid, /Invalid render settings/);
 });
 

@@ -259,29 +259,6 @@ export function EffectsBrowser({ effects, styleDefaults, initialView }: Props) {
     [defaultsForView, normalisedQuery],
   );
 
-  const posterBackfillTargets = useMemo(
-    () =>
-      effectsActive
-        ? filteredEffects
-            .filter((effect) => !effect.previewImagePath && effect.renderDiagnostics.length === 0)
-            .map((effect) => ({
-              id: `effect-${effect.id}`,
-              previewUrl: withFireworkPreviewRevision(
-                `/api/admin/firework-previews/effect/${effect.id}`,
-                effect.previewImageRevision,
-              ),
-            }))
-        : filteredDefaults
-            .filter((item) => item.renderDiagnostics.length === 0)
-            .map((item) => ({
-              id: `style-default-${item.id}`,
-              previewUrl: styleDefaultPreviewUrl(item),
-              persist: false,
-              displayPoster: true,
-            })),
-    [effectsActive, filteredDefaults, filteredEffects],
-  );
-
   const visibleCount = effectsActive ? filteredEffects.length : filteredDefaults.length;
   const totalCount = effectsActive ? effects.length : defaultsForView.length;
   const itemLabel = effectsActive ? 'base effect' : 'style default';
@@ -338,7 +315,7 @@ export function EffectsBrowser({ effects, styleDefaults, initialView }: Props) {
             : `No ${itemLabel}s have been created in this category yet.`}
         </EmptyNotice>
       ) : (
-        <FireworkBrowsePreviewProvider posterBackfillTargets={posterBackfillTargets}>
+        <FireworkBrowsePreviewProvider>
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {effectsActive
               ? filteredEffects.map((effect) => (
