@@ -603,7 +603,7 @@ export function FireworkBrowsePreviewProvider({
       const cached = cachedPreview(target.previewUrl);
       if (cached) {
         const canvasAlreadyMounted = mountedPreviewRef.current?.previewUrl === target.previewUrl;
-        if (target.background && cached.renderer !== 'legacy-editor') {
+        if (target.background) {
           completePreviewFrame(target, cached, serial);
           return;
         }
@@ -645,7 +645,7 @@ export function FireworkBrowsePreviewProvider({
           return;
         }
         positionOverlay(target);
-        if (target.background && loaded.renderer !== 'legacy-editor') {
+        if (target.background) {
           completePreviewFrame(target, loaded, serial);
         } else {
           installPreview(target, loaded);

@@ -138,7 +138,7 @@ test('missing browse posters queue at intersection and stored-design capture byp
     assert.match(
       provider,
       new RegExp(
-        `target.background && ${value}.renderer !== 'legacy-editor'\\) \\{\\s*completePreviewFrame\\(target, ${value}, serial\\)`,
+        `if \\(target.background\\) \\{\\s*completePreviewFrame\\(target, ${value}, serial\\)`,
       ),
     );
   }
