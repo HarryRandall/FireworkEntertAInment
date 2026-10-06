@@ -7,7 +7,8 @@ import { FireworkBrowsePreviewProvider } from '@/ui/catalogue/FireworkBrowsePrev
 import { FilterSkeleton } from '@/ui/shell/RouteSkeletons';
 import { EmptyNotice } from '@/ui/patterns/Feedback';
 import { FilterBar } from '@/ui/patterns/FilterBar';
-import { TABLE_PAGE_SIZE, TablePagination } from '@/ui/patterns/TablePagination';
+import { CARD_GRID_PAGE_SIZE } from '@/ui/patterns/card-grid-pagination';
+import { TablePagination } from '@/ui/patterns/TablePagination';
 import { listMultishots } from '@/lib/admin/multishots.server';
 import { fireworkPreviewImageUrl, withFireworkPreviewRevision } from '@/lib/firework-preview-image';
 import { formatDuration } from '@/lib/show-domain';
@@ -47,21 +48,12 @@ async function MultishotsData({ params }: { params: MultishotsSearchParams }) {
     return !query || text.includes(query);
   });
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / TABLE_PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / CARD_GRID_PAGE_SIZE));
   const currentPage = Number.isFinite(requestedPage)
     ? Math.min(Math.max(1, requestedPage), totalPages)
     : 1;
-  const pageStart = (currentPage - 1) * TABLE_PAGE_SIZE;
-  const paginated = filtered.slice(pageStart, pageStart + TABLE_PAGE_SIZE);
-  const posterBackfillTargets = filtered
-    .filter((multishot) => !multishot.previewImagePath)
-    .map((multishot) => ({
-      id: `multishot-${multishot.id}`,
-      previewUrl: withFireworkPreviewRevision(
-        `/api/admin/firework-previews/multishot/${multishot.id}`,
-        multishot.previewImageRevision,
-      ),
-    }));
+  const pageStart = (currentPage - 1) * CARD_GRID_PAGE_SIZE;
+  const paginated = filtered.slice(pageStart, pageStart + CARD_GRID_PAGE_SIZE);
 
   return (
     <>
@@ -73,7 +65,7 @@ async function MultishotsData({ params }: { params: MultishotsSearchParams }) {
             {query ? 'No multishots match that search.' : 'No multishots have been created yet.'}
           </EmptyNotice>
         ) : (
-          <FireworkBrowsePreviewProvider posterBackfillTargets={posterBackfillTargets}>
+          <FireworkBrowsePreviewProvider>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {paginated.map((multishot) => (
                 <FireworkBrowseCard
@@ -122,6 +114,7 @@ async function MultishotsData({ params }: { params: MultishotsSearchParams }) {
           totalPages={totalPages}
           searchParams={params}
           visibleItems={paginated.length}
+          pageSize={CARD_GRID_PAGE_SIZE}
           totalItems={filtered.length}
           itemLabel="multishot"
         />

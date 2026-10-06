@@ -8,7 +8,8 @@ import { FireworkBrowseCard, FireworkBrowseGridSkeleton } from '@/ui/catalogue/F
 import { FireworkBrowsePreviewProvider } from '@/ui/catalogue/FireworkBrowsePreviewContext';
 import { EmptyNotice } from '@/ui/patterns/Feedback';
 import { FilterBar } from '@/ui/patterns/FilterBar';
-import { TABLE_PAGE_SIZE, TablePagination } from '@/ui/patterns/TablePagination';
+import { CARD_GRID_PAGE_SIZE } from '@/ui/patterns/card-grid-pagination';
+import { TablePagination } from '@/ui/patterns/TablePagination';
 import { FilterSkeleton } from '@/ui/shell/RouteSkeletons';
 import { Clock3, Sparkles } from 'lucide-react';
 import { redirect } from 'next/navigation';
@@ -69,21 +70,12 @@ async function FireworksData({ params }: { params: FireworksSearchParams }) {
     return !query || text.includes(query);
   });
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / TABLE_PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filtered.length / CARD_GRID_PAGE_SIZE));
   const currentPage = Number.isFinite(requestedPage)
     ? Math.min(Math.max(1, requestedPage), totalPages)
     : 1;
-  const pageStart = (currentPage - 1) * TABLE_PAGE_SIZE;
-  const paginated = filtered.slice(pageStart, pageStart + TABLE_PAGE_SIZE);
-  const posterBackfillTargets = filtered
-    .filter((firework) => !firework.previewImagePath && firework.renderDiagnostics.length === 0)
-    .map((firework) => ({
-      id: `firework-${firework.id}`,
-      previewUrl: withFireworkPreviewRevision(
-        `/api/admin/firework-previews/firework/${firework.id}`,
-        firework.previewImageRevision,
-      ),
-    }));
+  const pageStart = (currentPage - 1) * CARD_GRID_PAGE_SIZE;
+  const paginated = filtered.slice(pageStart, pageStart + CARD_GRID_PAGE_SIZE);
 
   return (
     <>
@@ -95,7 +87,7 @@ async function FireworksData({ params }: { params: FireworksSearchParams }) {
             {query ? 'No fireworks match that search.' : 'No fireworks have been created yet.'}
           </EmptyNotice>
         ) : (
-          <FireworkBrowsePreviewProvider posterBackfillTargets={posterBackfillTargets}>
+          <FireworkBrowsePreviewProvider>
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {paginated.map((firework) => (
                 <FireworkBrowseCard
@@ -141,6 +133,7 @@ async function FireworksData({ params }: { params: FireworksSearchParams }) {
           totalPages={totalPages}
           searchParams={{ q: params.q, page: params.page }}
           visibleItems={paginated.length}
+          pageSize={CARD_GRID_PAGE_SIZE}
           totalItems={filtered.length}
           itemLabel="firework"
         />
