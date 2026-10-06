@@ -1,36 +1,21 @@
 'use client';
+import { Button } from '@/ui/patterns/Button';
 import { validateCatalogueRender } from '@/lib/admin/renderer-validation';
-import { rendererTabs } from '@/ui/firework-editor/renderer-tabs';
-import { applyCopiedPreset, resetCopiedPreset } from '@showcrafter/firework-editor/presets';
 
-import { useDraftHistory } from '@showcrafter/firework-editor/use-draft-history';
-
-import {
-  createStyleDefaultAndUpdateEffect,
-  restoreEffectEditorVersion,
-  updateEffect,
-} from '@/app/(admin)/admin/effects/actions';
-import type {
-  AdminEditorVersion,
-  AdminEffectDetail,
-  AdminStyleDefaultOption,
-} from '@/lib/admin.types';
+import { useDesignHistory as useDraftHistory } from '@/ui/firework-editor/renderer-design/use-design-history';
+import { useDesignTabs } from '@/ui/firework-editor/renderer-design/tabs';
+import { DesignPreview } from '@/ui/firework-editor/renderer-design/preview';
+import { validateEditorDesign } from '@/lib/renderer-editor/validation';
+import { restoreEffectEditorVersion, updateEffect } from '@/app/(admin)/admin/effects/actions';
+import type { AdminEditorVersion, AdminEffectDetail } from '@/lib/admin.types';
 import { canApplySavedEditorSnapshot } from '@/lib/admin/editor-save-state';
 import { parseEffectEditorSnapshot } from '@/lib/admin/editor-snapshots';
 import type { Json } from '@/lib/database.types';
-import type { ReplayCue } from '@/lib/show-domain';
-import {
-  PREVIEW_LAUNCH_POSITIONS,
-  estimatePreviewTicks,
-} from '@/ui/firework-editor/editor-preview-timing';
 import { EditorHistoryPanel, JsonReadOnlyPanel } from '@/ui/firework-editor/EditorInspectorPanels';
-import { EditorStyleDefaultControls } from '@/ui/firework-editor/EditorSectionPanels';
 import {
-  EditorPreviewTransport,
   FireworkEditorShell,
   type FireworkEditorShellTab,
 } from '@/ui/firework-editor/FireworkEditorShell';
-import { FireworkTimelineControls } from '@/ui/firework-editor/FireworkTimelineControls';
 import { usePreviewFullscreen } from '@/ui/firework-editor/previewFullscreen';
 import {
   makeOptimisticEditorVersion,
@@ -40,57 +25,26 @@ import { Field, FieldLabel } from '@/ui/patterns/Field';
 import { Input, Textarea } from '@/ui/patterns/Input';
 
 import { toast } from '@/ui/patterns/toast';
-import { ReplayStageBackdrop } from '@/ui/replay/ReplayStageBackdrop';
 import { useAdminBreadcrumbOverride } from '@/ui/shell/AdminShell';
-import {
-  DEFAULT_DESIGN,
-  canonicaliseEffectModelJson,
-  estimateDesignDurationSeconds,
-  validateFireworkDesign,
-} from '@showcrafter/fireworks/design';
-import { DEFAULT_FIREWORK_SPEC } from '@showcrafter/fireworks/spec';
+import { canonicaliseEffectModelJson, validateFireworkDesign } from '@showcrafter/fireworks/design';
 import {
   FIREWORK_STYLE_DEFAULT_KINDS,
-  NO_STYLE_DEFAULT_VALUE,
   emptyStyleDefaultIdMap,
-  extractStyleDefaultsFromDesign,
-  styleDefaultKindLabel,
   type FireworkStyleDefaultKind,
 } from '@showcrafter/fireworks/style-defaults';
-import { isGroundFireworkEffect } from '@showcrafter/fireworks/timing';
-import { Braces, GanttChartSquare, History, SlidersHorizontal } from 'lucide-react';
-import dynamic from 'next/dynamic';
+import { Braces, History, SlidersHorizontal } from 'lucide-react';
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, useTransition } from 'react';
 import {
   cloneRecord,
-  findStyleDefault,
   isEarlierUpdatedAt,
-  styleDefaultOptions,
   toSaveStyleDefaultIds,
 } from '@/ui/firework-editor/editor-document';
 
 type ParsedJson = { ok: true; value: Record<string, unknown> } | { ok: false; error: string };
 type JsonRecord = Record<string, unknown>;
-type LocalStyleDefaultOptions = Partial<
-  Record<FireworkStyleDefaultKind, AdminStyleDefaultOption[]>
->;
-
-const LazyFireworkReplayCanvas = dynamic(
-  () => import('@/ui/replay/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
-  {
-    ssr: false,
-    loading: () => <ReplayStageBackdrop />,
-  },
-);
 
 // Effects are colourless shapes, so the preview uses a neutral cyan.
 const PREVIEW_COLOR = '#22d3ee';
-const PREVIEW_CUE_TIME_SECONDS = 0.05;
-const PREVIEW_START_SECONDS = 0;
-// Coalesce heavyweight `elapsed` commits during a timeline drag to ~15Hz so a
-// fast scrub does not re-render the whole editor on every input event. The
-// engine ref and the transport's local thumb still update at full input rate.
-const SCRUB_COMMIT_INTERVAL_MS = 67;
 
 function parseJsonObject(text: string): ParsedJson {
   try {
@@ -111,30 +65,8 @@ function isRecord(value: unknown): value is JsonRecord {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function cloneJsonValue<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T;
-}
-
-function mergeRecordInto(target: JsonRecord, source: JsonRecord) {
-  for (const [key, value] of Object.entries(source)) {
-    if (isRecord(value)) {
-      mergeRecordInto(ensureRecord(target, key), value);
-    } else {
-      target[key] = cloneJsonValue(value);
-    }
-  }
-}
-
-function ensureRecord(parent: JsonRecord, key: string): JsonRecord {
-  if (!isRecord(parent[key])) parent[key] = {};
-  return parent[key] as JsonRecord;
-}
-
-function readRecord(parent: JsonRecord, key: string): JsonRecord {
-  return isRecord(parent[key]) ? (parent[key] as JsonRecord) : {};
-}
-
 function effectEditorSignature(fields: {
+  design: Json | null;
   name: string;
   description: string;
   patternKey: string;
@@ -143,6 +75,7 @@ function effectEditorSignature(fields: {
   modelJson: JsonRecord | string;
 }): string {
   return JSON.stringify({
+    design: fields.design,
     name: fields.name,
     description: fields.description,
     patternKey: fields.patternKey,
@@ -154,8 +87,8 @@ function effectEditorSignature(fields: {
 
 function hasConcreteRendererColor(value: unknown): boolean {
   if (!isRecord(value)) return false;
-  const renderDefaults = readRecord(value, 'renderDefaults');
-  const color = renderDefaults.color ?? value.color;
+  const defaults = isRecord(value.renderDefaults) ? value.renderDefaults : {};
+  const color = defaults.color ?? value.color;
   return color !== undefined && color !== 'random';
 }
 
@@ -172,6 +105,7 @@ function initialStyleDefaultIds(
 }
 
 type EffectEditorSavedSnapshot = {
+  design: Json | null;
   id: string;
   updatedAt: string;
   name: string;
@@ -184,6 +118,7 @@ type EffectEditorSavedSnapshot = {
 };
 
 type EffectEditorSnapshotFields = {
+  design: Json | null;
   id: string;
   updatedAt: string;
   name: string;
@@ -202,6 +137,7 @@ function effectSavedSnapshotFromFields(
   const modelJson = canonicaliseEffectModelJson(fields.modelJson);
   const sortOrder = String(fields.sortOrder);
   return {
+    design: fields.design,
     id: fields.id,
     updatedAt: fields.updatedAt,
     name: fields.name,
@@ -218,6 +154,7 @@ function effectSavedSnapshotFromFields(
     ),
     styleDefaultIds: fields.styleDefaultIds,
     signature: effectEditorSignature({
+      design: fields.design,
       name: fields.name,
       description: fields.description ?? '',
       patternKey: fields.patternKey,
@@ -230,6 +167,7 @@ function effectSavedSnapshotFromFields(
 
 function effectSavedSnapshotFromDetail(effect: AdminEffectDetail): EffectEditorSavedSnapshot {
   return effectSavedSnapshotFromFields({
+    design: effect.design,
     id: effect.id,
     updatedAt: effect.updatedAt,
     name: effect.name,
@@ -241,23 +179,21 @@ function effectSavedSnapshotFromDetail(effect: AdminEffectDetail): EffectEditorS
   });
 }
 
+/** Edits a complete renderer design using the existing record and version save flow. */
 export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   const setAdminBreadcrumb = useAdminBreadcrumbOverride();
   const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
   const [isPending, startTransition] = useTransition();
   const incomingSavedSnapshot = useMemo(() => effectSavedSnapshotFromDetail(effect), [effect]);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isLooping, setIsLooping] = useState(true);
-  const [elapsed, setElapsed] = useState(PREVIEW_START_SECONDS);
-  const [previewReady, setPreviewReady] = useState(false);
-  const [previewLoadingProgress, setPreviewLoadingProgress] = useState<number | null>(null);
+  const [design, setDesign] = useState<Json | null>(effect.design);
+  const [selectedLayer, setSelectedLayer] = useState('');
+  const designResult = useMemo(() => validateEditorDesign(design), [design]);
   const [name, setName] = useState(effect.name);
   const [description, setDescription] = useState(effect.description ?? '');
   const [patternKey, setPatternKey] = useState(effect.patternKey);
   const [sortOrder, setSortOrder] = useState(String(effect.sortOrder));
   const [modelText, setModelText] = useState(() => incomingSavedSnapshot.modelText);
   const [styleDefaultIds, setStyleDefaultIds] = useState(() => initialStyleDefaultIds(effect));
-  const [createdStyleDefaults, setCreatedStyleDefaults] = useState<LocalStyleDefaultOptions>({});
   const [lastSavedUpdatedAt, setLastSavedUpdatedAt] = useState(effect.updatedAt);
   const [savedSignature, setSavedSignature] = useState(() => incomingSavedSnapshot.signature);
   const savedSnapshotRef = useRef<EffectEditorSavedSnapshot>(incomingSavedSnapshot);
@@ -268,10 +204,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   const [restoringVersionId, setRestoringVersionId] = useState<string | null>(null);
   const editorHistory = useEditorHistory({ targetKey: effect.id, initialVersions: effect.history });
   const [error, setError] = useState<string | null>(null);
-  const playbackRef = useRef(PREVIEW_START_SECONDS);
-  const startedAtRef = useRef(0);
-  const lastScrubCommitRef = useRef(0);
-  const pendingScrubRef = useRef<number | null>(null);
   const parsedModel = useMemo(() => parseJsonObject(modelText), [modelText]);
   const baseModel = useMemo(
     () =>
@@ -280,20 +212,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         : canonicaliseEffectModelJson(effect.modelJson),
     [effect.modelJson, parsedModel],
   );
-  const modelRecord = parsedModel.ok ? baseModel : {};
-  const renderDefaults = readRecord(modelRecord, 'renderDefaults');
-  const selectedStyleDefaults = useMemo(() => {
-    const selected: Partial<Record<FireworkStyleDefaultKind, AdminStyleDefaultOption | null>> = {};
-    for (const kind of FIREWORK_STYLE_DEFAULT_KINDS) {
-      selected[kind] = findStyleDefault(
-        styleDefaultIds[kind],
-        effect.styleDefaults[kind],
-        effect.styleDefaultLinks[kind] ?? null,
-        createdStyleDefaults[kind] ?? [],
-      );
-    }
-    return selected;
-  }, [createdStyleDefaults, effect.styleDefaultLinks, effect.styleDefaults, styleDefaultIds]);
   function copySelectedStyleDefaultsIntoModel(source: JsonRecord): JsonRecord {
     return cloneRecord(canonicaliseEffectModelJson(source));
   }
@@ -306,6 +224,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   const currentSignature = useMemo(
     () =>
       effectEditorSignature({
+        design,
         name,
         description,
         patternKey,
@@ -314,6 +233,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
         modelJson: parsedModel.ok ? baseModel : modelText,
       }),
     [
+      design,
       baseModel,
       description,
       modelText,
@@ -345,13 +265,13 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     savedSnapshotRef.current = incomingSnapshot;
     setSavedPreviewSnapshot(incomingSnapshot);
     savedSignatureRef.current = incomingSnapshot.signature;
+    setDesign(incomingSnapshot.design);
     setName(incomingSnapshot.name);
     setDescription(incomingSnapshot.description);
     setPatternKey(incomingSnapshot.patternKey);
     setSortOrder(incomingSnapshot.sortOrder);
     setModelText(incomingSnapshot.modelText);
     setStyleDefaultIds({ ...incomingSnapshot.styleDefaultIds });
-    setCreatedStyleDefaults({});
     setLastSavedUpdatedAt(incomingSnapshot.updatedAt);
     setRestoringVersionId(null);
     setSavedSignature(incomingSnapshot.signature);
@@ -375,7 +295,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   }, [effect.id, parsedModel, baseModel, modelHasColour]);
 
   // Invalid settings remain editable, but never become preview particles.
-  const previewDesign = renderResult.ok ? renderResult.design : DEFAULT_DESIGN;
   const renderError = !parsedModel.ok
     ? parsedModel.error
     : !renderResult.ok
@@ -385,250 +304,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       : null;
 
   const [showSaved, setShowSaved] = useState(false);
-  const savedRenderResult = useMemo(() => {
-    const model = JSON.parse(savedPreviewSnapshot.modelText);
-    const source = validateCatalogueRender({
-      kind: 'effect',
-      recordId: effect.id,
-      settings: model,
-    });
-    return source.ok
-      ? validateFireworkDesign({
-          baseModel: model,
-          primaryColor: hasConcreteRendererColor(model) ? null : PREVIEW_COLOR,
-        })
-      : source;
-  }, [effect.id, savedPreviewSnapshot]);
-  const displayedDesign =
-    showSaved && savedRenderResult.ok ? savedRenderResult.design : previewDesign;
-
-  // Head-orb appearance is saved on the effect's renderDefaults, so the sliders
-  // read from the compiled design and write straight back into the model. The
-  // canvas preview reflects the saved look, and fireworks built on this effect
-  // inherit it as their starting point.
-  const heads = displayedDesign.stars.outer.head;
-  const glowPadding = heads.glowPadding;
-  const whiteCoreSizePercent = heads.whiteCoreSizePercent;
-  const whiteCoreBlurPercent = heads.whiteCoreBlurPercent;
-  const coreSoftness = heads.coreSoftness;
-  const coreBrightness = heads.coreBrightness;
-  const coreOpacityFalloff = heads.coreOpacityFalloff;
-  const glowSize = heads.glowSize;
-  const glowSoftness = heads.glowSoftness;
-  const glowOpacityFalloff = heads.glowOpacityFalloff;
-  const glowBlur = heads.glowBlur;
-  const backgroundGlowOpacityFalloff = heads.backgroundGlowOpacityFalloff;
-  const backgroundGlowSoftness = heads.backgroundGlowSoftness;
-
-  const previewDuration = useMemo(() => {
-    const estimated =
-      PREVIEW_CUE_TIME_SECONDS +
-      Math.max(
-        estimateDesignDurationSeconds(previewDesign),
-        savedRenderResult.ok ? estimateDesignDurationSeconds(savedRenderResult.design) : 0,
-      );
-    return Math.max(4, Math.ceil(estimated * 2) / 2);
-  }, [previewDesign, savedRenderResult]);
-  const previewTicks = useMemo(
-    () =>
-      estimatePreviewTicks({
-        design: displayedDesign,
-        cueTimeSeconds: PREVIEW_CUE_TIME_SECONDS,
-        previewDuration,
-      }),
-    [displayedDesign, previewDuration],
-  );
-
-  const previewCue = useMemo<ReplayCue>(
-    () => ({
-      id: `${effect.id}-base-preview`,
-      position: 1,
-      timeSeconds: PREVIEW_CUE_TIME_SECONDS,
-      description: description || name,
-      productId: effect.id,
-      launchPositionIndex: 0,
-      firework: {
-        id: effect.id,
-        slug: effect.slug,
-        name,
-        description: description || null,
-        sortOrder: sortOrderNumber,
-        durationSeconds: previewDuration,
-        heightMeters: null,
-        caliber: null,
-        shotCount: 1,
-        spec: DEFAULT_FIREWORK_SPEC,
-        rawSpec: baseModel,
-        renderDesign: previewDesign,
-        baseEffect: {
-          id: effect.id,
-          slug: effect.slug,
-          name,
-          patternKey,
-        },
-        variant: null,
-      },
-    }),
-    [
-      baseModel,
-      description,
-      effect.id,
-      effect.slug,
-      name,
-      patternKey,
-      previewDesign,
-      previewDuration,
-      sortOrderNumber,
-    ],
-  );
-  const previewCues = useMemo(() => {
-    if (showSaved)
-      return savedRenderResult.ok
-        ? [
-            {
-              ...previewCue,
-              firework: { ...previewCue.firework, renderDesign: savedRenderResult.design },
-            },
-          ]
-        : [];
-    return renderError ? [] : [previewCue];
-  }, [previewCue, renderError, showSaved, savedRenderResult]);
-
-  useEffect(() => {
-    if (!isPlaying) return;
-    let frameId = 0;
-    let lastUiUpdate = 0;
-    startedAtRef.current = performance.now() - playbackRef.current * 1000;
-
-    function tick(now: number) {
-      const raw = (now - startedAtRef.current) / 1000;
-      let next = raw;
-      if (raw >= previewDuration) {
-        if (!isLooping) {
-          playbackRef.current = previewDuration;
-          setElapsed(previewDuration);
-          setIsPlaying(false);
-          return;
-        }
-        next = raw % previewDuration;
-        startedAtRef.current = now - next * 1000;
-      }
-      playbackRef.current = next;
-      if (now - lastUiUpdate > 32) {
-        setElapsed(next);
-        lastUiUpdate = now;
-      }
-      frameId = requestAnimationFrame(tick);
-    }
-
-    frameId = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frameId);
-  }, [isPlaying, isLooping, previewDuration]);
-
-  function setPreviewTime(seconds: number) {
-    // Re-anchor the play loop so scrubbing works mid-playback too.
-    startedAtRef.current = performance.now() - seconds * 1000;
-    playbackRef.current = seconds;
-    setElapsed(seconds);
-  }
-
-  function scrubTo(seconds: number) {
-    const next = Math.max(0, Math.min(previewDuration, seconds));
-    // Engine ref + play-loop anchor track the drag at full rate; the
-    // heavyweight `elapsed` state (which re-renders the whole editor) is
-    // coalesced to ~15Hz. The transport's local thumb covers the visual gap.
-    playbackRef.current = next;
-    startedAtRef.current = performance.now() - next * 1000;
-    pendingScrubRef.current = next;
-    const now = performance.now();
-    if (now - lastScrubCommitRef.current >= SCRUB_COMMIT_INTERVAL_MS) {
-      lastScrubCommitRef.current = now;
-      setElapsed(next);
-    }
-  }
-
-  function commitScrub() {
-    const pending = pendingScrubRef.current;
-    if (pending == null) return;
-    pendingScrubRef.current = null;
-    lastScrubCommitRef.current = 0;
-    setPreviewTime(pending);
-  }
-
-  function updateModelDefaults(updater: (defaults: JsonRecord) => void) {
-    if (!parsedModel.ok) return;
-    const draft = cloneRecord(canonicaliseEffectModelJson(parsedModel.value));
-    const defaults = ensureRecord(draft, 'renderDefaults');
-    updater(defaults);
-    setModelText(JSON.stringify(draft, null, 2));
-  }
-
-  function markStyleDefaultCustom(kind: FireworkStyleDefaultKind) {
-    setStyleDefaultIds((current) => {
-      if (current[kind] === NO_STYLE_DEFAULT_VALUE) return current;
-      return { ...current, [kind]: NO_STYLE_DEFAULT_VALUE };
-    });
-  }
-
-  function materialiseStyleDefault(kind: FireworkStyleDefaultKind, defaults: JsonRecord) {
-    if (styleDefaultIds[kind] === NO_STYLE_DEFAULT_VALUE) return false;
-    mergeRecordInto(defaults, extractStyleDefaultsFromDesign(previewDesign, kind));
-    return true;
-  }
-
-  function updateModelDefaultsForStyle(
-    kind: FireworkStyleDefaultKind,
-    updater: (defaults: JsonRecord) => void,
-  ) {
-    if (!parsedModel.ok) return;
-    const draft = cloneRecord(canonicaliseEffectModelJson(parsedModel.value));
-    const defaults = ensureRecord(draft, 'renderDefaults');
-    const shouldMarkCustom = materialiseStyleDefault(kind, defaults);
-    updater(defaults);
-    setModelText(JSON.stringify(draft, null, 2));
-    if (shouldMarkCustom) markStyleDefaultCustom(kind);
-  }
-
-  function updateModelDefaultsForTimeline(
-    kinds: readonly FireworkStyleDefaultKind[],
-    updater: (defaults: JsonRecord) => void,
-  ) {
-    if (!parsedModel.ok) return;
-    const draft = cloneRecord(canonicaliseEffectModelJson(parsedModel.value));
-    const defaults = ensureRecord(draft, 'renderDefaults');
-    const customKinds = kinds.filter((kind) => materialiseStyleDefault(kind, defaults));
-    updater(defaults);
-    setModelText(JSON.stringify(draft, null, 2));
-    if (customKinds.length > 0) {
-      setStyleDefaultIds((current) => {
-        const next = { ...current };
-        for (const kind of customKinds) next[kind] = NO_STYLE_DEFAULT_VALUE;
-        return next;
-      });
-    }
-  }
-
-  function resetLocalStyleDefaults(kind: FireworkStyleDefaultKind) {
-    updateModelDefaults((defaults) => {
-      resetCopiedPreset(defaults, kind);
-    });
-  }
-
-  function handleStyleDefaultChange(kind: FireworkStyleDefaultKind, value: string) {
-    const option = [...effect.styleDefaults[kind], ...(createdStyleDefaults[kind] ?? [])].find(
-      (item) => item.id === value,
-    );
-    if (option) {
-      const checked = validateFireworkDesign({ variantOverrides: option.defaultsJson });
-      if (!checked.ok) {
-        setError(checked.diagnostics.map((issue) => issue.message).join('; '));
-        return;
-      }
-      updateModelDefaults((defaults) => applyCopiedPreset(defaults, kind, option));
-    }
-    setError(null);
-    setStyleDefaultIds((current) => ({ ...current, [kind]: value }));
-  }
 
   async function persistEffect(args: {
     targetId: string;
@@ -639,6 +314,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     let result: Awaited<ReturnType<typeof updateEffect>>;
     try {
       result = await updateEffect({
+        design,
         id: effect.id,
         expectedUpdatedAt: lastSavedUpdatedAt,
         name,
@@ -668,6 +344,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
 
   function currentLocalSnapshot(): EffectEditorSavedSnapshot {
     return {
+      design,
       id: effect.id,
       updatedAt: lastSavedUpdatedAt,
       name,
@@ -681,6 +358,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
   }
 
   function applySnapshot(snapshot: EffectEditorSavedSnapshot) {
+    setDesign(snapshot.design);
     setName(snapshot.name);
     setDescription(snapshot.description);
     setPatternKey(snapshot.patternKey);
@@ -722,105 +400,6 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     }
   }
 
-  function saveCurrentStyleAsDefault(kind: FireworkStyleDefaultKind, styleName: string) {
-    if (isPending) return;
-    setError(null);
-    if (renderError || !parsedModel.ok) {
-      setError(renderError ?? (!parsedModel.ok ? parsedModel.error : null));
-      return;
-    }
-    const savedModel = copySelectedStyleDefaultsIntoModel(parsedModel.value);
-    const savedModelText = JSON.stringify(savedModel, null, 2);
-    const clearedStyleDefaultIds = emptyStyleDefaultIdMap();
-    const clearedSaveMap = toSaveStyleDefaultIds(clearedStyleDefaultIds);
-    const optimisticSnapshot = effectSavedSnapshotFromFields({
-      id: effect.id,
-      updatedAt: lastSavedUpdatedAt,
-      name,
-      description,
-      patternKey,
-      sortOrder: sortOrderNumber,
-      modelJson: savedModel,
-      styleDefaultIds: clearedStyleDefaultIds,
-    });
-    const mutation = beginOptimisticMutation(optimisticSnapshot, 'update');
-    startTransition(async () => {
-      let result: Awaited<ReturnType<typeof createStyleDefaultAndUpdateEffect>>;
-      try {
-        result = await createStyleDefaultAndUpdateEffect({
-          effect: {
-            id: effect.id,
-            expectedUpdatedAt: lastSavedUpdatedAt,
-            name,
-            description,
-            patternKey,
-            sortOrder: sortOrderNumber,
-            styleDefaultIds: clearedSaveMap,
-            modelJson: savedModelText,
-            historyVersionId: mutation.historyVersionId,
-          },
-          styleDefault: {
-            kind,
-            name: styleName,
-            description: '',
-            defaultsJson: JSON.stringify(
-              extractStyleDefaultsFromDesign(previewDesign, kind),
-              null,
-              2,
-            ),
-          },
-        });
-      } catch {
-        rollbackOptimisticMutation(mutation);
-        if (editorTargetIdRef.current === mutation.targetId) {
-          setError('Could not create the style default. Try again.');
-        }
-        return;
-      }
-
-      if (editorTargetIdRef.current !== mutation.targetId) return;
-
-      if (!result.ok) {
-        rollbackOptimisticMutation(mutation);
-        setError(result.error);
-        return;
-      }
-
-      setCreatedStyleDefaults((current) => ({
-        ...current,
-        [kind]: [
-          result.styleDefault,
-          ...(current[kind] ?? []).filter((option) => option.id !== result.styleDefault.id),
-        ],
-      }));
-      setLastSavedUpdatedAt(result.saved.updatedAt);
-      const applySavedSnapshot = canApplySavedEditorSnapshot(
-        mutation.optimisticSnapshot.signature,
-        currentSignatureRef.current,
-      );
-      const savedSnapshot = effectSavedSnapshotFromFields({
-        ...result.saved,
-        styleDefaultIds: clearedStyleDefaultIds,
-      });
-      savedSnapshotRef.current = savedSnapshot;
-      setSavedPreviewSnapshot(savedSnapshot);
-      savedSignatureRef.current = savedSnapshot.signature;
-      setSavedSignature(savedSnapshot.signature);
-      editorHistory.settle({
-        optimisticId: mutation.historyVersionId,
-        persistedVersion: result.historyVersion,
-        recorded: result.historyRecorded,
-      });
-      if (applySavedSnapshot) {
-        currentSignatureRef.current = savedSnapshot.signature;
-        applySnapshot(savedSnapshot);
-        toast.success('Style default created and saved');
-      } else {
-        toast.success('Saved; newer effect edits remain unsaved');
-      }
-    });
-  }
-
   function saveEffect() {
     if (isPending) return;
     setError(null);
@@ -833,6 +412,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     const clearedStyleDefaultIds = emptyStyleDefaultIdMap();
     const clearedSaveMap = toSaveStyleDefaultIds(clearedStyleDefaultIds);
     const optimisticSnapshot = effectSavedSnapshotFromFields({
+      design,
       id: effect.id,
       updatedAt: lastSavedUpdatedAt,
       name,
@@ -899,6 +479,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       return;
     }
     const optimisticSnapshot = effectSavedSnapshotFromFields({
+      design: snapshot.design ?? design,
       id: snapshot.id,
       updatedAt: lastSavedUpdatedAt,
       name: snapshot.name,
@@ -962,71 +543,27 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     });
   }
 
-  const preview = (
-    <LazyFireworkReplayCanvas
-      cues={previewCues}
-      elapsed={elapsed}
-      playbackRef={playbackRef}
-      launchPositions={PREVIEW_LAUNCH_POSITIONS}
-      muted={!isPlaying}
-      interactive
-      controlsVisible
-      showStarfield={false}
-      showFps={false}
-      showCameraControls={false}
-      primeSnapshots
-      primeOnCueChanges={false}
-      showLoadingBar
-      onPrimeProgress={(progress) => {
-        setPreviewLoadingProgress(progress);
-        if (progress !== null) setPreviewReady(false);
-      }}
-      onReady={() => {
-        setPreviewReady(true);
-        setPreviewLoadingProgress(null);
-      }}
-      renderTuning={{ glowPadding, whiteCoreSizePercent, whiteCoreBlurPercent }}
-      headStyle={{
-        coreSoftness,
-        coreBrightness,
-        coreOpacityFalloff,
-        glowSize,
-        glowSoftness,
-        glowOpacityFalloff,
-        glowBlur,
-        backgroundGlowOpacityFalloff,
-        backgroundGlowSoftness,
-      }}
-    />
+  const savedDesignResult = useMemo(
+    () => validateEditorDesign(savedPreviewSnapshot.design),
+    [savedPreviewSnapshot.design],
   );
-  const transport = (
-    <EditorPreviewTransport
-      elapsed={elapsed}
-      duration={previewDuration}
-      isPlaying={isPlaying}
-      fullscreen={isFullscreen}
-      isLooping={isLooping}
-      onLoopToggle={() => setIsLooping((looping) => !looping)}
-      loading={!previewReady}
-      loadingProgress={previewLoadingProgress}
-      ticks={previewTicks}
-      onPlayPause={() => {
-        if (!isPlaying && playbackRef.current >= previewDuration - 0.05) {
-          setPreviewTime(PREVIEW_START_SECONDS);
-        }
-        setIsPlaying((playing) => !playing);
-      }}
-      onReset={() => {
-        setIsPlaying(false);
-        setPreviewTime(PREVIEW_START_SECONDS);
-      }}
-      onFullscreenToggle={toggleFullscreen}
-      onScrub={(seconds) => {
-        setIsPlaying(false);
-        scrubTo(seconds);
-      }}
-      onScrubEnd={commitScrub}
-    />
+  const preview = designResult.ok ? (
+    <div className="relative h-full">
+      <DesignPreview
+        document={showSaved && savedDesignResult.ok ? savedDesignResult.value : designResult.value}
+      />
+      <Button
+        variant="secondary"
+        onClick={toggleFullscreen}
+        className="absolute top-3 right-3 z-10 h-8"
+      >
+        {isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+      </Button>
+    </div>
+  ) : (
+    <p role="alert" className="text-status-danger p-4 text-sm">
+      {designResult.error}
+    </p>
   );
   const detailsContent = (
     <div className="space-y-4">
@@ -1064,28 +601,14 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       </div>
     </div>
   );
-  function renderStyleDefaultControls(kind: FireworkStyleDefaultKind) {
-    return (
-      <EditorStyleDefaultControls
-        label={`${styleDefaultKindLabel(kind)} style`}
-        value={styleDefaultIds[kind]}
-        onChange={(value) => handleStyleDefaultChange(kind, value)}
-        options={styleDefaultOptions(
-          effect.styleDefaults[kind],
-          selectedStyleDefaults[kind] ?? effect.styleDefaultLinks[kind] ?? null,
-        )}
-        disabled={!parsedModel.ok}
-        saveDisabled={isPending}
-        onSave={(styleName) => saveCurrentStyleAsDefault(kind, styleName)}
-        resetDisabled={
-          !isRecord(renderDefaults.presetSources) || !renderDefaults.presetSources[kind]
-        }
-        onReset={() => resetLocalStyleDefaults(kind)}
-      />
-    );
-  }
 
-  const isGroundEmitter = isGroundFireworkEffect(previewDesign);
+  const designTabs = useDesignTabs({
+    value: design,
+    onChange: (next) => setDesign(JSON.parse(JSON.stringify(next))),
+    selected: selectedLayer,
+    onSelect: setSelectedLayer,
+    disabled: isPending,
+  });
   const tabs: FireworkEditorShellTab[] = [
     {
       id: 'details',
@@ -1095,33 +618,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       title: 'Details',
       content: detailsContent,
     },
-    ...rendererTabs({
-      saved: savedRenderResult.ok ? savedRenderResult.design : undefined,
-      controls: {
-        design: previewDesign,
-        defaults: renderDefaults,
-
-        disabled: !parsedModel.ok,
-      },
-      mutate: updateModelDefaultsForStyle,
-      preset: renderStyleDefaultControls,
-    }),
-    {
-      id: 'timeline',
-      label: 'Timeline',
-      icon: GanttChartSquare,
-      eyebrow: 'Timing',
-      title: 'Timeline',
-      content: (
-        <FireworkTimelineControls
-          design={previewDesign}
-          disabled={!parsedModel.ok}
-          durationLabel="Render duration"
-          durationHint="Scale timing stored on this effect. Catalogue firework durations remain independently editable for scheduling safety."
-          onMutate={updateModelDefaultsForTimeline}
-        />
-      ),
-    },
+    ...designTabs,
     {
       id: 'history',
       label: 'History',
@@ -1145,9 +642,9 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       icon: Braces,
       eyebrow: 'Advanced',
       title: 'Canonical model JSON',
-      content: <JsonReadOnlyPanel value={baseModel as Json} />,
+      content: <JsonReadOnlyPanel value={design} />,
     },
-  ].filter((tab) => !isGroundEmitter || (tab.id !== 'launch-dot' && tab.id !== 'launch-trail'));
+  ];
 
   const draftHistory = useDraftHistory({
     recordKey: effect.id,
@@ -1164,7 +661,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       dirty={isDirty}
       saving={isPending}
       saveLabel="Save"
-      saveDisabled={Boolean(renderError) || isPending}
+      saveDisabled={!designResult.ok || Boolean(renderError) || isPending}
       revertDisabled={!isDirty || isPending}
       onSave={saveEffect}
       onRevert={revertLocalChanges}
@@ -1172,8 +669,8 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       onActiveTabChange={setActiveTab}
       tabs={tabs}
       preview={preview}
-      transport={transport}
-      transportPlaying={isPlaying}
+      transport={null}
+      transportPlaying={false}
       error={error}
       renderDiagnostics={{
         recordId: effect.id,

@@ -222,14 +222,8 @@ test('editor saves are optimistic while history persistence stays observed and l
   // SQL behaviour tests exercise rollback, conflicts, restores and inline presets.
   // This guard only ensures every app entry point reaches that tested transaction.
   for (const [actions, names] of [
-    [
-      effectActions,
-      ['updateEffect', 'restoreEffectEditorVersion', 'createStyleDefaultAndUpdateEffect'],
-    ],
-    [
-      fireworkActions,
-      ['updateFirework', 'restoreFireworkEditorVersion', 'createStyleDefaultAndUpdateFirework'],
-    ],
+    [effectActions, ['updateEffect', 'restoreEffectEditorVersion']],
+    [fireworkActions, ['updateFirework', 'restoreFireworkEditorVersion']],
     [
       styleDefaultActions,
       ['updateStyleDefault', 'archiveStyleDefault', 'restoreStyleDefaultEditorVersion'],

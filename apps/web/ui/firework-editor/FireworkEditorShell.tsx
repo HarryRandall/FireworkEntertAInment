@@ -173,11 +173,11 @@ export function FireworkEditorShell({
           if (
             !input &&
             (event.metaKey || event.ctrlKey) &&
-            event.key.toLowerCase() === 'z' &&
+            ['z', 'y'].includes(event.key.toLowerCase()) &&
             !saving
           ) {
             event.preventDefault();
-            if (event.shiftKey) history?.redo();
+            if (event.shiftKey || event.key.toLowerCase() === 'y') history?.redo();
             else history?.undo();
           }
           if (event.key === 'Escape') history?.cancel();
