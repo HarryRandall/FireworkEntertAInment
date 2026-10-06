@@ -519,8 +519,20 @@ export async function generateCuesForShow(params: {
         throw new Error('This assortment has no purchasable products available right now.');
       }
     }
+    const invalidProduct = products.find((product) => !product.design || product.designError);
+    if (invalidProduct)
+      throw new Error(
+        `${invalidProduct.name}: ${invalidProduct.designError ?? 'No valid renderer design.'}`,
+      );
     catalogueCount = products.length;
     timingProfiles = await loadProductTimingProfiles(supabase, products);
+    const incompleteProduct = products.find(
+      (product) => timingProfiles.get(product.id)?.normal.completeness !== 'complete',
+    );
+    if (incompleteProduct)
+      throw new Error(
+        `${incompleteProduct.name}: its child renderer designs or timing could not be fully loaded.`,
+      );
     timings.loadInputsMs = elapsedMs(loadStart);
 
     const songDuration = analysis?.duration_seconds ?? brief.duration_seconds ?? 0;

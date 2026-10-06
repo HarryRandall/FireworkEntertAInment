@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { test } from 'node:test';
 
+await import('../../../../scripts/renderer/register-typescript.mjs');
 const root = process.cwd();
 registerHooks({
   resolve(specifier, context, nextResolve) {
@@ -30,7 +31,9 @@ const [
   { rankAssortmentMusic },
 ] = await Promise.all([
   import('../../lib/fireworks/timing-profile.ts'),
-  import('@showcrafter/fireworks/design'),
+  import('@showcrafter/renderer').then(({ effectTemplates }) => ({
+    DEFAULT_DESIGN: effectTemplates.find((entry) => entry.key === 'peony').design,
+  })),
   import('../../lib/cue-generation/music-product-matching.ts'),
   import('../../lib/music-recommendations.ts'),
 ]);
@@ -48,7 +51,9 @@ function product(id, overrides = {}) {
     shotCount: 1,
     spec: { geometry: 'sphere', size: 20, shellLife: 1 },
     rawSpec: null,
-    renderDesign: DEFAULT_DESIGN,
+    renderDesign: null,
+    design: DEFAULT_DESIGN,
+    kind: DEFAULT_DESIGN.kind,
     baseEffect: null,
     variant: null,
     ...overrides,

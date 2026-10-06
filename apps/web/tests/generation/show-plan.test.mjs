@@ -1,12 +1,13 @@
 /** Behaviour of section-plan generation on a real analysed song. */
 
 import assert from 'node:assert/strict';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { registerHooks } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { test } from 'node:test';
 
+await import('../../../../scripts/renderer/register-typescript.mjs');
 const root = process.cwd();
 
 registerHooks({
@@ -53,7 +54,9 @@ const [
   import('../../lib/fireworks/timing-profile.ts'),
   import('../../lib/cue-generation/impact-timing.ts'),
   import('../../lib/cue-generation/prompt.ts'),
-  import('@showcrafter/fireworks/design'),
+  import('@showcrafter/renderer').then(({ effectTemplates }) => ({
+    DEFAULT_DESIGN: effectTemplates.find((entry) => entry.key === 'peony').design,
+  })),
   import('@showcrafter/fireworks/spec'),
 ]);
 
@@ -96,7 +99,9 @@ function product(id, { colour, calibre, effect = null, shotCount = 1 }) {
     launchPositionOverrideIndices: [],
     spec,
     rawSpec: null,
-    renderDesign: DEFAULT_DESIGN,
+    renderDesign: null,
+    design: DEFAULT_DESIGN,
+    kind: DEFAULT_DESIGN.kind,
     baseEffect: null,
     variant: null,
   };
@@ -318,4 +323,27 @@ test('saved prompts shape the voice but never replace the output contract', () =
   const legacy = buildSystemPrompt({ systemPromptText: 'Return { cues: [{ slotIndex }] }' });
   assert.equal(legacy.ignoredLegacyPrompt, true);
   assert.doesNotMatch(legacy.prompt, /slotIndex/);
+});
+
+test('the renderer-based generated timeline matches its deterministic summary snapshot', () => {
+  const { realised, metrics, showPlan } = generate();
+  const cueSummary = (cue) => ({
+    productId: cue.productId,
+    launchSeconds: cue.timeSeconds,
+    impactSeconds: cue.impactTimeSeconds,
+    tube: cue.tube,
+    emphasis: cue.emphasis,
+  });
+  const snapshot = {
+    cueCount: metrics.cueCount,
+    distinctProducts: metrics.distinctProducts,
+    syncErrorP95Ms: metrics.syncErrorP95Ms,
+    roles: showPlan.sections.map((section) => section.role),
+    opening: realised.cues.slice(0, 8).map(cueSummary),
+    finale: realised.cues.slice(-8).map(cueSummary),
+  };
+  const path = join(root, 'tests/generation/fixtures/show-plan-renderer-v1.json');
+  if (process.env.UPDATE_SHOW_GENERATION_SNAPSHOTS === '1')
+    writeFileSync(path, JSON.stringify(snapshot, null, 2) + '\n');
+  assert.deepEqual(snapshot, JSON.parse(readFileSync(path, 'utf8')));
 });

@@ -63,9 +63,8 @@ test('every planner lands the first visible burst on the musical time', () => {
   const realiser = read('lib/cue-generation/plan-realiser.ts');
   const prompt = read('lib/cue-generation/prompt.ts');
 
-  assert.match(timing, /scaleDesignForCaliber\(compiled, product\.caliber\)/);
-  assert.match(timing, /scaleDesignForEmphasis/);
-  assert.match(timing, /estimateFireworkLiftTimeSeconds/);
+  assert.match(timing, /resolvedShowDesign\(product, emphasis\)/);
+  assert.match(timing, /showLiftTimeSeconds/);
   // Multishots launch early by their first child's impact offset.
   assert.match(timing, /timingProfile\.firstImpactOffsetSeconds/);
   for (const planner of [fast, beat, realiser]) {
@@ -106,11 +105,8 @@ test('multishot child positions participate in site and overlap safety', () => {
   assert.match(fast, /occupiedLaunchPositions\(product\.product, tube, maxTubes\)/);
   assert.match(runner, /occupiedLaunchPositions\(product, cue\.tube, maxTubes\)/);
   assert.match(runner, /acceptedWindows\.push\(\.\.\.windows\)/);
-  assert.match(showTypes, /CACHE_PREFIX = 'shows:v13'/);
-  assert.match(
-    queries,
-    /occupancyDurationSeconds: conservativeProductDuration\(\s*row\.duration_seconds,\s*base\.durationSeconds,\s*\)/,
-  );
+  assert.match(showTypes, /CACHE_PREFIX = 'shows:v14'/);
+  assert.match(queries, /occupancyDurationSeconds: occupancy/);
   assert.match(fast, /fireworkOccupancyDurationSeconds\(product\)/);
   assert.match(spacing, /GENERATED_LAUNCH_INTERVAL_SECONDS = 0\.5/);
   assert.match(fast, /timing\.launchTimeSeconds \+ GENERATED_LAUNCH_INTERVAL_SECONDS/);

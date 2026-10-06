@@ -1,10 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import {
-  parsePromptConstraints,
-  productMatchesPromptConstraints,
-  validatePromptConstraints,
-} from '../../lib/cue-generation/prompt-constraints.ts';
+await import('../../../../scripts/renderer/register-typescript.mjs');
+const { parsePromptConstraints, productMatchesPromptConstraints, validatePromptConstraints } =
+  await import('../../lib/cue-generation/prompt-constraints.ts');
 
 function product({ id, colour, crackle = false, shotCount = 1 }) {
   return {
@@ -24,8 +22,9 @@ function product({ id, colour, crackle = false, shotCount = 1 }) {
       fallingLeaves: false,
       glitter: 'none',
     },
-    variant: null,
-    baseEffect: null,
+    kind: 'shell',
+    variant: { primaryColor: colour, secondaryColor: null, colorPalette: [] },
+    baseEffect: { templateKey: crackle ? 'crackle' : 'peony' },
   };
 }
 

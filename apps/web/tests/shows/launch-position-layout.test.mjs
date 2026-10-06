@@ -16,13 +16,13 @@ const root = process.cwd();
 test('site width creates centred and symmetric active launch positions', () => {
   assert.deepEqual(buildLaunchPositionsForWidth(25), [{ x: 0, y: 0, z: 0 }]);
   assert.deepEqual(buildLaunchPositionsForWidth(45), [
-    { x: -22.5, y: 0, z: 0 },
-    { x: 22.5, y: 0, z: 0 },
+    { x: -685.8, y: 0, z: 0 },
+    { x: 685.8, y: 0, z: 0 },
   ]);
   assert.deepEqual(buildLaunchPositionsForWidth(80), [
-    { x: -40, y: 0, z: 0 },
+    { x: -1219.2, y: 0, z: 0 },
     { x: 0, y: 0, z: 0 },
-    { x: 40, y: 0, z: 0 },
+    { x: 1219.2, y: 0, z: 0 },
   ]);
 });
 
@@ -30,14 +30,14 @@ test('launch geometry scales with measured width and uses a stable default', () 
   assert.equal(DEFAULT_SITE_WIDTH_FEET, 80);
   assert.deepEqual(buildLaunchPositionsForWidth(undefined), buildLaunchPositionsForWidth(80));
   assert.deepEqual(buildLaunchPositionsForWidth(60), [
-    { x: -30, y: 0, z: 0 },
+    { x: -914.4, y: 0, z: 0 },
     { x: 0, y: 0, z: 0 },
-    { x: 30, y: 0, z: 0 },
+    { x: 914.4, y: 0, z: 0 },
   ]);
   assert.deepEqual(buildLaunchPositionsForWidth(120), [
-    { x: -60, y: 0, z: 0 },
+    { x: -1828.8, y: 0, z: 0 },
     { x: 0, y: 0, z: 0 },
-    { x: 60, y: 0, z: 0 },
+    { x: 1828.8, y: 0, z: 0 },
   ]);
 });
 

@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { test } from 'node:test';
 
+await import('../../../../scripts/renderer/register-typescript.mjs');
 const root = process.cwd();
 
 registerHooks({
@@ -51,7 +52,9 @@ const [
   import('../../lib/cue-generation/fast-planner.ts'),
   import('../../lib/cue-generation/quality.ts'),
   import('../../lib/cue-generation/choreography-repair.ts'),
-  import('@showcrafter/fireworks/design'),
+  import('@showcrafter/renderer').then(({ effectTemplates }) => ({
+    DEFAULT_DESIGN: effectTemplates.find((entry) => entry.key === 'peony').design,
+  })),
   import('@showcrafter/fireworks/spec'),
 ]);
 
@@ -94,7 +97,9 @@ function product(id, { shotCount = 1, durationSeconds = 1.6 } = {}) {
     launchPositionOverrideIndices: [],
     spec: { ...DEFAULT_FIREWORK_SPEC, color: '#ffd166' },
     rawSpec: null,
-    renderDesign: DEFAULT_DESIGN,
+    renderDesign: null,
+    design: DEFAULT_DESIGN,
+    kind: DEFAULT_DESIGN.kind,
     baseEffect: null,
     variant: null,
   };

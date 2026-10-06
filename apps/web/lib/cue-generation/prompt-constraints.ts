@@ -1,3 +1,4 @@
+import { showProductColours } from '@/lib/shows/renderer-design';
 import type { FireworkSpecification } from '@/lib/show-domain';
 
 const COLOUR_ALIASES = {
@@ -164,13 +165,9 @@ export function validatePromptConstraints(params: {
 }
 
 export function productColourFamilies(product: FireworkSpecification): Set<ColourFamily> {
-  const values = [
-    product.spec?.color,
-    ...(product.spec?.colorPalette ?? []),
-    product.variant?.primaryColor,
-    product.variant?.secondaryColor,
-    ...(product.variant?.colorPalette ?? []),
-  ].filter((value): value is string => typeof value === 'string');
+  const values = [...showProductColours(product)].filter(
+    (value): value is string => typeof value === 'string',
+  );
   const text = normalise(`${productSearchText(product)} ${values.join(' ')}`);
   const families = new Set(matchingPositiveFamilies(text, COLOUR_ALIASES, new Set()));
   for (const value of values) {
@@ -182,14 +179,6 @@ export function productColourFamilies(product: FireworkSpecification): Set<Colou
 
 export function productEffectFamilies(product: FireworkSpecification): Set<EffectFamily> {
   const effects = new Set<EffectFamily>();
-  if (product.spec?.crackle) effects.add('crackle');
-  if (product.spec?.strobe) effects.add('strobe');
-  if (product.spec?.ring) effects.add('ring');
-  if (product.spec?.crossette) effects.add('crossette');
-  if (product.spec?.horsetail) effects.add('horsetail');
-  if (product.spec?.floral) effects.add('floral');
-  if (product.spec?.fallingLeaves) effects.add('falling leaves');
-  if (product.spec?.glitter && product.spec?.glitter !== 'none') effects.add('glitter');
 
   const text = normalise(productSearchText(product));
   for (const [family, aliases] of Object.entries(EFFECT_ALIASES) as Array<
@@ -246,13 +235,10 @@ function productSearchText(product: FireworkSpecification): string {
   return [
     product.name,
     product.description,
-    product.spec?.color,
-    ...(product.spec?.colorPalette ?? []),
-    product.variant?.primaryColor,
-    product.variant?.secondaryColor,
-    ...(product.variant?.colorPalette ?? []),
+    ...showProductColours(product),
     product.baseEffect?.name,
-    product.baseEffect?.patternKey,
+    product.baseEffect?.templateKey?.replace(/([a-z])([A-Z])/g, '$1 $2'),
+    product.kind,
   ]
     .filter(Boolean)
     .join(' ');

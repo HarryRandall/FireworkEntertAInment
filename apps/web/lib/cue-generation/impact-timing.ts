@@ -7,8 +7,7 @@
  */
 import type { FireworkSpecification } from '@/lib/show-domain';
 import type { ProductTimingProfile } from '@/lib/fireworks/timing-profile';
-import { scaleDesignForCaliber, scaleDesignForEmphasis } from '@showcrafter/fireworks/design';
-import { estimateFireworkLiftTimeSeconds } from '@showcrafter/fireworks/timing';
+import { resolvedShowDesign, showLiftTimeSeconds } from '@/lib/shows/renderer-design';
 import { scheduleImpactWithLift, type ImpactTiming } from './impact-clock';
 import type { CueEmphasis } from './schemas';
 
@@ -16,10 +15,8 @@ export type { ImpactTiming } from './impact-clock';
 
 /** Renderer-matched lift time after calibre and cue emphasis are applied. */
 function productLiftTimeSeconds(product: FireworkSpecification, emphasis: CueEmphasis): number {
-  const compiled = product.renderDesign;
-  if (!compiled) return Number.NaN;
-  const scaled = scaleDesignForEmphasis(scaleDesignForCaliber(compiled, product.caliber), emphasis);
-  return estimateFireworkLiftTimeSeconds(scaled);
+  if (!product.design) return Number.NaN;
+  return showLiftTimeSeconds(resolvedShowDesign(product, emphasis));
 }
 
 /**

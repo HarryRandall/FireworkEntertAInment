@@ -4,6 +4,7 @@
  * the server action, and the cue pipeline all use one source of truth.
  */
 
+import type { Design } from '@showcrafter/renderer';
 import type { LaunchPosition } from '@showcrafter/fireworks/launch-positions';
 
 /* === Firework types ===================================================== */
@@ -51,11 +52,10 @@ export function parseFireworkTypes(value: unknown): FireworkTypeKey[] | null {
  * taxonomy being filled in.
  */
 export function productMatchesTypes(
-  product: { shotCount?: number | null; name?: string | null; description?: string | null },
+  product: { shotCount?: number | null; kind?: Design['kind'] | null },
   types: readonly FireworkTypeKey[],
 ): boolean {
-  const text = `${product.name ?? ''} ${product.description ?? ''}`.toLowerCase();
-  const isFountain = /fountain|gerb|ground effect/.test(text);
+  const isFountain = isGroundEffect(product);
   const isMulti = (product.shotCount ?? 1) > 1;
   return types.some((type) => {
     if (type === 'fountains') return isFountain;
@@ -69,6 +69,8 @@ export function productMatchesTypes(
 export const MIN_SITE_WIDTH_FEET = 5;
 export const MAX_SITE_WIDTH_FEET = 2000;
 export const DEFAULT_SITE_WIDTH_FEET = 80;
+/** Centimetres per international foot, exactly 30.48; saved launch geometry uses legacy centimetres. */
+const LEGACY_LAUNCH_UNITS_PER_FOOT = 30.48;
 
 function resolvedSiteWidthFeet(widthFeet: number | null | undefined): number {
   if (widthFeet == null || !Number.isFinite(widthFeet)) return DEFAULT_SITE_WIDTH_FEET;
@@ -88,8 +90,8 @@ export function launchPositionsForWidth(widthFeet: number | null | undefined): 1
 
 /**
  * Centre the active mortars across the measured site. Scene x-coordinates use
- * the supplied feet directly so wider sites spread out without inheriting the
- * renderer's fixed legacy spacing.
+ * centimetres derived from the international foot, so the metre-based viewer
+ * preserves the measured site width after boundary conversion.
  */
 export function buildLaunchPositionsForWidth(
   widthFeet: number | null | undefined,
@@ -98,7 +100,7 @@ export function buildLaunchPositionsForWidth(
   const positionCount = launchPositionsForWidth(resolvedWidthFeet);
   if (positionCount === 1) return [{ x: 0, y: 0, z: 0 }];
 
-  const halfWidth = Number((resolvedWidthFeet / 2).toFixed(3));
+  const halfWidth = Number(((resolvedWidthFeet * LEGACY_LAUNCH_UNITS_PER_FOOT) / 2).toFixed(3));
   const left = { x: -halfWidth, y: 0, z: 0 };
   const right = { x: halfWidth, y: 0, z: 0 };
   if (positionCount === 2) return [left, right];
@@ -138,16 +140,6 @@ export function occupiedLaunchPositions(
 }
 
 /** Fountains, candles and mines fire from the ground with no lift phase. */
-export function isGroundEffect(product: {
-  name: string;
-  description?: string | null;
-  renderDesign?: { geometry?: string } | null;
-}): boolean {
-  const geometry = product.renderDesign?.geometry;
-  if (geometry === 'upward_fan' || geometry === 'roman_candle' || geometry === 'fountain') {
-    return true;
-  }
-  return /fountain|gerb|roman candle|mine/.test(
-    `${product.name} ${product.description ?? ''}`.toLowerCase(),
-  );
+export function isGroundEffect(product: { kind?: Design['kind'] | null }): boolean {
+  return product.kind != null && product.kind !== 'shell' && product.kind !== 'rocket';
 }

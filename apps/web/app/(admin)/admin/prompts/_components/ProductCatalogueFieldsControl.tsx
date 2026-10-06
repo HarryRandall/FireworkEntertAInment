@@ -24,7 +24,8 @@ const PRODUCT_FIELD_LABELS: Record<ProductCatalogueField, string> = {
   isMultiShot: 'Multi-shot flag',
   heightMeters: 'Height',
   caliber: 'Calibre',
-  shellType: 'Shell type',
+  templateKey: 'Template',
+  kind: 'Design kind',
   color: 'Colour',
   colorPalette: 'Palette',
   effects: 'Effects',
@@ -39,10 +40,11 @@ const FIELD_HELP: Record<ProductCatalogueField, string> = {
   isMultiShot: 'Whether the product occupies its launch tube across multiple shots.',
   heightMeters: 'Approximate visual height.',
   caliber: 'Physical calibre where available.',
-  shellType: 'Product shell or effect type.',
+  templateKey: 'Stored effect template key.',
+  kind: 'Renderer design kind.',
   color: 'Primary colour metadata.',
   colorPalette: 'Broader colour palette metadata.',
-  effects: 'Active effect flags used for matching musical intent.',
+  effects: 'Template effect families used for matching musical intent.',
 };
 
 type Props = {
@@ -55,6 +57,7 @@ function normaliseFields(initialFields: readonly ProductCatalogueField[]) {
   );
 }
 
+/** Selects the stored-design catalogue facts included in the model prompt. */
 export function ProductCatalogueFieldsControl({ initialFields }: Props) {
   const { resetVersion } = usePromptConfigFormState();
   const [fields, setFields] = useState<ProductCatalogueField[]>(() =>
