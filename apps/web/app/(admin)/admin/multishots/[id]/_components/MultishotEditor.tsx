@@ -1,11 +1,11 @@
 'use client';
 
 /**
- * Multishot editor, movie-editor style. A multishot fires from a single mortar,
- * so each shot only chooses its firework, when it fires, and the direction it is
- * aimed (pan/tilt). The stage at the top is a live 3D preview: clicking a
- * firework's aim marker selects it, while angle controls edit the horizontal
- * pan and depth tilt planes directly. Stable tracks below organise shots
+ * Multishot editor with a single cake launch position.
+ * Each shot chooses its firework, when it fires, and the direction it is
+ * aimed (pan/tilt). The stage at the top previews stored renderer designs,
+ * while inspector controls edit horizontal pan and depth tilt directly.
+ * Stable tracks below organise shots
  * without changing their physical launch position.
  *
  * Appearance is always locked; a multishot never changes how a firework looks.
@@ -30,7 +30,6 @@ import {
   upsertMultishotShot,
 } from '@/app/(admin)/admin/multishots/actions';
 import { useAdminBreadcrumbOverride } from '@/ui/shell/AdminShell';
-import type { AimMarker } from '@/ui/replay/FireworkReplayCanvas';
 import { InlineAlert } from '@/ui/patterns/Feedback';
 import { toast } from '@/ui/patterns/toast';
 import type { AdminMultishotDetail } from '@/lib/admin.types';
@@ -43,7 +42,7 @@ import {
   MULTISHOT_MAX_SHOT_COUNT,
   MULTISHOT_MAX_TRACK_COUNT,
 } from '@/lib/admin/multishot-constraints';
-import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
+import type { FireworkSpecification } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';
 import {
   MIN_TIMELINE_SECONDS,
@@ -59,18 +58,12 @@ import {
   nextShotSequenceIndex,
   timelineTrackCount,
   fireworkDurationOf,
-  colorOf,
-  burstCentre,
+  multishotPreviewCues,
 } from './multishot-model';
 import { MetaBar } from './MultishotMetaBar';
 import { PreviewStage } from './MultishotPreviewStage';
 import { Timeline } from './MultishotTimeline';
 import { Inspector } from './MultishotInspector';
-
-// A multishot is one physical mortar; the whole sequence launches from origin.
-
-// Mirrors the simulation's shell apex so a marker sits exactly where the burst
-// pops. A multishot fires from the origin, so the base position is (0, 0, 0).
 
 export function MultishotEditor({
   multishot,
@@ -166,45 +159,7 @@ export function MultishotEditor({
     Math.max(MIN_TIMELINE_SECONDS, multishot.durationSeconds ?? 0, Math.ceil(contentDuration) + 1),
   );
 
-  const previewCues = useMemo<ReplayCue[]>(() => {
-    const cues: ReplayCue[] = [];
-    let position = 0;
-    for (const shot of shots) {
-      const spec = specsById.get(shot.fireworkId);
-      if (!spec) continue;
-      position += 1;
-      cues.push({
-        id: shot.uid,
-        position,
-        timeSeconds: Math.max(0.01, shot.timeOffsetSeconds),
-        description: spec.name,
-        productId: shot.fireworkId,
-        launchPositionIndex: 0,
-        firework: spec,
-        shotPanDegrees: shot.panDegrees,
-        shotTiltDegrees: shot.tiltDegrees,
-        shotPositionOverride: null,
-      });
-    }
-    return cues;
-  }, [shots, specsById]);
-
-  const aimMarkers = useMemo<AimMarker[]>(
-    () =>
-      shots
-        .filter((shot) => specsById.has(shot.fireworkId))
-        .map((shot) => {
-          const spec = specsById.get(shot.fireworkId);
-          return {
-            id: shot.uid,
-            panDegrees: shot.panDegrees,
-            tiltDegrees: shot.tiltDegrees,
-            color: colorOf(spec),
-            position: burstCentre(spec, shot.panDegrees, shot.tiltDegrees),
-          };
-        }),
-    [shots, specsById],
-  );
+  const previewCues = useMemo(() => multishotPreviewCues(shots, specsById), [shots, specsById]);
 
   const transportTicks = useMemo(() => {
     // The transport keys ticks by `label-timeSeconds`, so collapse shots that
@@ -583,17 +538,6 @@ export function MultishotEditor({
     [clearSelectedShot],
   );
 
-  const handleSelectMarker = useCallback(
-    (id: string | null) => {
-      if (id) {
-        setSelectedUid(id);
-        return;
-      }
-      clearSelectedShot();
-    },
-    [clearSelectedShot],
-  );
-
   // --- Playback --------------------------------------------------------------
 
   useEffect(() => {
@@ -752,7 +696,6 @@ export function MultishotEditor({
           elapsed={elapsed}
           playbackRef={playbackRef}
           duration={duration}
-          fullWidth={!selectedShot}
           isPlaying={isPlaying}
           isLooping={isLooping}
           fullscreen={isFullscreen}
@@ -761,9 +704,6 @@ export function MultishotEditor({
           loading={!previewReady}
           loadingProgress={previewLoadingProgress}
           ticks={transportTicks}
-          aimMarkers={aimMarkers}
-          selectedUid={selectedUid}
-          onSelectMarker={handleSelectMarker}
           onPlayPause={handlePlayPause}
           onReset={handleReset}
           onLoopToggle={() => setIsLooping((loop) => !loop)}

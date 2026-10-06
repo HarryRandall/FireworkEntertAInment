@@ -5,10 +5,9 @@ import {
   clampMultishotTiltDegrees,
   clampMultishotTrackIndex,
 } from '@/lib/admin/multishot-constraints';
-import { DEFAULT_LIFT_VELOCITY, type LaunchPosition } from '@showcrafter/fireworks/design';
-import type { FireworkSpecification } from '@/lib/show-domain';
-
-export const SINGLE_MORTAR: LaunchPosition[] = [{ x: 0, y: 0, z: 0 }];
+import { shotDuration } from '@showcrafter/renderer';
+import { resolvedShowDesign } from '@/lib/shows/renderer-design';
+import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
 
 export const PX_PER_SECOND = 96;
 
@@ -24,19 +23,13 @@ export const TIMELINE_CLIP_INSET_PX = 5;
 
 export const MIN_TIMELINE_SECONDS = 6;
 
-const DEFAULT_FIREWORK_DURATION = 2.4;
+const DEFAULT_FIREWORK_DURATION_SECONDS = 2.4;
 
 export const SAVE_DEBOUNCE_MS = 650;
 
 export const SCRUB_COMMIT_MS = 60;
 
 export const PREVIEW_TRANSPORT_IDLE_MS = 2000;
-
-const INSPECTOR_RAIL_WIDTH_PX = 340;
-
-const INSPECTOR_RAIL_GAP_PX = 20;
-
-export const INSPECTOR_RENDER_OVERSCAN_PX = INSPECTOR_RAIL_WIDTH_PX + INSPECTOR_RAIL_GAP_PX;
 
 export const PAN_PRESETS = [
   { value: -30, label: 'L 30°', title: 'Hard left pan' },
@@ -131,13 +124,10 @@ export function timelineTrackCount(shots: Array<Pick<LocalShot, 'timelineTrackIn
   return Math.max(MIN_TIMELINE_TRACK_COUNT, highestTrackIndex + 1);
 }
 
+/** Uses the stored design lifetime; metadata remains a timeline placeholder for invalid records. */
 export function fireworkDurationOf(spec: FireworkSpecification | undefined): number {
-  const d = spec?.durationSeconds;
-  return d && Number.isFinite(d) && d > 0 ? d : DEFAULT_FIREWORK_DURATION;
-}
-
-export function colorOf(spec: FireworkSpecification | undefined): string {
-  return clipPaletteOf(spec).primary;
+  const d = spec?.design ? shotDuration(resolvedShowDesign(spec, 'normal')) : spec?.durationSeconds;
+  return d && Number.isFinite(d) && d > 0 ? d : DEFAULT_FIREWORK_DURATION_SECONDS;
 }
 
 export function clipPaletteOf(spec: FireworkSpecification | undefined): {
@@ -179,24 +169,28 @@ export function formatTimelineTimestamp(seconds: number): string {
   return `${minutes}:${wholeSeconds}.${tenths}`;
 }
 
-const GUIDE_GRAVITY = -9.82;
-
-export function burstCentre(
-  spec: FireworkSpecification | undefined,
-  panDegrees: number,
-  tiltDegrees: number,
-): { x: number; y: number; z: number } {
-  const design = spec?.renderDesign;
-  const liftVelocity = design?.liftVelocity ?? DEFAULT_LIFT_VELOCITY;
-  const panR = (panDegrees * Math.PI) / 180;
-  const tiltR = (tiltDegrees * Math.PI) / 180;
-  const vx = Math.sin(panR) * Math.max(1.2, liftVelocity * 0.62);
-  const vz = Math.sin(tiltR) * Math.max(1.0, liftVelocity * 0.42);
-  const vy = liftVelocity * Math.max(0.82, Math.cos(panR) * 0.96);
-  const apex = Math.max(0, vy / Math.abs(GUIDE_GRAVITY));
-  return {
-    x: vx * apex * 100,
-    y: (vy * apex + 0.5 * GUIDE_GRAVITY * apex * apex) * 100,
-    z: vz * apex * 100,
-  };
+/** Expands authored children without shifting zero-time shots or changing their stored designs. */
+export function multishotPreviewCues(
+  shots: readonly LocalShot[],
+  specs: ReadonlyMap<string, FireworkSpecification>,
+): ReplayCue[] {
+  return shots.flatMap((shot) => {
+    const firework = specs.get(shot.fireworkId);
+    if (!firework) return [];
+    return [
+      {
+        id: shot.uid,
+        position: shot.sequenceIndex,
+        timeSeconds: shot.timeOffsetSeconds,
+        description: firework.name,
+        productId: shot.fireworkId,
+        launchPositionIndex: 0,
+        firework,
+        shotPanDegrees: shot.panDegrees,
+        shotTiltDegrees: shot.tiltDegrees,
+        // Persisted sequence identity keeps particle variation stable while editing timing or tracks.
+        seedOverride: shot.sequenceIndex,
+      },
+    ];
+  });
 }
