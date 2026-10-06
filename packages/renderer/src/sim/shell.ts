@@ -1,6 +1,7 @@
 /** Stateless simulation entry point for launches, shell breaks and ground effects. */
 import type { SimulationOptions } from './simulation-options';
 export type { SimulationOptions } from './simulation-options';
+import { aimMineDirection } from './aim';
 import { prototypeOr } from './numeric';
 import { resolveDesign, type Design, type Fade } from '../schema/index';
 import { brightnessAt, colourAt, rgb, type Vec3 } from './colour';
@@ -167,6 +168,7 @@ function fillBreaks(
   const burstX =
     positionX +
     (mine ? 0 : Math.tan((launch.tilt_deg * Math.PI) / HALF_TURN_DEG) * launch.height_m);
+  const burstZ = positionZ + burstForwardOffset(design, options);
   // Random indices are global across breaks, matching the prototype's flattened layer list.
   let layerIndex = 0;
   for (const burst of design.breaks)
@@ -177,7 +179,7 @@ function fillBreaks(
       const centre: Vec3 = [
         burstX + layer.offset_m[0],
         burstHeight(design, options) + layer.offset_m[1],
-        positionZ + layer.offset_m[2],
+        burstZ + layer.offset_m[2],
       ];
       if (!mine) {
         burstSmoke(writer, layer, seed, index, age, centre, launch.smoke);
@@ -201,6 +203,7 @@ function fillBreaks(
           strobing: false,
         },
         mine,
+        placement: { ...options, pan_deg: options.pan_deg ?? launch.tilt_deg },
         layerIndex: index,
       };
       fillStars(writer, state);
@@ -211,6 +214,7 @@ interface ShellLayerState extends ModifierEventState {
   fade: Fade;
   appearance: ReturnType<typeof starAppearance>;
   mine: boolean;
+  placement: SimulationOptions;
   layerIndex: number;
 }
 function fillStars(writer: ParticleWriter, state: ShellLayerState): void {
@@ -221,7 +225,7 @@ function fillStars(writer: ParticleWriter, state: ShellLayerState): void {
     mine ? 'cone' : layer.pattern,
     seed * LAYER_DIRECTION_SEED_SCALE + index,
     layer.tilt,
-  );
+  ).map((direction) => (mine ? aimMineDirection(direction, state.placement) : direction));
   starDirections.forEach((direction, starIndex) => {
     const life = layer.life_s * (1 - layer.life_var / 2 + layer.life_var * direction.h2);
     const appearance = starAppearance(layer, fade, direction, starIndex, age, life, seed);
@@ -303,4 +307,13 @@ function burstHeight(
 ): number {
   if (design.kind === 'mine') return options.muzzle_m ?? MUZZLE_M;
   return design.launch.height_m;
+}
+
+function burstForwardOffset(
+  design: Extract<Design, { launch: object }>,
+  placement: SimulationOptions,
+): number {
+  return design.kind === 'mine'
+    ? 0
+    : Math.tan(((placement.tilt_deg ?? 0) * Math.PI) / HALF_TURN_DEG) * design.launch.height_m;
 }

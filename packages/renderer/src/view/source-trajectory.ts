@@ -76,7 +76,7 @@ function packLaunch(
     launch.height_m,
     launch.time_s,
     Math.tan((launch.tilt_deg * Math.PI) / HALF_TURN_DEG),
-    0,
+    Math.tan(((placement.tilt_deg ?? 0) * Math.PI) / HALF_TURN_DEG),
   ]);
   writeSourceLane(data, offset, sourceLane.shape, [
     style.jitter ?? 0,

@@ -76,6 +76,7 @@ export function makeProps(shots: readonly Shot[], kind: 'mortar' | 'cake'): THRE
     seen.add(key);
     const tube = makeMortar(dark, rim);
     tube.position.set(x, 0, z);
+    tube.rotation.x = forwardTilt(shot);
     tube.rotation.z = -((design.launch?.tilt_deg ?? 0) * Math.PI) / HALF_TURN_DEG;
     group.add(tube);
   }
@@ -155,4 +156,8 @@ function disposeUnusedHardwareMaterials(
     )
   )
     rim.dispose();
+}
+
+function forwardTilt(shot: Shot): number {
+  return ((shot.tilt_deg ?? 0) * Math.PI) / HALF_TURN_DEG;
 }

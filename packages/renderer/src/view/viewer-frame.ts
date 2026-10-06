@@ -15,6 +15,8 @@ const TIMING_OLD_WEIGHT = 0.9;
 const FPS_OLD_WEIGHT = 0.92;
 // Completed draw diagnostics use microsecond precision in show seconds, never transport input.
 const DRAWN_TIME_DECIMALS = 6;
+// Milliseconds per second, SI time conversion.
+const MS_PER_SECOND = 1000;
 /** Samples a viewer's current sequence seconds, packs attributes and submits unchanged GPU passes. */
 export function drawViewerFrame(
   viewer: Pick<
@@ -132,7 +134,7 @@ export function disposeViewerScene(viewer: Viewer, sprays: GpuSprays): void {
 }
 
 /** Advances show seconds by wall-clock seconds times speed; returns whether the final frame needs drawing. */
-export function advanceViewerPlayback(
+function advanceViewerPlayback(
   viewer: Pick<Viewer, 'fps' | 't' | 'speed' | 'duration' | 'options' | 'playing'>,
   dt: number,
 ): boolean {
@@ -163,4 +165,21 @@ function recordFrameDiagnostics(
   diagnostics.drawnTime = viewer.t.toFixed(DRAWN_TIME_DECIMALS);
   diagnostics.drawPending = 'false';
   viewer.frameMs = viewer.frameMs * TIMING_OLD_WEIGHT + elapsedMs * (1 - TIMING_OLD_WEIGHT);
+}
+
+/** Whether a visible viewer has work, including an external soundtrack clock. */
+export function viewerLiveDrawPending(
+  viewer: Pick<Viewer, 'playing'>,
+  onScreen: boolean,
+  dirty: boolean,
+  cameraMoving: boolean,
+): boolean {
+  return onScreen && !document.hidden && (dirty || viewer.playing || cameraMoving);
+}
+
+/** Records playback cadence and advances only a locally owned sequence clock. */
+export function tickViewerPlayback(viewer: Viewer, dt: number): boolean {
+  if (!viewer.playing) return false;
+  viewer.frameTimes.record(dt * MS_PER_SECOND);
+  return !viewer.externalClock && advanceViewerPlayback(viewer, dt);
 }

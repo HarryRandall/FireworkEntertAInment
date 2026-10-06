@@ -30,6 +30,10 @@ export interface ShotPlacement {
   position?: readonly [number, number];
   /** Muzzle height in metres; defaults to the calibrated tube height. */
   muzzle_m?: number;
+  /** Forward lean from vertical in degrees; horizontal lean lives in launch.tilt_deg. */
+  tilt_deg?: number;
+  /** Horizontal tube lean for mines and ground climbs, in degrees. Shell lean lives in launch.tilt_deg. */
+  pan_deg?: number;
 }
 /** Default tube muzzle height in metres, from the prototype scene calibration. */
 export const MUZZLE_M = 1.8;
@@ -52,7 +56,7 @@ export function launchPos(
     positionX +
     lean * heightM +
     Math.sin(time * CLIMB_SWAY_RAD_S + seed) * CLIMB_SWAY_M * clearance;
-  let worldZ = positionZ;
+  let worldZ = positionZ + forwardLean(placement) * heightM;
   const style = LAUNCH_STYLES[launch.tail];
   if (style.jitter !== undefined && style.jitter !== 0) {
     worldX += Math.sin(time * JITTER_X_RAD_S + seed) * style.jitter * clearance;
@@ -74,4 +78,8 @@ export function launchPos(
 function spiralRadius(style: LaunchStyle, time: number, climbTime: number): number {
   const decay = style.spiralKeep === true ? 1 : 1 - Math.min(1, time / climbTime);
   return (style.spiralR ?? DEFAULT_SPIRAL_RADIUS_M) * decay;
+}
+
+function forwardLean(placement: ShotPlacement): number {
+  return Math.tan(((placement.tilt_deg ?? 0) * Math.PI) / HALF_TURN_DEG);
 }

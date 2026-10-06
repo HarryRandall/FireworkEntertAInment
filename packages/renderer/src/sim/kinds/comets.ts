@@ -1,4 +1,5 @@
 /** Source-clock comets simulation, retaining prototype tuning and stream identities. */
+import { placementAimRadians } from '../aim';
 import type { Design } from '../../schema/index';
 import { colourAt, rgb, WHITE, type Vec3 } from '../colour';
 import { MUZZLE_M } from '../launch';
@@ -116,6 +117,7 @@ export function fillComets(
     positionZ,
     muzzle,
     time,
+    aim: placementAimRadians(placement),
     sourceIndex: 0,
     age: 0,
     path: () => [0, 0, 0],
@@ -140,6 +142,7 @@ interface CometContext {
   positionZ: number;
   muzzle: number;
   time: number;
+  aim: readonly [number, number];
   sourceIndex: number;
   age: number;
   path: (time: number) => Vec3;
@@ -152,6 +155,8 @@ function fillCometSource(context: CometContext): void {
   const { writer, comets, seed, positionX, positionZ, muzzle, time, sourceIndex } = context;
 
   selectCometSource(context);
+  context.angle += context.aim[0];
+  context.yaw += context.aim[1];
   const { angle, yaw, start } = context;
   const age = time - start;
   context.age = age;
