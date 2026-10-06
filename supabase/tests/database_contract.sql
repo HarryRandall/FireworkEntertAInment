@@ -27,8 +27,9 @@ select pg_temp.assert_true(not exists (
   select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
   where n.nspname = 'private'
     and (has_function_privilege('anon', p.oid, 'EXECUTE')
-      or has_function_privilege('authenticated', p.oid, 'EXECUTE'))
-), 'Private functions must not be executable by API callers');
+      or (has_function_privilege('authenticated', p.oid, 'EXECUTE')
+        and p.oid <> 'private.firework_design_schema()'::regprocedure))
+), 'Private functions other than the constant design schema must not be executable by API callers');
 select pg_temp.assert_true(not has_schema_privilege('anon', 'private', 'USAGE')
   and not has_schema_privilege('authenticated', 'private', 'USAGE'), 'Private schema must remain inaccessible');
 select pg_temp.assert_true(not has_column_privilege('anon', 'public.show_presets', 'source_show_id', 'SELECT'), 'Explore provenance must remain private');

@@ -836,7 +836,9 @@
         }
       },
       "burstFlashIntensity": 0.25
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "06bf1289-fe3e-4af8-a552-3872608f143d",
@@ -1728,7 +1730,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "099aade7-639c-4653-8c22-496d23c564c0",
@@ -2620,7 +2624,9 @@
         }
       },
       "burstFlashIntensity": 0.13
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "0a04aab5-28ff-4b3e-9b4b-764bcc216eb5",
@@ -3512,7 +3518,9 @@
         }
       },
       "burstFlashIntensity": 0.3
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "0c92894a-d512-4cca-a591-bcc05d00d4f9",
@@ -4382,7 +4390,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "0ebbabd9-8de7-4a2a-b1ed-4d9a3b1dcd04",
@@ -5221,7 +5231,9 @@
         }
       },
       "burstFlashIntensity": 0.3
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "10817605-b84d-4d95-8b6d-fb147be762b1",
@@ -6091,7 +6103,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "1147018d-f9d3-4734-9220-56b7ca264b10",
@@ -6983,7 +6997,9 @@
         }
       },
       "burstFlashIntensity": 0.32
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "122c7d57-d9d3-4b0f-8007-12dbbab0d19a",
@@ -7875,7 +7891,9 @@
         }
       },
       "burstFlashIntensity": 0.1
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "13733567-58a0-4bf2-85ed-8bc64bc0dd3e",
@@ -8767,7 +8785,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "1507e18b-089d-49b5-a60e-1aab0b62027b",
@@ -9661,7 +9681,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "1851e5c8-2daf-4612-aec0-ee4ac3b93663",
@@ -10553,7 +10575,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "1e8b855c-94d2-47c3-9527-af0feb8fb021",
@@ -11445,7 +11469,9 @@
         }
       },
       "burstFlashIntensity": 0.4
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "1f1558a5-ff32-4016-a9a6-e77434b8a672",
@@ -12315,7 +12341,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "1fb52bd4-3570-4195-a746-cdf16e70c572",
@@ -13207,7 +13235,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "22f5b457-89ee-436b-8a43-8b196efa122f",
@@ -14091,7 +14121,9 @@
         }
       },
       "burstFlashIntensity": 0.3
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "24482d6e-749d-4af4-a311-59d83e2471b7",
@@ -14983,7 +15015,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "2cff03ae-01f3-4211-8dbf-1deaddd38b92",
@@ -15875,7 +15909,9 @@
         }
       },
       "burstFlashIntensity": 0.22
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "36577785-4dbb-4e70-8dbb-212758f4d91a",
@@ -16802,7 +16838,9 @@
         }
       },
       "burstFlashIntensity": 0.25
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "3657b00f-4101-4f0d-854d-d4ccc65419c0",
@@ -17694,7 +17732,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "384a3a7f-f84f-498e-a0cb-fb7529ba73db",
@@ -18564,7 +18604,9 @@
         }
       },
       "burstFlashIntensity": 0.3
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "3946fc09-768a-42e6-bebb-ce2a8bd95603",
@@ -19456,7 +19498,9 @@
         }
       },
       "burstFlashIntensity": 0.2
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "3a52494a-6b0d-456d-8db6-8d5cc27a9e74",
@@ -20326,7 +20370,9 @@
         }
       },
       "burstFlashIntensity": 0.3
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "3ac7e771-372e-420e-8dce-f1f50c8be22d",
@@ -21218,7 +21264,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "49b99246-e90e-4478-ad7f-4bb59ef5d553",
@@ -22110,7 +22158,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "4e475476-acc2-4832-8f8d-fa14d2198e3e",
@@ -22980,7 +23030,9 @@
         }
       },
       "burstFlashIntensity": 0.3
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "50ecd8b0-5c6f-4d30-9006-ef1ec1362248",
@@ -23872,7 +23924,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "584a3106-a01d-4f58-9486-1775d5578230",
@@ -24764,7 +24818,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "585e6de7-49a1-4f01-b70f-34c7829ab60c",
@@ -25656,7 +25712,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "58c833ec-7703-40a3-ba46-ac87e0813195",
@@ -26540,7 +26598,9 @@
         }
       },
       "burstFlashIntensity": 0.3
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "5ef623f6-c8bf-4945-9c0e-0ec0bab07906",
@@ -27434,7 +27494,9 @@
         }
       },
       "burstFlashIntensity": 0.3
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "6015b6b5-2b49-45f2-a710-4d5be07d0d59",
@@ -28326,7 +28388,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "608a8b4a-940c-408c-ba37-93c2fdb84ea7",
@@ -29218,7 +29282,9 @@
         }
       },
       "burstFlashIntensity": 0.22
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "63c4e4cb-5902-4a0a-9728-6d4dac9ed97a",
@@ -30110,7 +30176,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "681ddba3-b5e7-4be0-8fd8-e4d83f8aa3d0",
@@ -31004,7 +31072,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "6aaca796-1d7b-413d-afec-26c9f564b920",
@@ -31896,7 +31966,9 @@
         }
       },
       "burstFlashIntensity": 0.2
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "6cc09197-617c-49ec-9bbf-1909255f1c4f",
@@ -32788,7 +32860,9 @@
         }
       },
       "burstFlashIntensity": 0.12
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "6f8c9716-e594-4473-baae-cdfdca990582",
@@ -33660,7 +33734,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "70e6c6a8-c677-4394-8fdd-f8a5521cdf52",
@@ -34552,7 +34628,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "752a188a-726e-454c-a104-3776a0e8c2d7",
@@ -35422,7 +35500,9 @@
         }
       },
       "burstFlashIntensity": 0.3
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "7becba41-a064-444b-b7d2-73390bbcc480",
@@ -36292,7 +36372,9 @@
         }
       },
       "burstFlashIntensity": 0.25
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "7c3f8116-f368-40de-9bda-412c97c7bd5a",
@@ -37162,7 +37244,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "7c983af8-6af2-4f41-9500-83aacc265d4c",
@@ -38036,7 +38120,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "8884671f-8d7f-457b-ae00-eec4c0d51486",
@@ -38875,7 +38961,9 @@
         }
       },
       "burstFlashIntensity": 0.25
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "8d0c03c1-db75-477b-adbd-73bb01b07d36",
@@ -39769,7 +39857,9 @@
         }
       },
       "burstFlashIntensity": 0.3
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "8d482bbd-4195-498f-bc77-168acebf1a59",
@@ -40641,7 +40731,9 @@
         }
       },
       "burstFlashIntensity": 0.25
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "9134f3a7-0cf2-419f-af93-9def76511de5",
@@ -41533,7 +41625,9 @@
         }
       },
       "burstFlashIntensity": 0.22
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "921fb69f-2a02-49d6-8053-7df43d4ee78a",
@@ -42425,7 +42519,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "98ccf0cd-aa3f-41f9-8c4b-2779acad9032",
@@ -43317,7 +43413,9 @@
         }
       },
       "burstFlashIntensity": 0.13
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "9b11764d-6934-43ac-9c7c-f2bd05bc941f",
@@ -44361,7 +44459,9 @@
         }
       },
       "burstFlashIntensity": 0.25
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "9c36cbb5-8df5-458f-9f1a-f585ed5c2f3f",
@@ -45253,7 +45353,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "a19a90f4-1c35-4e21-8598-244546f5339b",
@@ -46145,7 +46247,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "a35b21f6-f387-4cb6-815a-6dfac0b77ca0",
@@ -47015,7 +47119,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "a538e835-514a-4a6a-8f83-2e358c0eeed1",
@@ -47885,7 +47991,9 @@
         }
       },
       "burstFlashIntensity": 0.25
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "a68912b4-0512-49c0-a578-cdab33661121",
@@ -48755,7 +48863,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "a76bd834-4407-4e7f-aa3e-18faaea0a267",
@@ -49627,7 +49737,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "a7a276bb-8f0b-487f-ae18-19639f11ea61",
@@ -50499,7 +50611,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "a9807784-3ae8-489b-a5ce-2aaa72051511",
@@ -51347,7 +51461,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "b2530966-e96b-434b-91f7-0500fce4c543",
@@ -52239,7 +52355,9 @@
         }
       },
       "burstFlashIntensity": 0.22
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "b69eefea-2717-4ab9-a820-3f8b47dabad5",
@@ -53131,7 +53249,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "b6cdc6e8-0404-4bc9-820c-d24fd2b146f9",
@@ -54089,7 +54209,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "ba5b44b6-30ca-4dbe-9af8-08cc1f2c3c4c",
@@ -54981,7 +55103,9 @@
         }
       },
       "burstFlashIntensity": 0.32
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "baf9e89b-9874-45ff-af65-9aa826c57c35",
@@ -55873,7 +55997,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "bcd86731-caf3-48c3-8e7e-4b1aba0a031a",
@@ -56743,7 +56869,9 @@
         }
       },
       "burstFlashIntensity": 0.25
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "bd0d5bb4-6974-479c-96c6-a1ea0656a152",
@@ -57635,7 +57763,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "bf032b56-1338-4456-8328-5f388de3fc27",
@@ -58527,7 +58657,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "c07bac6d-fa94-4045-a7a8-5b17f8585c4a",
@@ -59421,7 +59553,9 @@
         }
       },
       "burstFlashIntensity": 0.3
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "c28b22bd-5fe0-45b4-89d8-259f8fac936a",
@@ -60313,7 +60447,9 @@
         }
       },
       "burstFlashIntensity": 0.2
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "c2a77547-3ef2-4727-a473-448d432b0ab5",
@@ -61205,7 +61341,9 @@
         }
       },
       "burstFlashIntensity": 0.4
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "c3fde61f-e65b-46ec-b771-8af1991f3917",
@@ -62097,7 +62235,9 @@
         }
       },
       "burstFlashIntensity": 0.13
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "c6aec4cd-6e75-46ac-8985-1d9189a966da",
@@ -62969,7 +63109,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "c78f9897-15cb-493e-86db-dff0d18b3d86",
@@ -63861,7 +64003,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "c801ea42-ab94-438f-8db7-8f79e2b9c90b",
@@ -64950,7 +65094,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "c8b5d9ba-abd9-4fa2-9346-1bcd5a00ae9c",
@@ -65844,7 +65990,9 @@
         }
       },
       "burstFlashIntensity": 0.1
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "ce98adc4-7040-4bee-9f91-a02b4ca245cc",
@@ -66736,7 +66884,9 @@
         }
       },
       "burstFlashIntensity": 0.4
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "cf8d412c-5210-4905-ae2b-a60b5225164f",
@@ -67630,7 +67780,9 @@
         }
       },
       "burstFlashIntensity": 0.2
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "d2c57ea5-34ca-4b45-baec-3ae25c7f89fe",
@@ -68522,7 +68674,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "d3a09de9-379f-416c-9435-d03c188935f5",
@@ -69414,7 +69568,9 @@
         }
       },
       "burstFlashIntensity": 0.3
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "d622b111-67a9-4c7c-9e0f-9c9d6464630e",
@@ -70501,7 +70657,9 @@
         }
       },
       "burstFlashIntensity": 0.2
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "d834d2a7-002a-424d-9526-731cfd129f99",
@@ -71393,7 +71551,9 @@
         }
       },
       "burstFlashIntensity": 0.1
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "dd2d6b72-9acc-4320-90da-733f8c57c61c",
@@ -72265,7 +72425,9 @@
         }
       },
       "burstFlashIntensity": 0.3
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "e383343a-d6a2-44e9-96db-2f7164aa0516",
@@ -73157,7 +73319,9 @@
         }
       },
       "burstFlashIntensity": 0.12
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "e83060e3-ca4d-41c2-8196-acbef06d029e",
@@ -74029,7 +74193,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "ea5920b0-f423-4155-b953-c5dbeb543353",
@@ -74899,7 +75065,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "ed093925-5a50-4c9e-a098-6203337729b4",
@@ -75791,7 +75959,9 @@
         }
       },
       "burstFlashIntensity": 0.12
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "ee2dbc47-808b-496f-b4cc-1e141c7ff9c3",
@@ -76661,7 +76831,9 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "f364080f-1fd5-4263-821a-60420f27364d",
@@ -77531,7 +77703,9 @@
         }
       },
       "burstFlashIntensity": 0.3
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "f50d7ab4-efaa-4427-87ac-66dc01341df6",
@@ -78423,7 +78597,9 @@
         }
       },
       "burstFlashIntensity": 0.2
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "f6b96c45-b04d-4286-81f0-55de68bb2fc2",
@@ -79317,7 +79493,9 @@
         }
       },
       "burstFlashIntensity": 0.32
-    }
+    },
+    "design": null,
+    "design_schema": 1
   },
   {
     "id": "ff6e7fae-e624-4392-b083-77603408dbf1",
@@ -80209,6 +80387,8 @@
         }
       },
       "burstFlashIntensity": 0
-    }
+    },
+    "design": null,
+    "design_schema": 1
   }
 ]

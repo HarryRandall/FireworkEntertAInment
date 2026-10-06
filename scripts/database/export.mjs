@@ -2,6 +2,7 @@ import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
 import {
   snapshotTables,
+  assertSnapshotColumns,
   selectSnapshotContent,
   portableRow,
   readTable,
@@ -25,6 +26,7 @@ async function main() {
   const output = resolve(destination);
   await mkdir(output, { recursive: false });
   let tables = {};
+  // Read complete rows, including renderer designs and Finale mappings.
   for (const [table, order] of snapshotTables) {
     tables[table] = await readTable({ url, key, table, order });
     console.log(`${table}: ${tables[table].length} rows`);
@@ -50,6 +52,7 @@ async function main() {
     media: [],
   };
   for (const [table] of snapshotTables) {
+    assertSnapshotColumns(table, tables[table]);
     const content =
       JSON.stringify(
         tables[table].map((row) => portableRow(table, row)),

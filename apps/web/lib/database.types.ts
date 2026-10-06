@@ -391,6 +391,8 @@ export type Database = {
           created_at: string
           description: string | null
           duration_seconds: number | null
+          finale_effect_name: string | null
+          finale_product_id: string | null
           firework_id: string | null
           firework_type: string | null
           id: string
@@ -407,6 +409,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           duration_seconds?: number | null
+          finale_effect_name?: string | null
+          finale_product_id?: string | null
           firework_id?: string | null
           firework_type?: string | null
           id?: string
@@ -423,6 +427,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           duration_seconds?: number | null
+          finale_effect_name?: string | null
+          finale_product_id?: string | null
           firework_id?: string | null
           firework_type?: string | null
           id?: string
@@ -525,6 +531,8 @@ export type Database = {
         Row: {
           created_at: string
           description: string | null
+          design: Json | null
+          design_schema: number
           id: string
           model_json: Json
           name: string
@@ -532,11 +540,14 @@ export type Database = {
           slug: string
           sort_order: number
           source: string
+          template_key: string | null
           updated_at: string
         }
         Insert: {
           created_at?: string
           description?: string | null
+          design?: Json | null
+          design_schema?: number
           id?: string
           model_json?: Json
           name: string
@@ -544,11 +555,14 @@ export type Database = {
           slug: string
           sort_order?: number
           source?: string
+          template_key?: string | null
           updated_at?: string
         }
         Update: {
           created_at?: string
           description?: string | null
+          design?: Json | null
+          design_schema?: number
           id?: string
           model_json?: Json
           name?: string
@@ -556,6 +570,7 @@ export type Database = {
           slug?: string
           sort_order?: number
           source?: string
+          template_key?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -676,6 +691,8 @@ export type Database = {
           confidence: number
           created_at: string
           description: string | null
+          design: Json | null
+          design_schema: number
           duration_seconds: number | null
           firework_effect_id: string
           height_meters: number | null
@@ -696,6 +713,8 @@ export type Database = {
           confidence?: number
           created_at?: string
           description?: string | null
+          design?: Json | null
+          design_schema?: number
           duration_seconds?: number | null
           firework_effect_id: string
           height_meters?: number | null
@@ -716,6 +735,8 @@ export type Database = {
           confidence?: number
           created_at?: string
           description?: string | null
+          design?: Json | null
+          design_schema?: number
           duration_seconds?: number | null
           firework_effect_id?: string
           height_meters?: number | null
