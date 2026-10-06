@@ -69,7 +69,7 @@ $function$;
 grant execute on function pg_temp.valid_design() to anon, authenticated;
 
 select is((select count(*) from public.catalogue_items where manufacturer is not null), 51::bigint, '51 supplier products');
-select is((select count(*) from public.catalogue_items where manufacturer is null), 93::bigint, '93 generated catalogue entries');
+select is((select count(*) from public.catalogue_items where manufacturer is null), 169::bigint, '169 generated catalogue entries');
 select ok(not exists(select 1 from public.catalogue_items where
   finale_product_id is distinct from case when manufacturer is not null then part_number end), 'Finale backfill matches supplier rule');
 select ok(not exists(select 1 from public.catalogue_items where finale_effect_name is not null), 'Effect names remain unspecified');

@@ -10,8 +10,8 @@ const directory = join(repositoryRoot, 'supabase/bootstrap');
 
 test('handover snapshot is complete, portable and keeps the approved content', () => {
   const { tables, manifest } = readSnapshot(directory);
-  assert.equal(tables.firework_effects.length, 26);
-  assert.equal(tables.fireworks.length, 90);
+  assert.equal(tables.firework_effects.length, 102);
+  assert.equal(tables.fireworks.length, 166);
   assert.equal(tables.multishots.length, 39);
   assert.equal(tables.multishot_fireworks.length, 882);
   assert.deepEqual(tables.supplier_profiles.map((row) => row.name).sort(), [
@@ -76,15 +76,16 @@ test('renderer designs and Finale mappings survive snapshot SQL generation', () 
   const snapshot = readSnapshot(directory);
   for (const table of ['firework_effects', 'fireworks']) {
     for (const row of snapshot.tables[table]) {
-      assert.equal(row.design, null);
+      assert.equal(typeof row.design, 'object');
+      assert.ok(row.design);
       assert.equal(row.design_schema, 1);
-      if (table === 'firework_effects') assert.equal(row.template_key, null);
+      if (table === 'firework_effects') assert.equal(typeof row.template_key, 'string');
     }
   }
   const products = snapshot.tables.catalogue_items.filter((row) => row.manufacturer !== null);
   const generated = snapshot.tables.catalogue_items.filter((row) => row.manufacturer === null);
   assert.equal(products.length, 51);
-  assert.equal(generated.length, 93);
+  assert.equal(generated.length, 169);
   for (const row of products) assert.equal(row.finale_product_id, row.part_number);
   for (const row of generated) assert.equal(row.finale_product_id, null);
   for (const row of snapshot.tables.catalogue_items) assert.equal(row.finale_effect_name, null);

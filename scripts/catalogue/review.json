@@ -1,0 +1,1363 @@
+{
+  "effectMappings": [
+    {
+      "slug": "chrysanthemum",
+      "patternKey": "chrysanthemum",
+      "templateKey": "chrysanthemum",
+      "oldGeometry": "sphere",
+      "oldTrailProfile": "spark",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": [],
+      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+    },
+    {
+      "slug": "horsetail",
+      "patternKey": "horsetail",
+      "templateKey": "horsetail",
+      "oldGeometry": "falling_tail",
+      "oldTrailProfile": "waterfall",
+      "templateKind": "shell",
+      "templatePatterns": ["bottom"],
+      "templateModifiers": [],
+      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+    },
+    {
+      "slug": "willow",
+      "patternKey": "willow",
+      "templateKey": "willow",
+      "oldGeometry": "weeping",
+      "oldTrailProfile": "long_hang",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": [],
+      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+    },
+    {
+      "slug": "whirl",
+      "patternKey": "whirl",
+      "templateKey": "whirlwind",
+      "oldGeometry": "whirl",
+      "oldTrailProfile": "whirl",
+      "templateKind": "shell",
+      "templatePatterns": ["ring"],
+      "templateModifiers": ["twist"],
+      "review": "Both swirl; the template uses a ring and a spin modifier rather than the old whirl geometry."
+    },
+    {
+      "slug": "comet",
+      "patternKey": "comet",
+      "templateKey": "comet",
+      "oldGeometry": "single_tail",
+      "oldTrailProfile": "thick_tail",
+      "templateKind": "comet",
+      "templatePatterns": [],
+      "templateModifiers": [],
+      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+    },
+    {
+      "slug": "mine",
+      "patternKey": "mine",
+      "templateKey": "mine",
+      "oldGeometry": "upward_fan",
+      "oldTrailProfile": "glitter",
+      "templateKind": "mine",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": [],
+      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+    },
+    {
+      "slug": "waterfall",
+      "patternKey": "waterfall",
+      "templateKey": "waterfall",
+      "oldGeometry": "waterfall",
+      "oldTrailProfile": "waterfall",
+      "templateKind": "shell",
+      "templatePatterns": ["bottom"],
+      "templateModifiers": [],
+      "review": "Both fall downwards; the template uses an aerial bottom hemisphere rather than the old wide falling scatter."
+    },
+    {
+      "slug": "pistil",
+      "patternKey": "pistil",
+      "templateKey": "pistil",
+      "oldGeometry": "sphere",
+      "oldTrailProfile": "spark",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere", "sphere"],
+      "templateModifiers": [],
+      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+    },
+    {
+      "slug": "pearls",
+      "patternKey": "pearls",
+      "templateKey": "pearls",
+      "oldGeometry": "pearls",
+      "oldTrailProfile": "pearls",
+      "templateKind": "comet",
+      "templatePatterns": [],
+      "templateModifiers": [],
+      "review": "Old pearls geometry is an aerial cluster. String of pearls is a ground-fired comet sequence."
+    },
+    {
+      "slug": "crackle",
+      "patternKey": "crackle",
+      "templateKey": "crackle",
+      "oldGeometry": "fragment_cloud",
+      "oldTrailProfile": "crackle",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": ["crackle"],
+      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+    },
+    {
+      "slug": "fountain",
+      "patternKey": "fountain",
+      "templateKey": "fountain",
+      "oldGeometry": "fountain",
+      "oldTrailProfile": "glitter",
+      "templateKind": "fountain",
+      "templatePatterns": [],
+      "templateModifiers": [],
+      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+    },
+    {
+      "slug": "kamuro",
+      "patternKey": "kamuro",
+      "templateKey": "kamuro",
+      "oldGeometry": "crown",
+      "oldTrailProfile": "glitter",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": [],
+      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+    },
+    {
+      "slug": "saturn",
+      "patternKey": "saturn",
+      "templateKey": "saturn",
+      "oldGeometry": "ring",
+      "oldTrailProfile": "none",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere", "ring"],
+      "templateModifiers": [],
+      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+    },
+    {
+      "slug": "bowtie",
+      "patternKey": "bowtie",
+      "templateKey": "bowtie",
+      "oldGeometry": "bowtie",
+      "oldTrailProfile": "spark",
+      "templateKind": "shell",
+      "templatePatterns": ["bowtie"],
+      "templateModifiers": [],
+      "review": "Old bowtie enables splitting. The template preserves a planar silhouette without those splits."
+    },
+    {
+      "slug": "double_break",
+      "patternKey": "double_break",
+      "templateKey": "multiBreak",
+      "oldGeometry": "split_cross",
+      "oldTrailProfile": "spark",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere", "sphere", "sphere"],
+      "templateModifiers": ["crackle"],
+      "review": "Old split-cross stars split into fragments. Multi-break uses three independent timed breaks, not two secondary splits."
+    },
+    {
+      "slug": "palm",
+      "patternKey": "palm",
+      "templateKey": "palm",
+      "oldGeometry": "radial_arms",
+      "oldTrailProfile": "thick_tail",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": [],
+      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+    },
+    {
+      "slug": "crossette",
+      "patternKey": "crossette",
+      "templateKey": "crossette",
+      "oldGeometry": "split_cross",
+      "oldTrailProfile": "thick_tail",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": ["crossette"],
+      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+    },
+    {
+      "slug": "nishiki",
+      "patternKey": "nishiki",
+      "templateKey": "nishiki",
+      "oldGeometry": "sphere",
+      "oldTrailProfile": "glitter",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": [],
+      "review": "Brocade-family visual approximation: 5-second stars, 105 trail sparks, 2.6-second trails and maximum glitter strength. Not a measured reconstruction."
+    },
+    {
+      "slug": "brocade",
+      "patternKey": "brocade",
+      "templateKey": "brocade",
+      "oldGeometry": "crown",
+      "oldTrailProfile": "glitter",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": [],
+      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+    },
+    {
+      "slug": "outlined-star-shell",
+      "patternKey": "five_point_star",
+      "templateKey": "fivePointStar",
+      "oldGeometry": "five_point_star",
+      "oldTrailProfile": "spark",
+      "templateKind": "shell",
+      "templatePatterns": ["star"],
+      "templateModifiers": [],
+      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+    },
+    {
+      "slug": "ring",
+      "patternKey": "ring",
+      "templateKey": "ring",
+      "oldGeometry": "ring",
+      "oldTrailProfile": "none",
+      "templateKind": "shell",
+      "templatePatterns": ["ring", "sphere"],
+      "templateModifiers": [],
+      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+    },
+    {
+      "slug": "heart-shell",
+      "patternKey": "heart",
+      "templateKey": "heart",
+      "oldGeometry": "heart",
+      "oldTrailProfile": "spark",
+      "templateKind": "shell",
+      "templatePatterns": ["heart"],
+      "templateModifiers": [],
+      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+    },
+    {
+      "slug": "roman_candle",
+      "patternKey": "roman_candle",
+      "templateKey": "romanCandle",
+      "oldGeometry": "roman_candle",
+      "oldTrailProfile": "thick_tail",
+      "templateKind": "comet",
+      "templatePatterns": [],
+      "templateModifiers": [],
+      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+    },
+    {
+      "slug": "strobe",
+      "patternKey": "strobe",
+      "templateKey": "strobe",
+      "oldGeometry": "sphere",
+      "oldTrailProfile": "blink",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": ["strobe"],
+      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+    },
+    {
+      "slug": "peony",
+      "patternKey": "peony",
+      "templateKey": "peony",
+      "oldGeometry": "sphere",
+      "oldTrailProfile": "none",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": [],
+      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+    },
+    {
+      "slug": "silverFish",
+      "patternKey": "silverFish",
+      "templateKey": "fish",
+      "oldGeometry": "fish",
+      "oldTrailProfile": "fish",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": ["fish"],
+      "review": "Same effect family. Template defaults replace old counts, lifetimes and motion tuning; visual review is required."
+    }
+  ],
+  "fireworks": [
+    {
+      "slug": "test-ckav",
+      "name": "test",
+      "templateKey": "chrysanthemum",
+      "unmatchedSettings": [],
+      "notes": []
+    },
+    {
+      "slug": "horsetail-crimson",
+      "name": "Horsetail Crimson",
+      "templateKey": "horsetail",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "mine-azure",
+      "name": "Mine Azure",
+      "templateKey": "mine",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "willow-crimson",
+      "name": "Willow Crimson",
+      "templateKey": "willow",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "ring-azure",
+      "name": "Ring Azure",
+      "templateKey": "ring",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "test-e8rx",
+      "name": "test",
+      "templateKey": "peony",
+      "unmatchedSettings": [],
+      "notes": []
+    },
+    {
+      "slug": "brocade-crimson",
+      "name": "Brocade Crimson",
+      "templateKey": "brocade",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "nishiki-crimson",
+      "name": "Nishiki Crimson",
+      "templateKey": "nishiki",
+      "unmatchedSettings": [],
+      "notes": [
+        "Brocade-family visual approximation: 5-second stars, 105 trail sparks, 2.6-second trails and maximum glitter strength. Not a measured reconstruction.",
+        "Secondary colour and its ratio have no automatic layer assignment."
+      ]
+    },
+    {
+      "slug": "pistil-crimson",
+      "name": "Pistil Crimson",
+      "templateKey": "pistil",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "comet-default",
+      "name": "Comet Default",
+      "templateKey": "comet",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "roman_candle-default",
+      "name": "Roman Candle Default",
+      "templateKey": "romanCandle",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "horsetail-default",
+      "name": "Horsetail Default",
+      "templateKey": "horsetail",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "fountain-azure",
+      "name": "Fountain Azure",
+      "templateKey": "fountain",
+      "unmatchedSettings": [],
+      "notes": [
+        "v1 fountain colour accepts one hex colour only. Primary colour retained; alternate palette needs renderer support.",
+        "Secondary colour and its ratio have no automatic layer assignment."
+      ]
+    },
+    {
+      "slug": "ring-crimson",
+      "name": "Ring Crimson",
+      "templateKey": "ring",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "pearls-crimson",
+      "name": "Pearls Crimson",
+      "templateKey": "pearls",
+      "unmatchedSettings": [],
+      "notes": [
+        "Old pearls geometry is an aerial cluster. String of pearls is a ground-fired comet sequence.",
+        "Secondary colour and its ratio have no automatic layer assignment."
+      ]
+    },
+    {
+      "slug": "peony-green-vfwp",
+      "name": "Peony Green",
+      "templateKey": "peony",
+      "unmatchedSettings": [
+        { "path": "stars.outer.color.b", "value": 0.33725490196078434 },
+        { "path": "stars.outer.color.g", "value": 0.9882352941176471 },
+        { "path": "stars.outer.color.r", "value": 0.0784313725490196 },
+        { "path": "stars.outer.colourPattern.axis", "value": "vertical" },
+        { "path": "stars.outer.colourPattern.mode", "value": "solid" },
+        { "path": "stars.outer.colourPattern.count", "value": 1 },
+        {
+          "path": "stars.outer.colourPattern.colours",
+          "value": [
+            {
+              "color": {
+                "b": 0.33725490196078434,
+                "g": 0.9882352941176471,
+                "r": 0.0784313725490196
+              },
+              "weight": 100
+            }
+          ]
+        }
+      ],
+      "notes": []
+    },
+    {
+      "slug": "comet-crimson",
+      "name": "Comet Crimson",
+      "templateKey": "comet",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "crackle-azure",
+      "name": "Crackle Azure",
+      "templateKey": "crackle",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "arthur-rozzi-silver-crackle",
+      "name": "Arthur Rozzi Silver Crysanthemum Crackle",
+      "templateKey": "chrysanthemum",
+      "unmatchedSettings": [
+        { "path": "stars.outer.color.b", "value": 0.9803921568627451 },
+        { "path": "stars.outer.color.g", "value": 0.9686274509803922 },
+        { "path": "stars.outer.color.r", "value": 0.9607843137254902 },
+        { "path": "stars.outer.colourPattern.axis", "value": "vertical" },
+        { "path": "stars.outer.colourPattern.mode", "value": "random" },
+        { "path": "stars.outer.colourPattern.count", "value": 2 },
+        {
+          "path": "stars.outer.colourPattern.colours",
+          "value": [
+            {
+              "color": {
+                "b": 0.9803921568627451,
+                "g": 0.9686274509803922,
+                "r": 0.9607843137254902
+              },
+              "weight": 78
+            },
+            { "color": { "b": 1, "g": 1, "r": 1 }, "weight": 22 }
+          ]
+        },
+        { "path": "secondaryColorRatio", "value": 0.22 }
+      ],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "silverFish-azure",
+      "name": "Silver Fish Azure",
+      "templateKey": "fish",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "peony-default",
+      "name": "Peony Default",
+      "templateKey": "peony",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "double_break-crimson",
+      "name": "Double Break Crimson",
+      "templateKey": "multiBreak",
+      "unmatchedSettings": [],
+      "notes": [
+        "Old split-cross stars split into fragments. Multi-break uses three independent timed breaks, not two secondary splits.",
+        "Secondary colour and its ratio have no automatic layer assignment."
+      ]
+    },
+    {
+      "slug": "kamuro-azure",
+      "name": "Kamuro Azure",
+      "templateKey": "kamuro",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "silverFish-crimson",
+      "name": "Silver Fish Crimson",
+      "templateKey": "fish",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "crossette-default",
+      "name": "Crossette Default",
+      "templateKey": "crossette",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "peony-crimson",
+      "name": "Peony Crimson",
+      "templateKey": "peony",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "palm-crimson",
+      "name": "Palm Crimson",
+      "templateKey": "palm",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "whirl-crimson",
+      "name": "Whirl Crimson",
+      "templateKey": "whirlwind",
+      "unmatchedSettings": [],
+      "notes": [
+        "Both swirl; the template uses a ring and a spin modifier rather than the old whirl geometry.",
+        "Secondary colour and its ratio have no automatic layer assignment."
+      ]
+    },
+    {
+      "slug": "pearls-default",
+      "name": "Pearls Default",
+      "templateKey": "pearls",
+      "unmatchedSettings": [],
+      "notes": [
+        "Old pearls geometry is an aerial cluster. String of pearls is a ground-fired comet sequence.",
+        "Secondary colour and its ratio have no automatic layer assignment."
+      ]
+    },
+    {
+      "slug": "peony-white-nqow",
+      "name": "Peony White",
+      "templateKey": "peony",
+      "unmatchedSettings": [
+        { "path": "stars.outer.color.b", "value": 1 },
+        { "path": "stars.outer.color.g", "value": 1 },
+        { "path": "stars.outer.color.r", "value": 1 },
+        { "path": "stars.outer.colourPattern.axis", "value": "vertical" },
+        { "path": "stars.outer.colourPattern.mode", "value": "solid" },
+        { "path": "stars.outer.colourPattern.count", "value": 1 },
+        {
+          "path": "stars.outer.colourPattern.colours",
+          "value": [{ "color": { "b": 1, "g": 1, "r": 1 }, "weight": 100 }]
+        }
+      ],
+      "notes": []
+    },
+    {
+      "slug": "arthur-rozzi-gold-willow-green-purple",
+      "name": "Arthur Rozzi Gold Willow to Green and Purple",
+      "templateKey": "willow",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "bowtie-default",
+      "name": "Bow Tie Default",
+      "templateKey": "bowtie",
+      "unmatchedSettings": [],
+      "notes": [
+        "Old bowtie enables splitting. The template preserves a planar silhouette without those splits.",
+        "Secondary colour and its ratio have no automatic layer assignment."
+      ]
+    },
+    {
+      "slug": "arthur-rozzi-indigo-crackle-red",
+      "name": "Arthur Rozzi Indigo Crackle to Red",
+      "templateKey": "crackle",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "palm-azure",
+      "name": "Palm Azure",
+      "templateKey": "palm",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "arthur-rozzi-palm-red-green-crackle",
+      "name": "Arthur Rozzi Red and Green Palm Crackle",
+      "templateKey": "palm",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "strobe-crimson",
+      "name": "Strobe Crimson",
+      "templateKey": "strobe",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "waterfall-azure",
+      "name": "Waterfall Azure",
+      "templateKey": "waterfall",
+      "unmatchedSettings": [],
+      "notes": [
+        "Both fall downwards; the template uses an aerial bottom hemisphere rather than the old wide falling scatter.",
+        "Secondary colour and its ratio have no automatic layer assignment."
+      ]
+    },
+    {
+      "slug": "saturn-default",
+      "name": "Saturn Default",
+      "templateKey": "saturn",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "pearls-azure",
+      "name": "Pearls Azure",
+      "templateKey": "pearls",
+      "unmatchedSettings": [],
+      "notes": [
+        "Old pearls geometry is an aerial cluster. String of pearls is a ground-fired comet sequence.",
+        "Secondary colour and its ratio have no automatic layer assignment."
+      ]
+    },
+    {
+      "slug": "kamuro-crimson",
+      "name": "Kamuro Crimson",
+      "templateKey": "kamuro",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "chrysanthemum-crimson",
+      "name": "Chrysanthemum Crimson",
+      "templateKey": "chrysanthemum",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "saturn-azure",
+      "name": "Saturn Azure",
+      "templateKey": "saturn",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "brocade-default",
+      "name": "Brocade Default",
+      "templateKey": "brocade",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "blue-steel-base-4igm",
+      "name": "Blue Steel Base",
+      "templateKey": "chrysanthemum",
+      "unmatchedSettings": [],
+      "notes": []
+    },
+    {
+      "slug": "arthur-rozzi-gold-willow-blue",
+      "name": "Arthur Rozzi Gold Willow to Blue",
+      "templateKey": "willow",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "arthur-rozzi-chrysanthemum-rgb-crackle",
+      "name": "Arthur Rozzi Red Green Blue Crackling Chrysanthemum",
+      "templateKey": "chrysanthemum",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "crackle-crimson",
+      "name": "Crackle Crimson",
+      "templateKey": "crackle",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "crossette-azure",
+      "name": "Crossette Azure",
+      "templateKey": "crossette",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "mine-default",
+      "name": "Mine Default",
+      "templateKey": "mine",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "chrysanthemum-default",
+      "name": "Chrysanthemum Default",
+      "templateKey": "chrysanthemum",
+      "unmatchedSettings": [
+        { "path": "stars.outer.color.b", "value": 0.33725490196078434 },
+        { "path": "stars.outer.color.g", "value": 0.9882352941176471 },
+        { "path": "stars.outer.color.r", "value": 0.0784313725490196 },
+        { "path": "stars.outer.colourPattern.axis", "value": "vertical" },
+        { "path": "stars.outer.colourPattern.mode", "value": "random" },
+        { "path": "stars.outer.colourPattern.count", "value": 2 },
+        {
+          "path": "stars.outer.colourPattern.colours",
+          "value": [
+            {
+              "color": {
+                "b": 0.33725490196078434,
+                "g": 0.9882352941176471,
+                "r": 0.0784313725490196
+              },
+              "weight": 78
+            },
+            { "color": { "b": 1, "g": 0, "r": 0.7843137254901961 }, "weight": 22 }
+          ]
+        },
+        {
+          "path": "burstTrail.stops",
+          "value": [
+            {
+              "size": 1.05,
+              "density": 1.5,
+              "position": 0,
+              "shapeWeights": { "circle": 25, "square": 50, "triangle": 25 },
+              "sizeVariation": 28
+            },
+            {
+              "size": 0.9,
+              "density": 1.15,
+              "position": 32,
+              "shapeWeights": { "circle": 25, "square": 50, "triangle": 25 },
+              "sizeVariation": 30
+            },
+            {
+              "size": 0.5,
+              "density": 0.34,
+              "position": 100,
+              "shapeWeights": { "circle": 25, "square": 50, "triangle": 25 },
+              "sizeVariation": 34
+            }
+          ]
+        },
+        { "path": "burstTrail.width.tail", "value": 30 },
+        { "path": "burstTrail.width.curve", "value": 1 },
+        { "path": "burstTrail.width.front", "value": 0 },
+        { "path": "burstTrail.motion.drag", "value": 1.4 },
+        { "path": "burstTrail.motion.spin", "value": 0 },
+        { "path": "burstTrail.motion.driftX", "value": 0 },
+        { "path": "burstTrail.motion.driftY", "value": -0.012 },
+        { "path": "burstTrail.motion.driftZ", "value": 0 },
+        { "path": "burstTrail.motion.gravity", "value": -0.02 },
+        { "path": "burstTrail.motion.turbulence", "value": 0.045 },
+        { "path": "burstTrail.motion.inheritedVelocity", "value": 0.02 },
+        { "path": "burstTrail.preset", "value": "custom" },
+        { "path": "burstTrail.closing.size.enabled", "value": false },
+        { "path": "burstTrail.closing.size.endPercent", "value": 0 },
+        { "path": "burstTrail.closing.size.shrinkPercent", "value": 22 },
+        { "path": "burstTrail.closing.colour.color.b", "value": 0 },
+        { "path": "burstTrail.closing.colour.color.g", "value": 0.16470588235294117 },
+        { "path": "burstTrail.closing.colour.color.r", "value": 0.5843137254901961 },
+        { "path": "burstTrail.closing.colour.enabled", "value": false },
+        { "path": "burstTrail.closing.colour.fadePercent", "value": 22 },
+        { "path": "burstTrail.closing.spreadFade.enabled", "value": true },
+        { "path": "burstTrail.closing.spreadFade.startAngle", "value": 60 },
+        { "path": "burstTrail.closing.spreadFade.endOpacityPercent", "value": 36 },
+        { "path": "burstTrail.enabled", "value": true },
+        { "path": "burstTrail.flicker.chance", "value": 0 },
+        { "path": "burstTrail.flicker.strength", "value": 0.9 },
+        { "path": "burstTrail.flicker.lifetimeMultiplier", "value": 0.45 },
+        { "path": "burstTrail.opening.size.startPercent", "value": 1 },
+        { "path": "burstTrail.opening.visibility.revealPercent", "value": 25 },
+        { "path": "burstTrail.opening.visibility.particlesPercent", "value": 100 },
+        { "path": "burstTrail.opening.visibility.brightnessPercent", "value": 39 },
+        { "path": "burstTrail.spacing.curve", "value": 4 },
+        { "path": "burstTrail.spacing.jitterPercent", "value": 100 },
+        { "path": "burstTrail.version", "value": 2 },
+        { "path": "burstTrail.lifetime.mode", "value": "dynamic" },
+        { "path": "burstTrail.lifetime.percent", "value": 1 },
+        { "path": "burstTrail.lifetime.baseSeconds", "value": 1.7 },
+        { "path": "burstTrail.lifetime.afterglowSeconds", "value": 0.32 },
+        { "path": "burstTrail.lifetime.variationPercent", "value": 0 },
+        { "path": "burstTrail.intensity.brightness", "value": 1.15 },
+        { "path": "burstTrail.intensity.fadeSoftness", "value": 3.2 },
+        { "path": "burstTrail.placement.headGapPercent", "value": 0 },
+        { "path": "burstTrail.colourMode", "value": "ember" },
+        { "path": "burstTrail.frontClump", "value": 0.55 },
+        { "path": "burstTrail.particleSize.base", "value": 4.63 },
+        { "path": "burstTrail.particleSize.headScale", "value": 1.25 },
+        { "path": "burstTrail.particleSize.tailScale", "value": 0.3 },
+        { "path": "burstTrail.particleSize.variationPercent", "value": 28 },
+        { "path": "burstTrail.particlesPerStar", "value": 280 },
+        { "path": "secondaryColorRatio", "value": 0.22 }
+      ],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "roman_candle-crimson",
+      "name": "Roman Candle Crimson",
+      "templateKey": "romanCandle",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "silverFish-default",
+      "name": "Silver Fish Default",
+      "templateKey": "fish",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "saturn-crimson",
+      "name": "Saturn Crimson",
+      "templateKey": "saturn",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "arthur-rozzi-chrysanthemum-silver-red",
+      "name": "Arthur Rozzi Silver Chrysanthemum to Red",
+      "templateKey": "chrysanthemum",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "brocade-azure",
+      "name": "Brocade Azure",
+      "templateKey": "brocade",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "arthur-rozzi-brocade-glitter-red",
+      "name": "Arthur Rozzi Glittering Brocade to Red",
+      "templateKey": "brocade",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "arthur-rozzi-brocade-red-green-blue",
+      "name": "Arthur Rozzi Brocade to Red Green and Blue",
+      "templateKey": "brocade",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "test-firework-6rkv",
+      "name": "test firework",
+      "templateKey": "brocade",
+      "unmatchedSettings": [],
+      "notes": []
+    },
+    {
+      "slug": "crackle-default",
+      "name": "Crackle Default",
+      "templateKey": "crackle",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "comet-azure",
+      "name": "Comet Azure",
+      "templateKey": "comet",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "palm-default",
+      "name": "Palm Default",
+      "templateKey": "palm",
+      "unmatchedSettings": [
+        { "path": "stars.outer.color.b", "value": 0.4 },
+        { "path": "stars.outer.color.g", "value": 0.8196078431372549 },
+        { "path": "stars.outer.color.r", "value": 1 },
+        { "path": "stars.outer.colourPattern.axis", "value": "vertical" },
+        { "path": "stars.outer.colourPattern.mode", "value": "random" },
+        { "path": "stars.outer.colourPattern.count", "value": 2 },
+        {
+          "path": "stars.outer.colourPattern.colours",
+          "value": [
+            { "color": { "b": 0.4, "g": 0.8196078431372549, "r": 1 }, "weight": 78 },
+            { "color": { "b": 0.23921568627450981, "g": 0.6823529411764706, "r": 1 }, "weight": 22 }
+          ]
+        },
+        { "path": "geometryTuning.radialArms.arms", "value": 6 },
+        { "path": "geometryTuning.radialArms.lift", "value": 2 },
+        { "path": "geometryTuning.radialArms.angleJitter", "value": 1 },
+        { "path": "geometryTuning.radialArms.dragPercent", "value": 10 },
+        { "path": "geometryTuning.radialArms.countPercent", "value": 100 },
+        { "path": "geometryTuning.radialArms.liftVariation", "value": 2 },
+        { "path": "secondaryColorRatio", "value": 0.22 }
+      ],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "nishiki-azure",
+      "name": "Nishiki Azure",
+      "templateKey": "nishiki",
+      "unmatchedSettings": [],
+      "notes": [
+        "Brocade-family visual approximation: 5-second stars, 105 trail sparks, 2.6-second trails and maximum glitter strength. Not a measured reconstruction.",
+        "Secondary colour and its ratio have no automatic layer assignment."
+      ]
+    },
+    {
+      "slug": "roman_candle-azure",
+      "name": "Roman Candle Azure",
+      "templateKey": "romanCandle",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "chrysanthemum-azure",
+      "name": "Chrysanthemum Azure",
+      "templateKey": "chrysanthemum",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "crossette-crimson",
+      "name": "Crossette Crimson",
+      "templateKey": "crossette",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "bowtie-crimson",
+      "name": "Bow Tie Crimson",
+      "templateKey": "bowtie",
+      "unmatchedSettings": [],
+      "notes": [
+        "Old bowtie enables splitting. The template preserves a planar silhouette without those splits.",
+        "Secondary colour and its ratio have no automatic layer assignment."
+      ]
+    },
+    {
+      "slug": "willow-default",
+      "name": "Willow Default",
+      "templateKey": "willow",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "strobe-azure",
+      "name": "Strobe Azure",
+      "templateKey": "strobe",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "fountain-default",
+      "name": "Fountain Default",
+      "templateKey": "fountain",
+      "unmatchedSettings": [],
+      "notes": [
+        "v1 fountain colour accepts one hex colour only. Primary colour retained; alternate palette needs renderer support.",
+        "Secondary colour and its ratio have no automatic layer assignment."
+      ]
+    },
+    {
+      "slug": "mine-crimson",
+      "name": "Mine Crimson",
+      "templateKey": "mine",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "arthur-rozzi-brocade-magenta-green",
+      "name": "Arthur Rozzi Brocade Magenta to Green",
+      "templateKey": "brocade",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "horsetail-azure",
+      "name": "Horsetail Azure",
+      "templateKey": "horsetail",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "bowtie-azure",
+      "name": "Bow Tie Azure",
+      "templateKey": "bowtie",
+      "unmatchedSettings": [
+        { "path": "stars.outer.head.opening.colour.enabled", "value": true },
+        { "path": "stars.outer.head.opening.colour.fadePercent", "value": 10 },
+        { "path": "stars.outer.head.glowSize", "value": 180 },
+        { "path": "stars.outer.head.coreSoftness", "value": 48.4 },
+        { "path": "stars.outer.head.glowSoftness", "value": 96 },
+        { "path": "stars.outer.head.coreBrightness", "value": 31 },
+        { "path": "stars.outer.head.coreOpacityFalloff", "value": 73.2 },
+        { "path": "stars.outer.head.whiteCoreBlurPercent", "value": 11.4 },
+        { "path": "stars.outer.head.whiteCoreSizePercent", "value": 23.2 },
+        { "path": "stars.outer.burst.speed", "value": [9.2, 10.4] },
+        { "path": "stars.outer.color.b", "value": 1 },
+        { "path": "stars.outer.color.g", "value": 0.4980392156862745 },
+        { "path": "stars.outer.color.r", "value": 0.11764705882352941 },
+        { "path": "stars.outer.count", "value": 40 },
+        { "path": "stars.outer.colourPattern.axis", "value": "vertical" },
+        { "path": "stars.outer.colourPattern.mode", "value": "random" },
+        { "path": "stars.outer.colourPattern.count", "value": 2 },
+        {
+          "path": "stars.outer.colourPattern.colours",
+          "value": [
+            {
+              "color": { "b": 1, "g": 0.4980392156862745, "r": 0.11764705882352941 },
+              "weight": 48
+            },
+            { "color": { "b": 1, "g": 0, "r": 0.7843137254901961 }, "weight": 52 }
+          ]
+        },
+        {
+          "path": "burstTrail.stops",
+          "value": [
+            {
+              "size": 1.05,
+              "density": 1.5,
+              "position": 0,
+              "shapeWeights": { "circle": 4, "square": 88, "triangle": 8 },
+              "sizeVariation": 28
+            },
+            {
+              "size": 0.9,
+              "density": 1.15,
+              "position": 32,
+              "shapeWeights": { "circle": 5, "square": 86, "triangle": 9 },
+              "sizeVariation": 30
+            },
+            {
+              "size": 0.5,
+              "density": 0.34,
+              "position": 100,
+              "shapeWeights": { "circle": 8, "square": 84, "triangle": 8 },
+              "sizeVariation": 34
+            }
+          ]
+        },
+        { "path": "burstTrail.width.tail", "value": 56 },
+        { "path": "burstTrail.width.curve", "value": 1 },
+        { "path": "burstTrail.width.front", "value": 39 },
+        { "path": "burstTrail.motion.drag", "value": 1.4 },
+        { "path": "burstTrail.motion.spin", "value": 0 },
+        { "path": "burstTrail.motion.driftX", "value": 0 },
+        { "path": "burstTrail.motion.driftY", "value": -0.012 },
+        { "path": "burstTrail.motion.driftZ", "value": 0 },
+        { "path": "burstTrail.motion.gravity", "value": -0.02 },
+        { "path": "burstTrail.motion.turbulence", "value": 0.045 },
+        { "path": "burstTrail.motion.inheritedVelocity", "value": 0.02 },
+        { "path": "burstTrail.preset", "value": "custom" },
+        { "path": "burstTrail.closing.size.enabled", "value": true },
+        { "path": "burstTrail.closing.size.endPercent", "value": 46 },
+        { "path": "burstTrail.closing.size.shrinkPercent", "value": 22 },
+        { "path": "burstTrail.closing.colour.color.b", "value": 0.08 },
+        { "path": "burstTrail.closing.colour.color.g", "value": 0.34 },
+        { "path": "burstTrail.closing.colour.color.r", "value": 1 },
+        { "path": "burstTrail.closing.colour.enabled", "value": false },
+        { "path": "burstTrail.closing.colour.fadePercent", "value": 22 },
+        { "path": "burstTrail.closing.spreadFade.enabled", "value": true },
+        { "path": "burstTrail.closing.spreadFade.startAngle", "value": 60 },
+        { "path": "burstTrail.closing.spreadFade.endOpacityPercent", "value": 55 },
+        { "path": "burstTrail.enabled", "value": true },
+        { "path": "burstTrail.flicker.chance", "value": 0.08 },
+        { "path": "burstTrail.flicker.strength", "value": 0.9 },
+        { "path": "burstTrail.flicker.lifetimeMultiplier", "value": 0.45 },
+        { "path": "burstTrail.opening.size.startPercent", "value": 100 },
+        { "path": "burstTrail.opening.visibility.revealPercent", "value": 24 },
+        { "path": "burstTrail.opening.visibility.particlesPercent", "value": 100 },
+        { "path": "burstTrail.opening.visibility.brightnessPercent", "value": 100 },
+        { "path": "burstTrail.spacing.curve", "value": 1 },
+        { "path": "burstTrail.spacing.jitterPercent", "value": 5 },
+        { "path": "burstTrail.version", "value": 2 },
+        { "path": "burstTrail.lifetime.mode", "value": "dynamic" },
+        { "path": "burstTrail.lifetime.percent", "value": 0.4 },
+        { "path": "burstTrail.lifetime.baseSeconds", "value": 1.7 },
+        { "path": "burstTrail.lifetime.afterglowSeconds", "value": 0.32 },
+        { "path": "burstTrail.lifetime.variationPercent", "value": 47 },
+        { "path": "burstTrail.intensity.brightness", "value": 1.15 },
+        { "path": "burstTrail.intensity.fadeSoftness", "value": 1 },
+        { "path": "burstTrail.placement.headGapPercent", "value": 0 },
+        { "path": "burstTrail.colourMode", "value": "ember" },
+        { "path": "burstTrail.frontClump", "value": 0.55 },
+        { "path": "burstTrail.particleSize.base", "value": 1 },
+        { "path": "burstTrail.particleSize.headScale", "value": 1 },
+        { "path": "burstTrail.particleSize.tailScale", "value": 0.55 },
+        { "path": "burstTrail.particleSize.variationPercent", "value": 28 },
+        { "path": "burstTrail.particlesPerStar", "value": 981 },
+        { "path": "liftVelocity", "value": 15 },
+        { "path": "secondaryColorRatio", "value": 0.52 }
+      ],
+      "notes": [
+        "Old bowtie enables splitting. The template preserves a planar silhouette without those splits.",
+        "Secondary colour and its ratio have no automatic layer assignment."
+      ]
+    },
+    {
+      "slug": "pistil-default",
+      "name": "Pistil Default",
+      "templateKey": "pistil",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "fountain-crimson",
+      "name": "Fountain Crimson",
+      "templateKey": "fountain",
+      "unmatchedSettings": [],
+      "notes": [
+        "v1 fountain colour accepts one hex colour only. Primary colour retained; alternate palette needs renderer support.",
+        "Secondary colour and its ratio have no automatic layer assignment."
+      ]
+    },
+    {
+      "slug": "double_break-default",
+      "name": "Double Break Default",
+      "templateKey": "multiBreak",
+      "unmatchedSettings": [],
+      "notes": [
+        "Old split-cross stars split into fragments. Multi-break uses three independent timed breaks, not two secondary splits.",
+        "Secondary colour and its ratio have no automatic layer assignment."
+      ]
+    },
+    {
+      "slug": "whirl-azure",
+      "name": "Whirl Azure",
+      "templateKey": "whirlwind",
+      "unmatchedSettings": [],
+      "notes": [
+        "Both swirl; the template uses a ring and a spin modifier rather than the old whirl geometry.",
+        "Secondary colour and its ratio have no automatic layer assignment."
+      ]
+    },
+    {
+      "slug": "willow-azure",
+      "name": "Willow Azure",
+      "templateKey": "willow",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "strobe-default",
+      "name": "Blue and Red Strobe",
+      "templateKey": "strobe",
+      "unmatchedSettings": [
+        { "path": "stars.core.head.size", "value": 223 },
+        { "path": "stars.core.head.closing.size.enabled", "value": false },
+        { "path": "stars.core.head.closing.size.endPercent", "value": 0 },
+        { "path": "stars.core.head.closing.size.shrinkPercent", "value": 22 },
+        { "path": "stars.core.head.closing.colour.color.b", "value": 0.4 },
+        { "path": "stars.core.head.closing.colour.color.g", "value": 0.84 },
+        { "path": "stars.core.head.closing.colour.color.r", "value": 1 },
+        { "path": "stars.core.head.closing.colour.enabled", "value": false },
+        { "path": "stars.core.head.closing.colour.fadePercent", "value": 22 },
+        { "path": "stars.core.head.opening.size.enabled", "value": false },
+        { "path": "stars.core.head.opening.size.growPercent", "value": 22 },
+        { "path": "stars.core.head.opening.size.startPercent", "value": 35 },
+        { "path": "stars.core.head.opening.colour.color.b", "value": 0.08 },
+        { "path": "stars.core.head.opening.colour.color.g", "value": 0.42 },
+        { "path": "stars.core.head.opening.colour.color.r", "value": 1 },
+        { "path": "stars.core.head.opening.colour.enabled", "value": false },
+        { "path": "stars.core.head.opening.colour.fadePercent", "value": 24 },
+        { "path": "stars.core.head.visible", "value": true },
+        { "path": "stars.core.head.glowBlur", "value": 45 },
+        { "path": "stars.core.head.glowSize", "value": 90 },
+        { "path": "stars.core.head.glowPadding", "value": 150 },
+        { "path": "stars.core.head.coreSoftness", "value": 55 },
+        { "path": "stars.core.head.glowSoftness", "value": 100 },
+        { "path": "stars.core.head.glowStrength", "value": 1.5 },
+        { "path": "stars.core.head.coreBrightness", "value": 50 },
+        { "path": "stars.core.head.coreOpacityFalloff", "value": 60 },
+        { "path": "stars.core.head.glowOpacityFalloff", "value": 100 },
+        { "path": "stars.core.head.whiteCoreBlurPercent", "value": 15 },
+        { "path": "stars.core.head.whiteCoreSizePercent", "value": 20 },
+        { "path": "stars.core.head.brightnessHoldPercent", "value": 82 },
+        { "path": "stars.core.head.backgroundGlowSoftness", "value": 50 },
+        { "path": "stars.core.head.brightnessHoldExponent", "value": 0.8 },
+        { "path": "stars.core.head.backgroundGlowOpacityFalloff", "value": 75 },
+        { "path": "stars.core.burst.life", "value": [0.31, 5.33] },
+        { "path": "stars.core.burst.speed", "value": [0.89, 1.99] },
+        { "path": "stars.core.burst.gravity", "value": [-0.24, -0.02] },
+        { "path": "stars.core.burst.flairColorMode", "value": "mixed" },
+        { "path": "stars.core.count", "value": 38 },
+        { "path": "stars.core.enabled", "value": false },
+        { "path": "stars.outer.head.size", "value": 200 },
+        { "path": "stars.outer.head.closing.size.enabled", "value": false },
+        { "path": "stars.outer.head.closing.size.endPercent", "value": 0 },
+        { "path": "stars.outer.head.closing.size.shrinkPercent", "value": 22 },
+        { "path": "stars.outer.head.closing.colour.color.b", "value": 0.4 },
+        { "path": "stars.outer.head.closing.colour.color.g", "value": 0.84 },
+        { "path": "stars.outer.head.closing.colour.color.r", "value": 1 },
+        { "path": "stars.outer.head.closing.colour.enabled", "value": false },
+        { "path": "stars.outer.head.closing.colour.fadePercent", "value": 22 },
+        { "path": "stars.outer.head.opening.size.enabled", "value": false },
+        { "path": "stars.outer.head.opening.size.growPercent", "value": 22 },
+        { "path": "stars.outer.head.opening.size.startPercent", "value": 35 },
+        { "path": "stars.outer.head.opening.colour.color.b", "value": 0.08 },
+        { "path": "stars.outer.head.opening.colour.color.g", "value": 0.42 },
+        { "path": "stars.outer.head.opening.colour.color.r", "value": 1 },
+        { "path": "stars.outer.head.opening.colour.enabled", "value": false },
+        { "path": "stars.outer.head.opening.colour.fadePercent", "value": 24 },
+        { "path": "stars.outer.head.visible", "value": true },
+        { "path": "stars.outer.head.glowBlur", "value": 45 },
+        { "path": "stars.outer.head.glowSize", "value": 90 },
+        { "path": "stars.outer.head.glowPadding", "value": 150 },
+        { "path": "stars.outer.head.coreSoftness", "value": 55 },
+        { "path": "stars.outer.head.glowSoftness", "value": 100 },
+        { "path": "stars.outer.head.glowStrength", "value": 1.5 },
+        { "path": "stars.outer.head.coreBrightness", "value": 50 },
+        { "path": "stars.outer.head.coreOpacityFalloff", "value": 60 },
+        { "path": "stars.outer.head.glowOpacityFalloff", "value": 100 },
+        { "path": "stars.outer.head.whiteCoreBlurPercent", "value": 15 },
+        { "path": "stars.outer.head.whiteCoreSizePercent", "value": 20 },
+        { "path": "stars.outer.head.brightnessHoldPercent", "value": 82 },
+        { "path": "stars.outer.head.backgroundGlowSoftness", "value": 50 },
+        { "path": "stars.outer.head.brightnessHoldExponent", "value": 0.8 },
+        { "path": "stars.outer.head.backgroundGlowOpacityFalloff", "value": 75 },
+        { "path": "stars.outer.burst.life", "value": [2.5, 4] },
+        { "path": "stars.outer.burst.speed", "value": [1, 1.8] },
+        { "path": "stars.outer.burst.gravity", "value": [-0.4, 0] },
+        { "path": "stars.outer.burst.flairColorMode", "value": "bombColor" },
+        { "path": "stars.outer.color.b", "value": 0.00784313725490196 },
+        { "path": "stars.outer.color.g", "value": 0.00784313725490196 },
+        { "path": "stars.outer.color.r", "value": 0.7803921568627451 },
+        { "path": "stars.outer.count", "value": 70 },
+        { "path": "stars.outer.enabled", "value": true },
+        { "path": "stars.outer.colourPattern.axis", "value": "vertical" },
+        { "path": "stars.outer.colourPattern.mode", "value": "random" },
+        { "path": "stars.outer.colourPattern.count", "value": 2 },
+        {
+          "path": "stars.outer.colourPattern.colours",
+          "value": [
+            {
+              "color": {
+                "b": 0.00784313725490196,
+                "g": 0.00784313725490196,
+                "r": 0.7803921568627451
+              },
+              "weight": 51
+            },
+            { "color": { "b": 0.8705882352941177, "g": 0.34901960784313724, "r": 0 }, "weight": 49 }
+          ]
+        },
+        { "path": "liftVelocity", "value": 15 },
+        { "path": "secondaryColorRatio", "value": 0.49 }
+      ],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "pistil-azure",
+      "name": "Pistil Azure",
+      "templateKey": "pistil",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "kamuro-default",
+      "name": "Kamuro Default",
+      "templateKey": "kamuro",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "waterfall-crimson",
+      "name": "Waterfall Crimson",
+      "templateKey": "waterfall",
+      "unmatchedSettings": [],
+      "notes": [
+        "Both fall downwards; the template uses an aerial bottom hemisphere rather than the old wide falling scatter.",
+        "Secondary colour and its ratio have no automatic layer assignment."
+      ]
+    },
+    {
+      "slug": "arthur-rozzi-brocade-crackling-palm-red-green",
+      "name": "Arthur Rozzi Brocade Crackling Palm Red and Green",
+      "templateKey": "brocade",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "arthur-rozzi-brocade-blue-green",
+      "name": "Arthur Rozzi Brocade to Blue with Green Strobe",
+      "templateKey": "brocade",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "waterfall-default",
+      "name": "Waterfall Default",
+      "templateKey": "waterfall",
+      "unmatchedSettings": [],
+      "notes": [
+        "Both fall downwards; the template uses an aerial bottom hemisphere rather than the old wide falling scatter.",
+        "Secondary colour and its ratio have no automatic layer assignment."
+      ]
+    },
+    {
+      "slug": "ring-default",
+      "name": "Ring Default",
+      "templateKey": "ring",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "peony-azure",
+      "name": "Peony Azure",
+      "templateKey": "peony",
+      "unmatchedSettings": [],
+      "notes": ["Secondary colour and its ratio have no automatic layer assignment."]
+    },
+    {
+      "slug": "double_break-azure",
+      "name": "Double Break Azure",
+      "templateKey": "multiBreak",
+      "unmatchedSettings": [],
+      "notes": [
+        "Old split-cross stars split into fragments. Multi-break uses three independent timed breaks, not two secondary splits.",
+        "Secondary colour and its ratio have no automatic layer assignment."
+      ]
+    },
+    {
+      "slug": "nishiki-default",
+      "name": "Nishiki Default",
+      "templateKey": "nishiki",
+      "unmatchedSettings": [],
+      "notes": [
+        "Brocade-family visual approximation: 5-second stars, 105 trail sparks, 2.6-second trails and maximum glitter strength. Not a measured reconstruction.",
+        "Secondary colour and its ratio have no automatic layer assignment."
+      ]
+    },
+    {
+      "slug": "whirl-default",
+      "name": "Whirl Default",
+      "templateKey": "whirlwind",
+      "unmatchedSettings": [],
+      "notes": [
+        "Both swirl; the template uses a ring and a spin modifier rather than the old whirl geometry.",
+        "Secondary colour and its ratio have no automatic layer assignment."
+      ]
+    }
+  ],
+  "newRowsPerTable": 76
+}
