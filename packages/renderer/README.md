@@ -29,7 +29,11 @@ reignition is optional and applies only to colour changes.
 same values. It does not mutate the document or apply defaults. Invalid documents
 throw a Zod error containing property paths; unknown versions throw a range error.
 The version is stored externally as `design_schema`, not inside the document.
-`RENDERER_VERSION` is `0.7.1`, with consistent catalogue height bands and burst-centred close zoom.
+`RENDERER_VERSION` is `0.8.0`, adding tilted planar bowtie and five-point star outlines.
+The star uses ten equal-length edges with a 0.44 inner/outer radius ratio. Bowtie
+uses two opposed 60-degree circular fans. Both are visual tuning based on the
+legacy shell intent, with unit directions and a separate outline radius. Existing
+patterns retain their previous geometry.
 
 `TEMPLATE_HEIGHT_BANDS` in `src/templates/height-bands.ts` documents authored apex
 and burst-top limits in metres. Shells/rockets use 55 to 65 m (catalogue apex 60 m),
