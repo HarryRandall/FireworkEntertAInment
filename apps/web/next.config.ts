@@ -5,7 +5,11 @@ const nextConfig: NextConfig = {
   // AGENTS.md already points to the bundled version-matched documentation.
   // Prevent `next dev` from appending a second managed instruction block.
   agentRules: false,
-  transpilePackages: ['@showcrafter/fireworks', '@showcrafter/firework-editor'],
+  transpilePackages: [
+    '@showcrafter/fireworks',
+    '@showcrafter/firework-editor',
+    '@showcrafter/renderer',
+  ],
   allowedDevOrigins: ['127.0.0.1'],
   // Parallel renderer QA uses an isolated cache so it cannot disturb a
   // developer's existing Next process in this fast-moving worktree.
