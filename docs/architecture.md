@@ -144,3 +144,25 @@ The admin renderer preview loads its browser view without server rendering.
 Shows continue to use `packages/fireworks` and `packages/firework-editor`; the
 renderer library is not used by shows. Keep its validators separate from web
 Zod 4 schemas.
+
+## Renderer design storage
+
+`firework_effects.design` and `fireworks.design` optionally store complete renderer
+v1 documents alongside their existing rendering fields. `design_schema` is fixed
+at 1. PostgreSQL validates documents with `pg_jsonschema` and the generated
+`private.firework_design_schema()` helper. Effect `template_key` values are unique
+when present. Existing snapshot triggers and editor RPC field allowlists retain
+their current behaviour; application flows do not consume these designs yet.
+
+`catalogue_items.finale_product_id` identifies a Finale 3D supplier product;
+null means there is no equivalent yet. `finale_effect_name` is optional. The
+initial mapping copies `part_number` only for manufacturer-labelled products.
+Existing table grants and RLS apply to all these columns, including listed public
+catalogue reads and catalogue administrator writes.
+
+`pnpm db:design-schema --check`, included in `pnpm check`, rejects a stale SQL
+schema. After changing the JSON Schema, run
+`pnpm db:design-schema --migration <YYYYMMDDHHMMSS>` to emit a new migration
+without rewriting history. The migration revalidates existing designs, so inspect
+compatibility before applying it. Bootstrap snapshots include the design and
+Finale columns explicitly.
