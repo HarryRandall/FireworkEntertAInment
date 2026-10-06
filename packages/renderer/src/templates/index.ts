@@ -5,6 +5,7 @@ import dahlia from './dahlia.json' with { type: 'json' };
 import chrysanthemum from './chrysanthemum.json' with { type: 'json' };
 import willow from './willow.json' with { type: 'json' };
 import brocade from './brocade.json' with { type: 'json' };
+import nishiki from './nishiki.json' with { type: 'json' };
 import kamuro from './kamuro.json' with { type: 'json' };
 import horsetail from './horsetail.json' with { type: 'json' };
 import palm from './palm.json' with { type: 'json' };
@@ -107,6 +108,7 @@ export type EffectTemplateKey =
   | 'dahlia'
   | 'chrysanthemum'
   | 'willow'
+  | 'nishiki'
   | 'brocade'
   | 'kamuro'
   | 'horsetail'
@@ -216,6 +218,7 @@ export type EffectTemplateGroup =
 export interface EffectTemplate {
   readonly key: EffectTemplateKey;
   readonly name: string;
+  readonly description?: string;
   readonly group: EffectTemplateGroup;
   readonly design: Design;
 }
@@ -668,6 +671,13 @@ export const effectTemplates: readonly EffectTemplate[] = [
     name: rocketFlowers.name,
     group: 'Display effects',
     design: upgradeDesign(rocketFlowers.design, 1),
+  },
+  {
+    key: 'nishiki',
+    name: nishiki.name,
+    description: nishiki.description,
+    group: 'Shells',
+    design: upgradeDesign(nishiki.design, 1),
   },
 ];
 

@@ -23,8 +23,8 @@ const golden = JSON.parse(
 // Float32 reference outputs use the same absolute tolerance as the core simulation goldens.
 const FLOAT32_TOLERANCE = 1e-6;
 // Captured prototype catalogue plus two visually tuned planar shells.
-const TEMPLATE_COUNT = 101;
-const NEW_TEMPLATE_KEYS = ['bowtie', 'fivePointStar'];
+const TEMPLATE_COUNT = 102;
+const NEW_TEMPLATE_KEYS = ['bowtie', 'fivePointStar', 'nishiki'];
 const compare = (actual, expected, label) => {
   assert.equal(actual.length, expected.length, label);
   actual.forEach((v, i) =>
