@@ -22,6 +22,7 @@ function reply() {
     ok: true,
     kind: 'effect',
     saved: {
+      design: null,
       id: 'effect-id',
       name: 'Saved',
       description: null,

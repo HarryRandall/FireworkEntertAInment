@@ -1,4 +1,5 @@
 'use server';
+import { validateEditorDesign, designJson } from '@/lib/renderer-editor/validation';
 
 /** Admin base-effect actions. Base effects are colourless shared firework patterns. */
 
@@ -35,13 +36,21 @@ type EffectRow = Database['public']['Tables']['firework_effects']['Row'];
 type StyleDefaultRow = Database['public']['Tables']['firework_style_defaults']['Row'];
 type EffectMutationRow = Pick<
   EffectRow,
-  'id' | 'name' | 'description' | 'pattern_key' | 'sort_order' | 'model_json' | 'updated_at'
+  | 'id'
+  | 'name'
+  | 'description'
+  | 'pattern_key'
+  | 'sort_order'
+  | 'model_json'
+  | 'design'
+  | 'updated_at'
 >;
 type StyleDefaultMutationRow = Pick<
   StyleDefaultRow,
   'id' | 'name' | 'description' | 'kind' | 'defaults_json'
 >;
 type SavedEffect = {
+  design: Json | null;
   id: string;
   name: string;
   description: string | null;
@@ -115,6 +124,7 @@ const CUSTOM_STAR_EFFECT_MODEL = canonicaliseEffectModelJson({
 }) as Json;
 
 const EffectPatchSchema = z.object({
+  design: z.unknown().optional(),
   id: z.string().uuid(),
   historyVersionId: z.string().uuid().optional(),
   expectedUpdatedAt: z.string().trim().min(1),
@@ -193,6 +203,7 @@ function parseStyleDefaultJson(
 
 function mapSavedEffect(row: EffectMutationRow): SavedEffect {
   return {
+    design: row.design,
     id: row.id,
     name: row.name,
     description: row.description,
@@ -226,8 +237,11 @@ export async function updateEffect(input: z.infer<typeof EffectPatchSchema>): Pr
   const model = parseModelJson(parsed.data.modelJson);
   if (!model.ok) return { ok: false, error: model.error };
 
+  const design = parsed.data.design === undefined ? null : validateEditorDesign(parsed.data.design);
+  if (design && !design.ok) return { ok: false, error: design.error };
   const supabase = createClient(await cookies(), supabaseFetchLong);
   const patch = {
+    ...(design?.ok ? { design: designJson(design.value) } : {}),
     name: parsed.data.name,
     description: parsed.data.description || null,
     pattern_key: parsed.data.patternKey,
@@ -275,12 +289,18 @@ export async function createStyleDefaultAndUpdateEffect(
   const defaults = parseStyleDefaultJson(parsed.data.styleDefault.defaultsJson);
   if (!defaults.ok) return { ok: false, error: defaults.error };
 
+  const design =
+    parsed.data.effect.design === undefined
+      ? null
+      : validateEditorDesign(parsed.data.effect.design);
+  if (design && !design.ok) return { ok: false, error: design.error };
   const supabase = createClient(await cookies(), supabaseFetchLong);
   const result = await saveEditorRecord(supabase, {
     kind: 'effect',
     id: parsed.data.effect.id,
     expectedUpdatedAt: parsed.data.effect.expectedUpdatedAt,
     patch: {
+      ...(design?.ok ? { design: designJson(design.value) } : {}),
       name: parsed.data.effect.name,
       description: parsed.data.effect.description || null,
       pattern_key: parsed.data.effect.patternKey,
@@ -325,6 +345,7 @@ export async function createStyleDefaultAndUpdateEffect(
   };
 }
 
+/** Restores a saved design and record through the existing atomic editor transaction. */
 export async function restoreEffectEditorVersion(
   input: z.infer<typeof RestoreEffectVersionSchema>,
 ): Promise<Result> {
@@ -361,7 +382,10 @@ export async function restoreEffectEditorVersion(
     return { ok: false, error: `That version has invalid renderer settings: ${rendererError}` };
   }
 
+  const design = snapshot.design == null ? null : validateEditorDesign(snapshot.design);
+  if (design && !design.ok) return { ok: false, error: design.error };
   const patch = {
+    ...(design?.ok ? { design: designJson(design.value) } : {}),
     name: snapshot.name,
     description: snapshot.description,
     pattern_key: snapshot.patternKey,

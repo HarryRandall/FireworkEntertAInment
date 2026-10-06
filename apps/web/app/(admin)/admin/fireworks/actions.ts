@@ -1,4 +1,5 @@
 'use server';
+import { validateEditorDesign, designJson } from '@/lib/renderer-editor/validation';
 import { createRenderSnapshot, validateRenderSnapshot } from '@/lib/admin/render-snapshot.server';
 
 /** Admin firework actions: create and edit atomic fireworks (effect + colours
@@ -43,6 +44,7 @@ type FireworkMutationRow = Pick<
   | 'secondary_color'
   | 'color_palette'
   | 'render_overrides_json'
+  | 'design'
   | 'updated_at'
 >;
 type StyleDefaultMutationRow = Pick<
@@ -50,6 +52,7 @@ type StyleDefaultMutationRow = Pick<
   'id' | 'name' | 'description' | 'kind' | 'defaults_json'
 >;
 type SavedFirework = {
+  design: Json | null;
   id: string;
   name: string;
   description: string | null;
@@ -94,6 +97,7 @@ const CreateFireworkSchema = z.object({
 });
 
 const UpdateFireworkSchema = z.object({
+  design: z.unknown().optional(),
   id: z.string().uuid(),
   historyVersionId: z.string().uuid().optional(),
   expectedUpdatedAt: z.string().trim().min(1),
@@ -173,6 +177,7 @@ function parseStyleDefaultJson(
 
 function mapSavedFirework(row: FireworkMutationRow): SavedFirework {
   return {
+    design: row.design,
     id: row.id,
     name: row.name,
     description: row.description,
@@ -261,10 +266,13 @@ export async function updateFirework(input: z.infer<typeof UpdateFireworkSchema>
   const overrides = parseJsonObject(parsed.data.renderOverridesJson);
   if (!overrides.ok) return { ok: false, error: overrides.error };
 
+  const design = parsed.data.design === undefined ? null : validateEditorDesign(parsed.data.design);
+  if (design && !design.ok) return { ok: false, error: design.error };
   const supabase = createClient(await cookies());
   const resolved = validateRenderSnapshot(overrides.value, parsed.data.id);
   if (!resolved.ok) return resolved;
   const patch = {
+    ...(design?.ok ? { design: designJson(design.value) } : {}),
     name: parsed.data.name,
     description: parsed.data.description || null,
     firework_effect_id: parsed.data.fireworkEffectId,
@@ -307,6 +315,11 @@ export async function createStyleDefaultAndUpdateFirework(
   const defaults = parseStyleDefaultJson(parsed.data.styleDefault.defaultsJson);
   if (!defaults.ok) return { ok: false, error: defaults.error };
 
+  const design =
+    parsed.data.firework.design === undefined
+      ? null
+      : validateEditorDesign(parsed.data.firework.design);
+  if (design && !design.ok) return { ok: false, error: design.error };
   const supabase = createClient(await cookies());
   const resolved = validateRenderSnapshot(overrides.value, parsed.data.firework.id);
   if (!resolved.ok) return resolved;
@@ -315,6 +328,7 @@ export async function createStyleDefaultAndUpdateFirework(
     id: parsed.data.firework.id,
     expectedUpdatedAt: parsed.data.firework.expectedUpdatedAt,
     patch: {
+      ...(design?.ok ? { design: designJson(design.value) } : {}),
       name: parsed.data.firework.name,
       description: parsed.data.firework.description || null,
       firework_effect_id: parsed.data.firework.fireworkEffectId,
@@ -354,6 +368,7 @@ export async function createStyleDefaultAndUpdateFirework(
   };
 }
 
+/** Restores a saved design and record through the existing atomic editor transaction. */
 export async function restoreFireworkEditorVersion(
   input: z.infer<typeof RestoreFireworkVersionSchema>,
 ): Promise<Result> {
@@ -391,7 +406,10 @@ export async function restoreFireworkEditorVersion(
 
   const resolved = validateRenderSnapshot(snapshot.renderOverridesJson, snapshot.id);
   if (!resolved.ok) return resolved;
+  const design = snapshot.design == null ? null : validateEditorDesign(snapshot.design);
+  if (design && !design.ok) return { ok: false, error: design.error };
   const patch = {
+    ...(design?.ok ? { design: designJson(design.value) } : {}),
     name: snapshot.name,
     description: snapshot.description,
     firework_effect_id: snapshot.fireworkEffectId,

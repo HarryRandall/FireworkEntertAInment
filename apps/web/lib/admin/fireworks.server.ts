@@ -33,6 +33,7 @@ type FireworkEffectRow = {
   pattern_key: string;
   type?: string | null;
   model_json?: Json;
+  design?: Json | null;
 };
 
 type FireworkRow = {
@@ -46,6 +47,7 @@ type FireworkRow = {
   caliber: string | null;
   duration_seconds: number | null;
   height_meters: number | null;
+  design: Json | null;
   render_snapshot_json: Json | null;
   render_overrides_json: Json;
   updated_at: string;
@@ -54,8 +56,8 @@ type FireworkRow = {
 };
 
 const FIREWORK_SELECT =
-  'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, render_snapshot_json, render_overrides_json, updated_at, firework_effects (id, slug, name, pattern_key, model_json), firework_preview_images(source_revision, renderer_version, storage_path)';
-const EFFECT_OPTIONS_SELECT = 'id, slug, name, pattern_key, model_json';
+  'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, design, render_snapshot_json, render_overrides_json, updated_at, firework_effects (id, slug, name, pattern_key, model_json), firework_preview_images(source_revision, renderer_version, storage_path)';
+const EFFECT_OPTIONS_SELECT = 'id, slug, name, pattern_key, model_json, design';
 
 function firstEffect(
   effect: FireworkEffectRow | FireworkEffectRow[] | null | undefined,
@@ -179,6 +181,7 @@ export async function listEffectOptions(): Promise<AdminEffectOption[]> {
 async function loadEffectOptionsAndModels(): Promise<{
   options: AdminEffectOption[];
   models: Record<string, Json>;
+  designs: Record<string, Json | null>;
   starStyleDefaults: Record<string, AdminStyleDefaultOption | null>;
   trailStyleDefaults: Record<string, AdminStyleDefaultOption | null>;
   styleDefaultLinksByEffect: Record<string, AdminStyleDefaultLinkMap>;
@@ -193,6 +196,7 @@ async function loadEffectOptionsAndModels(): Promise<{
     return {
       options: [],
       models: {},
+      designs: {},
       starStyleDefaults: {},
       trailStyleDefaults: {},
       styleDefaultLinksByEffect: {},
@@ -206,16 +210,25 @@ async function loadEffectOptionsAndModels(): Promise<{
     patternKey: row.pattern_key,
   }));
   const models: Record<string, Json> = {};
+  const designs: Record<string, Json | null> = {};
   const starStyleDefaults: Record<string, AdminStyleDefaultOption | null> = {};
   const trailStyleDefaults: Record<string, AdminStyleDefaultOption | null> = {};
   const styleDefaultLinksByEffect: Record<string, AdminStyleDefaultLinkMap> = {};
   for (const row of rows) {
+    designs[row.id] = row.design ?? null;
     models[row.id] = (row.model_json ?? {}) as Json;
     styleDefaultLinksByEffect[row.id] = {};
     starStyleDefaults[row.id] = null;
     trailStyleDefaults[row.id] = null;
   }
-  return { options, models, starStyleDefaults, trailStyleDefaults, styleDefaultLinksByEffect };
+  return {
+    options,
+    models,
+    designs,
+    starStyleDefaults,
+    trailStyleDefaults,
+    styleDefaultLinksByEffect,
+  };
 }
 
 /** One atomic firework plus its base-effect model and the effect options. */
@@ -252,6 +265,8 @@ export async function getAdminFireworkById(
   const detail: AdminFireworkDetailWithoutHistory = {
     ...mapSummary(row),
     renderOverridesJson: row.render_snapshot_json,
+    design: row.design,
+    effectDesigns: effectData.designs,
     effectModelJson: (effect?.model_json ?? effectData.models[effect?.id ?? ''] ?? {}) as Json,
     effectStarStyleDefault: effectStyleDefaultLinks.star ?? null,
     effectTrailStyleDefault: effectStyleDefaultLinks.trail ?? null,

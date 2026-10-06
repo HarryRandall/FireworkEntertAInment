@@ -2612,6 +2612,17 @@ export type Database = {
         }
         Returns: Json
       }
+      create_firework_from_template: {
+        Args: {
+          p_design: Json
+          p_duration_seconds: number
+          p_model: Json
+          p_name: string
+          p_render_snapshot: Json
+          p_template_key: string
+        }
+        Returns: string
+      }
       current_firework_import_render_validator_version: {
         Args: never
         Returns: string

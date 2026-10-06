@@ -27,6 +27,7 @@ type BaseEffectRow = Pick<
   | 'name'
   | 'description'
   | 'pattern_key'
+  | 'design'
   | 'model_json'
   | 'sort_order'
   | 'source'
@@ -68,6 +69,7 @@ function mapBaseEffectDetail(row: BaseEffectRow): AdminEffectDetailWithoutHistor
   return {
     ...mapBaseEffectSummary(row),
     modelJson: row.model_json as Json,
+    design: row.design,
     starStyleDefault: null,
     trailStyleDefault: null,
     styleDefaultLinks: {},
@@ -89,7 +91,7 @@ function mapBaseEffectDetail(row: BaseEffectRow): AdminEffectDetailWithoutHistor
 }
 
 const BASE_EFFECT_SELECT =
-  'id, slug, name, description, pattern_key, model_json, sort_order, source, updated_at, fireworks(id), firework_preview_images(source_revision, renderer_version, storage_path)';
+  'id, slug, name, description, pattern_key, design, model_json, sort_order, source, updated_at, fireworks(id), firework_preview_images(source_revision, renderer_version, storage_path)';
 
 async function selectBaseEffects(supabase: ServerClient) {
   const result = await supabase
