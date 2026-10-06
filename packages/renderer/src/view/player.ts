@@ -10,8 +10,7 @@ const SPEEDS = [QUARTER_SPEED, 0.5, 1, 2];
 const ROWS: readonly [Exclude<keyof ViewerSettings, 'volume'>, string][] = [
   ['stats', 'Frame rate and particles'],
   ['smoke', 'Smoke'],
-  ['stars', 'Stars in the sky'],
-  ['grid', 'Ground grid'],
+  ['ground', 'Ground lattice'],
   ['shake', 'Camera shake'],
   ['free', 'Free camera'],
 ];

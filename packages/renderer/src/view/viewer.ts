@@ -190,7 +190,6 @@ export class Viewer {
     this.layers.uniforms.uScale.value =
       (height * dpr) / (2 * Math.tan((FOV_DEG * Math.PI) / HALF_TURN_DEG / 2));
     this.layers.uniforms.uDpr.value = dpr;
-    this.world.resize(height, dpr);
     if (!this.controls.touched) this.resetCamera(true);
     else this.invalidate();
   }

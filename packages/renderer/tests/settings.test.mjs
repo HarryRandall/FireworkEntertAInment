@@ -38,10 +38,11 @@ test('settings load only known booleans, notify mounted views, persist and clean
     assert.equal('unknown' in SETTINGS, false);
     assert.equal(SETTINGS.sound, false);
     assert.equal(SETTINGS.volume, 0.7);
-    setSetting('grid', false);
+    setSetting('ground', false);
     assert.equal(first, 2);
     assert.equal(second, 2);
-    assert.equal(JSON.parse(storage.get('sc-viewer-settings')).grid, false);
+    assert.equal(JSON.parse(storage.get('sc-viewer-settings')).ground, false);
+    assert.equal('stars' in SETTINGS, false, 'the decorative starfield has no persisted setting');
     const update = new Event('storage');
     Object.assign(update, {
       key: 'sc-viewer-settings',

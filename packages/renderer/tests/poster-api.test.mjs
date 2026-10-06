@@ -252,7 +252,7 @@ test('identical posters share pending and completed captures, while changes and 
 
 test('poster reuse is bounded and changing appearance requires new pixels', async () => {
   const { SETTINGS } = await import('../src/view/settings.ts');
-  const savedStars = SETTINGS.stars;
+  const savedGround = SETTINGS.ground;
   const fake = fakeSurface();
   const surface = new SharedPosterSurface(() => fake.rig);
   const blob = new Blob(['PNG']);
@@ -266,18 +266,18 @@ test('poster reuse is bounded and changing appearance requires new pixels', asyn
   try {
     for (let time = 0; time < 33; time++) await finish(time);
     await finish(0); // Oldest poster has been evicted from the bounded working set.
-    SETTINGS.stars = !savedStars;
+    SETTINGS.ground = !savedGround;
     await finish(0);
     // Queued preferences must not leave pixels cached under the old appearance.
     const queued = surface.capture(design, 40, options);
-    SETTINGS.stars = savedStars;
+    SETTINGS.ground = savedGround;
     await new Promise((resolve) => setImmediate(resolve));
     fake.pending.shift().resolve(blob);
     await queued;
-    SETTINGS.stars = !savedStars;
+    SETTINGS.ground = !savedGround;
     await finish(40);
   } finally {
-    SETTINGS.stars = savedStars;
+    SETTINGS.ground = savedGround;
     await surface.dispose();
   }
 });

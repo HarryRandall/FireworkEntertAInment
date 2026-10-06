@@ -99,7 +99,7 @@ export function applyViewerShake(
 
 /** Applies shared rendering preferences and wakes a visible viewer for a settings redraw. */
 export function applyViewerSettings(viewer: Viewer, world: ReturnType<typeof makeWorld>): void {
-  world.setSettings(SETTINGS.stars, SETTINGS.grid);
+  world.setSettings(SETTINGS.ground);
   viewer.controls.setFree(SETTINGS.free);
   viewer.invalidate();
 }

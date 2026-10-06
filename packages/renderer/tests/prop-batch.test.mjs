@@ -25,7 +25,8 @@ test('forty-shot hardware uses one draw, with no per-face or per-shot groups', (
   assert.equal(drawables[0].geometry.groups.length, 0);
   assert.equal(Array.isArray(drawables[0].material), false);
   // The original 21 unique positions each had a body, lip and foot: 63 draws.
-  // Three world draws, three CPU layers, one GPU spray and one output add at most eight.
+  // Two static-world draws after removing decorative stars, three CPU layers, one GPU spray
+  // and one output add seven fixed draws; the batched hardware remains the eighth.
   const scene = new THREE.Scene();
   makeWorld(scene);
   const layers = new ParticleLayers();
@@ -48,10 +49,10 @@ test('forty-shot hardware uses one draw, with no per-face or per-shot groups', (
   output.render(renderer, scene, new THREE.Camera());
   assert.equal(
     submissions,
-    9,
+    8,
     'full live scene plus output stays within a shot-independent draw budget',
   );
-  console.log(`Finale scene draw budget: 71 before, ${submissions} after (hardware 63 -> 1)`);
+  console.log(`Finale scene draw budget: 70 before, ${submissions} after (hardware 63 -> 1)`);
   scene.remove(layers.group, sprays.points);
   layers.dispose();
   sprays.dispose();
