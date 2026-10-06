@@ -22,7 +22,7 @@ export function sanitizeStorageName(name: string): string {
  * normalises separators, and capitalises each word. Returns an empty string
  * when nothing usable remains so callers can skip the suggestion.
  */
-export function suggestTitleFromFilename(filename: string): string {
+function suggestTitleFromFilename(filename: string): string {
   const base = filename.replace(/\.[^.]+$/, '');
   const cleaned = base
     .replace(/[-_.]+/g, ' ')
@@ -41,7 +41,7 @@ export function suggestTitleFromFilename(filename: string): string {
  * capped, with the first letter capitalised. Empty string when the brief is
  * blank so callers can fall through to other sources.
  */
-export function deriveTitleFromDescription(description: string): string {
+function deriveTitleFromDescription(description: string): string {
   const words = description.replace(/\s+/g, ' ').trim().split(' ').slice(0, 6).join(' ');
   const cleaned = words
     .replace(/[.,;:!?]+$/, '')
