@@ -1,10 +1,4 @@
-/**
- * Read helpers for the supplier-facing product catalogue.
- *
- * Capped at 100 results because the admin page paginates client-side and we
- * don't want to ship megabyte payloads. Bump the limit when proper server
- * pagination lands.
- */
+/** Complete admin catalogue reads for metadata editing and mapping counts. */
 import 'server-only';
 
 import { getCachedJson, setCachedJson } from '@/lib/server-cache';
@@ -13,9 +7,13 @@ import { ADMIN_CACHE_TTL_SECONDS, getAdminCatalogueCacheKey } from './cache-keys
 import { requirePermission } from '@/lib/access/current-profile.server';
 import { getServerClient } from './supabase';
 
+const CATALOGUE_PAGE_SIZE = 500; // PostgREST read batch, rows; below the default server limit.
+
 type CatalogueItemRow = {
   id: string;
   part_number: string;
+  finale_product_id: string | null;
+  finale_effect_name: string | null;
   name: string;
   manufacturer: string | null;
   firework_type: string | null;
@@ -43,19 +41,27 @@ export async function listCatalogueProducts(): Promise<CatalogueProductSummary[]
   if (cached) return cached;
 
   const supabase = await getServerClient();
-  const { data, error } = await supabase
-    .from('catalogue_items')
-    .select(
-      'id, part_number, name, manufacturer, firework_type, catalogue_item_kind, firework_id, multishot_id, duration_seconds, updated_at',
-    )
-    .order('name', { ascending: true })
-    .limit(1000);
-  if (error) {
-    throwCatalogueReadError('listCatalogueProducts', error);
+  const rows: CatalogueItemRow[] = [];
+  for (let offset = 0; ; offset += CATALOGUE_PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from('catalogue_items')
+      .select(
+        'id, part_number, finale_product_id, finale_effect_name, name, manufacturer, firework_type, catalogue_item_kind, firework_id, multishot_id, duration_seconds, updated_at',
+      )
+      .order('name', { ascending: true })
+      .order('id', { ascending: true })
+      .range(offset, offset + CATALOGUE_PAGE_SIZE - 1);
+    if (error) {
+      throwCatalogueReadError('listCatalogueProducts', error);
+    }
+    rows.push(...(data ?? []));
+    if ((data?.length ?? 0) < CATALOGUE_PAGE_SIZE) break;
   }
-  const mapped = ((data ?? []) as CatalogueItemRow[]).map((row) => ({
+  const mapped = rows.map((row) => ({
     id: row.id,
     partNumber: row.part_number,
+    finaleProductId: row.finale_product_id,
+    finaleEffectName: row.finale_effect_name,
     name: row.name,
     manufacturer: row.manufacturer,
     category: null,

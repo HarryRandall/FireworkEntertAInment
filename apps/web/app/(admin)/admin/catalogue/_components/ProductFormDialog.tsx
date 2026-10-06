@@ -17,6 +17,10 @@ import {
 import { Button } from '@/ui/patterns/Button';
 import { Input } from '@/ui/patterns/Input';
 import { toast } from '@/ui/patterns/toast';
+import {
+  FINALE_PRODUCT_ID_MAX_CHARACTERS,
+  FINALE_EFFECT_NAME_MAX_CHARACTERS,
+} from '@/lib/finale/mapping';
 import { updateProduct, type ProductInputType } from '../actions';
 
 type Values = ProductInputType & { id?: string };
@@ -37,6 +41,8 @@ export function ProductFormDialog({ initial, open: controlledOpen, onOpenChange,
     if (controlledOpen === undefined) setInternalOpen(v);
   };
 
+  const [finaleProductId, setFinaleProductId] = useState(initial?.finaleProductId ?? '');
+  const [finaleEffectName, setFinaleEffectName] = useState(initial?.finaleEffectName ?? '');
   const [partNumber, setPartNumber] = useState(initial?.partNumber ?? '');
   const [name, setName] = useState(initial?.name ?? '');
   const [manufacturer, setManufacturer] = useState(initial?.manufacturer ?? '');
@@ -48,6 +54,8 @@ export function ProductFormDialog({ initial, open: controlledOpen, onOpenChange,
 
   useEffect(() => {
     if (open) {
+      setFinaleProductId(initial?.finaleProductId ?? '');
+      setFinaleEffectName(initial?.finaleEffectName ?? '');
       setPartNumber(initial?.partNumber ?? '');
       setName(initial?.name ?? '');
       setManufacturer(initial?.manufacturer ?? '');
@@ -59,6 +67,8 @@ export function ProductFormDialog({ initial, open: controlledOpen, onOpenChange,
   const submit = () => {
     startTransition(async () => {
       const values: ProductInputType = {
+        finaleProductId,
+        finaleEffectName,
         partNumber,
         name,
         manufacturer,
@@ -69,13 +79,17 @@ export function ProductFormDialog({ initial, open: controlledOpen, onOpenChange,
         toast.error('Missing catalogue item.');
         return;
       }
-      const result = await updateProduct({ id: initial.id, ...values });
-      if (result.ok) {
-        toast.success('Catalogue item updated');
-        setOpen(false);
-        router.refresh();
-      } else {
-        toast.error(result.error);
+      try {
+        const result = await updateProduct({ id: initial.id, ...values });
+        if (result.ok) {
+          toast.success('Catalogue item updated');
+          setOpen(false);
+          router.refresh();
+        } else {
+          toast.error(result.error);
+        }
+      } catch {
+        toast.error('The catalogue item could not be saved. Please try again.');
       }
     });
   };
@@ -108,7 +122,7 @@ export function ProductFormDialog({ initial, open: controlledOpen, onOpenChange,
                 step={0.1}
                 value={duration}
                 onChange={(e) => setDuration(e.target.value)}
-                placeholder="—"
+                placeholder="-"
               />
             </Field>
           </div>
@@ -124,9 +138,29 @@ export function ProductFormDialog({ initial, open: controlledOpen, onOpenChange,
             </Field>
           </div>
 
+          <fieldset className="space-y-3">
+            <legend className="text-sm font-medium">Finale 3D product</legend>
+            <Field label="Product ID">
+              <Input
+                value={finaleProductId}
+                maxLength={FINALE_PRODUCT_ID_MAX_CHARACTERS}
+                onChange={(e) => setFinaleProductId(e.target.value)}
+              />
+            </Field>
+            <Field label="Effect name (optional)">
+              <Input
+                value={finaleEffectName}
+                maxLength={FINALE_EFFECT_NAME_MAX_CHARACTERS}
+                onChange={(e) => setFinaleEffectName(e.target.value)}
+              />
+            </Field>
+            <p className="text-muted-foreground text-xs">
+              Leave Product ID blank when there is no Finale 3D equivalent.
+            </p>
+          </fieldset>
           <DialogFooter>
             <DialogClose asChild>
-              <Button type="button" variant="secondary">
+              <Button type="button" variant="secondary" disabled={isPending}>
                 Cancel
               </Button>
             </DialogClose>

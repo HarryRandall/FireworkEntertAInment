@@ -112,6 +112,8 @@ export type ImportJobDetail = ImportJobSummary & {
 };
 
 export type CatalogueProductSummary = {
+  finaleProductId: string | null;
+  finaleEffectName: string | null;
   id: string;
   partNumber: string;
   name: string;

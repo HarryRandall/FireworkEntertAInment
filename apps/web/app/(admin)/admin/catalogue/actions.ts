@@ -11,6 +11,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
+import { finaleMappingFields } from '@/lib/finale/mapping';
 import { z } from 'zod';
 import { createClient } from '@/lib/supabase/server';
 import {
@@ -29,6 +30,7 @@ function clampProductDurationSeconds(value: number): number {
 }
 
 const ProductInput = z.object({
+  ...finaleMappingFields,
   partNumber: z.string().trim().min(1).max(80),
   name: z.string().trim().min(1).max(180),
   manufacturer: z.string().trim().max(120).optional(),
@@ -61,6 +63,8 @@ export async function updateProduct(input: z.infer<typeof UpdateProduct>): Promi
     .from('catalogue_items')
     .update({
       part_number: parsed.data.partNumber,
+      finale_product_id: parsed.data.finaleProductId || null,
+      finale_effect_name: parsed.data.finaleEffectName || null,
       name: parsed.data.name,
       manufacturer: parsed.data.manufacturer || null,
       firework_type: parsed.data.fireworkType || null,
