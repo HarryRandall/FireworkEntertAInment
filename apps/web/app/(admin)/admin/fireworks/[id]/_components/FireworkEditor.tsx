@@ -19,7 +19,7 @@ import {
   FireworkEditorShell,
   type FireworkEditorShellTab,
 } from '@/ui/firework-editor/FireworkEditorShell';
-import { type JsonRecord } from '@/ui/firework-editor/FireworkRenderControls';
+import { type JsonRecord } from '@showcrafter/firework-editor/types';
 import { usePreviewFullscreen } from '@/ui/firework-editor/previewFullscreen';
 import {
   makeOptimisticEditorVersion,
