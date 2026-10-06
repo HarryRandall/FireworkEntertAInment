@@ -47,6 +47,8 @@ import redCrossette from './redCrossette.json' with { type: 'json' };
 import saturn from './saturn.json' with { type: 'json' };
 import doubleRing from './doubleRing.json' with { type: 'json' };
 import heart from './heart.json' with { type: 'json' };
+import bowtie from './bowtie.json' with { type: 'json' };
+import fivePointStar from './fivePointStar.json' with { type: 'json' };
 import purplePistil from './purplePistil.json' with { type: 'json' };
 import dragonEggs from './dragonEggs.json' with { type: 'json' };
 import greenStrobe from './greenStrobe.json' with { type: 'json' };
@@ -148,6 +150,8 @@ export type EffectTemplateKey =
   | 'saturn'
   | 'doubleRing'
   | 'heart'
+  | 'bowtie'
+  | 'fivePointStar'
   | 'purplePistil'
   | 'dragonEggs'
   | 'greenStrobe'
@@ -390,6 +394,19 @@ export const effectTemplates: readonly EffectTemplate[] = [
     design: upgradeDesign(doubleRing.design, 1),
   },
   { key: 'heart', name: heart.name, group: 'Variations', design: upgradeDesign(heart.design, 1) },
+  // Visual tuning: restrained single breaks preserve the planar silhouettes.
+  {
+    key: 'bowtie',
+    name: bowtie.name,
+    group: 'Variations',
+    design: upgradeDesign(bowtie.design, 1),
+  },
+  {
+    key: 'fivePointStar',
+    name: fivePointStar.name,
+    group: 'Variations',
+    design: upgradeDesign(fivePointStar.design, 1),
+  },
   {
     key: 'purplePistil',
     name: purplePistil.name,
