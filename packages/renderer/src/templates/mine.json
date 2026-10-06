@@ -1,0 +1,93 @@
+{
+  "key": "mine",
+  "name": "Mine",
+  "group": "Ground",
+  "design": {
+    "kind": "mine",
+    "launch": {
+      "height_m": 48,
+      "time_s": 1.6099689437998486,
+      "tilt_deg": 0,
+      "tail": "gold",
+      "sparks": 180,
+      "spread": 1.4,
+      "smoke": 1
+    },
+    "breaks": [
+      {
+        "at_s": 0,
+        "core": {
+          "enabled": false,
+          "colour": "#ff3b2f",
+          "count": 110,
+          "radius": 0.5,
+          "flash": 1,
+          "flash_on": true,
+          "ring": false
+        },
+        "fade": {
+          "white_hot": 0.03,
+          "ember_at": 0.8,
+          "fade_at": 0.72,
+          "prime_s": 0.25
+        },
+        "layers": [
+          {
+            "id": "l1",
+            "name": "Mine stars",
+            "pattern": "sphere",
+            "count": 90,
+            "radius_m": 52,
+            "tilt": 0.4,
+            "speed_var": 0.35,
+            "drag_per_s": 1.1,
+            "gravity_m_s2": 14,
+            "life_s": 1.9,
+            "life_var": 0.2,
+            "delay_s": 0,
+            "offset_m": [0, 0, 0],
+            "flash": true,
+            "hidden": false,
+            "colour": {
+              "mode": "alternate",
+              "stops": [
+                [0, ["#ff4655", "#2ee6a0"]],
+                [1, ["#ff4655", "#2ee6a0"]]
+              ]
+            },
+            "brightness": [
+              [0, 0.9],
+              [1, 0.9]
+            ],
+            "head": {
+              "size": 0.45,
+              "visible": true
+            },
+            "trail": {
+              "sparks": 22,
+              "length_s": 0.6,
+              "spread_m_s": 0.5,
+              "gravity_m_s2": 3,
+              "drag_per_s": 2.6,
+              "size": 0.8,
+              "flicker": 0.3,
+              "colour": "house",
+              "glitter": 0,
+              "glitter_delay_s": 0.35,
+              "fork": 0
+            },
+            "modifiers": []
+          }
+        ]
+      }
+    ],
+    "ground": null,
+    "sound": {
+      "lift": 0.7,
+      "break": 0.85,
+      "crackle": 0.6,
+      "whistle": 0
+    },
+    "seed": 11
+  }
+}

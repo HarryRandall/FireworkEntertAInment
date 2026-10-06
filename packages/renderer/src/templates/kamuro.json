@@ -1,0 +1,94 @@
+{
+  "key": "kamuro",
+  "name": "Kamuro",
+  "group": "Shells",
+  "design": {
+    "kind": "shell",
+    "launch": {
+      "height_m": 60,
+      "time_s": 1.8,
+      "tilt_deg": 0,
+      "tail": "glitter",
+      "sparks": 180,
+      "spread": 1.4,
+      "smoke": 1
+    },
+    "breaks": [
+      {
+        "at_s": 0,
+        "core": {
+          "enabled": false,
+          "colour": "#ff3b2f",
+          "count": 110,
+          "radius": 0.5,
+          "flash": 1,
+          "flash_on": true,
+          "ring": false
+        },
+        "fade": {
+          "white_hot": 0.03,
+          "ember_at": 0.8,
+          "fade_at": 0.72,
+          "prime_s": 0.25
+        },
+        "layers": [
+          {
+            "id": "l1",
+            "name": "Crown",
+            "pattern": "sphere",
+            "count": 80,
+            "radius_m": 28,
+            "tilt": 0.4,
+            "speed_var": 0.22,
+            "drag_per_s": 1.4,
+            "gravity_m_s2": 8,
+            "life_s": 5,
+            "life_var": 0.2,
+            "delay_s": 0,
+            "offset_m": [0, 0, 0],
+            "flash": true,
+            "hidden": false,
+            "colour": {
+              "mode": "solid",
+              "stops": [
+                [0, ["#ffe3a0"]],
+                [1, ["#ffe3a0"]]
+              ]
+            },
+            "brightness": [
+              [0, 0.25],
+              [1, 0.25]
+            ],
+            "head": {
+              "size": 0.35,
+              "visible": true,
+              "halo": 0
+            },
+            "trail": {
+              "sparks": 70,
+              "length_s": 3,
+              "spread_m_s": 0.6,
+              "gravity_m_s2": 4,
+              "drag_per_s": 1.5,
+              "size": 1,
+              "flicker": 0.2,
+              "colour": "#ffae45",
+              "glitter": 0.6,
+              "glitter_delay_s": 0.6,
+              "fork": 0
+            },
+            "modifiers": []
+          }
+        ]
+      }
+    ],
+    "ground": null,
+    "sound": {
+      "lift": 0.7,
+      "break": 0.85,
+      "crackle": 0.6,
+      "whistle": 0
+    },
+    "seed": 11
+  }
+}

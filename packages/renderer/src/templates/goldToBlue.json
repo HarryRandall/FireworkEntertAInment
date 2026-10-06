@@ -1,0 +1,48 @@
+{
+  "key": "goldToBlue",
+  "name": "Gold comets to blue",
+  "group": "Signature",
+  "design": {
+    "kind": "comet",
+    "launch": null,
+    "breaks": [],
+    "ground": {
+      "kind": "comet",
+      "comets": {
+        "count": 5,
+        "pattern": "fan",
+        "spread_deg": 60,
+        "height_m": 52,
+        "time_s": 2.0419242261784705,
+        "colour": {
+          "mode": "alternate",
+          "stops": [
+            [0, "#ffc56b"],
+            [0.45, "#ffc56b"],
+            [0.55, "#2a62ff"],
+            [1, "#2a62ff"]
+          ]
+        },
+        "trail": "house",
+        "size": 1.4,
+        "sparks": 200,
+        "tail_life_s": 1.4,
+        "glitter": 0,
+        "gap_s": 0.5,
+        "spin_rad_s": 0,
+        "spin_radius_m": 2.2,
+        "pop": false,
+        "split": null,
+        "halo": 1,
+        "whistle": false
+      }
+    },
+    "sound": {
+      "lift": 0.7,
+      "break": 0.85,
+      "crackle": 0.6,
+      "whistle": 0
+    },
+    "seed": 11
+  }
+}

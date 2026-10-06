@@ -1,0 +1,94 @@
+{
+  "key": "glitterWillow",
+  "name": "Glitter willow",
+  "group": "Display effects",
+  "design": {
+    "kind": "shell",
+    "launch": {
+      "height_m": 60,
+      "time_s": 1.8,
+      "tilt_deg": 0,
+      "tail": "willow",
+      "sparks": 180,
+      "spread": 1.4,
+      "smoke": 1
+    },
+    "breaks": [
+      {
+        "at_s": 0,
+        "core": {
+          "enabled": true,
+          "colour": "#ffb347",
+          "count": 110,
+          "radius": 0.5,
+          "flash": 1,
+          "flash_on": true,
+          "ring": false
+        },
+        "fade": {
+          "white_hot": 0.03,
+          "ember_at": 0.8,
+          "fade_at": 0.72,
+          "prime_s": 0.25
+        },
+        "layers": [
+          {
+            "id": "l1",
+            "name": "Willow stars",
+            "pattern": "sphere",
+            "count": 64,
+            "radius_m": 30,
+            "tilt": 0.4,
+            "speed_var": 0.22,
+            "drag_per_s": 2.2,
+            "gravity_m_s2": 9.8,
+            "life_s": 5.5,
+            "life_var": 0.2,
+            "delay_s": 0,
+            "offset_m": [0, 0, 0],
+            "flash": true,
+            "hidden": false,
+            "colour": {
+              "mode": "solid",
+              "stops": [
+                [0, ["#ffd27a"]],
+                [1, ["#ffd27a"]]
+              ]
+            },
+            "brightness": [
+              [0, 0.3],
+              [1, 0.3]
+            ],
+            "head": {
+              "size": 0.4,
+              "visible": true,
+              "halo": 0.3
+            },
+            "trail": {
+              "sparks": 110,
+              "length_s": 4,
+              "spread_m_s": 0.4,
+              "gravity_m_s2": 1.5,
+              "drag_per_s": 1.4,
+              "size": 1,
+              "flicker": 0.1,
+              "colour": "#ffb04a",
+              "glitter": 0.7,
+              "glitter_delay_s": 0.6,
+              "fork": 0
+            },
+            "modifiers": []
+          }
+        ]
+      }
+    ],
+    "ground": null,
+    "sound": {
+      "lift": 0.7,
+      "break": 0.85,
+      "crackle": 0.6,
+      "whistle": 0
+    },
+    "seed": 11
+  }
+}

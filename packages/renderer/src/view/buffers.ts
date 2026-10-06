@@ -1,0 +1,218 @@
+/** Reusable GPU attributes bridge deterministic CPU frames to points and billboards. */
+import * as THREE from 'three';
+import { ParticleKind, type Particles } from '../sim/index';
+import {
+  pointVertex,
+  pointFragment,
+  quadVertex,
+  quadFragment,
+  smokeVertex,
+  smokeFragment,
+} from './shaders';
+
+// Initial particle slots and geometric growth factor, chosen to avoid per-frame GPU allocation.
+const INITIAL_CAPACITY = 256;
+const VECTOR_COMPONENTS = 3;
+const SEED_COMPONENTS = 2;
+const additive = {
+  transparent: true,
+  depthWrite: false,
+  blending: THREE.CustomBlending,
+  blendSrc: THREE.OneFactor,
+  blendDst: THREE.OneFactor,
+};
+
+/** Owns one points draw, one instanced glow draw and one normal-blended smoke draw. */
+export class ParticleLayers {
+  readonly group = new THREE.Group();
+  readonly uniforms = { uScale: { value: 1 }, uDpr: { value: 1 } };
+  private readonly plane = new THREE.PlaneGeometry(1, 1);
+  private readonly points = new THREE.Points(
+    new THREE.BufferGeometry(),
+    new THREE.ShaderMaterial({
+      ...additive,
+      uniforms: this.uniforms,
+      vertexShader: pointVertex,
+      fragmentShader: pointFragment,
+    }),
+  );
+  private readonly quads = new THREE.Mesh(
+    new THREE.InstancedBufferGeometry(),
+    new THREE.ShaderMaterial({
+      ...additive,
+      uniforms: this.uniforms,
+      vertexShader: quadVertex,
+      fragmentShader: quadFragment,
+    }),
+  );
+  private readonly smoke = new THREE.Mesh(
+    new THREE.InstancedBufferGeometry(),
+    new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.NormalBlending,
+      vertexShader: smokeVertex,
+      fragmentShader: smokeFragment,
+    }),
+  );
+
+  /** Allocates reusable draw layers; call dispose when their scene is retired. */
+  constructor() {
+    for (const mesh of [this.quads, this.smoke]) {
+      // Each layer owns its base attributes so capacity changes cannot retire another layer's GPU buffers.
+      mesh.geometry.index = this.plane.index?.clone() ?? null;
+      mesh.geometry.setAttribute('position', this.plane.getAttribute('position').clone());
+      mesh.geometry.instanceCount = 0;
+    }
+    for (const mesh of [this.points, this.quads, this.smoke]) mesh.frustumCulled = false;
+    this.smoke.renderOrder = -1;
+    this.group.add(this.smoke, this.quads, this.points);
+  }
+
+  private attribute(
+    geometry: THREE.BufferGeometry,
+    name: string,
+    data: Float32Array,
+    components: number,
+  ): void {
+    const instanced = geometry instanceof THREE.InstancedBufferGeometry;
+    let attr = geometry.attributes[name];
+    if (!(attr instanceof THREE.BufferAttribute) || attr.array.length < data.length) {
+      const capacity = Math.max(
+        INITIAL_CAPACITY,
+        2 ** Math.ceil(Math.log2(Math.max(1, data.length / components))),
+      );
+      // Retiring the old geometry binding frees GPU attributes before a capacity replacement.
+      if (attr !== undefined) geometry.dispose();
+      const array = new Float32Array(capacity * components);
+      attr = instanced
+        ? new THREE.InstancedBufferAttribute(array, components)
+        : new THREE.BufferAttribute(array, components);
+      attr.setUsage(THREE.DynamicDrawUsage);
+      geometry.setAttribute(name, attr);
+    }
+    // Upload just the populated prefix; old tail slots are excluded by the draw count.
+    attr.array.set(data);
+    attr.clearUpdateRanges();
+    if (data.length > 0) attr.addUpdateRange(0, data.length);
+    attr.needsUpdate = true;
+  }
+
+  /** Uploads CPU simulation frames, preserving spark/head/halo/flash and puff identities. */
+  upload(frames: readonly Particles[]): void {
+    this.uploadAdditive(frames, this.points.geometry, false);
+    this.uploadAdditive(frames, this.quads.geometry, true);
+
+    this.uploadSmoke(frames);
+  }
+
+  private uploadSmoke(frames: readonly Particles[]): void {
+    const count = frames.reduce((sum, frame) => sum + frame.smoke.sizes.length, 0);
+    const positions = new Float32Array(count * VECTOR_COMPONENTS);
+    const colours = new Float32Array(positions.length);
+    const sizes = new Float32Array(count);
+    const alphas = new Float32Array(count);
+    const seeds = new Float32Array(count * SEED_COMPONENTS);
+    let offset = 0;
+    for (const { smoke } of frames) {
+      positions.set(smoke.positions, offset * VECTOR_COMPONENTS);
+      colours.set(smoke.colours, offset * VECTOR_COMPONENTS);
+      sizes.set(smoke.sizes, offset);
+      alphas.set(smoke.alphas, offset);
+      smoke.seeds.forEach((seed, i) => {
+        seeds[(offset + i) * SEED_COMPONENTS] = seed;
+        seeds[(offset + i) * SEED_COMPONENTS + 1] = smoke.ages[i] ?? 0;
+      });
+      offset += smoke.sizes.length;
+    }
+    for (const [name, data, components] of [
+      ['iPos', positions, VECTOR_COMPONENTS],
+      ['iColor', colours, VECTOR_COMPONENTS],
+      ['iSize', sizes, 1],
+      ['iAlpha', alphas, 1],
+      ['iSeed', seeds, SEED_COMPONENTS],
+    ] as const)
+      this.attribute(this.smoke.geometry, name, data, components);
+    this.smoke.geometry.instanceCount = count;
+  }
+  private uploadAdditive(
+    frames: readonly Particles[],
+    geometry: THREE.BufferGeometry,
+    instanced: boolean,
+  ): void {
+    const count = frames.reduce(
+      (sum, frame) =>
+        sum +
+        frame.kinds.reduce(
+          (total, kind) => total + Number((kind !== ParticleKind.Spark) === instanced),
+          0,
+        ),
+      0,
+    );
+    const position = new Float32Array(count * VECTOR_COMPONENTS);
+    const colour = new Float32Array(position.length);
+    const size = new Float32Array(count);
+    const alpha = new Float32Array(count);
+    const shape = new Float32Array(count);
+    packAdditive(frames, instanced, { position, colour, size, alpha, shape });
+    this.attribute(geometry, instanced ? 'iPos' : 'position', position, VECTOR_COMPONENTS);
+    this.attribute(geometry, instanced ? 'iColor' : 'color', colour, VECTOR_COMPONENTS);
+    this.attribute(geometry, instanced ? 'iSize' : 'size', size, 1);
+    this.attribute(geometry, instanced ? 'iAlpha' : 'alpha', alpha, 1);
+    if (instanced) {
+      this.attribute(geometry, 'iShape', shape, 1);
+      this.quads.geometry.instanceCount = count;
+    } else geometry.setDrawRange(0, count);
+  }
+  /** Releases every owned geometry and shader material. */
+  dispose(): void {
+    for (const mesh of [this.points, this.quads, this.smoke]) {
+      mesh.geometry.dispose();
+      mesh.material.dispose();
+    }
+    this.plane.dispose();
+  }
+}
+
+interface AdditiveAttributes {
+  position: Float32Array;
+  colour: Float32Array;
+  size: Float32Array;
+  alpha: Float32Array;
+  shape: Float32Array;
+}
+function packAdditive(
+  frames: readonly Particles[],
+  instanced: boolean,
+  arrays: AdditiveAttributes,
+): void {
+  let dest = 0;
+  for (const frame of frames) {
+    for (let index = 0; index < frame.kinds.length; index++) {
+      const kind = frame.kinds[index] ?? ParticleKind.Spark;
+      if ((kind !== ParticleKind.Spark) !== instanced) continue;
+      copyParticle(frame, index, arrays, dest);
+      dest++;
+    }
+  }
+}
+
+function copyParticle(
+  frame: Particles,
+  index: number,
+  arrays: AdditiveAttributes,
+  dest: number,
+): void {
+  const { position, colour, size, alpha, shape } = arrays;
+  const kind = frame.kinds[index] ?? ParticleKind.Spark;
+  // Copy scalar lanes directly, avoiding two subarray objects and a routing object per particle.
+  for (let channel = 0; channel < VECTOR_COMPONENTS; channel++) {
+    position[dest * VECTOR_COMPONENTS + channel] =
+      frame.positions[index * VECTOR_COMPONENTS + channel] ?? 0;
+    colour[dest * VECTOR_COMPONENTS + channel] =
+      frame.colours[index * VECTOR_COMPONENTS + channel] ?? 0;
+  }
+  size[dest] = frame.sizes[index] ?? 0;
+  alpha[dest] = frame.alphas[index] ?? 0;
+  shape[dest] = kind === ParticleKind.Flash ? 0 : kind;
+}

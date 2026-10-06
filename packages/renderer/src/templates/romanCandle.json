@@ -1,0 +1,46 @@
+{
+  "key": "romanCandle",
+  "name": "Roman candle",
+  "group": "Rockets and candles",
+  "design": {
+    "kind": "comet",
+    "launch": null,
+    "breaks": [],
+    "ground": {
+      "kind": "comet",
+      "comets": {
+        "count": 8,
+        "pattern": "sequence",
+        "spread_deg": 10,
+        "height_m": 52,
+        "time_s": 1.6306719195138268,
+        "colour": {
+          "mode": "alternate",
+          "stops": [
+            [0, ["#ff3b3b", "#35d06b", "#3f7bff", "#ffe066", "#b06bff"]],
+            [1, ["#ff3b3b", "#35d06b", "#3f7bff", "#ffe066", "#b06bff"]]
+          ]
+        },
+        "trail": "star",
+        "size": 1.2,
+        "sparks": 90,
+        "tail_life_s": 0.8,
+        "glitter": 0,
+        "gap_s": 0.8,
+        "spin_rad_s": 0,
+        "spin_radius_m": 2.2,
+        "pop": false,
+        "split": null,
+        "halo": 1,
+        "whistle": false
+      }
+    },
+    "sound": {
+      "lift": 0.7,
+      "break": 0.85,
+      "crackle": 0.6,
+      "whistle": 0
+    },
+    "seed": 11
+  }
+}

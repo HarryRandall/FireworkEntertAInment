@@ -1,0 +1,139 @@
+{
+  "key": "doubleRing",
+  "name": "Double ring",
+  "group": "Variations",
+  "design": {
+    "kind": "shell",
+    "launch": {
+      "height_m": 60,
+      "time_s": 1.8,
+      "tilt_deg": 0,
+      "tail": "silver",
+      "sparks": 180,
+      "spread": 1.4,
+      "smoke": 1
+    },
+    "breaks": [
+      {
+        "at_s": 0,
+        "core": {
+          "enabled": true,
+          "colour": "#ff3b2f",
+          "count": 110,
+          "radius": 0.5,
+          "flash": 1,
+          "flash_on": true,
+          "ring": false
+        },
+        "fade": {
+          "white_hot": 0.03,
+          "ember_at": 0.8,
+          "fade_at": 0.72,
+          "prime_s": 0.25
+        },
+        "layers": [
+          {
+            "id": "l1",
+            "name": "Green ring",
+            "pattern": "ring",
+            "count": 56,
+            "radius_m": 26,
+            "tilt": 0.1,
+            "speed_var": 0.02,
+            "drag_per_s": 2.2,
+            "gravity_m_s2": 6,
+            "life_s": 2.2,
+            "life_var": 0.2,
+            "delay_s": 0,
+            "offset_m": [0, 0, 0],
+            "flash": true,
+            "hidden": false,
+            "colour": {
+              "mode": "solid",
+              "stops": [
+                [0, ["#35d06b"]],
+                [1, ["#35d06b"]]
+              ]
+            },
+            "brightness": [
+              [0, 1],
+              [1, 1]
+            ],
+            "head": {
+              "size": 1,
+              "visible": true
+            },
+            "trail": {
+              "sparks": 8,
+              "length_s": 0.25,
+              "spread_m_s": 1,
+              "gravity_m_s2": 3,
+              "drag_per_s": 2.6,
+              "size": 1,
+              "flicker": 0.3,
+              "colour": "house",
+              "glitter": 0,
+              "glitter_delay_s": 0.35,
+              "fork": 0
+            },
+            "modifiers": []
+          },
+          {
+            "id": "l2",
+            "name": "Gold ring",
+            "pattern": "ring",
+            "count": 56,
+            "radius_m": 22,
+            "tilt": 0.9,
+            "speed_var": 0.02,
+            "drag_per_s": 2.2,
+            "gravity_m_s2": 6,
+            "life_s": 2,
+            "life_var": 0.2,
+            "delay_s": 0,
+            "offset_m": [0, 0, 0],
+            "flash": false,
+            "hidden": false,
+            "colour": {
+              "mode": "solid",
+              "stops": [
+                [0, ["#ffc56b"]],
+                [1, ["#ffc56b"]]
+              ]
+            },
+            "brightness": [
+              [0, 1],
+              [1, 1]
+            ],
+            "head": {
+              "size": 1,
+              "visible": true
+            },
+            "trail": {
+              "sparks": 8,
+              "length_s": 0.25,
+              "spread_m_s": 1,
+              "gravity_m_s2": 3,
+              "drag_per_s": 2.6,
+              "size": 1,
+              "flicker": 0.3,
+              "colour": "house",
+              "glitter": 0,
+              "glitter_delay_s": 0.35,
+              "fork": 0
+            },
+            "modifiers": []
+          }
+        ]
+      }
+    ],
+    "ground": null,
+    "sound": {
+      "lift": 0.7,
+      "break": 0.85,
+      "crackle": 0.6,
+      "whistle": 0
+    },
+    "seed": 11
+  }
+}

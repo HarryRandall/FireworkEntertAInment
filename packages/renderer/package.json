@@ -1,0 +1,40 @@
+{
+  "name": "@showcrafter/renderer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema/index.ts",
+    "./schema/design.v1.json": "./schema/design.v1.json",
+    "./sim": "./src/sim/index.ts",
+    "./fixtures": "./src/fixtures/index.ts",
+    "./poster": "./src/poster/index.ts",
+    "./view": "./src/view/index.ts"
+  },
+  "scripts": {
+    "generate:schema": "node scripts/generate-schema.mjs",
+    "check:schema": "node scripts/generate-schema.mjs --check",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src 'tests/**/*.ts' --max-warnings 0",
+    "test": "node --import ../../scripts/renderer/register-typescript.mjs --test tests/*.test.mjs",
+    "check": "pnpm check:schema && pnpm lint && pnpm typecheck && pnpm test"
+  },
+  "dependencies": {
+    "three": "0.184.0",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/three": "0.184.1",
+    "ajv": "8.17.1",
+    "eslint": "9.39.4",
+    "json-schema-to-zod": "2.6.1",
+    "prettier": "3.8.3",
+    "typescript": "5.9.3",
+    "@eslint/js": "9.39.4",
+    "eslint-config-prettier": "10.1.8",
+    "eslint-plugin-sonarjs": "4.2.2",
+    "eslint-plugin-tsdoc": "0.5.4",
+    "typescript-eslint": "8.71.0"
+  }
+}

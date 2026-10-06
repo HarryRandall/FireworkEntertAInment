@@ -1,0 +1,46 @@
+{
+  "key": "bombettes",
+  "name": "Bombettes",
+  "group": "Rockets and candles",
+  "design": {
+    "kind": "comet",
+    "launch": null,
+    "breaks": [],
+    "ground": {
+      "kind": "comet",
+      "comets": {
+        "count": 6,
+        "pattern": "sequence",
+        "spread_deg": 14,
+        "height_m": 52,
+        "time_s": 1.6653327995729061,
+        "colour": {
+          "mode": "alternate",
+          "stops": [
+            [0, "#ffc56b"],
+            [1, "#ffc56b"]
+          ]
+        },
+        "trail": "house",
+        "size": 1.4,
+        "sparks": 80,
+        "tail_life_s": 0.9,
+        "glitter": 0,
+        "gap_s": 0.65,
+        "spin_rad_s": 0,
+        "spin_radius_m": 2.2,
+        "pop": true,
+        "split": null,
+        "halo": 1,
+        "whistle": false
+      }
+    },
+    "sound": {
+      "lift": 0.7,
+      "break": 0.85,
+      "crackle": 0.6,
+      "whistle": 0
+    },
+    "seed": 11
+  }
+}

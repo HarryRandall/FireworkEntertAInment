@@ -1,0 +1,46 @@
+{
+  "key": "brocadeComets",
+  "name": "Brocade comets",
+  "group": "Variations",
+  "design": {
+    "kind": "comet",
+    "launch": null,
+    "breaks": [],
+    "ground": {
+      "kind": "comet",
+      "comets": {
+        "count": 7,
+        "pattern": "fan",
+        "spread_deg": 80,
+        "height_m": 52,
+        "time_s": 1.9446897392175908,
+        "colour": {
+          "mode": "alternate",
+          "stops": [
+            [0, "#ffd98a"],
+            [1, "#ffd98a"]
+          ]
+        },
+        "trail": "#ffc66a",
+        "size": 1.2,
+        "sparks": 260,
+        "tail_life_s": 2,
+        "glitter": 0.8,
+        "gap_s": 0.5,
+        "spin_rad_s": 0,
+        "spin_radius_m": 2.2,
+        "pop": false,
+        "split": null,
+        "halo": 1,
+        "whistle": false
+      }
+    },
+    "sound": {
+      "lift": 0.7,
+      "break": 0.85,
+      "crackle": 0.6,
+      "whistle": 0
+    },
+    "seed": 11
+  }
+}
