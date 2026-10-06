@@ -6,17 +6,14 @@
     },
     "apps/web": {
       "entry": ["tests/**/*.mjs", "scripts/**/*.mjs"],
-      "project": ["**/*.{ts,tsx}"],
+      "project": ["**/*.{ts,tsx,css}"],
       "ignore": [
         "ui/primitives/**",
         "lib/database.types.ts",
         "lib/firework-import/reconstruction.ts",
-        "lib/firework-import/render-metrics.ts",
-        "lib/firework-import/reconstruction-shot.ts",
-        "ui/replay/FireworkReplayCanvas.tsx",
-        "app/internal/import-render/ImportRenderHarness.tsx"
+        "lib/firework-import/render-metrics.ts"
       ],
-      "ignoreDependencies": ["server-only", "tailwindcss", "tw-animate-css", "shadcn"]
+      "ignoreDependencies": ["server-only"]
     },
     "packages/*": {
       "entry": ["tests/**/*.mjs", "src/**/*.ts"],
