@@ -289,7 +289,7 @@ export class Viewer {
     this.controls.frame(
       framingFor(this.shots, false, this.camera.aspect, this.camera.fov),
       snap,
-      this.options.startDistance ?? 'framed',
+      this.options.startDistance ?? (this.shots.length === 1 ? 'elevated' : 'framed'),
     );
   }
   /** Whether live drawing owns the frame budget; background posters yield throughout playback. */

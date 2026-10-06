@@ -9,6 +9,7 @@ import {
   FREE_FAR,
   MIN_ORBIT_DISTANCE_SCALE,
   PINCH_ZOOM_RESPONSE,
+  SINGLE_FIREWORK_START_PITCH_DEG,
   WHEEL_ZOOM_PER_PIXEL,
 } from '../src/view/stage-controls.ts';
 import { framingFor, EYE_HEIGHT_M } from '../src/sim/framing.ts';
@@ -87,6 +88,37 @@ test('framed and farthest starts preserve the target and pitch, and reset to the
     } finally {
       r.controls.dispose();
     }
+  }
+});
+
+test('the elevated single-firework start uses the furthest normal distance and restores its pose', () => {
+  const r = rig(shots);
+  try {
+    const target = vector(r.framing.target);
+    const base = vector(r.framing.position).distanceTo(target);
+    r.controls.frame(r.framing, true, 'elevated');
+    const pose = r.camera.position.clone().sub(target);
+    assert.ok(Math.abs(pose.length() - base * FAR_SCALE) < 1e-6);
+    assert.ok(
+      Math.abs(
+        Math.asin(pose.y / pose.length()) - (SINGLE_FIREWORK_START_PITCH_DEG * Math.PI) / 180,
+      ) < 1e-10,
+    );
+    assert.deepEqual(r.controls.target.toArray(), r.framing.target);
+
+    r.controls.zoom(0.2);
+    r.settle();
+    r.controls.frame(r.framing, true, 'elevated');
+    const resetPose = r.camera.position.clone().sub(target);
+    assert.ok(Math.abs(resetPose.length() - base * FAR_SCALE) < 1e-6);
+    assert.ok(
+      Math.abs(
+        Math.asin(resetPose.y / resetPose.length()) -
+          (SINGLE_FIREWORK_START_PITCH_DEG * Math.PI) / 180,
+      ) < 1e-10,
+    );
+  } finally {
+    r.controls.dispose();
   }
 });
 

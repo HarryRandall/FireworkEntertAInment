@@ -18,6 +18,8 @@ const TOP_RAD = 0.55;
 export const MIN_ORBIT_DISTANCE_SCALE = 0.2;
 /** Visual tuning, dimensionless multiple of the framed distance for normal orbit zoom-out. */
 export const FAR_SCALE = 1.8;
+/** Visual tuning, degrees above the burst centre for the elevated single-firework starting view. */
+export const SINGLE_FIREWORK_START_PITCH_DEG = 12;
 const FREE_NEAR = 0.15;
 /** Visual tuning, dimensionless multiple of the framed distance for free-camera zoom-out. */
 export const FREE_FAR = 4;
@@ -187,7 +189,11 @@ export class StageControls {
     this.invalidate();
   }
   /** Fits metre framing, clearing user pan; snap applies it without easing. */
-  frame(framing: Framing, snap = false, startDistance: 'framed' | 'farthest' = 'framed'): void {
+  frame(
+    framing: Framing,
+    snap = false,
+    startDistance: 'framed' | 'farthest' | 'elevated' = 'framed',
+  ): void {
     this.target.fromArray(framing.target);
     this.focusRadiusM = framing.focus?.radius_m ?? 0;
     this.sphericalFocus = framing.focus?.spherical ?? true;
@@ -199,7 +205,15 @@ export class StageControls {
       dist: this.base,
     };
     // Reset starts at the normal-mode cap even if free camera is currently enabled.
-    if (startDistance === 'farthest') this.goal.dist = this.range(false)[1];
+    const farthest = this.range(false)[1];
+    const elevatedPitch = (SINGLE_FIREWORK_START_PITCH_DEG * Math.PI) / HALF_TURN_DEG;
+    this.goal.dist = { framed: this.base, farthest, elevated: farthest }[startDistance];
+    this.goal.pitch = {
+      framed: this.goal.pitch,
+      farthest: this.goal.pitch,
+      elevated: elevatedPitch,
+    }[startDistance];
+    this.clampGoal();
     this.panGoal.set(0, 0, 0);
     this.touched = false;
     if (snap) {
