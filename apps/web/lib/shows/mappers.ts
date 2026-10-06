@@ -2,6 +2,8 @@
  * Pure mappers from `shows.*` row projections to the domain types in
  * {@link ../show-domain}. No I/O — safe to import from anywhere.
  */
+import { readShowDesign, resolvedShowDesign } from '@/lib/shows/renderer-design';
+import { shotDuration } from '@showcrafter/renderer';
 import { parseLaunchPositions } from '@showcrafter/fireworks/design';
 import { validateFireworkDesign } from '@showcrafter/fireworks/design';
 import { parseCover } from '@/lib/cover';
@@ -91,7 +93,7 @@ function firstEffect(
 
 function firstCatalogueEffect(
   effect: CatalogueFireworkCardProjection['firework_effects'],
-): Pick<FireworkEffectProjection, 'id' | 'slug' | 'name' | 'pattern_key'> | null {
+): Pick<FireworkEffectProjection, 'id' | 'slug' | 'name' | 'pattern_key' | 'template_key'> | null {
   if (!effect) return null;
   return Array.isArray(effect) ? (effect[0] ?? null) : effect;
 }
@@ -104,6 +106,10 @@ export function mapCatalogueFireworkCard(
 ): FireworkSpecification {
   const effect = firstCatalogueEffect(row.firework_effects);
   const caliber = shotCaliber ?? row.caliber;
+  const stored = readShowDesign(row.design, row.design_schema);
+  const duration = stored.ok
+    ? shotDuration(resolvedShowDesign({ design: stored.design, caliber }))
+    : row.duration_seconds;
 
   return {
     id: row.id,
@@ -111,8 +117,13 @@ export function mapCatalogueFireworkCard(
     name: row.name,
     description: row.description,
     sortOrder: index,
-    durationSeconds: row.duration_seconds,
-    occupancyDurationSeconds: row.duration_seconds,
+    durationSeconds: duration,
+    occupancyDurationSeconds: stored.ok
+      ? shotDuration(resolvedShowDesign({ design: stored.design, caliber }, 'peak'))
+      : duration,
+    design: stored.ok ? stored.design : null,
+    kind: stored.ok ? stored.design.kind : null,
+    designError: stored.ok ? null : stored.error,
     heightMeters: row.height_meters,
     caliber,
     shotCount: null,
@@ -126,6 +137,7 @@ export function mapCatalogueFireworkCard(
           slug: effect.slug,
           name: effect.name,
           patternKey: effect.pattern_key,
+          templateKey: effect.template_key,
         }
       : null,
     variant: {
@@ -138,6 +150,7 @@ export function mapCatalogueFireworkCard(
   };
 }
 
+/** Maps stored designs and reports invalid catalogue data without substituting an effect. */
 export function mapFireworkVariantSpecification(
   row: FireworkVariantProjection,
   index = 0,
@@ -145,6 +158,10 @@ export function mapFireworkVariantSpecification(
 ): FireworkSpecification {
   const effect = firstEffect(row.firework_effects);
   const caliber = shotCaliber ?? row.caliber;
+  const stored = readShowDesign(row.design, row.design_schema);
+  const duration = stored.ok
+    ? shotDuration(resolvedShowDesign({ design: stored.design, caliber }))
+    : row.duration_seconds;
   const renderResult =
     row.render_snapshot_json == null
       ? { ok: false as const, diagnostics: [{ path: [], message: 'Render snapshot is missing.' }] }
@@ -156,8 +173,13 @@ export function mapFireworkVariantSpecification(
     name: row.name,
     description: row.description,
     sortOrder: index,
-    durationSeconds: row.duration_seconds,
-    occupancyDurationSeconds: row.duration_seconds,
+    durationSeconds: duration,
+    occupancyDurationSeconds: stored.ok
+      ? shotDuration(resolvedShowDesign({ design: stored.design, caliber }, 'peak'))
+      : duration,
+    design: stored.ok ? stored.design : null,
+    kind: stored.ok ? stored.design.kind : null,
+    designError: stored.ok ? null : stored.error,
     heightMeters: row.height_meters,
     caliber,
     shotCount: null,
@@ -171,6 +193,7 @@ export function mapFireworkVariantSpecification(
           slug: effect.slug,
           name: effect.name,
           patternKey: effect.pattern_key,
+          templateKey: effect.template_key,
         }
       : null,
     variant: {

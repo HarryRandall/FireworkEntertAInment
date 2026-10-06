@@ -37,7 +37,7 @@
     },
     "catalogue_items": {
       "rows": 220,
-      "sha256": "3e2f6128ec87d1da8068df83f1cc33f5f6a75539650a93f4b2f229d7b76d9ae5"
+      "sha256": "4a2b4856b36a2cfceee51d1af20dcdc78447fd3a4a6728e3b976729cccf54fa8"
     },
     "supplier_profiles": {
       "rows": 2,
@@ -61,7 +61,7 @@
     },
     "generation_settings": {
       "rows": 1,
-      "sha256": "7abffb54a981312057dd54b8ec4620cf1572db63cea5928cbfcd19cdcefa8d30"
+      "sha256": "bc16e033e4ea9b83e2d9875d1b0e3f069252e8b68cb9b338c78ecae9ccfef669"
     },
     "ai_credit_costs": {
       "rows": 8,

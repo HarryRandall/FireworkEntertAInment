@@ -1,7 +1,7 @@
 import type { CueEmphasis } from '@/lib/cue-generation/schemas';
 import type { FireworkSpecification } from '@/lib/show-domain';
-import { scaleDesignForCaliber, scaleDesignForEmphasis } from '@showcrafter/fireworks/design';
-import { estimateFireworkDesignTiming } from '@showcrafter/fireworks/timing';
+import { shotDuration } from '@showcrafter/renderer';
+import { resolvedShowDesign, showLiftTimeSeconds } from '@/lib/shows/renderer-design';
 
 type ProductTimingProfileChild = {
   firework: FireworkSpecification;
@@ -46,9 +46,7 @@ type TimingProfileInput = {
 };
 
 function designFor(product: FireworkSpecification, emphasis: CueEmphasis) {
-  const compiled = product.renderDesign;
-  if (!compiled) return null;
-  return scaleDesignForEmphasis(scaleDesignForCaliber(compiled, product.caliber), emphasis);
+  return product.design ? resolvedShowDesign(product, emphasis) : null;
 }
 
 function finite(value: number | null | undefined): value is number {
@@ -121,10 +119,10 @@ export function buildProductTimingProfile({
     if (!finite(child.timeOffsetSeconds) || child.timeOffsetSeconds < 0) continue;
     const design = designFor(child.firework, emphasis);
     if (!design) continue;
-    const timing = estimateFireworkDesignTiming(
-      design,
-      finite(child.panDegrees) ? child.panDegrees : 0,
-    );
+    const timing = {
+      liftTimeSeconds: showLiftTimeSeconds(design),
+      endSeconds: shotDuration(design),
+    };
     const impactOffsetSeconds = child.timeOffsetSeconds + timing.liftTimeSeconds;
     const endOffsetSeconds = child.timeOffsetSeconds + timing.endSeconds;
     if (

@@ -1,4 +1,6 @@
 import 'server-only';
+import { shotDuration } from '@showcrafter/renderer';
+import { readShowDesign, resolvedShowDesign } from '@/lib/shows/renderer-design';
 
 import { validateCatalogueRender } from '@/lib/admin/renderer-validation';
 import { RendererValidationError } from '@showcrafter/fireworks/design';
@@ -74,8 +76,8 @@ function linkedStyleDefaults(links: AdminStyleDefaultLinkMap): unknown[] {
 
 function previewDurationForCues(cues: ReplayCue[]): number {
   const contentEnd = cues.reduce((latest, cue) => {
-    const designDuration = cue.firework.renderDesign
-      ? estimateDesignDurationSeconds(cue.firework.renderDesign)
+    const designDuration = cue.firework.design
+      ? shotDuration(resolvedShowDesign(cue.firework, cue.emphasis ?? 'normal'))
       : (cue.firework.durationSeconds ?? 0);
     return Math.max(latest, cue.timeSeconds + designDuration);
   }, 0);
@@ -107,6 +109,11 @@ function boundSequenceCues(cues: ReplayCue[]): ReplayCue[] {
 function normalisePreviewPayload(cues: ReplayCue[]): FireworkCardPreviewPayload | null {
   const boundedCues = boundSequenceCues(cues);
   if (boundedCues.length === 0) return null;
+  const invalid = boundedCues.find((cue) => cue.firework.designError);
+  if (invalid)
+    throw new FireworkCardPreviewReadError(
+      `${invalid.firework.name}: ${invalid.firework.designError}`,
+    );
 
   const specificationsById = new Map<string, FireworkSpecification>();
   const previewCues: FireworkCardPreviewCue[] = boundedCues.map((cue) => {
@@ -185,6 +192,20 @@ async function adminEntityExists(kind: AdminFireworkCardPreviewKind, id: string)
   return Boolean(result.data);
 }
 
+async function storedPreviewDesign(table: 'fireworks' | 'firework_effects', id: string) {
+  const supabase = await getServerClient();
+  const { data, error } = await supabase
+    .from(table)
+    .select('design, design_schema')
+    .eq('id', id)
+    .maybeSingle();
+  if (error || !data)
+    throw new FireworkCardPreviewReadError('Could not load stored preview design.', error);
+  const result = readShowDesign(data.design, data.design_schema);
+  if (!result.ok) throw new FireworkCardPreviewReadError(result.error);
+  return { design: result.design, kind: result.design.kind };
+}
+
 async function loadEffectPreview(id: string): Promise<FireworkCardPreviewPayload | null> {
   const effect = await getAdminEffectById(id);
   if (!effect) {
@@ -215,6 +236,7 @@ async function loadEffectPreview(id: string): Promise<FireworkCardPreviewPayload
     ) / 2,
   );
   const firework: FireworkSpecification = {
+    ...(await storedPreviewDesign('firework_effects', effect.id)),
     id: effect.id,
     slug: effect.slug,
     name: effect.name,
@@ -272,7 +294,8 @@ async function loadStyleDefaultPreview(id: string): Promise<FireworkCardPreviewP
     baseEffect: null,
     variant: null,
   };
-  return normalisePreviewPayload([singlePreviewCue(firework)]);
+  const payload = normalisePreviewPayload([singlePreviewCue(firework)]);
+  return payload ? { ...payload, renderer: 'legacy-editor' } : null;
 }
 
 async function loadFireworkPreview(id: string): Promise<FireworkCardPreviewPayload | null> {
@@ -292,6 +315,7 @@ async function loadFireworkPreview(id: string): Promise<FireworkCardPreviewPaylo
   if (!validation.ok) throw new RendererValidationError(validation.diagnostics);
   const design = validation.design;
   const specification: FireworkSpecification = {
+    ...(await storedPreviewDesign('fireworks', firework.id)),
     id: firework.id,
     slug: firework.slug,
     name: firework.name,

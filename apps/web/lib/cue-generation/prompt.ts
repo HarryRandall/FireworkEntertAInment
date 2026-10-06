@@ -46,6 +46,8 @@ function projectCatalogue(
     return [
       {
         a: alias,
+        ...(include('templateKey') ? { templateKey: product.baseEffect?.templateKey ?? null } : {}),
+        ...(include('kind') ? { kind: product.kind ?? null } : {}),
         ...(include('name') ? { name: product.name } : {}),
         ...(description ? { description } : {}),
         colours: [...productColourFamilies(product)],

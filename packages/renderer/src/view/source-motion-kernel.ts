@@ -127,7 +127,7 @@ vec3 launchSource(int source, float time, float local, float step) {
   float progress = clamp(time / travel.y, 0.0, 1.0);
   float height = origin.y + (travel.x - origin.y) * (1.0 - (1.0 - progress) * (1.0 - progress));
   float clear = clearance(height - origin.y);
-  vec3 outPosition = vec3(travel.z * height + shiftedSin(phaseAt(source, 0, CLIMB_SWAY_RAD_S, local), (CLIMB_SWAY_RAD_S) * step) * CLIMB_SWAY_M * clear, height - origin.y, 0.0);
+  vec3 outPosition = vec3(travel.z * height + shiftedSin(phaseAt(source, 0, CLIMB_SWAY_RAD_S, local), (CLIMB_SWAY_RAD_S) * step) * CLIMB_SWAY_M * clear, height - origin.y, travel.w * height);
   outPosition.x += shiftedSin(phaseAt(source, 1, JITTER_X_RAD_S, local), (JITTER_X_RAD_S) * step) * shape.x * clear;
   outPosition.z += shiftedCos(phaseAt(source, 2, JITTER_Z_RAD_S, local), (JITTER_Z_RAD_S) * step) * shape.x * clear;
   outPosition.x += shiftedSin(phaseAt(source, 3, WOBBLE_X_RAD_S, local), (WOBBLE_X_RAD_S) * step) * shape.y * clear;

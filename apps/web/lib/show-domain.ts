@@ -6,6 +6,7 @@
  * modules; this file is the contract they expose to the rest of the app.
  */
 
+import type { Design } from '@showcrafter/renderer';
 import type { FireworkSpec } from '@showcrafter/fireworks/spec';
 import type { FireworkDesign, LaunchPosition } from '@showcrafter/fireworks/design';
 import type { ShowCover } from '@/lib/cover';
@@ -89,12 +90,17 @@ export type FireworkSpecification = {
   launchPositionOverrideIndices?: number[];
   spec: FireworkSpec | null;
   rawSpec: unknown;
+  /** Validated stored v1 design, absent only for legacy editor previews. */
+  design?: Design | null;
+  kind?: Design['kind'] | null;
+  designError?: string | null;
   renderDesign: FireworkDesign | null;
   baseEffect: {
     id: string;
     slug: string;
     name: string;
     patternKey: string;
+    templateKey?: string | null;
   } | null;
   variant: {
     id: string;

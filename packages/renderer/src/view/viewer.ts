@@ -1,3 +1,4 @@
+import { syncViewerClock, subscribeViewer } from './external-clock';
 /** Browser playback coordinates stateless source sampling, GPU sprays and redraw scheduling. */
 import { ViewerSound } from './sound/scheduler';
 import { prototypeOr } from '../sim/numeric';
@@ -17,7 +18,8 @@ import { viewerInput, mountViewerSurface } from './viewer-input';
 import { buildPlayer } from './player';
 import {
   drawViewerFrame,
-  advanceViewerPlayback,
+  viewerLiveDrawPending,
+  tickViewerPlayback,
   applyViewerShake,
   applyViewerSettings,
   resetViewerReadout,
@@ -58,6 +60,7 @@ export class Viewer {
   t = 0;
   speed = 1;
   playing = false;
+  externalClock = false;
   fps = 0;
   fillMs = 0;
   frameMs = 0;
@@ -159,10 +162,7 @@ export class Viewer {
     if (this.disposed || !this.onScreen || document.hidden) return;
     const dt = this.last !== 0 ? (now - this.last) / MS_PER_SECOND : 0;
     this.last = now;
-    if (this.playing) {
-      this.frameTimes.record(dt * MS_PER_SECOND);
-      this.advancePlayback(dt);
-    }
+    this.dirty = tickViewerPlayback(this, dt) || this.dirty;
     this.cameraMoving = this.controls.update(now);
     this.sound.frame(this);
     if (this.profiler.poll()) this.emit();
@@ -173,9 +173,6 @@ export class Viewer {
       this.emit();
     }
     this.schedule();
-  }
-  private advancePlayback(dt: number): void {
-    if (advanceViewerPlayback(this, dt)) this.dirty = true;
   }
   private emit(): void {
     for (const listener of this.listeners) listener(this);
@@ -233,6 +230,12 @@ export class Viewer {
     this.invalidate();
     this.emit();
   }
+  /** Samples a soundtrack-owned clock in seconds; discontinuities reset sound, smooth ticks retain voices. */
+  syncTime(time_s: number, playing: boolean): void {
+    if (this.disposed) return;
+    syncViewerClock(this, this.sound, time_s, playing);
+  }
+
   /** Toggles the current playback state. */
   toggle(): void {
     if (this.playing) this.pause();
@@ -289,10 +292,7 @@ export class Viewer {
   /** Whether live drawing owns the frame budget; background posters yield throughout playback. */
   get liveDrawPending(): boolean {
     return (
-      !this.disposed &&
-      this.onScreen &&
-      !document.hidden &&
-      (this.dirty || this.playing || this.cameraMoving)
+      !this.disposed && viewerLiveDrawPending(this, this.onScreen, this.dirty, this.cameraMoving)
     );
   }
   /** Marks externally changed data dirty and schedules a visible redraw. */
@@ -305,12 +305,10 @@ export class Viewer {
   }
   /** Subscribes to playback changes and returns an unsubscribe function. */
   on(listener: (viewer: Viewer) => void): () => void {
-    if (this.disposed) return () => {};
-    this.listeners.add(listener);
-    listener(this);
-    return () => {
-      this.listeners.delete(listener);
-    };
+    return subscribeViewer(
+      { viewer: this, disposed: this.disposed, listeners: this.listeners },
+      listener,
+    );
   }
   /** Cancels callbacks, disconnects observers and frees all scene, target and context resources. */
   dispose(): void {

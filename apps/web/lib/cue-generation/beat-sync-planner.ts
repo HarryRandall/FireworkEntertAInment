@@ -1,3 +1,4 @@
+import { showProductColours } from '@/lib/shows/renderer-design';
 /**
  * Deterministic strict-sync planner.
  *
@@ -606,13 +607,9 @@ function requestedColourFamilies(text: string): string[] {
 }
 
 function productColourFamilies(product: FireworkSpecification): Set<string> {
-  const values = [
-    product.spec?.color,
-    ...(product.spec?.colorPalette ?? []),
-    product.variant?.primaryColor,
-    product.variant?.secondaryColor,
-    ...(product.variant?.colorPalette ?? []),
-  ].filter((value): value is string => typeof value === 'string');
+  const values = [...showProductColours(product)].filter(
+    (value): value is string => typeof value === 'string',
+  );
   const text = `${productSearchText(product)} ${values.join(' ')}`;
   const families = new Set(requestedColourFamilies(text));
   for (const value of values) {
@@ -651,13 +648,10 @@ function productSearchText(product: FireworkSpecification): string {
   return [
     product.name,
     product.description,
-    product.spec?.color,
-    ...(product.spec?.colorPalette ?? []),
-    product.variant?.primaryColor,
-    product.variant?.secondaryColor,
-    ...(product.variant?.colorPalette ?? []),
+    ...showProductColours(product),
     product.baseEffect?.name,
-    product.baseEffect?.patternKey,
+    product.baseEffect?.templateKey,
+    product.kind,
   ]
     .filter(Boolean)
     .join(' ')

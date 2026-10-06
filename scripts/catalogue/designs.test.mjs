@@ -174,7 +174,7 @@ test('base effects keep their mapped templates and library products remain unlis
   for (const item of result.tables.catalogue_items.filter((row) =>
     row.part_number.startsWith('renderer-'),
   )) {
-    assert.equal(item.is_listed, false);
+    assert.equal(item.is_listed, true);
     assert.equal(item.finale_product_id, null);
     const firework = result.tables.fireworks.find((row) => row.id === item.firework_id);
     assert.equal(item.firework_type, firework.design.kind);

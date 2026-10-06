@@ -141,8 +141,9 @@ check runtime imports, re-exports and tests before removing a component. Use
 `packages/renderer` (`@showcrafter/renderer`) owns its v1 design schema, pinned
 Zod 3 validators, deterministic simulation, templates, posters and WebGL viewer.
 The admin renderer preview loads its browser view without server rendering.
-Shows continue to use `packages/fireworks` and `packages/firework-editor`; the
-renderer library is not used by shows. Keep its validators separate from web
+Shows plan and play stored designs through the renderer library. The legacy
+`packages/fireworks` and `packages/firework-editor` remain for admin editors and
+the video import harness. Keep its validators separate from web
 Zod 4 schemas.
 
 ## Renderer design storage
@@ -153,7 +154,7 @@ at 1. PostgreSQL validates documents with `pg_jsonschema` and the generated
 `private.firework_design_schema()` helper. Effect `template_key` values are unique
 when present. Existing snapshot triggers and editor RPC field allowlists retain
 their current behaviour. The admin renderer comparison reads these designs;
-show generation and replay retain the existing renderer.
+show generation and replay validate stored designs and use the renderer library.
 
 `catalogue_items.finale_product_id` identifies a Finale 3D supplier product;
 null means there is no equivalent yet. `finale_effect_name` is optional. The
@@ -167,3 +168,30 @@ schema. After changing the JSON Schema, run
 without rewriting history. The migration revalidates existing designs, so inspect
 compatibility before applying it. Bootstrap snapshots include the design and
 Finale columns explicitly.
+
+## Show design resolution
+
+`lib/shows/renderer-design.ts` validates stored v1 documents through `upgradeDesign`
+and resolves one shared adjustment table for planning and replay. Missing or invalid
+designs are visible errors. Shells and rockets compensate `launch.time_s`; mines and
+all ground kinds fire on their musical impact. Durations use `shotDuration`, including
+each expanded multishot child. Occupancy reserves the peak-adjusted duration.
+
+Calibre uses a 75 mm baseline: up to 30/50/60/75/100/125 mm maps to
+-3/-2/-1/0/+1/+2, with larger sizes at +3. Unknown calibre stays at zero.
+The renderer registry applies launch height at 1.12 per level, lift time by the
+square root of that factor and layer radius at 1.15 per level. Accent and peak add
+one and two size/brightness levels respectively, clamped with stored adjustments to
+-3..3. Brightness uses the package's 1.2 per-level multiplier and flash uses 1.3.
+
+`ShowRendererCanvas` adapts the soundtrack-owned playhead to `Viewer.syncTime`.
+It uses stateless simulation for seeks, with no show snapshot cache. Saved launch
+positions use legacy centimetres and convert once at 0.01 metres per unit. New
+site-width layouts convert feet to centimetres before persistence. The legacy
+`FireworkReplayCanvas` remains the fingerprinted admin editor and import surface;
+admin style-default previews explicitly declare that editor renderer.
+
+Catalogue posters use the detached package poster API and retain 1600 by 1000
+physical-pixel WebP uploads, immutable paths and revision/signature race checks.
+Renderer design edits invalidate their own posters and dependent multishot posters.
+Copied fireworks remain independent of later source-effect changes.

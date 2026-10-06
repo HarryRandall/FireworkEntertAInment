@@ -110,13 +110,6 @@ function finiteOrZero(value: unknown): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-function conservativeProductDuration(...values: Array<number | null | undefined>): number | null {
-  const durations = values.filter(
-    (value): value is number => value != null && Number.isFinite(value) && value > 0,
-  );
-  return durations.length > 0 ? Math.max(...durations) : null;
-}
-
 /** Cheapest purchasable supplier price for a catalogue item; null when unlisted. */
 function cheapestAvailablePriceCents(
   rows: Array<{ price_cents: number | null; available: boolean | null }> | null | undefined,
@@ -263,6 +256,7 @@ export const listFireworkProducts = cache(
          firework_preview_images(source_revision, renderer_version, storage_path),
          multishot_fireworks (
            sequence_index,
+           time_offset_seconds,
            caliber,
            position_override_json,
            fireworks (${fireworkSelect})
@@ -304,6 +298,7 @@ export const listFireworkProducts = cache(
           firework_preview_images: FireworkPreviewImageProjectionRelation;
           multishot_fireworks: Array<{
             sequence_index: number;
+            time_offset_seconds: number;
             caliber: string | null;
             position_override_json: unknown;
             fireworks:
@@ -351,6 +346,41 @@ export const listFireworkProducts = cache(
                 previewImagePath: base.previewImagePath ?? null,
                 previewImageRevision: base.previewImageRevision ?? null,
               };
+        const children = multishotRows.map((child) => {
+          const firework = firstVariant(child.fireworks);
+          if (!firework) return null;
+          const spec = lightweight
+            ? mapCatalogueFireworkCard(
+                firework as CatalogueFireworkCardProjection,
+                0,
+                child.caliber,
+              )
+            : mapFireworkVariantSpecification(
+                firework as FireworkVariantProjection,
+                0,
+                child.caliber,
+              );
+          return { spec, offset: child.time_offset_seconds };
+        });
+        const invalidChild = children.find((child) => !child?.spec.design);
+        const duration =
+          row.catalogue_item_kind === 'multishot'
+            ? Math.max(
+                0,
+                ...children.map((child) =>
+                  child ? child.offset + (child.spec.durationSeconds ?? 0) : 0,
+                ),
+              )
+            : base.durationSeconds;
+        const occupancy =
+          row.catalogue_item_kind === 'multishot'
+            ? Math.max(
+                0,
+                ...children.map((child) =>
+                  child ? child.offset + (child.spec.occupancyDurationSeconds ?? 0) : 0,
+                ),
+              )
+            : base.occupancyDurationSeconds;
         mapped.push({
           ...base,
           ...previewImage,
@@ -360,11 +390,13 @@ export const listFireworkProducts = cache(
           manufacturer: row.manufacturer,
           description: row.description ?? base.description,
           minPriceCents: cheapestAvailablePriceCents(row.supplier_inventory_items),
-          durationSeconds: row.duration_seconds ?? base.durationSeconds,
-          occupancyDurationSeconds: conservativeProductDuration(
-            row.duration_seconds,
-            base.durationSeconds,
-          ),
+          durationSeconds: duration,
+          occupancyDurationSeconds: occupancy,
+          designError:
+            invalidChild === undefined
+              ? base.designError
+              : 'A multishot child has no valid renderer design.',
+
           shotCount:
             row.catalogue_item_kind === 'multishot'
               ? (row.multishots?.shot_count ?? multishotRows.length)

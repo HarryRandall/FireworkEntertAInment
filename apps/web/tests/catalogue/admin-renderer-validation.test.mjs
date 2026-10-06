@@ -5,6 +5,9 @@ import ts from 'typescript';
 await import('../../../../scripts/renderer/register-typescript.mjs');
 const { validateCatalogueRender } = await import('../../lib/admin/renderer-validation.ts');
 const renderer = await import('@showcrafter/fireworks/design');
+const newRenderer = await import('@showcrafter/renderer');
+const showDesign = await import('../../lib/shows/renderer-design.ts');
+const storedDesign = newRenderer.effectTemplates.find((entry) => entry.key === 'peony').design;
 const styles = await import('@showcrafter/fireworks/style-defaults');
 const previewConstants = await import('../../lib/firework-card-preview.ts');
 const utils = await import('../../lib/utils.ts');
@@ -38,6 +41,8 @@ function fixtureModule(path, dependencies) {
 function previewLoader({ effect, firework, preset }) {
   return fixtureModule('../../lib/firework-card-preview.server.ts', {
     'node:crypto': {},
+    '@showcrafter/renderer': newRenderer,
+    '@/lib/shows/renderer-design': showDesign,
     '@/lib/utils': utils,
     '@/lib/admin/renderer-validation': { validateCatalogueRender },
     '@/lib/admin/effects.server': { getAdminEffectById: async () => effect },
@@ -59,7 +64,12 @@ function previewLoader({ effect, firework, preset }) {
       getServerClient: async () => ({
         from: () => ({
           select: () => ({
-            eq: () => ({ maybeSingle: async () => ({ data: { variant_json: {} }, error: null }) }),
+            eq: () => ({
+              maybeSingle: async () => ({
+                data: { variant_json: {}, design: storedDesign, design_schema: 1 },
+                error: null,
+              }),
+            }),
           }),
         }),
       }),

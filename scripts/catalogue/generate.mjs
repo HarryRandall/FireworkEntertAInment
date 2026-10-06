@@ -10,6 +10,8 @@ import { catalogueDesign, matchTemplate, templateSlug } from './designs.mjs';
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const BOOTSTRAP = join(ROOT, 'supabase/bootstrap');
 export const MIGRATION_PATH = 'supabase/migrations/20261006000200_catalogue_renderer_designs.sql';
+export const LISTING_MIGRATION_PATH =
+  'supabase/migrations/20261006000300_list_renderer_template_products.sql';
 // Content timestamps are fixed to the catalogue generation epoch, UTC.
 const CONTENT_TIMESTAMP_UTC = '2026-10-06T00:00:00+00:00';
 const MAPPING = {
@@ -235,6 +237,8 @@ on conflict do nothing;`);
     'drop function pg_temp.catalogue_design(jsonb, text[], text, text, bigint);',
     'commit;',
   );
+  // The subsequent listing migration makes these products public in fresh snapshots.
+  for (const { item } of additions) item.is_listed = true;
   return {
     tables: {
       firework_effects: effects,
@@ -242,6 +246,18 @@ on conflict do nothing;`);
       catalogue_items: items,
       firework_preview_images: previews,
     },
+    listingMigration: `-- Publish the renderer library products by stable catalogue slug.
+begin;
+update public.catalogue_items set is_listed = true
+where part_number in (
+  ${additions
+    .map(({ item }) => item.part_number)
+    .sort()
+    .map((slug) => `'${slug}'`)
+    .join(',\n  ')}
+);
+commit;
+`,
     migration: sql.join('\n\n') + '\n',
     report: {
       effectMappings,
@@ -254,7 +270,10 @@ on conflict do nothing;`);
 /** Writes generated artefacts, or rejects stale files without modifying them. */
 export async function generateCatalogue(check = false) {
   const result = buildCatalogue();
-  const outputs = new Map([[join(ROOT, MIGRATION_PATH), result.migration]]);
+  const outputs = new Map([
+    [join(ROOT, MIGRATION_PATH), result.migration],
+    [join(ROOT, LISTING_MIGRATION_PATH), result.listingMigration],
+  ]);
   const manifest = read('manifest');
   for (const [table, rows] of Object.entries(result.tables)) {
     rows.sort((left, right) => left.id.localeCompare(right.id));

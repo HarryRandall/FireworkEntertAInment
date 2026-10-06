@@ -17,7 +17,7 @@ import { DEMO_SHOW_CUES, DEMO_SHOW_DURATION_SECONDS } from './demoShow';
 import styles from './landing.module.css';
 
 const FireworkReplayCanvas = dynamic(
-  () => import('@/ui/replay/FireworkReplayCanvas').then((m) => m.FireworkReplayCanvas),
+  () => import('@/ui/replay/ShowRendererCanvas').then((m) => m.FireworkReplayCanvas),
   { ssr: false, loading: () => null },
 );
 

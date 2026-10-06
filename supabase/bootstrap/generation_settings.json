@@ -14,7 +14,8 @@
       "isMultiShot",
       "heightMeters",
       "caliber",
-      "shellType",
+      "templateKey",
+      "kind",
       "color",
       "colorPalette",
       "effects"
