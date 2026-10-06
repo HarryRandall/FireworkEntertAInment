@@ -8,7 +8,7 @@ const PAN_PER_PX = 0.0014;
 /** Visual tuning, exponential wheel-zoom response per pixel delta. */
 export const WHEEL_ZOOM_PER_PIXEL = 0.004;
 /** Visual tuning, exponential wheel-zoom response per line delta. */
-export const WHEEL_ZOOM_PER_LINE = 0.16;
+const WHEEL_ZOOM_PER_LINE = 0.16;
 /** Visual tuning, power applied to the inverse pinch-spread ratio. */
 export const PINCH_ZOOM_RESPONSE = 2;
 const UP_FAR_RAD = 0.38;
