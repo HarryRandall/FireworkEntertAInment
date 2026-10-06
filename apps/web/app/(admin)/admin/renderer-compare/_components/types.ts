@@ -7,6 +7,7 @@ export type ComparisonRow = {
   id: string;
   slug: string;
   name: string;
+  templateName: string;
   caliber: string | null;
   durationSeconds: number | null;
   oldDesign: FireworkDesign | null;

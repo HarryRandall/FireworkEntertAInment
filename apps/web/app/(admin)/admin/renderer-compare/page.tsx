@@ -42,6 +42,9 @@ export default async function RendererComparePage() {
       id: row.id,
       slug: row.slug,
       name: row.name,
+      templateName:
+        review.fireworks.find((firework) => firework.slug === row.slug)?.templateName ??
+        'Unknown template',
       caliber: row.caliber,
       durationSeconds: row.duration_seconds,
       oldDesign: old.ok ? old.design : null,

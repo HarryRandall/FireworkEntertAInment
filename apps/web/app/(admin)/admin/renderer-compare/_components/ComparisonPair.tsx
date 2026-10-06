@@ -2,13 +2,12 @@
 
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Viewer } from '@showcrafter/renderer/view';
+import { RendererPlayer } from '@/ui/renderer/RendererPlayer';
 import { shotDuration } from '@showcrafter/renderer';
 import { DEFAULT_FIREWORK_SPEC } from '@showcrafter/fireworks/spec';
 import { estimateFireworkDesignTiming } from '@showcrafter/fireworks/timing';
 import type { ReplayCue } from '@/lib/show-domain';
 import { Button } from '@/ui/patterns/Button';
-import { InlineAlert } from '@/ui/patterns/Feedback';
 import type { ComparisonRow } from './types';
 
 const OldCanvas = dynamic(
@@ -18,14 +17,11 @@ const OldCanvas = dynamic(
 // Browser animation timestamps are milliseconds; renderer playback is in seconds.
 const MILLISECONDS_PER_SECOND = 1000;
 
-/** Synchronises the two saved designs with a silent shared playhead and explicit playback. */
+/** Keeps the old replay independently controlled beside the standard library viewer. */
 export default function ComparisonPair({ row }: { row: ComparisonRow }) {
-  const container = useRef<HTMLDivElement>(null);
   const oldContainer = useRef<HTMLDivElement>(null);
-  const viewer = useRef<Viewer | null>(null);
   const [elapsed, setElapsed] = useState(0);
   const [playing, setPlaying] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const durationS = Math.max(
     row.durationSeconds ?? 0,
     row.newDesign ? shotDuration(row.newDesign) : 0,
@@ -73,27 +69,6 @@ export default function ComparisonPair({ row }: { row: ComparisonRow }) {
     };
   }, []);
   useEffect(() => {
-    if (!container.current || !row.newDesign) return;
-    try {
-      const instance = new Viewer(container.current, {
-        design: row.newDesign,
-        ui: false,
-        autoplay: false,
-        clickToPause: false,
-      });
-      viewer.current = instance;
-      return () => {
-        viewer.current = null;
-        instance.dispose();
-      };
-    } catch {
-      setError('The new renderer could not start. Check WebGL availability.');
-    }
-  }, [row]);
-  useEffect(() => {
-    viewer.current?.seek(elapsed);
-  }, [elapsed]);
-  useEffect(() => {
     if (!playing) return;
     let previousMs: number | null = null;
     let frame = 0;
@@ -110,8 +85,7 @@ export default function ComparisonPair({ row }: { row: ComparisonRow }) {
   }, [playing, durationS]);
   return (
     <div className="space-y-3">
-      {error && <InlineAlert tone="danger" title={error} />}
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="space-y-4">
         <div>
           <h3 className="mb-2 text-sm font-medium">Old renderer</h3>
           <div
@@ -130,16 +104,12 @@ export default function ComparisonPair({ row }: { row: ComparisonRow }) {
         </div>
         <div>
           <h3 className="mb-2 text-sm font-medium">New renderer</h3>
-          <div
-            ref={container}
-            aria-label={`${row.name} new rendering`}
-            className="border-border relative aspect-video overflow-hidden rounded border"
-          />
+          {row.newDesign && <RendererPlayer design={row.newDesign} name={row.name} />}
         </div>
       </div>
       <div className="flex items-center gap-3">
         <Button variant="secondary" onClick={() => setPlaying(!playing)}>
-          {playing ? 'Pause' : 'Play'}
+          {playing ? 'Pause old renderer' : 'Play old renderer'}
         </Button>
         <Button
           variant="ghost"
