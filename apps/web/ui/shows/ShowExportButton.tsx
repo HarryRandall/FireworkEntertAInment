@@ -3,6 +3,15 @@
 import { useState } from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '@/ui/patterns/Button';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/ui/primitives/dialog';
+import { isFinaleExportWarning, type FinaleExportWarning } from '@/lib/finale3d';
 import { toast } from '@/ui/patterns/toast';
 
 type ShowExportButtonProps = {
@@ -14,6 +23,7 @@ type ShowExportButtonProps = {
   showIcon?: boolean;
 };
 
+/** Prepares a download and requests confirmation for products with no Finale mapping. */
 export function ShowExportButton({
   showSlug,
   label = 'Export',
@@ -24,13 +34,18 @@ export function ShowExportButton({
 }: ShowExportButtonProps) {
   const [isPreparing, setIsPreparing] = useState(false);
 
-  async function downloadExport() {
+  const [warning, setWarning] = useState<FinaleExportWarning | null>(null);
+
+  async function downloadExport(confirmed = false) {
     if (isPreparing) return;
     setIsPreparing(true);
     try {
-      const response = await fetch(`/api/shows/${encodeURIComponent(showSlug)}/export`, {
-        credentials: 'same-origin',
-      });
+      const response = await fetch(
+        `/api/shows/${encodeURIComponent(showSlug)}/export` + (confirmed ? '?continue=1' : ''),
+        {
+          credentials: 'same-origin',
+        },
+      );
       if (!response.ok) {
         const value: unknown = await response.json().catch(() => null);
         const message =
@@ -43,6 +58,13 @@ export function ShowExportButton({
         throw new Error(message);
       }
 
+      if (response.headers.get('Content-Type')?.includes('application/json')) {
+        const result: unknown = await response.json();
+        if (!isFinaleExportWarning(result)) throw new Error('Invalid export response.');
+        setWarning(result);
+        return;
+      }
+      setWarning(null);
       const blob = await response.blob();
       if (blob.size === 0) throw new Error('The export was empty. Please try again.');
       const filename = exportFilename(
@@ -69,17 +91,48 @@ export function ShowExportButton({
   }
 
   return (
-    <Button
-      type="button"
-      variant={variant}
-      size={size}
-      className={className}
-      loading={isPreparing}
-      onClick={() => void downloadExport()}
-    >
-      {showIcon && !isPreparing ? <Download size={13} aria-hidden="true" /> : null}
-      {isPreparing ? 'Preparing export' : label}
-    </Button>
+    <>
+      <Button
+        type="button"
+        variant={variant}
+        size={size}
+        className={className}
+        loading={isPreparing}
+        onClick={() => void downloadExport()}
+      >
+        {showIcon && !isPreparing ? <Download size={13} aria-hidden="true" /> : null}
+        {isPreparing ? 'Preparing export' : label}
+      </Button>
+      <Dialog
+        open={warning !== null}
+        onOpenChange={(open) => {
+          if (!open && !isPreparing) setWarning(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>No Finale 3D equivalent</DialogTitle>
+            <DialogDescription>
+              {warning?.cueCount} cues will have a blank Product ID and the firing note 'No Finale
+              3D equivalent'.
+            </DialogDescription>
+          </DialogHeader>
+          <ul className="max-h-64 overflow-auto text-sm">
+            {warning?.effectNames.map((name) => (
+              <li key={name}>{name}</li>
+            ))}
+          </ul>
+          <DialogFooter>
+            <Button variant="secondary" disabled={isPreparing} onClick={() => setWarning(null)}>
+              Cancel
+            </Button>
+            <Button loading={isPreparing} onClick={() => void downloadExport(true)}>
+              Continue export
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

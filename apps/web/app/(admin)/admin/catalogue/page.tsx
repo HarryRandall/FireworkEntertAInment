@@ -46,6 +46,7 @@ type PageProps = {
     q?: string;
     manufacturer?: string;
     kind?: string;
+    finale?: string;
     duration_min?: string;
     duration_max?: string;
     page?: string;
@@ -112,7 +113,14 @@ async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
     const d = p.durationSeconds;
     const matchesMin = minDuration == null || (d != null && d >= minDuration);
     const matchesMax = maxDuration == null || (d != null && d <= maxDuration);
-    return matchesQuery && matchesManufacturer && matchesKind && matchesMin && matchesMax;
+    return (
+      (params.finale !== 'unmatched' || p.finaleProductId === null) &&
+      matchesQuery &&
+      matchesManufacturer &&
+      matchesKind &&
+      matchesMin &&
+      matchesMax
+    );
   });
   const totalPages = Math.max(1, Math.ceil(filtered.length / TABLE_PAGE_SIZE));
   const currentPage = Number.isFinite(requestedPage)
@@ -126,6 +134,17 @@ async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
       <FilterBar
         searchPlaceholder="Search part #, name, manufacturer…"
         filters={[
+          {
+            key: 'finale',
+            label: 'Finale 3D',
+            type: 'select',
+            options: [
+              {
+                value: 'unmatched',
+                label: `Unmatched in Finale (${products.filter((p) => p.finaleProductId === null).length})`,
+              },
+            ],
+          },
           {
             key: 'kind',
             label: 'Kind',
@@ -209,6 +228,8 @@ async function CatalogueData({ params }: { params: CatalogueSearchParams }) {
                     product={{
                       id: product.id,
                       partNumber: product.partNumber,
+                      finaleProductId: product.finaleProductId ?? undefined,
+                      finaleEffectName: product.finaleEffectName ?? undefined,
                       name: product.name,
                       manufacturer: product.manufacturer ?? undefined,
                       fireworkType: product.fireworkType ?? undefined,

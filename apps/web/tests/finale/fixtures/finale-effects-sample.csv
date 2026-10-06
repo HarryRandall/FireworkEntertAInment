@@ -1,0 +1,4 @@
+partNumber,description,partType,size,duration,internalDelay,numTubes,height,color,manufacturer,stdPrice,vdl
+SC-CAKE-021,"21 Shot 2s (a) Red Peony + (b) Green Peony Cake, 1 Row (-30a100/-20b/-10a/0b/10a/20b/30a/30b/20a/10b/0b/-10a/-20b/-30a/-30b/-20a/-10b/0a/10b/20a/30b/CAK)",cake,30mm,2.0,,21,30,Red,ShowCrafter,24.99,"21 Shot 2s (a) Red Peony + (b) Green Peony Cake, 1 Row (-30a100/-20b/-10a/0b/10a/20b/30a/30b/20a/10b/0b/-10a/-20b/-30a/-30b/-20a/-10b/0a/10b/20a/30b/CAK)"
+SC-CAKE-049,"49 Shot 5s (a) Red Pearl + (b) Blue Pearl Cake Z-Shape, 7 Rows, Row 1,3,5 (aaaaaaa), Row 2,4,6 (bbbbbbb), Row 7 (1.2/abababa/FNT)",cake,30mm,5.0,,49,,Red,ShowCrafter,39.99,
+G2SH1000,Red Chrysanthemum,shell,"2""",1.02,2.24,1,,Red,ShowCrafter,1.45,

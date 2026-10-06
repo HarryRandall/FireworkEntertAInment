@@ -5,7 +5,9 @@ import { NextResponse } from 'next/server';
 import type { Json } from '@/lib/database.types';
 import { createClient } from '@/lib/supabase/server';
 import { getShowBySlug } from '@/lib/shows/queries.server';
-import { buildFinale3dCsv } from '@/lib/finale3d';
+import { buildFinale3dCsv, finaleExportWarning } from '@/lib/finale3d';
+
+const EXPORT_READ_PAGE_SIZE = 500; // PostgREST export read batch, rows; below the default server limit.
 
 function productToSourcePayload(row: {
   part_number: string;
@@ -25,23 +27,33 @@ function productToSourcePayload(row: {
   } as Json;
 }
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const show = await getShowBySlug(id);
   if (!show) return new NextResponse('Not found', { status: 404 });
 
   const supabase = createClient(await cookies());
 
-  const { data: cues, error: cuesError } = await supabase
-    .from('show_timeline_items')
-    .select('time_seconds, catalogue_item_id, launch_position_index')
-    .eq('show_id', show.id)
-    .not('time_seconds', 'is', null)
-    .order('time_seconds', { ascending: true });
-
-  if (cuesError) {
-    console.error('[show-export] cue read failed:', cuesError);
-    return new NextResponse('The show could not be exported.', { status: 500 });
+  const cues: Array<{
+    time_seconds: number | null;
+    catalogue_item_id: string;
+    launch_position_index: number | null;
+  }> = [];
+  for (let from = 0; ; from += EXPORT_READ_PAGE_SIZE) {
+    const { data: page, error: cuesError } = await supabase
+      .from('show_timeline_items')
+      .select('time_seconds, catalogue_item_id, launch_position_index')
+      .eq('show_id', show.id)
+      .not('time_seconds', 'is', null)
+      .order('time_seconds', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, from + EXPORT_READ_PAGE_SIZE - 1);
+    if (cuesError) {
+      console.error('[show-export] cue read failed:', cuesError);
+      return new NextResponse('The show could not be exported.', { status: 500 });
+    }
+    cues.push(...(page ?? []));
+    if ((page?.length ?? 0) < EXPORT_READ_PAGE_SIZE) break;
   }
   if (!cues?.length) {
     return new NextResponse('No cues found', { status: 404 });
@@ -49,19 +61,28 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
   const catalogueItemIds = [...new Set(cues.map((c) => c.catalogue_item_id))];
 
-  const { data: catalogueItems, error: catalogueError } = await supabase
-    .from('catalogue_items')
-    .select(
-      `id, part_number, name, manufacturer, firework_type, duration_seconds, description,
+  const catalogueBatches: string[][] = [];
+  for (let from = 0; from < catalogueItemIds.length; from += EXPORT_READ_PAGE_SIZE) {
+    catalogueBatches.push(catalogueItemIds.slice(from, from + EXPORT_READ_PAGE_SIZE));
+  }
+  const cataloguePages = await Promise.all(
+    catalogueBatches.map((ids) =>
+      supabase
+        .from('catalogue_items')
+        .select(
+          `id, part_number, name, finale_product_id, finale_effect_name, manufacturer, firework_type, duration_seconds, description,
        fireworks (caliber),
        multishots (multishot_fireworks (sequence_index, caliber))`,
-    )
-    .in('id', catalogueItemIds);
-
+        )
+        .in('id', ids),
+    ),
+  );
+  const catalogueError = cataloguePages.find((page) => page.error)?.error;
   if (catalogueError) {
     console.error('[show-export] catalogue read failed:', catalogueError);
     return new NextResponse('Failed to fetch catalogue items', { status: 500 });
   }
+  const catalogueItems = cataloguePages.flatMap((page) => page.data ?? []);
 
   const catalogueItemById = new Map((catalogueItems ?? []).map((item) => [item.id, item]));
   const missingCatalogueItemIds = catalogueItemIds.filter(
@@ -92,6 +113,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     return {
       timeSeconds: Number(c.time_seconds),
       effectName: catalogueItem.name,
+      finaleProductId: catalogueItem.finale_product_id,
+      finaleEffectName: catalogueItem.finale_effect_name,
       launchPositionIndex: c.launch_position_index ?? 0,
       sourcePayload: productToSourcePayload({
         ...catalogueItem,
@@ -100,6 +123,11 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     };
   });
 
+  // A multishot cue exports one purchased product, so only its own mapping matters.
+  const warning = finaleExportWarning(csvCues);
+  if (warning && new URL(req.url).searchParams.get('continue') !== '1') {
+    return NextResponse.json(warning, { headers: { 'Cache-Control': 'private, no-store' } });
+  }
   const csv = buildFinale3dCsv(csvCues);
   const filename = `${show.title.replace(/[^a-z0-9]/gi, '-').toLowerCase()}-finale3d.csv`;
 

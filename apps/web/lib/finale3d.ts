@@ -21,6 +21,8 @@ type SourcePayload = {
 export type Finale3dCueInput = {
   timeSeconds: number;
   effectName: string;
+  finaleProductId?: string | null;
+  finaleEffectName?: string | null;
   /** Tube the cue fires from; maps deterministically to a Finale position name. */
   launchPositionIndex: number;
   sourcePayload: Json | null;
@@ -62,7 +64,7 @@ const HEADER = [
 
 function csvCell(value: string): string {
   if (value === '') return '';
-  if (value.includes(',') || value.includes('"') || value.includes('\n')) {
+  if (value.includes(',') || value.includes('"') || value.includes('\n') || value.includes('\r')) {
     return `"${value.replace(/"/g, '""')}"`;
   }
   return value;
@@ -79,6 +81,7 @@ function parsePayload(payload: Json | null): SourcePayload {
   return payload as SourcePayload;
 }
 
+/** Exports every cue; multishots use their parent catalogue mapping, never child mappings. */
 export function buildFinale3dCsv(cues: Finale3dCueInput[]): string {
   const lines: string[] = [HEADER.join(',')];
 
@@ -102,7 +105,7 @@ export function buildFinale3dCsv(cues: Finale3dCueInput[]): string {
       '',
       '0.0',
       p.internalDelay ?? '0',
-      cue.effectName,
+      cue.finaleEffectName ?? cue.effectName,
       p.size ?? '',
       normalizeCategory(p.category),
       '',
@@ -112,8 +115,8 @@ export function buildFinale3dCsv(cues: Finale3dCueInput[]): string {
       '',
       '',
       '',
-      '',
-      p.partNumber ?? '',
+      cue.finaleProductId ? '' : 'No Finale 3D equivalent',
+      cue.finaleProductId ?? '',
       p.manufacturerPartNumber ?? '',
       '',
       '',
@@ -126,4 +129,40 @@ export function buildFinale3dCsv(cues: Finale3dCueInput[]): string {
   }
 
   return lines.join('\n');
+}
+
+/** Expected confirmation result for cues whose catalogue product has no Finale mapping. */
+export type FinaleExportWarning = {
+  kind: 'unmatched';
+  cueCount: number;
+  effectNames: string[];
+};
+
+/** Counts parent catalogue mappings, retaining unique exported effect names in cue order. */
+export function finaleExportWarning(cues: readonly Finale3dCueInput[]): FinaleExportWarning | null {
+  const unmatched = cues.filter((cue) => !cue.finaleProductId);
+  return unmatched.length
+    ? {
+        kind: 'unmatched',
+        cueCount: unmatched.length,
+        effectNames: [...new Set(unmatched.map((cue) => cue.finaleEffectName ?? cue.effectName))],
+      }
+    : null;
+}
+
+/** Narrows the API's expected confirmation response before displaying it. */
+export function isFinaleExportWarning(value: unknown): value is FinaleExportWarning {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'kind' in value &&
+    value.kind === 'unmatched' &&
+    'cueCount' in value &&
+    typeof value.cueCount === 'number' &&
+    Number.isSafeInteger(value.cueCount) &&
+    value.cueCount > 0 &&
+    'effectNames' in value &&
+    Array.isArray(value.effectNames) &&
+    value.effectNames.every((name: unknown) => typeof name === 'string')
+  );
 }

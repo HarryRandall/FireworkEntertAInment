@@ -36,7 +36,7 @@ export function getAdminSuppliersCacheKey(): string {
 
 /** Cache key for the catalogue product list. */
 export function getAdminCatalogueCacheKey(): string {
-  return `${ADMIN_CACHE_PREFIX}:catalogue`;
+  return `${ADMIN_CACHE_PREFIX}:catalogue:finale-v1`;
 }
 
 /** Cache key for the reusable effect-spec list. */
