@@ -90,7 +90,7 @@ export default function ComparisonPair({ row }: { row: ComparisonRow }) {
           <h3 className="mb-2 text-sm font-medium">Old renderer</h3>
           <div
             ref={oldContainer}
-            className="border-border relative aspect-video overflow-hidden rounded border"
+            className="border-border relative isolate aspect-video overflow-hidden rounded border"
           >
             <OldCanvas
               cues={cues}

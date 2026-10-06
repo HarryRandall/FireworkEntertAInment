@@ -158,7 +158,7 @@ export function FireworkBrowseCard({
   const media = (
     <div
       ref={mediaRef}
-      className="bg-stage-night border-border relative aspect-[16/10] overflow-hidden border-b"
+      className="bg-stage-night border-border relative isolate aspect-[16/10] overflow-hidden rounded-t-xl border-b"
     >
       {/* Shimmer only while a real poster is loading. Cards without a
           persisted poster show the stage backdrop, not a permanent skeleton. */}

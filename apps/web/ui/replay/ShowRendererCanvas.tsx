@@ -91,7 +91,7 @@ function ShowCanvas(props: Props) {
     <>
       <div
         ref={container}
-        className="absolute inset-0 overflow-hidden rounded-[inherit] bg-black"
+        className="absolute inset-0 isolate overflow-hidden rounded-[inherit] bg-black"
       />
       {!shots.ok || error ? (
         <div

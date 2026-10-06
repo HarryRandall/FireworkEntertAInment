@@ -34,7 +34,7 @@ export function PreviewSurface({ template }: { template: EffectTemplate }) {
       <SectionHeader title="Poster still" size="sm" />
       <canvas
         ref={still}
-        className="border-border aspect-video w-full rounded-lg border"
+        className="border-border isolate aspect-video w-full overflow-hidden rounded-lg border"
         role="img"
         aria-label={`${template.name} poster still`}
       />

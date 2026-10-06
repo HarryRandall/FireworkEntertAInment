@@ -61,7 +61,7 @@ export default function PreviewSurface({
   }, [document]);
   return (
     <div className="relative h-full min-h-48 w-full">
-      <div className="absolute inset-0" ref={container} />
+      <div className="absolute inset-0 isolate overflow-hidden rounded-[inherit]" ref={container} />
       {player && transport && !failure && (
         <div className="absolute inset-x-0 bottom-5 z-30">
           <EditorPreviewTransport

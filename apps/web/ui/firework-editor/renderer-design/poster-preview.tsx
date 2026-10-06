@@ -37,7 +37,7 @@ export function PosterPreview({ document }: { document: Design }) {
     };
   }, [document]);
   return (
-    <div className="bg-stage-night relative aspect-[16/10] w-full overflow-hidden rounded-md">
+    <div className="bg-stage-night relative isolate aspect-[16/10] w-full overflow-hidden rounded-md">
       <canvas ref={canvas} aria-hidden className="h-full w-full" />
       {failure && (
         <p role="status" className="text-status-danger absolute inset-0 p-3 text-xs">

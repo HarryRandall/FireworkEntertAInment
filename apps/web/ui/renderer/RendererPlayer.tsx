@@ -23,7 +23,7 @@ export function RendererPlayer({ design, name }: { design: Design; name: string 
       {error && <InlineAlert tone="danger" title={error} />}
       <div
         ref={container}
-        className="border-border relative aspect-video w-full overflow-hidden rounded-lg border"
+        className="border-border relative isolate aspect-video w-full overflow-hidden rounded-lg border"
         aria-label={`${name} player`}
       />
     </>
