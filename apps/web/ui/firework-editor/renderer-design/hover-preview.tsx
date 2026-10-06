@@ -2,7 +2,7 @@
 import type { ReactElement } from 'react';
 import type { Design } from '@showcrafter/renderer';
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@/ui/primitives/tooltip';
-import { DesignPreview } from './preview';
+import { PosterPreview } from './poster-preview';
 const HOVER_DELAY_MS = 250; // Reference editor hover-intent delay in milliseconds.
 /** Shows an isolated, disposable preview without changing the authored document. */
 export function HoverPreview({
@@ -21,11 +21,8 @@ export function HoverPreview({
     <TooltipProvider delayDuration={HOVER_DELAY_MS}>
       <Tooltip>
         <TooltipTrigger asChild>{children}</TooltipTrigger>
-        <TooltipContent aria-label={`${name} preview`} className="w-64" side="right">
-          <div className="h-48">
-            <DesignPreview document={document} player={false} loop />
-          </div>
-          <p>{name}</p>
+        <TooltipContent aria-label={`${name} preview`} className="w-64 p-1" side="right">
+          <PosterPreview document={document} />
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
