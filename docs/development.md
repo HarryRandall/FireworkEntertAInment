@@ -35,6 +35,12 @@ pins the version). The import worker also needs FFmpeg and Playwright Chromium. 
 [service guide](../services/firework-import-worker/README.md) owns those details.
 `pnpm worker:firework-import` loads `apps/web/.env.local` (or `.env` as a fallback).
 
+The music analyser uses Beat This! 1.1.0 fold 0 on CPU. Its Modal image downloads
+the pinned checkpoint during the image build and verifies its SHA-256, increasing
+the image build download and image size. Local contributors can fetch the same
+verified checkpoint with `services/music-analyser/.venv/bin/python
+services/music-analyser/download_model.py`. Torch inference uses two CPU threads.
+
 ## Verification
 
 Run focused checks during development and `pnpm check` before delivery. The web

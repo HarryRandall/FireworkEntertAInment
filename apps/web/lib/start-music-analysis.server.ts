@@ -73,7 +73,7 @@ export async function startMusicAnalysisForStoredAudio(params: {
       size_bytes: params.sizeBytes,
       personality: 'balanced',
       status: 'running',
-      runner_version: 'modal-librosa-2',
+      runner_version: 'beat-this-1.1.0-fold0',
       schema_version: '1.4.0',
       source_provider: params.source?.provider ?? null,
       source_track_id: params.source?.trackId ?? null,

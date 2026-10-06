@@ -33,7 +33,26 @@ image = (
     .apt_install("ffmpeg", "libsndfile1")
     .pip_install_from_requirements(str(WORKER_DIRECTORY / "requirements.txt"))
     .pip_install("fastapi[standard]")
-    .add_local_python_source("showcrafter", "audio_download", "queued_analysis")
+    .add_local_file(
+        str(WORKER_DIRECTORY / "beat-this-model.json"),
+        "/root/beat-this-model.json",
+        copy=True,
+    )
+    .add_local_file(
+        str(WORKER_DIRECTORY / "download_model.py"), "/root/download_model.py", copy=True
+    )
+    .add_local_file(
+        str(WORKER_DIRECTORY / "asset_integrity.py"), "/root/asset_integrity.py", copy=True
+    )
+    .run_commands("python /root/download_model.py")
+    .add_local_python_source(
+        "showcrafter",
+        "audio_download",
+        "queued_analysis",
+        "asset_integrity",
+        "beat_metrics",
+        "beat_tracking",
+    )
 )
 
 app = modal.App("showcrafter-analyser")
@@ -64,8 +83,10 @@ class SongAnalyser:
 
         self.analyse_song = analyse_song
 
+        from beat_tracking import HOP_LENGTH, neural_model
+
         sr = 22050
-        hop_length = 512
+        hop_length = HOP_LENGTH
         y = np.zeros(sr * 2, dtype=np.float32)
         onset_env = librosa.onset.onset_strength(
             y=y,
@@ -84,6 +105,7 @@ class SongAnalyser:
         sklearn.cluster.KMeans(n_clusters=2, n_init=1, random_state=0).fit_predict(
             np.array([[0.0], [1.0], [0.5]])
         )
+        neural_model()
 
     @modal.fastapi_endpoint(method="POST")
     def analyse(
@@ -118,11 +140,12 @@ class SongAnalyser:
         from audio_download import AudioDownloadError, download_audio
 
         if payload.get("warmup") is True:
+            from beat_tracking import algorithm_for
             from showcrafter import SCHEMA_VERSION
 
             return {
                 "ok": True,
-                "runner_version": "modal-librosa-2",
+                "runner_version": algorithm_for("beat-this"),
                 "schema_version": SCHEMA_VERSION,
             }
 
@@ -152,7 +175,6 @@ class SongAnalyser:
                 result = self.analyse_song(
                     str(path),
                     personality,
-                    runner_version="modal-librosa-2",
                     initial_timings_ms={"download_ms": download_ms},
                 )
             except AudioInputError as exc:

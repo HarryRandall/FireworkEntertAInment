@@ -28,7 +28,7 @@ import {
   type AnalyserV14Result,
 } from '@/lib/show-analysis-validation';
 
-const ANALYSER_RUNNER_VERSION = 'modal-librosa-2';
+const ANALYSER_RUNNER_VERSION = 'beat-this-1.1.0-fold0';
 const SIGNED_URL_TTL_SECONDS = 600;
 const ANALYSIS_LEASE_SECONDS = 900;
 const MAX_ANALYSIS_ATTEMPTS = 3;

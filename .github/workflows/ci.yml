@@ -93,6 +93,9 @@ jobs:
       - name: Install analyser dependencies
         run: python -m pip install -r requirements.txt
 
+      - name: Download verified beat tracker model
+        run: python download_model.py
+
       - name: Lint analyser
         run: python -m pip install ruff==0.16.9 && ruff check .
 
@@ -129,6 +132,9 @@ jobs:
 
       - name: Install analyser dependencies
         run: python -m pip install -r services/music-analyser/requirements.txt
+
+      - name: Download verified beat tracker model
+        run: python services/music-analyser/download_model.py
 
       - name: Run Python to Zod to planner contract
         env:
