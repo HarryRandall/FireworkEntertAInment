@@ -10,7 +10,6 @@ import type { AdminStyleDefaultLinkMap } from '@/lib/admin.types';
 import { getAdminEffectById } from '@/lib/admin/effects.server';
 import { getAdminFireworkById } from '@/lib/admin/fireworks.server';
 import { getMultishotById } from '@/lib/admin/multishots.server';
-import { getAdminStyleDefaultPreviewSourceById } from '@/lib/admin/style-defaults.server';
 import {
   FIREWORK_CARD_PREVIEW_CUE_TIME_SECONDS,
   fireworkCardPreviewShotTimeSeconds,
@@ -43,7 +42,7 @@ import { getServerClient } from '@/lib/supabase/server-client';
 import { isRecord } from '@/lib/utils';
 
 export type AdminFireworkCardPreviewKind = Exclude<FireworkCardPreviewKind, 'catalogue'>;
-export type AdminFireworkCardPreviewSourceKind = AdminFireworkCardPreviewKind | 'style-default';
+export type AdminFireworkCardPreviewSourceKind = AdminFireworkCardPreviewKind;
 
 const FIREWORK_CARD_PREVIEW_MAX_CUES = 80;
 
@@ -260,44 +259,6 @@ async function loadEffectPreview(id: string): Promise<FireworkCardPreviewPayload
   return normalisePreviewPayload([singlePreviewCue(firework)]);
 }
 
-async function loadStyleDefaultPreview(id: string): Promise<FireworkCardPreviewPayload | null> {
-  const styleDefault = await getAdminStyleDefaultPreviewSourceById(id);
-  if (!styleDefault) return null;
-
-  const validation = validateCatalogueRender({
-    kind: 'style-default',
-    recordId: id,
-    settings: styleDefault.defaultsJson,
-    styleKind: styleDefault.kind,
-  });
-  if (!validation.ok) throw new RendererValidationError(validation.diagnostics);
-  const design = validation.design;
-  const durationSeconds = Math.max(
-    MIN_PREVIEW_DURATION_SECONDS,
-    Math.ceil(
-      (FIREWORK_CARD_PREVIEW_CUE_TIME_SECONDS + estimateDesignDurationSeconds(design)) * 2,
-    ) / 2,
-  );
-  const firework: FireworkSpecification = {
-    id: styleDefault.id,
-    slug: styleDefault.slug,
-    name: styleDefault.name,
-    description: styleDefault.description,
-    sortOrder: styleDefault.sortOrder,
-    durationSeconds,
-    heightMeters: null,
-    caliber: null,
-    shotCount: 1,
-    spec: DEFAULT_FIREWORK_SPEC,
-    rawSpec: styleDefault.defaultsJson,
-    renderDesign: design,
-    baseEffect: null,
-    variant: null,
-  };
-  const payload = normalisePreviewPayload([singlePreviewCue(firework)]);
-  return payload ? { ...payload, renderer: 'legacy-editor' } : null;
-}
-
 async function loadFireworkPreview(id: string): Promise<FireworkCardPreviewPayload | null> {
   const firework = await getAdminFireworkById(id);
   if (!firework) {
@@ -411,12 +372,11 @@ async function loadMultishotPreview(id: string): Promise<FireworkCardPreviewPayl
   return normalisePreviewPayload(cues);
 }
 
-export async function loadAdminFireworkCardPreview(
+async function loadAdminFireworkCardPreview(
   kind: AdminFireworkCardPreviewSourceKind,
   id: string,
 ): Promise<FireworkCardPreviewPayload | null> {
   try {
-    if (kind === 'style-default') return await loadStyleDefaultPreview(id);
     if (kind === 'effect') return await loadEffectPreview(id);
     if (kind === 'firework') return await loadFireworkPreview(id);
     return await loadMultishotPreview(id);

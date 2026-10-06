@@ -90,6 +90,7 @@ test('missing persisted and session-only posters backfill sequentially through o
   assert.match(source, /Direct interaction always takes priority over sequential backfill/);
   assert.match(effectsBrowser, /<FireworkBrowsePreviewProvider>/);
   assert.doesNotMatch(effectsBrowser, /posterBackfillTargets/);
+  assert.doesNotMatch(effectsBrowser, /style-default/);
   assert.equal(source.match(/<LazyFireworkReplayCanvas/g)?.length, 1);
 });
 
