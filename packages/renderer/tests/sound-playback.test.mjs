@@ -82,12 +82,12 @@ test('muted gestures cannot authorise later context creation outside a gesture',
   }
 });
 
-test('all 104 poster replacements retain shots without reading designs or allocating audio', () => {
+test('all poster replacements retain shots without reading designs or allocating audio', () => {
   const r = rig();
   let reads = 0;
   try {
     const entries = [...effectTemplates, ...reviewFixtures];
-    assert.equal(entries.length, 104);
+    assert.equal(entries.length, effectTemplates.length + 3);
     for (const entry of entries) {
       r.sound.setShots([
         {

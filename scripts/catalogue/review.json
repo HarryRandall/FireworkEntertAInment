@@ -1,0 +1,1111 @@
+{
+  "effectMappings": [
+    {
+      "slug": "chrysanthemum",
+      "patternKey": "chrysanthemum",
+      "templateKey": "chrysanthemum",
+      "oldGeometry": "sphere",
+      "oldTrailProfile": "spark",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": [],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "horsetail",
+      "patternKey": "horsetail",
+      "templateKey": "horsetail",
+      "oldGeometry": "falling_tail",
+      "oldTrailProfile": "waterfall",
+      "templateKind": "shell",
+      "templatePatterns": ["bottom"],
+      "templateModifiers": [],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "willow",
+      "patternKey": "willow",
+      "templateKey": "willow",
+      "oldGeometry": "weeping",
+      "oldTrailProfile": "long_hang",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": [],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "whirl",
+      "patternKey": "whirl",
+      "templateKey": "whirlwind",
+      "oldGeometry": "whirl",
+      "oldTrailProfile": "whirl",
+      "templateKind": "shell",
+      "templatePatterns": ["ring"],
+      "templateModifiers": ["twist"],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "comet",
+      "patternKey": "comet",
+      "templateKey": "comet",
+      "oldGeometry": "single_tail",
+      "oldTrailProfile": "thick_tail",
+      "templateKind": "comet",
+      "templatePatterns": [],
+      "templateModifiers": [],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "mine",
+      "patternKey": "mine",
+      "templateKey": "mine",
+      "oldGeometry": "upward_fan",
+      "oldTrailProfile": "glitter",
+      "templateKind": "mine",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": [],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "waterfall",
+      "patternKey": "waterfall",
+      "templateKey": "waterfall",
+      "oldGeometry": "waterfall",
+      "oldTrailProfile": "waterfall",
+      "templateKind": "shell",
+      "templatePatterns": ["bottom"],
+      "templateModifiers": [],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "pistil",
+      "patternKey": "pistil",
+      "templateKey": "pistil",
+      "oldGeometry": "sphere",
+      "oldTrailProfile": "spark",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere", "sphere"],
+      "templateModifiers": [],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "pearls",
+      "patternKey": "pearls",
+      "templateKey": "pearls",
+      "oldGeometry": "pearls",
+      "oldTrailProfile": "pearls",
+      "templateKind": "comet",
+      "templatePatterns": [],
+      "templateModifiers": [],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "crackle",
+      "patternKey": "crackle",
+      "templateKey": "crackle",
+      "oldGeometry": "fragment_cloud",
+      "oldTrailProfile": "crackle",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": ["crackle"],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "fountain",
+      "patternKey": "fountain",
+      "templateKey": "fountain",
+      "oldGeometry": "fountain",
+      "oldTrailProfile": "glitter",
+      "templateKind": "fountain",
+      "templatePatterns": [],
+      "templateModifiers": [],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "kamuro",
+      "patternKey": "kamuro",
+      "templateKey": "kamuro",
+      "oldGeometry": "crown",
+      "oldTrailProfile": "glitter",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": [],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "saturn",
+      "patternKey": "saturn",
+      "templateKey": "saturn",
+      "oldGeometry": "ring",
+      "oldTrailProfile": "none",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere", "ring"],
+      "templateModifiers": [],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "bowtie",
+      "patternKey": "bowtie",
+      "templateKey": "bowtie",
+      "oldGeometry": "bowtie",
+      "oldTrailProfile": "spark",
+      "templateKind": "shell",
+      "templatePatterns": ["bowtie"],
+      "templateModifiers": [],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "double_break",
+      "patternKey": "double_break",
+      "templateKey": "multiBreak",
+      "oldGeometry": "split_cross",
+      "oldTrailProfile": "spark",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere", "sphere", "sphere"],
+      "templateModifiers": ["crackle"],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "palm",
+      "patternKey": "palm",
+      "templateKey": "palm",
+      "oldGeometry": "radial_arms",
+      "oldTrailProfile": "thick_tail",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": [],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "crossette",
+      "patternKey": "crossette",
+      "templateKey": "crossette",
+      "oldGeometry": "split_cross",
+      "oldTrailProfile": "thick_tail",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": ["crossette"],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "nishiki",
+      "patternKey": "nishiki",
+      "templateKey": "nishiki",
+      "oldGeometry": "sphere",
+      "oldTrailProfile": "glitter",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": [],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "brocade",
+      "patternKey": "brocade",
+      "templateKey": "brocade",
+      "oldGeometry": "crown",
+      "oldTrailProfile": "glitter",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": [],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "outlined-star-shell",
+      "patternKey": "five_point_star",
+      "templateKey": "fivePointStar",
+      "oldGeometry": "five_point_star",
+      "oldTrailProfile": "spark",
+      "templateKind": "shell",
+      "templatePatterns": ["star"],
+      "templateModifiers": [],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "ring",
+      "patternKey": "ring",
+      "templateKey": "ring",
+      "oldGeometry": "ring",
+      "oldTrailProfile": "none",
+      "templateKind": "shell",
+      "templatePatterns": ["ring", "sphere"],
+      "templateModifiers": [],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "heart-shell",
+      "patternKey": "heart",
+      "templateKey": "heart",
+      "oldGeometry": "heart",
+      "oldTrailProfile": "spark",
+      "templateKind": "shell",
+      "templatePatterns": ["heart"],
+      "templateModifiers": [],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "roman_candle",
+      "patternKey": "roman_candle",
+      "templateKey": "romanCandle",
+      "oldGeometry": "roman_candle",
+      "oldTrailProfile": "thick_tail",
+      "templateKind": "comet",
+      "templatePatterns": [],
+      "templateModifiers": [],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "strobe",
+      "patternKey": "strobe",
+      "templateKey": "strobe",
+      "oldGeometry": "sphere",
+      "oldTrailProfile": "blink",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": ["strobe"],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "peony",
+      "patternKey": "peony",
+      "templateKey": "peony",
+      "oldGeometry": "sphere",
+      "oldTrailProfile": "none",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": [],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    },
+    {
+      "slug": "silverFish",
+      "patternKey": "silverFish",
+      "templateKey": "fish",
+      "oldGeometry": "fish",
+      "oldTrailProfile": "fish",
+      "templateKind": "shell",
+      "templatePatterns": ["sphere"],
+      "templateModifiers": ["fish"],
+      "review": "Base effect retains its mapped renderer template unchanged."
+    }
+  ],
+  "fireworks": [
+    {
+      "slug": "arthur-rozzi-brocade-blue-green",
+      "name": "Arthur Rozzi Brocade to Blue with Green Strobe",
+      "templateKey": "brocadeTips",
+      "templateName": "Brocade crown, red tips",
+      "reason": "name and description: brocade.*\\bto\\b; equally suitable candidates: brocadeTips; least-used tie break.",
+      "notes": [
+        "name and description: brocade.*\\bto\\b; equally suitable candidates: brocadeTips; least-used tie break."
+      ]
+    },
+    {
+      "slug": "arthur-rozzi-brocade-crackling-palm-red-green",
+      "name": "Arthur Rozzi Brocade Crackling Palm Red and Green",
+      "templateKey": "crackPalm",
+      "templateName": "Palm, crackling tips",
+      "reason": "name and description: crackl.*palm|palm.*crackl; equally suitable candidates: crackPalm; least-used tie break.",
+      "notes": [
+        "name and description: crackl.*palm|palm.*crackl; equally suitable candidates: crackPalm; least-used tie break."
+      ]
+    },
+    {
+      "slug": "arthur-rozzi-brocade-glitter-red",
+      "name": "Arthur Rozzi Glittering Brocade to Red",
+      "templateKey": "brocade",
+      "templateName": "Brocade",
+      "reason": "name and description: glitter.*brocade|brocade.*glitter; equally suitable candidates: brocade; least-used tie break.",
+      "notes": [
+        "name and description: glitter.*brocade|brocade.*glitter; equally suitable candidates: brocade; least-used tie break."
+      ]
+    },
+    {
+      "slug": "arthur-rozzi-brocade-magenta-green",
+      "name": "Arthur Rozzi Brocade Magenta to Green",
+      "templateKey": "brocadeTips",
+      "templateName": "Brocade crown, red tips",
+      "reason": "name and description: brocade.*\\bto\\b; equally suitable candidates: brocadeTips; least-used tie break.",
+      "notes": [
+        "name and description: brocade.*\\bto\\b; equally suitable candidates: brocadeTips; least-used tie break."
+      ]
+    },
+    {
+      "slug": "arthur-rozzi-brocade-red-green-blue",
+      "name": "Arthur Rozzi Brocade to Red Green and Blue",
+      "templateKey": "brocadeTips",
+      "templateName": "Brocade crown, red tips",
+      "reason": "name and description: brocade.*\\bto\\b; equally suitable candidates: brocadeTips; least-used tie break.",
+      "notes": [
+        "name and description: brocade.*\\bto\\b; equally suitable candidates: brocadeTips; least-used tie break."
+      ]
+    },
+    {
+      "slug": "arthur-rozzi-chrysanthemum-rgb-crackle",
+      "name": "Arthur Rozzi Red Green Blue Crackling Chrysanthemum",
+      "templateKey": "crackleChrys",
+      "templateName": "Crackling chrysanthemum",
+      "reason": "name and description: crackl.*c[hry]+santhemum|c[hry]+santhemum.*crackl; equally suitable candidates: crackleChrys; least-used tie break.",
+      "notes": [
+        "name and description: crackl.*c[hry]+santhemum|c[hry]+santhemum.*crackl; equally suitable candidates: crackleChrys; least-used tie break."
+      ]
+    },
+    {
+      "slug": "arthur-rozzi-chrysanthemum-silver-red",
+      "name": "Arthur Rozzi Silver Chrysanthemum to Red",
+      "templateKey": "silverChrys",
+      "templateName": "Silver chrysanthemum",
+      "reason": "name and description: silver.*c[hry]+santhemum; equally suitable candidates: silverChrys; least-used tie break.",
+      "notes": [
+        "name and description: silver.*c[hry]+santhemum; equally suitable candidates: silverChrys; least-used tie break."
+      ]
+    },
+    {
+      "slug": "arthur-rozzi-gold-willow-blue",
+      "name": "Arthur Rozzi Gold Willow to Blue",
+      "templateKey": "willow",
+      "templateName": "Willow",
+      "reason": "name: willow; equally suitable candidates: willow, greenWillow; least-used tie break.",
+      "notes": [
+        "name: willow; equally suitable candidates: willow, greenWillow; least-used tie break."
+      ]
+    },
+    {
+      "slug": "arthur-rozzi-gold-willow-green-purple",
+      "name": "Arthur Rozzi Gold Willow to Green and Purple",
+      "templateKey": "greenWillow",
+      "templateName": "Willow, green tips",
+      "reason": "name: willow; equally suitable candidates: willow, greenWillow; least-used tie break.",
+      "notes": [
+        "name: willow; equally suitable candidates: willow, greenWillow; least-used tie break."
+      ]
+    },
+    {
+      "slug": "arthur-rozzi-indigo-crackle-red",
+      "name": "Arthur Rozzi Indigo Crackle to Red",
+      "templateKey": "crackle",
+      "templateName": "Crackle",
+      "reason": "name: crackl; equally suitable candidates: crackle; least-used tie break.",
+      "notes": ["name: crackl; equally suitable candidates: crackle; least-used tie break."]
+    },
+    {
+      "slug": "arthur-rozzi-palm-red-green-crackle",
+      "name": "Arthur Rozzi Red and Green Palm Crackle",
+      "templateKey": "crackPalm",
+      "templateName": "Palm, crackling tips",
+      "reason": "name and description: crackl.*palm|palm.*crackl; equally suitable candidates: crackPalm; least-used tie break.",
+      "notes": [
+        "name and description: crackl.*palm|palm.*crackl; equally suitable candidates: crackPalm; least-used tie break."
+      ]
+    },
+    {
+      "slug": "arthur-rozzi-silver-crackle",
+      "name": "Arthur Rozzi Silver Crysanthemum Crackle",
+      "templateKey": "crackleChrys",
+      "templateName": "Crackling chrysanthemum",
+      "reason": "name and description: crackl.*c[hry]+santhemum|c[hry]+santhemum.*crackl; equally suitable candidates: crackleChrys; least-used tie break.",
+      "notes": [
+        "name and description: crackl.*c[hry]+santhemum|c[hry]+santhemum.*crackl; equally suitable candidates: crackleChrys; least-used tie break."
+      ]
+    },
+    {
+      "slug": "blue-steel-base-4igm",
+      "name": "Blue Steel Base",
+      "templateKey": "chrysanthemum",
+      "templateName": "Chrysanthemum",
+      "reason": "base effect: c[hry]+santhemum; equally suitable candidates: chrysanthemum, silverChrys; least-used tie break.",
+      "notes": [
+        "base effect: c[hry]+santhemum; equally suitable candidates: chrysanthemum, silverChrys; least-used tie break."
+      ]
+    },
+    {
+      "slug": "bowtie-azure",
+      "name": "Bow Tie Azure",
+      "templateKey": "bowtie",
+      "templateName": "Bowtie (visual tuning)",
+      "reason": "name: bow.*tie; equally suitable candidates: bowtie; least-used tie break.",
+      "notes": ["name: bow.*tie; equally suitable candidates: bowtie; least-used tie break."]
+    },
+    {
+      "slug": "bowtie-crimson",
+      "name": "Bow Tie Crimson",
+      "templateKey": "bowtie",
+      "templateName": "Bowtie (visual tuning)",
+      "reason": "name: bow.*tie; equally suitable candidates: bowtie; least-used tie break.",
+      "notes": ["name: bow.*tie; equally suitable candidates: bowtie; least-used tie break."]
+    },
+    {
+      "slug": "bowtie-default",
+      "name": "Bow Tie Default",
+      "templateKey": "bowtie",
+      "templateName": "Bowtie (visual tuning)",
+      "reason": "name: bow.*tie; equally suitable candidates: bowtie; least-used tie break.",
+      "notes": ["name: bow.*tie; equally suitable candidates: bowtie; least-used tie break."]
+    },
+    {
+      "slug": "brocade-azure",
+      "name": "Brocade Azure",
+      "templateKey": "brocade",
+      "templateName": "Brocade",
+      "reason": "name: brocade; equally suitable candidates: brocade; least-used tie break.",
+      "notes": ["name: brocade; equally suitable candidates: brocade; least-used tie break."]
+    },
+    {
+      "slug": "brocade-crimson",
+      "name": "Brocade Crimson",
+      "templateKey": "brocade",
+      "templateName": "Brocade",
+      "reason": "name: brocade; equally suitable candidates: brocade; least-used tie break.",
+      "notes": ["name: brocade; equally suitable candidates: brocade; least-used tie break."]
+    },
+    {
+      "slug": "brocade-default",
+      "name": "Brocade Default",
+      "templateKey": "brocade",
+      "templateName": "Brocade",
+      "reason": "name: brocade; equally suitable candidates: brocade; least-used tie break.",
+      "notes": ["name: brocade; equally suitable candidates: brocade; least-used tie break."]
+    },
+    {
+      "slug": "chrysanthemum-azure",
+      "name": "Chrysanthemum Azure",
+      "templateKey": "chrysanthemum",
+      "templateName": "Chrysanthemum",
+      "reason": "name: c[hry]+santhemum; equally suitable candidates: chrysanthemum, silverChrys; least-used tie break.",
+      "notes": [
+        "name: c[hry]+santhemum; equally suitable candidates: chrysanthemum, silverChrys; least-used tie break."
+      ]
+    },
+    {
+      "slug": "chrysanthemum-crimson",
+      "name": "Chrysanthemum Crimson",
+      "templateKey": "silverChrys",
+      "templateName": "Silver chrysanthemum",
+      "reason": "name: c[hry]+santhemum; equally suitable candidates: chrysanthemum, silverChrys; least-used tie break.",
+      "notes": [
+        "name: c[hry]+santhemum; equally suitable candidates: chrysanthemum, silverChrys; least-used tie break."
+      ]
+    },
+    {
+      "slug": "chrysanthemum-default",
+      "name": "Chrysanthemum Default",
+      "templateKey": "chrysanthemum",
+      "templateName": "Chrysanthemum",
+      "reason": "name: c[hry]+santhemum; equally suitable candidates: chrysanthemum, silverChrys; least-used tie break.",
+      "notes": [
+        "name: c[hry]+santhemum; equally suitable candidates: chrysanthemum, silverChrys; least-used tie break."
+      ]
+    },
+    {
+      "slug": "comet-azure",
+      "name": "Comet Azure",
+      "templateKey": "comet",
+      "templateName": "Comet",
+      "reason": "name: comet; equally suitable candidates: comet; least-used tie break.",
+      "notes": ["name: comet; equally suitable candidates: comet; least-used tie break."]
+    },
+    {
+      "slug": "comet-crimson",
+      "name": "Comet Crimson",
+      "templateKey": "comet",
+      "templateName": "Comet",
+      "reason": "name: comet; equally suitable candidates: comet; least-used tie break.",
+      "notes": ["name: comet; equally suitable candidates: comet; least-used tie break."]
+    },
+    {
+      "slug": "comet-default",
+      "name": "Comet Default",
+      "templateKey": "comet",
+      "templateName": "Comet",
+      "reason": "name: comet; equally suitable candidates: comet; least-used tie break.",
+      "notes": ["name: comet; equally suitable candidates: comet; least-used tie break."]
+    },
+    {
+      "slug": "crackle-azure",
+      "name": "Crackle Azure",
+      "templateKey": "crackle",
+      "templateName": "Crackle",
+      "reason": "name: crackl; equally suitable candidates: crackle; least-used tie break.",
+      "notes": ["name: crackl; equally suitable candidates: crackle; least-used tie break."]
+    },
+    {
+      "slug": "crackle-crimson",
+      "name": "Crackle Crimson",
+      "templateKey": "crackle",
+      "templateName": "Crackle",
+      "reason": "name: crackl; equally suitable candidates: crackle; least-used tie break.",
+      "notes": ["name: crackl; equally suitable candidates: crackle; least-used tie break."]
+    },
+    {
+      "slug": "crackle-default",
+      "name": "Crackle Default",
+      "templateKey": "crackle",
+      "templateName": "Crackle",
+      "reason": "name: crackl; equally suitable candidates: crackle; least-used tie break.",
+      "notes": ["name: crackl; equally suitable candidates: crackle; least-used tie break."]
+    },
+    {
+      "slug": "crossette-azure",
+      "name": "Crossette Azure",
+      "templateKey": "crossette",
+      "templateName": "Crossette",
+      "reason": "name: crossette; equally suitable candidates: crossette, redCrossette; least-used tie break.",
+      "notes": [
+        "name: crossette; equally suitable candidates: crossette, redCrossette; least-used tie break."
+      ]
+    },
+    {
+      "slug": "crossette-crimson",
+      "name": "Crossette Crimson",
+      "templateKey": "redCrossette",
+      "templateName": "Red crossette",
+      "reason": "name: crossette; equally suitable candidates: crossette, redCrossette; least-used tie break.",
+      "notes": [
+        "name: crossette; equally suitable candidates: crossette, redCrossette; least-used tie break."
+      ]
+    },
+    {
+      "slug": "crossette-default",
+      "name": "Crossette Default",
+      "templateKey": "crossette",
+      "templateName": "Crossette",
+      "reason": "name: crossette; equally suitable candidates: crossette, redCrossette; least-used tie break.",
+      "notes": [
+        "name: crossette; equally suitable candidates: crossette, redCrossette; least-used tie break."
+      ]
+    },
+    {
+      "slug": "double_break-azure",
+      "name": "Double Break Azure",
+      "templateKey": "multiBreak",
+      "templateName": "Multi-break",
+      "reason": "name: double.*break|multi.*break; equally suitable candidates: multiBreak; least-used tie break.",
+      "notes": [
+        "name: double.*break|multi.*break; equally suitable candidates: multiBreak; least-used tie break."
+      ]
+    },
+    {
+      "slug": "double_break-crimson",
+      "name": "Double Break Crimson",
+      "templateKey": "multiBreak",
+      "templateName": "Multi-break",
+      "reason": "name: double.*break|multi.*break; equally suitable candidates: multiBreak; least-used tie break.",
+      "notes": [
+        "name: double.*break|multi.*break; equally suitable candidates: multiBreak; least-used tie break."
+      ]
+    },
+    {
+      "slug": "double_break-default",
+      "name": "Double Break Default",
+      "templateKey": "multiBreak",
+      "templateName": "Multi-break",
+      "reason": "name: double.*break|multi.*break; equally suitable candidates: multiBreak; least-used tie break.",
+      "notes": [
+        "name: double.*break|multi.*break; equally suitable candidates: multiBreak; least-used tie break."
+      ]
+    },
+    {
+      "slug": "fountain-azure",
+      "name": "Fountain Azure",
+      "templateKey": "fountain",
+      "templateName": "Fountain",
+      "reason": "name: fountain; equally suitable candidates: fountain, silverFountain; least-used tie break.",
+      "notes": [
+        "name: fountain; equally suitable candidates: fountain, silverFountain; least-used tie break."
+      ]
+    },
+    {
+      "slug": "fountain-crimson",
+      "name": "Fountain Crimson",
+      "templateKey": "silverFountain",
+      "templateName": "Silver fountain",
+      "reason": "name: fountain; equally suitable candidates: fountain, silverFountain; least-used tie break.",
+      "notes": [
+        "name: fountain; equally suitable candidates: fountain, silverFountain; least-used tie break."
+      ]
+    },
+    {
+      "slug": "fountain-default",
+      "name": "Fountain Default",
+      "templateKey": "fountain",
+      "templateName": "Fountain",
+      "reason": "name: fountain; equally suitable candidates: fountain, silverFountain; least-used tie break.",
+      "notes": [
+        "name: fountain; equally suitable candidates: fountain, silverFountain; least-used tie break."
+      ]
+    },
+    {
+      "slug": "horsetail-azure",
+      "name": "Horsetail Azure",
+      "templateKey": "horsetail",
+      "templateName": "Horsetail",
+      "reason": "name: horsetail; equally suitable candidates: horsetail; least-used tie break.",
+      "notes": ["name: horsetail; equally suitable candidates: horsetail; least-used tie break."]
+    },
+    {
+      "slug": "horsetail-crimson",
+      "name": "Horsetail Crimson",
+      "templateKey": "horsetail",
+      "templateName": "Horsetail",
+      "reason": "name: horsetail; equally suitable candidates: horsetail; least-used tie break.",
+      "notes": ["name: horsetail; equally suitable candidates: horsetail; least-used tie break."]
+    },
+    {
+      "slug": "horsetail-default",
+      "name": "Horsetail Default",
+      "templateKey": "horsetail",
+      "templateName": "Horsetail",
+      "reason": "name: horsetail; equally suitable candidates: horsetail; least-used tie break.",
+      "notes": ["name: horsetail; equally suitable candidates: horsetail; least-used tie break."]
+    },
+    {
+      "slug": "kamuro-azure",
+      "name": "Kamuro Azure",
+      "templateKey": "kamuro",
+      "templateName": "Kamuro",
+      "reason": "name: kamuro; equally suitable candidates: kamuro, silverKamuro; least-used tie break.",
+      "notes": [
+        "name: kamuro; equally suitable candidates: kamuro, silverKamuro; least-used tie break."
+      ]
+    },
+    {
+      "slug": "kamuro-crimson",
+      "name": "Kamuro Crimson",
+      "templateKey": "silverKamuro",
+      "templateName": "Silver kamuro",
+      "reason": "name: kamuro; equally suitable candidates: kamuro, silverKamuro; least-used tie break.",
+      "notes": [
+        "name: kamuro; equally suitable candidates: kamuro, silverKamuro; least-used tie break."
+      ]
+    },
+    {
+      "slug": "kamuro-default",
+      "name": "Kamuro Default",
+      "templateKey": "kamuro",
+      "templateName": "Kamuro",
+      "reason": "name: kamuro; equally suitable candidates: kamuro, silverKamuro; least-used tie break.",
+      "notes": [
+        "name: kamuro; equally suitable candidates: kamuro, silverKamuro; least-used tie break."
+      ]
+    },
+    {
+      "slug": "mine-azure",
+      "name": "Mine Azure",
+      "templateKey": "mine",
+      "templateName": "Mine",
+      "reason": "name: mine; equally suitable candidates: mine; least-used tie break.",
+      "notes": ["name: mine; equally suitable candidates: mine; least-used tie break."]
+    },
+    {
+      "slug": "mine-crimson",
+      "name": "Mine Crimson",
+      "templateKey": "mine",
+      "templateName": "Mine",
+      "reason": "name: mine; equally suitable candidates: mine; least-used tie break.",
+      "notes": ["name: mine; equally suitable candidates: mine; least-used tie break."]
+    },
+    {
+      "slug": "mine-default",
+      "name": "Mine Default",
+      "templateKey": "mine",
+      "templateName": "Mine",
+      "reason": "name: mine; equally suitable candidates: mine; least-used tie break.",
+      "notes": ["name: mine; equally suitable candidates: mine; least-used tie break."]
+    },
+    {
+      "slug": "nishiki-azure",
+      "name": "Nishiki Azure",
+      "templateKey": "nishiki",
+      "templateName": "Nishiki",
+      "reason": "name: nishiki; equally suitable candidates: nishiki; least-used tie break.",
+      "notes": ["name: nishiki; equally suitable candidates: nishiki; least-used tie break."]
+    },
+    {
+      "slug": "nishiki-crimson",
+      "name": "Nishiki Crimson",
+      "templateKey": "nishiki",
+      "templateName": "Nishiki",
+      "reason": "name: nishiki; equally suitable candidates: nishiki; least-used tie break.",
+      "notes": ["name: nishiki; equally suitable candidates: nishiki; least-used tie break."]
+    },
+    {
+      "slug": "nishiki-default",
+      "name": "Nishiki Default",
+      "templateKey": "nishiki",
+      "templateName": "Nishiki",
+      "reason": "name: nishiki; equally suitable candidates: nishiki; least-used tie break.",
+      "notes": ["name: nishiki; equally suitable candidates: nishiki; least-used tie break."]
+    },
+    {
+      "slug": "palm-azure",
+      "name": "Palm Azure",
+      "templateKey": "palm",
+      "templateName": "Palm",
+      "reason": "name: palm; equally suitable candidates: palm; least-used tie break.",
+      "notes": ["name: palm; equally suitable candidates: palm; least-used tie break."]
+    },
+    {
+      "slug": "palm-crimson",
+      "name": "Palm Crimson",
+      "templateKey": "palm",
+      "templateName": "Palm",
+      "reason": "name: palm; equally suitable candidates: palm; least-used tie break.",
+      "notes": ["name: palm; equally suitable candidates: palm; least-used tie break."]
+    },
+    {
+      "slug": "palm-default",
+      "name": "Palm Default",
+      "templateKey": "palm",
+      "templateName": "Palm",
+      "reason": "name: palm; equally suitable candidates: palm; least-used tie break.",
+      "notes": ["name: palm; equally suitable candidates: palm; least-used tie break."]
+    },
+    {
+      "slug": "pearls-azure",
+      "name": "Pearls Azure",
+      "templateKey": "pearls",
+      "templateName": "String of pearls",
+      "reason": "name: pearls; equally suitable candidates: pearls; least-used tie break.",
+      "notes": ["name: pearls; equally suitable candidates: pearls; least-used tie break."]
+    },
+    {
+      "slug": "pearls-crimson",
+      "name": "Pearls Crimson",
+      "templateKey": "pearls",
+      "templateName": "String of pearls",
+      "reason": "name: pearls; equally suitable candidates: pearls; least-used tie break.",
+      "notes": ["name: pearls; equally suitable candidates: pearls; least-used tie break."]
+    },
+    {
+      "slug": "pearls-default",
+      "name": "Pearls Default",
+      "templateKey": "pearls",
+      "templateName": "String of pearls",
+      "reason": "name: pearls; equally suitable candidates: pearls; least-used tie break.",
+      "notes": ["name: pearls; equally suitable candidates: pearls; least-used tie break."]
+    },
+    {
+      "slug": "peony-azure",
+      "name": "Peony Azure",
+      "templateKey": "peony",
+      "templateName": "Peony",
+      "reason": "name: peony; equally suitable candidates: peony, peonyRedGreen; least-used tie break.",
+      "notes": [
+        "name: peony; equally suitable candidates: peony, peonyRedGreen; least-used tie break."
+      ]
+    },
+    {
+      "slug": "peony-crimson",
+      "name": "Peony Crimson",
+      "templateKey": "peonyRedGreen",
+      "templateName": "Red and green peony",
+      "reason": "name: peony; equally suitable candidates: peony, peonyRedGreen; least-used tie break.",
+      "notes": [
+        "name: peony; equally suitable candidates: peony, peonyRedGreen; least-used tie break."
+      ]
+    },
+    {
+      "slug": "peony-default",
+      "name": "Peony Default",
+      "templateKey": "peony",
+      "templateName": "Peony",
+      "reason": "name: peony; equally suitable candidates: peony, peonyRedGreen; least-used tie break.",
+      "notes": [
+        "name: peony; equally suitable candidates: peony, peonyRedGreen; least-used tie break."
+      ]
+    },
+    {
+      "slug": "peony-green-vfwp",
+      "name": "Peony Green",
+      "templateKey": "peonyRedGreen",
+      "templateName": "Red and green peony",
+      "reason": "name: peony; equally suitable candidates: peony, peonyRedGreen; least-used tie break.",
+      "notes": [
+        "name: peony; equally suitable candidates: peony, peonyRedGreen; least-used tie break."
+      ]
+    },
+    {
+      "slug": "peony-white-nqow",
+      "name": "Peony White",
+      "templateKey": "peony",
+      "templateName": "Peony",
+      "reason": "name: peony; equally suitable candidates: peony, peonyRedGreen; least-used tie break.",
+      "notes": [
+        "name: peony; equally suitable candidates: peony, peonyRedGreen; least-used tie break."
+      ]
+    },
+    {
+      "slug": "pistil-azure",
+      "name": "Pistil Azure",
+      "templateKey": "pistil",
+      "templateName": "Pistil",
+      "reason": "name: pistil; equally suitable candidates: pistil, purplePistil; least-used tie break.",
+      "notes": [
+        "name: pistil; equally suitable candidates: pistil, purplePistil; least-used tie break."
+      ]
+    },
+    {
+      "slug": "pistil-crimson",
+      "name": "Pistil Crimson",
+      "templateKey": "purplePistil",
+      "templateName": "Purple, white pistil",
+      "reason": "name: pistil; equally suitable candidates: pistil, purplePistil; least-used tie break.",
+      "notes": [
+        "name: pistil; equally suitable candidates: pistil, purplePistil; least-used tie break."
+      ]
+    },
+    {
+      "slug": "pistil-default",
+      "name": "Pistil Default",
+      "templateKey": "pistil",
+      "templateName": "Pistil",
+      "reason": "name: pistil; equally suitable candidates: pistil, purplePistil; least-used tie break.",
+      "notes": [
+        "name: pistil; equally suitable candidates: pistil, purplePistil; least-used tie break."
+      ]
+    },
+    {
+      "slug": "ring-azure",
+      "name": "Ring Azure",
+      "templateKey": "ring",
+      "templateName": "Ring",
+      "reason": "name: ring; equally suitable candidates: ring; least-used tie break.",
+      "notes": ["name: ring; equally suitable candidates: ring; least-used tie break."]
+    },
+    {
+      "slug": "ring-crimson",
+      "name": "Ring Crimson",
+      "templateKey": "ring",
+      "templateName": "Ring",
+      "reason": "name: ring; equally suitable candidates: ring; least-used tie break.",
+      "notes": ["name: ring; equally suitable candidates: ring; least-used tie break."]
+    },
+    {
+      "slug": "ring-default",
+      "name": "Ring Default",
+      "templateKey": "ring",
+      "templateName": "Ring",
+      "reason": "name: ring; equally suitable candidates: ring; least-used tie break.",
+      "notes": ["name: ring; equally suitable candidates: ring; least-used tie break."]
+    },
+    {
+      "slug": "roman_candle-azure",
+      "name": "Roman Candle Azure",
+      "templateKey": "romanCandle",
+      "templateName": "Roman candle",
+      "reason": "name: roman.*candle; equally suitable candidates: romanCandle; least-used tie break.",
+      "notes": [
+        "name: roman.*candle; equally suitable candidates: romanCandle; least-used tie break."
+      ]
+    },
+    {
+      "slug": "roman_candle-crimson",
+      "name": "Roman Candle Crimson",
+      "templateKey": "romanCandle",
+      "templateName": "Roman candle",
+      "reason": "name: roman.*candle; equally suitable candidates: romanCandle; least-used tie break.",
+      "notes": [
+        "name: roman.*candle; equally suitable candidates: romanCandle; least-used tie break."
+      ]
+    },
+    {
+      "slug": "roman_candle-default",
+      "name": "Roman Candle Default",
+      "templateKey": "romanCandle",
+      "templateName": "Roman candle",
+      "reason": "name: roman.*candle; equally suitable candidates: romanCandle; least-used tie break.",
+      "notes": [
+        "name: roman.*candle; equally suitable candidates: romanCandle; least-used tie break."
+      ]
+    },
+    {
+      "slug": "saturn-azure",
+      "name": "Saturn Azure",
+      "templateKey": "saturn",
+      "templateName": "Saturn",
+      "reason": "name: saturn; equally suitable candidates: saturn; least-used tie break.",
+      "notes": ["name: saturn; equally suitable candidates: saturn; least-used tie break."]
+    },
+    {
+      "slug": "saturn-crimson",
+      "name": "Saturn Crimson",
+      "templateKey": "saturn",
+      "templateName": "Saturn",
+      "reason": "name: saturn; equally suitable candidates: saturn; least-used tie break.",
+      "notes": ["name: saturn; equally suitable candidates: saturn; least-used tie break."]
+    },
+    {
+      "slug": "saturn-default",
+      "name": "Saturn Default",
+      "templateKey": "saturn",
+      "templateName": "Saturn",
+      "reason": "name: saturn; equally suitable candidates: saturn; least-used tie break.",
+      "notes": ["name: saturn; equally suitable candidates: saturn; least-used tie break."]
+    },
+    {
+      "slug": "silverFish-azure",
+      "name": "Silver Fish Azure",
+      "templateKey": "fish",
+      "templateName": "Fish",
+      "reason": "name: silver.*fish|\\bfish\\b; equally suitable candidates: fish; least-used tie break.",
+      "notes": [
+        "name: silver.*fish|\\bfish\\b; equally suitable candidates: fish; least-used tie break."
+      ]
+    },
+    {
+      "slug": "silverFish-crimson",
+      "name": "Silver Fish Crimson",
+      "templateKey": "fish",
+      "templateName": "Fish",
+      "reason": "name: silver.*fish|\\bfish\\b; equally suitable candidates: fish; least-used tie break.",
+      "notes": [
+        "name: silver.*fish|\\bfish\\b; equally suitable candidates: fish; least-used tie break."
+      ]
+    },
+    {
+      "slug": "silverFish-default",
+      "name": "Silver Fish Default",
+      "templateKey": "fish",
+      "templateName": "Fish",
+      "reason": "name: silver.*fish|\\bfish\\b; equally suitable candidates: fish; least-used tie break.",
+      "notes": [
+        "name: silver.*fish|\\bfish\\b; equally suitable candidates: fish; least-used tie break."
+      ]
+    },
+    {
+      "slug": "strobe-azure",
+      "name": "Strobe Azure",
+      "templateKey": "strobe",
+      "templateName": "Strobe",
+      "reason": "name: strob; equally suitable candidates: strobe, greenStrobe; least-used tie break.",
+      "notes": [
+        "name: strob; equally suitable candidates: strobe, greenStrobe; least-used tie break."
+      ]
+    },
+    {
+      "slug": "strobe-crimson",
+      "name": "Strobe Crimson",
+      "templateKey": "greenStrobe",
+      "templateName": "Green strobe",
+      "reason": "name: strob; equally suitable candidates: strobe, greenStrobe; least-used tie break.",
+      "notes": [
+        "name: strob; equally suitable candidates: strobe, greenStrobe; least-used tie break."
+      ]
+    },
+    {
+      "slug": "strobe-default",
+      "name": "Blue and Red Strobe",
+      "templateKey": "strobe",
+      "templateName": "Strobe",
+      "reason": "name: strob; equally suitable candidates: strobe, greenStrobe; least-used tie break.",
+      "notes": [
+        "name: strob; equally suitable candidates: strobe, greenStrobe; least-used tie break."
+      ]
+    },
+    {
+      "slug": "test-ckav",
+      "name": "test",
+      "templateKey": "silverChrys",
+      "templateName": "Silver chrysanthemum",
+      "reason": "base effect: c[hry]+santhemum; equally suitable candidates: chrysanthemum, silverChrys; least-used tie break.",
+      "notes": [
+        "base effect: c[hry]+santhemum; equally suitable candidates: chrysanthemum, silverChrys; least-used tie break."
+      ]
+    },
+    {
+      "slug": "test-e8rx",
+      "name": "test",
+      "templateKey": "peonyRedGreen",
+      "templateName": "Red and green peony",
+      "reason": "base effect: peony; equally suitable candidates: peony, peonyRedGreen; least-used tie break.",
+      "notes": [
+        "base effect: peony; equally suitable candidates: peony, peonyRedGreen; least-used tie break."
+      ]
+    },
+    {
+      "slug": "test-firework-6rkv",
+      "name": "test firework",
+      "templateKey": "brocade",
+      "templateName": "Brocade",
+      "reason": "base effect: brocade; equally suitable candidates: brocade; least-used tie break.",
+      "notes": ["base effect: brocade; equally suitable candidates: brocade; least-used tie break."]
+    },
+    {
+      "slug": "waterfall-azure",
+      "name": "Waterfall Azure",
+      "templateKey": "waterfall",
+      "templateName": "Waterfall",
+      "reason": "name: waterfall; equally suitable candidates: waterfall; least-used tie break.",
+      "notes": ["name: waterfall; equally suitable candidates: waterfall; least-used tie break."]
+    },
+    {
+      "slug": "waterfall-crimson",
+      "name": "Waterfall Crimson",
+      "templateKey": "waterfall",
+      "templateName": "Waterfall",
+      "reason": "name: waterfall; equally suitable candidates: waterfall; least-used tie break.",
+      "notes": ["name: waterfall; equally suitable candidates: waterfall; least-used tie break."]
+    },
+    {
+      "slug": "waterfall-default",
+      "name": "Waterfall Default",
+      "templateKey": "waterfall",
+      "templateName": "Waterfall",
+      "reason": "name: waterfall; equally suitable candidates: waterfall; least-used tie break.",
+      "notes": ["name: waterfall; equally suitable candidates: waterfall; least-used tie break."]
+    },
+    {
+      "slug": "whirl-azure",
+      "name": "Whirl Azure",
+      "templateKey": "whirlwind",
+      "templateName": "Whirlwind",
+      "reason": "name: whirl; equally suitable candidates: whirlwind; least-used tie break.",
+      "notes": ["name: whirl; equally suitable candidates: whirlwind; least-used tie break."]
+    },
+    {
+      "slug": "whirl-crimson",
+      "name": "Whirl Crimson",
+      "templateKey": "whirlwind",
+      "templateName": "Whirlwind",
+      "reason": "name: whirl; equally suitable candidates: whirlwind; least-used tie break.",
+      "notes": ["name: whirl; equally suitable candidates: whirlwind; least-used tie break."]
+    },
+    {
+      "slug": "whirl-default",
+      "name": "Whirl Default",
+      "templateKey": "whirlwind",
+      "templateName": "Whirlwind",
+      "reason": "name: whirl; equally suitable candidates: whirlwind; least-used tie break.",
+      "notes": ["name: whirl; equally suitable candidates: whirlwind; least-used tie break."]
+    },
+    {
+      "slug": "willow-azure",
+      "name": "Willow Azure",
+      "templateKey": "willow",
+      "templateName": "Willow",
+      "reason": "name: willow; equally suitable candidates: willow, greenWillow; least-used tie break.",
+      "notes": [
+        "name: willow; equally suitable candidates: willow, greenWillow; least-used tie break."
+      ]
+    },
+    {
+      "slug": "willow-crimson",
+      "name": "Willow Crimson",
+      "templateKey": "greenWillow",
+      "templateName": "Willow, green tips",
+      "reason": "name: willow; equally suitable candidates: willow, greenWillow; least-used tie break.",
+      "notes": [
+        "name: willow; equally suitable candidates: willow, greenWillow; least-used tie break."
+      ]
+    },
+    {
+      "slug": "willow-default",
+      "name": "Willow Default",
+      "templateKey": "willow",
+      "templateName": "Willow",
+      "reason": "name: willow; equally suitable candidates: willow, greenWillow; least-used tie break.",
+      "notes": [
+        "name: willow; equally suitable candidates: willow, greenWillow; least-used tie break."
+      ]
+    }
+  ],
+  "newRowsPerTable": 76
+}

@@ -57,7 +57,7 @@ schema change, reset locally, run the SQL tests and regenerate types with
 `pnpm db:types`. Commit generated types with the migration.
 
 `supabase/bootstrap/` contains reusable production content and media, with hashes
-and row counts in `manifest.json`. It includes all 26 effects, 90 fireworks,
+and row counts in `manifest.json`. It includes all 102 effects, 166 fireworks,
 39 multishots and their 882 shots, calibrated defaults, catalogue rows, previews,
 role/permission definitions, suppliers/inventory, assortments, AI prompts/settings
 and credit prices. The handover selection retains Queen City Fireworks and Hammer
@@ -73,7 +73,9 @@ Bootstrap validates every file before writing, refuses any populated application
 table, and installs rows transactionally. Media uploads are resumable and never
 overwrite a different object. A private receipt prevents subsequent deployments
 or bootstrap runs from overwriting catalogue edits. A seed is a fresh-install
-snapshot, not a production synchronisation mechanism.
+snapshot, not a production synchronisation mechanism. The guarded renderer
+catalogue content migration fills missing designs and adds unlisted library
+products to installed databases; see [renderer catalogue designs](renderer-catalogue.md).
 
 Continue editing catalogue content through the production admin UI. To update
 future handovers, pause content edits briefly and export to a new ignored directory:

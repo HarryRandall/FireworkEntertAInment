@@ -20,12 +20,12 @@
       "sha256": "053064444e9cb3f99181ebe520419b19d99c2effc291bc61867bd7237c6c5dc7"
     },
     "firework_effects": {
-      "rows": 26,
-      "sha256": "40a83c9a3f913e23060218d41b2c9bc76618196bb0680e1f6a5576a3330b91fe"
+      "rows": 102,
+      "sha256": "ba7502e62d2d20a0e614497e963c87b82b64cd6e6caccefd9e3d5cdeef62cbe2"
     },
     "fireworks": {
-      "rows": 90,
-      "sha256": "8357fcb9d24283e64201dd0ff03b2f1e779f2e11f57d39fe8d19a0cde962ac51"
+      "rows": 166,
+      "sha256": "54edaaae4207c5432329c4070f381587d859ababff53230959fde4e22bd66ccd"
     },
     "multishots": {
       "rows": 39,
@@ -36,8 +36,8 @@
       "sha256": "2e9a0f4869118a11f77e9c5b49ca801babb44a6205dee6a6aee321c8ef74f7e6"
     },
     "catalogue_items": {
-      "rows": 144,
-      "sha256": "3495dc89cdd1b6b00dea3fd817913722469e081eeeb6fde785515badb9c9dc53"
+      "rows": 220,
+      "sha256": "3e2f6128ec87d1da8068df83f1cc33f5f6a75539650a93f4b2f229d7b76d9ae5"
     },
     "supplier_profiles": {
       "rows": 2,
@@ -68,8 +68,8 @@
       "sha256": "cad5c03c407c17a059df956347202506536f7ea48392f4c1314b11494a947582"
     },
     "firework_preview_images": {
-      "rows": 155,
-      "sha256": "9757c1949ba9af8904322866450eec4848acb2387e0341125992b6e169a6b7ed"
+      "rows": 307,
+      "sha256": "e253e6b32f1c324ac5f9d1e1b972adcc5fb44be61da55693a340c7f211953c24"
     },
     "show_presets": {
       "rows": 3,

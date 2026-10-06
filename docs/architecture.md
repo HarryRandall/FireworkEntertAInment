@@ -152,7 +152,8 @@ v1 documents alongside their existing rendering fields. `design_schema` is fixed
 at 1. PostgreSQL validates documents with `pg_jsonschema` and the generated
 `private.firework_design_schema()` helper. Effect `template_key` values are unique
 when present. Existing snapshot triggers and editor RPC field allowlists retain
-their current behaviour; application flows do not consume these designs yet.
+their current behaviour. The admin renderer comparison reads these designs;
+show generation and replay retain the existing renderer.
 
 `catalogue_items.finale_product_id` identifies a Finale 3D supplier product;
 null means there is no equivalent yet. `finale_effect_name` is optional. The
