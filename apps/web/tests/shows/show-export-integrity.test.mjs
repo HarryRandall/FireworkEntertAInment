@@ -14,7 +14,7 @@ test('exports page offers responsive downloads only for shows with generated cue
   assert.match(page, /show\.cueCount > 0/);
   assert.match(page, /<ShowExportButton/);
   assert.match(page, /showSlug=\{show\.slug\}/);
-  assert.match(button, /fetch\(`\/api\/shows\/\$\{encodeURIComponent\(showSlug\)\}\/export`/);
+  assert.match(button, /fetch\(\s*`\/api\/shows\/\$\{encodeURIComponent\(showSlug\)\}\/export`/);
   assert.match(button, /setIsPreparing\(true\)/);
   assert.match(button, /loading=\{isPreparing\}/);
   assert.match(button, /Preparing export/);
