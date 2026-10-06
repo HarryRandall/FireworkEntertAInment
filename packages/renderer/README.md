@@ -46,14 +46,14 @@ height ratio; radii, colours and other authored values stay unchanged.
 
 Normal orbit zoom extends to 1.8 times the framed distance; free mode extends to
 four times the framed distance. These dimensionless limits preserve the original
-scene context. The close-fit minimum can exceed a cap only when needed to fit an
-unusually large computed burst or ground-travel extent, rather than widening the
-zoom-out range for normal templates. Minimum distance fits the computed burst sphere,
-or ground travel extent, inside the narrower field of view with a 5% margin. As distance decreases,
-the target moves towards the computed effect centre and audience pitch approaches
-a level burst view, preserving manual orbit offsets and the ground floor clamp.
-At the framed distance, the original camera pose is unchanged. Wheel, pinch and
-UI zoom buttons all call the same control method.
+scene context. The normal close limit is 20% of framed distance, subject to a 10%
+margin outside a single-shot burst sphere. Ground-travel extents retain their narrower-
+frustum fit. The default orbit target is the computed vertical centre of the burst, or
+the combined show bounds, so wheel, pinch and UI zoom buttons perform a straight dolly:
+they change distance only, never target, yaw or pitch. The ground floor clamp still
+prevents the camera entering the ground. Visual tuning sets wheel response to 0.004 per
+pixel delta (0.16 per line) and pinch response to a power of 2, so ordinary gestures
+cover the useful range in a few steps.
 
 ## Quick adjustments
 

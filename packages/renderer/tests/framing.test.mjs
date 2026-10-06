@@ -14,7 +14,9 @@ test('live framing starts at audience height and widens for portrait finales', (
   const wide = framingFor(shots, false, 1.6);
   const narrow = framingFor(shots, false, 390 / 844);
   assert.equal(wide.position[1], EYE_HEIGHT_M);
-  assert.ok(wide.target[1] > EYE_HEIGHT_M);
+  assert.deepEqual(wide.target, wide.focus.target);
+  assert.equal(wide.target[1], peony.launch.height_m);
+  assert.deepEqual(narrow.target, narrow.focus.target);
   assert.ok(narrow.position[2] > wide.position[2]);
   const poster = framingFor([{ design: peony }], true);
   assert.equal(poster.target[1], peony.launch.height_m);
