@@ -11,7 +11,7 @@ function read(path) {
   return readFileSync(join(root, path), 'utf8');
 }
 
-test('effects navigation expands in the global sidebar and derives every default kind', () => {
+test('effects navigation retains its submenu and hides legacy defaults', () => {
   const shell = read('ui/shell/AdminShell.tsx');
   const navigation = read('lib/admin-effects-navigation.ts');
 
@@ -26,7 +26,7 @@ test('effects navigation expands in the global sidebar and derives every default
   assert.match(shell, /<SidebarMenuSub id="admin-effects-navigation">/);
   assert.match(shell, /<SidebarMenuSubItem/);
   assert.match(shell, /<SidebarMenuSubButton/);
-  assert.match(shell, /ADMIN_EFFECTS_VIEWS\.map/);
+  assert.match(shell, /ADMIN_EFFECTS_VIEWS[\s\S]*\.filter\(\(view\) => view === 'base'\)/);
   assert.match(shell, /aria-current=\{selected \? 'page' : undefined\}/);
   assert.match(shell, /setOpen\(true\)/);
   assert.match(shell, /if \(isMobile\) setOpenMobile\(false\)/);

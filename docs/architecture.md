@@ -152,8 +152,8 @@ Zod 4 schemas.
 v1 documents alongside their existing rendering fields. `design_schema` is fixed
 at 1. PostgreSQL validates documents with `pg_jsonschema` and the generated
 `private.firework_design_schema()` helper. Effect `template_key` values are unique
-when present. Existing snapshot triggers and editor RPC field allowlists retain
-their current behaviour. The admin renderer comparison reads these designs;
+when present. Editor RPCs save designs and version snapshots atomically alongside the legacy
+fields. Existing render-snapshot triggers retain their behaviour. The admin renderer comparison reads these designs;
 show generation and replay validate stored designs and use the renderer library.
 
 `catalogue_items.finale_product_id` identifies a Finale 3D supplier product;
@@ -195,3 +195,18 @@ Catalogue posters use the detached package poster API and retain 1600 by 1000
 physical-pixel WebP uploads, immutable paths and revision/signature race checks.
 Renderer design edits invalidate their own posters and dependent multishot posters.
 Copied fireworks remain independent of later source-effect changes.
+
+Admin firework and effect editors use `lib/renderer-editor` for validated controls,
+immutable draft history and labelled design diffs. Their shared inspectors and
+browser-only Viewer live in `ui/firework-editor/renderer-design`. The existing
+editor shell, record details, optimistic save flow and version history remain the
+owners of the editing session. Older history entries without a design restore
+their legacy fields while retaining the current design.
+
+A firework stores its own complete design copy. Resetting it to its selected
+effect's design is an explicit draft edit. New-template creation uses a guarded
+transaction to create or reuse an effect by `template_key`, copy its design and
+create a listed catalogue item with no Finale product. These new templates have
+an independent complete legacy sphere appearance until show rendering adopts
+the design renderer. Design edits do not translate into the legacy renderer's
+model or override fields, and catalogue scheduling durations remain independent.

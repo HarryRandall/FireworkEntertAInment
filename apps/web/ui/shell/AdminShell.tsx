@@ -234,7 +234,7 @@ function AdminEffectsNavItem({
 
       {submenuVisible ? (
         <SidebarMenuSub id="admin-effects-navigation">
-          {ADMIN_EFFECTS_VIEWS.map((view) => {
+          {ADMIN_EFFECTS_VIEWS.filter((view) => view === 'base').map((view) => {
             const href = adminEffectsViewHref(view);
             const selected = activeView === view;
             return (
