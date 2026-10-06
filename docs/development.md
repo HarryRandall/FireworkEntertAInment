@@ -154,3 +154,13 @@ alone does not stop an already deployed schedule. Existing admin
 retention reconciliation remains a separate operation authorised by `CRON_SECRET`.
 Deploy the callback routes before enabling `ANALYSER_DISPATCH_URL`. Manual
 recovery requires the web routes and dispatch configuration to be ready.
+
+## Renderer package checks
+
+`pnpm --filter @showcrafter/renderer check` verifies schema generation, readability
+lint, types and renderer tests. Root `pnpm check` and CI include this through
+`pnpm test:packages`. The package uses the existing TypeScript test loader in
+`scripts/renderer/register-typescript.mjs`. Knip reads its public entry points from the
+package export map. `/admin/renderer-preview` provides browser-only playback and poster
+stills behind the admin workspace permission check. Shows still use the existing
+fireworks engine.

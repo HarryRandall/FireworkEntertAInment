@@ -135,3 +135,12 @@ Run `pnpm audit:ui` for the page inventory and import review, or add `-- --json`
 for machine-readable paths. The audit identifies candidates, not safe deletions:
 check runtime imports, re-exports and tests before removing a component. Use
 `pnpm check` for the delivery gate.
+
+## Renderer library
+
+`packages/renderer` (`@showcrafter/renderer`) owns its v1 design schema, pinned
+Zod 3 validators, deterministic simulation, templates, posters and WebGL viewer.
+The admin renderer preview loads its browser view without server rendering.
+Shows continue to use `packages/fireworks` and `packages/firework-editor`; the
+renderer library is not used by shows. Keep its validators separate from web
+Zod 4 schemas.
