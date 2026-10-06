@@ -89,6 +89,7 @@ test('hover stills use explicit dimensions and never commit cancelled captures',
     globalThis.window = previousWindow;
   });
   const { PosterPreview } = load('ui/firework-editor/renderer-design/poster-preview.tsx', {
+    '@/ui/renderer/CanvasSurface': { CanvasSurface: 'surface' },
     react: {
       useRef: () => ({ current: destination }),
       useState: () => [false, () => {}],

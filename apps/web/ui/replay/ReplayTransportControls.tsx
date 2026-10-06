@@ -2,6 +2,7 @@
 
 import { type MutableRefObject, useEffect, useRef, useState } from 'react';
 import { Maximize2, Minimize2, Pause, Play, Repeat, RotateCcw } from 'lucide-react';
+import { playbackReadoutGate } from '@/ui/renderer/playback-readout';
 import { formatDuration } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';
 
@@ -14,9 +15,9 @@ type ReplayTransportControlsProps = {
   elapsed: number;
   /**
    * Optional live playhead ref (same ref the engine reads). When provided,
-   * the thumb and time readout self-animate from it at display rate while
+   * the thumb and time readout sample it at the transport readout cadence while
    * playing, so the parent can throttle its `elapsed` state without the
-   * transport UI stuttering.
+   * transport UI losing sync.
    */
   playheadRef?: MutableRefObject<number>;
   duration: number;
@@ -80,18 +81,23 @@ export function ReplayTransportControls({
     if (!scrubbingRef.current && !selfAnimated) setLocalElapsed(elapsed);
   }, [elapsed, selfAnimated]);
 
-  // Smooth playback: track the live playhead ref at display rate so only this
-  // small component re-renders each frame, not the parent viewer.
+  // Keep the transport clock in sync without a React update on every display frame.
   useEffect(() => {
     if (!selfAnimated || !playheadRef) return;
     let frame = 0;
-    function tick() {
-      if (!scrubbingRef.current) setLocalElapsed(playheadRef!.current);
+    const playhead = playheadRef;
+    const readout = playbackReadoutGate();
+    function tick(nowMs: number) {
+      if (
+        !scrubbingRef.current &&
+        readout({ time: playhead.current, duration, playing: true }, nowMs)
+      )
+        setLocalElapsed(playhead.current);
       frame = requestAnimationFrame(tick);
     }
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [selfAnimated, playheadRef]);
+  }, [selfAnimated, playheadRef, duration]);
 
   const safeElapsed = Math.min(safeDuration, Math.max(0, localElapsed));
   const progress = (safeElapsed / safeDuration) * 100;

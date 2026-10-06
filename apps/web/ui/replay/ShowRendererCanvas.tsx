@@ -1,5 +1,9 @@
 'use client';
 
+import { viewerReadiness } from '@/ui/renderer/viewer-readiness';
+import { visibleClock } from '@/ui/renderer/visible-clock';
+import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
+
 import { useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react';
 import { Viewer, setSetting } from '@showcrafter/renderer/view';
 import { buildShowRendererShots } from '@/lib/shows/renderer-shots';
@@ -15,6 +19,8 @@ type Props = {
   launchPositions?: Show['launchPositions'];
   prop?: 'mortar' | 'cake';
   muted?: boolean;
+  /** Whether the external playhead advances, independent of sound muting. */
+  playing?: boolean;
   scrubbing?: boolean;
   interactive?: boolean;
   controlsVisible?: boolean;
@@ -44,6 +50,8 @@ type Props = {
 export function ShowRendererCanvas(props: Props) {
   const container = useRef<HTMLDivElement>(null);
   const viewer = useRef<Viewer | null>(null);
+  const clock = useRef<ReturnType<typeof visibleClock> | null>(null);
+  const readiness = useRef<ReturnType<typeof viewerReadiness> | null>(null);
   const latest = useRef(props);
   useEffect(() => {
     latest.current = props;
@@ -55,18 +63,31 @@ export function ShowRendererCanvas(props: Props) {
     [props.cues, props.launchPositions],
   );
 
+  const currentShots = useRef(shots);
+  const valid = shots.ok;
+  useEffect(() => {
+    currentShots.current = shots;
+    if (shots.ok && viewer.current) {
+      readiness.current?.reset();
+      setLoading(true);
+      viewer.current.setShots(shots.shots, true);
+      clock.current?.wake();
+    }
+  }, [shots]);
+
   useEffect(() => {
     if (!shots.ok) latest.current.onSceneReady?.();
   }, [shots]);
 
   useEffect(() => {
-    if (!container.current || !shots.ok) return;
+    const sequence = currentShots.current;
+    if (!container.current || !sequence.ok) return;
     setLoading(true);
     setError(null);
     let instance: Viewer;
     try {
       instance = new Viewer(container.current, {
-        shots: shots.shots,
+        shots: sequence.shots,
         ui: false,
         controls: props.interactive !== false,
         clickToPause: false,
@@ -81,32 +102,42 @@ export function ShowRendererCanvas(props: Props) {
       return;
     }
     viewer.current = instance;
-    let frame = 0;
-    let ready = false;
-    let reported = false;
-    const draw = () => {
-      const current = latest.current;
-      const time = Math.max(0, current.playbackRef?.current ?? current.elapsed);
-      if (!ready && instance.renderer.domElement.dataset.drawPending === 'false') {
-        ready = true;
-        current.onSceneReady?.();
-        current.onPrimeProgress?.(null);
-      }
-      if (ready && !reported && current.cuesFinal !== false) {
-        reported = true;
+    readiness.current = viewerReadiness(instance, () => ({
+      final: latest.current.cuesFinal !== false,
+      scene: () => {
+        latest.current.onSceneReady?.();
+        latest.current.onPrimeProgress?.(null);
+      },
+      ready: () => {
         setLoading(false);
-        current.onReady?.();
-      }
-      instance.syncTime(time, current.muted === false && !current.scrubbing);
-      frame = requestAnimationFrame(draw);
-    };
-    frame = requestAnimationFrame(draw);
+        latest.current.onReady?.();
+      },
+    }));
+    clock.current = visibleClock(
+      container.current,
+      () => latest.current.playing ?? latest.current.muted === false,
+      () => {
+        const current = latest.current;
+        instance.syncTime(
+          Math.max(0, current.playbackRef?.current ?? current.elapsed),
+          current.muted === false && !current.scrubbing,
+        );
+      },
+    );
     return () => {
-      cancelAnimationFrame(frame);
+      readiness.current?.dispose();
+      readiness.current = null;
+      clock.current?.dispose();
+      clock.current = null;
       instance.dispose();
       viewer.current = null;
     };
-  }, [shots, props.interactive, props.prop]);
+  }, [valid, props.interactive, props.prop]);
+
+  useEffect(() => {
+    clock.current?.wake();
+    readiness.current?.report();
+  }, [props.elapsed, props.playing, props.muted, props.scrubbing, props.cuesFinal]);
 
   useEffect(() => {
     // Interactive players unlock on the first gesture; the external clock owns pause and mute.
@@ -114,8 +145,8 @@ export function ShowRendererCanvas(props: Props) {
   }, [props.muted, props.interactive]);
 
   return (
-    <>
-      <div
+    <CanvasSurface className="absolute inset-0">
+      <CanvasSurface
         ref={container}
         className="absolute inset-0 isolate overflow-hidden rounded-[inherit] bg-black"
       />
@@ -155,6 +186,6 @@ export function ShowRendererCanvas(props: Props) {
           ) : null}
         </div>
       ) : null}
-    </>
+    </CanvasSurface>
   );
 }

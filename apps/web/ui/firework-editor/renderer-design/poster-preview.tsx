@@ -1,5 +1,7 @@
 'use client';
 
+import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
+
 import { useEffect, useRef, useState } from 'react';
 import type { Design } from '@showcrafter/renderer';
 import { poster } from '@showcrafter/renderer/poster';
@@ -37,13 +39,13 @@ export function PosterPreview({ document }: { document: Design }) {
     };
   }, [document]);
   return (
-    <div className="bg-stage-night relative isolate aspect-[16/10] w-full overflow-hidden rounded-md">
+    <CanvasSurface className="bg-stage-night aspect-[16/10] w-full rounded-md">
       <canvas ref={canvas} aria-hidden className="h-full w-full" />
       {failure && (
         <p role="status" className="text-status-danger absolute inset-0 p-3 text-xs">
           Preview unavailable
         </p>
       )}
-    </div>
+    </CanvasSurface>
   );
 }
