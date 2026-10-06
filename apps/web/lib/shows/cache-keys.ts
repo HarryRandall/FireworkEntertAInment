@@ -34,11 +34,10 @@ export function getFireworkSpecificationsCacheKey(): string {
 }
 
 export function getFireworkProductsCacheKey(lightweight = false): string {
-  // v2: payload gained supplier pricing and occupancy durations. Stale v1
-  // entries would let generation understate occupancy or miss purchasability.
+  // Listed-only content also applies to admin and service-role generation reads.
   return lightweight
-    ? `${CACHE_PREFIX}:firework-catalogue-cards:preview-v2`
-    : `${CACHE_PREFIX}:firework-products:preview-v2`;
+    ? `${CACHE_PREFIX}:firework-catalogue-cards:listed-v3`
+    : `${CACHE_PREFIX}:firework-products:listed-v3`;
 }
 
 /** Invalidate the per-user shows list (e.g. after creating/deleting a show). */

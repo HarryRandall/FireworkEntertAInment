@@ -269,6 +269,7 @@ export const listFireworkProducts = cache(
          )
        )`,
         )
+        .eq('is_listed', true)
         .order('name', { ascending: true });
       if (options?.scopedRead) query = query.in('id', options.scopedRead.ids);
       const { data, error } = await query;

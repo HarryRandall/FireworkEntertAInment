@@ -38,6 +38,10 @@ test('firework products expose the cheapest available supplier price', () => {
 
 test('product payload cache key versions with the pricing/occupancy payload', () => {
   const cacheKeys = read('lib/shows/cache-keys.ts');
-  assert.match(cacheKeys, /firework-products:preview-v2/);
-  assert.match(cacheKeys, /firework-catalogue-cards:preview-v2/);
+  assert.match(cacheKeys, /firework-products:listed-v3/);
+  assert.match(cacheKeys, /firework-catalogue-cards:listed-v3/);
+});
+
+test('catalogue product reads explicitly exclude unlisted entries for every caller', () => {
+  assert.match(read('lib/shows/queries.server.ts'), /\.eq\('is_listed', true\)/);
 });
