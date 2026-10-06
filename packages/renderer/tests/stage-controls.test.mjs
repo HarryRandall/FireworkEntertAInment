@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { StageControls, NORMAL_FAR_SCALE, FREE_FAR_SCALE } from '../src/view/stage-controls.ts';
+import { StageControls, FAR_SCALE, FREE_FAR } from '../src/view/stage-controls.ts';
 import { framingFor, EYE_HEIGHT_M } from '../src/sim/framing.ts';
 import { effectTemplates } from '../src/templates/index.ts';
 
@@ -34,13 +34,13 @@ const event = (element, name, fields) => {
   element.dispatchEvent(e);
 };
 
-test('normal and free zoom-out limits give four and eight framed distances', () => {
+test('normal and free zoom-out limits restore the framed-distance caps', () => {
   const r = rig(shots);
   try {
     const base = vector(r.framing.position).distanceTo(vector(r.framing.target));
     for (const [free, factor] of [
-      [false, NORMAL_FAR_SCALE],
-      [true, FREE_FAR_SCALE],
+      [false, FAR_SCALE],
+      [true, FREE_FAR],
     ]) {
       r.controls.setFree(free);
       r.controls.zoom(1000);
@@ -172,7 +172,7 @@ test('ground extent tops and rocket aliases remain visible at the closest zoom',
   }
 });
 
-test('a scene larger than its original framing still has a finite zoom-out range', () => {
+test('a scene larger than its original framing preserves its close-fit floor without widening normal zoom-out', () => {
   const r = rig(shots);
   try {
     r.controls.frame(
@@ -185,17 +185,18 @@ test('a scene larger than its original framing still has a finite zoom-out range
     );
     r.controls.zoom(0.0001);
     r.settle();
+    const base = vector([0, EYE_HEIGHT_M, 100]).distanceTo(vector([0, 30, 0]));
     const near = r.camera.position.distanceTo(vector([0, 60, 0]));
     for (const [free, scale] of [
-      [false, NORMAL_FAR_SCALE],
-      [true, FREE_FAR_SCALE],
+      [false, FAR_SCALE],
+      [true, FREE_FAR],
     ]) {
       r.controls.setFree(free);
       r.controls.zoom(1000);
       r.settle();
       assert.ok(r.camera.position.toArray().every(Number.isFinite));
       const far = r.camera.position.distanceTo(vector([0, 60, 0]));
-      assert.ok(Math.abs(far / near - scale) < 1e-6);
+      assert.ok(Math.abs(far - Math.max(base * scale, near)) < 1e-6);
       inside(r.camera, [0, 260, 0], 'large scene top');
     }
   } finally {

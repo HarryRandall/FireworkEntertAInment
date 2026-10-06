@@ -40,11 +40,12 @@ use 50 to 55 m (catalogue 52 m). Fountains, wheels, spinners and tourbillons ret
 their existing scale. Height changes scale climb time by the square root of the
 height ratio; radii, colours and other authored values stay unchanged.
 
-Normal orbit zoom extends to four times the larger of the framed distance and
-minimum fit distance; free mode extends to eight times that reference. These
-dimensionless limits are visual tuning for comfortable scene context, including
-scenes whose original framing is closer than a safe full-extent fit. Minimum distance fits the computed burst sphere, or ground travel
-extent, inside the narrower field of view with a 5% margin. As distance decreases,
+Normal orbit zoom extends to 1.8 times the framed distance; free mode extends to
+four times the framed distance. These dimensionless limits preserve the original
+scene context. The close-fit minimum can exceed a cap only when needed to fit an
+unusually large computed burst or ground-travel extent, rather than widening the
+zoom-out range for normal templates. Minimum distance fits the computed burst sphere,
+or ground travel extent, inside the narrower field of view with a 5% margin. As distance decreases,
 the target moves towards the computed effect centre and audience pitch approaches
 a level burst view, preserving manual orbit offsets and the ground floor clamp.
 At the framed distance, the original camera pose is unchanged. Wheel, pinch and

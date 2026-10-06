@@ -13,11 +13,11 @@ const TOP_RAD = 0.55;
 const FLOOR_PADDING = 1.02;
 const NEAR_SCALE = 0.3;
 const NEAR_LIMIT = 0.8;
-/** Visual tuning, dimensionless multiples of the larger framed/fit distance: generous scene context. */
-export const NORMAL_FAR_SCALE = 4;
+/** Visual tuning, dimensionless multiple of the framed distance for normal orbit zoom-out. */
+export const FAR_SCALE = 1.8;
 const FREE_NEAR = 0.15;
-/** Visual tuning, dimensionless framed/fit-distance multiple for wider free-camera exploration. */
-export const FREE_FAR_SCALE = 8;
+/** Visual tuning, dimensionless multiple of the framed distance for free-camera zoom-out. */
+export const FREE_FAR = 4;
 /** Visual tuning, dimensionless margin on the frustum's enclosing-sphere fit. */
 const CLOSE_FIT_MARGIN = 1.05;
 /** Degrees per half turn, for the camera's vertical field of view. */
@@ -151,16 +151,17 @@ export class StageControls {
     const fit =
       (this.focusRadiusM * CLOSE_FIT_MARGIN) /
       (this.sphericalFocus ? Math.sin(limitingAngle) : Math.tan(limitingAngle));
-    const reference = Math.max(this.base, fit);
-    if (this.free) return [Math.max(this.base * FREE_NEAR, fit), reference * FREE_FAR_SCALE];
+    if (this.free)
+      return [Math.max(this.base * FREE_NEAR, fit), Math.max(this.base * FREE_FAR, fit)];
     const floor = ((this.target.y - EYE_HEIGHT_M) / Math.sin(UP_NEAR_RAD)) * FLOOR_PADDING;
     return [
       Math.max(this.base * NEAR_SCALE, Math.min(floor, this.base * NEAR_LIMIT), fit),
-      reference * NORMAL_FAR_SCALE,
+      Math.max(this.base * FAR_SCALE, fit),
     ];
   }
   private maxUp(distance: number): number {
     const [low, high] = this.range();
+    if (high - low <= DISTANCE_TOLERANCE_M) return UP_NEAR_RAD;
     return UP_FAR_RAD + (UP_NEAR_RAD - UP_FAR_RAD) * clamp((high - distance) / (high - low), 0, 1);
   }
   private lowElevation(distance: number): number {
