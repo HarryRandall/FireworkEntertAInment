@@ -1,0 +1,358 @@
+{
+  "whistleShell": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "whiteComet": {
+    "height_m": 60,
+    "time_s": 2.4
+  },
+  "pistil": {
+    "height_m": 66,
+    "time_s": 1.887855926706273
+  },
+  "crossette": {
+    "height_m": 58,
+    "time_s": 1.769745744450315
+  },
+  "skyRocket": {
+    "height_m": 64,
+    "time_s": 1.85903200617956
+  },
+  "chrysanthemum": {
+    "height_m": 62,
+    "time_s": 1.8297540818372289
+  },
+  "brocadeComets": {
+    "height_m": 55,
+    "time_s": 2
+  },
+  "randomComets": {
+    "height_m": 52,
+    "time_s": 2.1
+  },
+  "brocadeCrown": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "helicopter": {
+    "height_m": 24,
+    "time_s": 1.391402170474087
+  },
+  "crackPalm": {
+    "height_m": 72,
+    "time_s": 1.971801207018598
+  },
+  "glitter": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "brocade": {
+    "height_m": 76,
+    "time_s": 2.025833161936096
+  },
+  "comet": {
+    "height_m": 55,
+    "time_s": 1.9
+  },
+  "salute": {
+    "height_m": 46,
+    "time_s": 1.5760710643876437
+  },
+  "tigerTail": {
+    "height_m": 74,
+    "time_s": 1.9989997498749217
+  },
+  "bottleRocket": {
+    "height_m": 32,
+    "time_s": 1.3145341380123987
+  },
+  "multiBreak": {
+    "height_m": 70,
+    "time_s": 1.9442222095223582
+  },
+  "horsetail": {
+    "height_m": 72,
+    "time_s": 1.971801207018598
+  },
+  "glitterMine": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "brocadeTips": {
+    "height_m": 78,
+    "time_s": 2.0523157651784487
+  },
+  "snowflakes": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "rainbow": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "zFan": {
+    "height_m": 45,
+    "time_s": 1.5
+  },
+  "mine": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "coconut": {
+    "height_m": 72,
+    "time_s": 1.971801207018598
+  },
+  "glitterWillow": {
+    "height_m": 84,
+    "time_s": 2.1297887219158618
+  },
+  "dahlia": {
+    "height_m": 66,
+    "time_s": 1.887855926706273
+  },
+  "crackleMine": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "twinkleSilver": {
+    "height_m": 70,
+    "time_s": 1.9442222095223582
+  },
+  "missile": {
+    "height_m": 46,
+    "time_s": 1.3
+  },
+  "fish": {
+    "height_m": 54,
+    "time_s": 1.7076299364909249
+  },
+  "romanCandle": {
+    "height_m": 44,
+    "time_s": 1.5
+  },
+  "parachute": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "chrysTips": {
+    "height_m": 70,
+    "time_s": 1.9442222095223582
+  },
+  "dahliaStrobe": {
+    "height_m": 66,
+    "time_s": 1.887855926706273
+  },
+  "bouquet": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "kamuro": {
+    "height_m": 88,
+    "time_s": 2.179908254950194
+  },
+  "jellyfish": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "silverChrys": {
+    "height_m": 66,
+    "time_s": 1.887855926706273
+  },
+  "crackleChrys": {
+    "height_m": 68,
+    "time_s": 1.9162463307205575
+  },
+  "bombettes": {
+    "height_m": 48,
+    "time_s": 1.6
+  },
+  "fallingLeaves": {
+    "height_m": 74,
+    "time_s": 1.9989997498749217
+  },
+  "redGold": {
+    "height_m": 72,
+    "time_s": 1.971801207018598
+  },
+  "peony": {
+    "height_m": 56,
+    "time_s": 1.7389652095427326
+  },
+  "greenComets": {
+    "height_m": 55,
+    "time_s": 2
+  },
+  "timeRain": {
+    "height_m": 78,
+    "time_s": 2.0523157651784487
+  },
+  "pearls": {
+    "height_m": 50,
+    "time_s": 1.6
+  },
+  "multiTails": {
+    "height_m": 62,
+    "time_s": 1.8297540818372289
+  },
+  "rings": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "neutron": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "rocketFlowers": {
+    "height_m": 70,
+    "time_s": 1.9442222095223582
+  },
+  "cometCrossette": {
+    "height_m": 50,
+    "time_s": 1.7
+  },
+  "floral": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "peonyChange": {
+    "height_m": 64,
+    "time_s": 1.85903200617956
+  },
+  "saturn": {
+    "height_m": 66,
+    "time_s": 1.887855926706273
+  },
+  "wave": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "risingTail": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "waterfall": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "silverDragon": {
+    "height_m": 40,
+    "time_s": 2.4
+  },
+  "redLace": {
+    "height_m": 62,
+    "time_s": 1.8297540818372289
+  },
+  "spiral": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "silverMine": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "heart": {
+    "height_m": 62,
+    "time_s": 1.8297540818372289
+  },
+  "goldToBlue": {
+    "height_m": 55,
+    "time_s": 2.1
+  },
+  "flitter": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "strobePistil": {
+    "height_m": 66,
+    "time_s": 1.887855926706273
+  },
+  "ring": {
+    "height_m": 64,
+    "time_s": 1.85903200617956
+  },
+  "glitterHorsetail": {
+    "height_m": 76,
+    "time_s": 2.025833161936096
+  },
+  "greenStrobe": {
+    "height_m": 70,
+    "time_s": 1.9442222095223582
+  },
+  "firefly": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "spider": {
+    "height_m": 64,
+    "time_s": 1.85903200617956
+  },
+  "ghost": {
+    "height_m": 64,
+    "time_s": 1.85903200617956
+  },
+  "poppingFlowers": {
+    "height_m": 64,
+    "time_s": 1.85903200617956
+  },
+  "whirlwind": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "greenWhite": {
+    "height_m": 80,
+    "time_s": 2.0784609690826525
+  },
+  "willow": {
+    "height_m": 82,
+    "time_s": 2.104281350010022
+  },
+  "doubleRing": {
+    "height_m": 68,
+    "time_s": 1.9162463307205575
+  },
+  "whistleCake": {
+    "height_m": 45,
+    "time_s": 1.4
+  },
+  "purplePistil": {
+    "height_m": 64,
+    "time_s": 1.85903200617956
+  },
+  "silverKamuro": {
+    "height_m": 86,
+    "time_s": 2.154994199528157
+  },
+  "crackle": {
+    "height_m": 52,
+    "time_s": 1.675708805252273
+  },
+  "dragonEggs": {
+    "height_m": 54,
+    "time_s": 1.7076299364909249
+  },
+  "strobe": {
+    "height_m": 68,
+    "time_s": 1.9162463307205575
+  },
+  "palm": {
+    "height_m": 70,
+    "time_s": 1.9442222095223582
+  },
+  "redCrossette": {
+    "height_m": 60,
+    "time_s": 1.8
+  },
+  "peonyRedGreen": {
+    "height_m": 58,
+    "time_s": 1.769745744450315
+  },
+  "bees": {
+    "height_m": 50,
+    "time_s": 1.6431676725154984
+  },
+  "greenWillow": {
+    "height_m": 80,
+    "time_s": 2.0784609690826525
+  }
+}

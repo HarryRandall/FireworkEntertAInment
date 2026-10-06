@@ -5,8 +5,8 @@
   "design": {
     "kind": "shell",
     "launch": {
-      "height_m": 50,
-      "time_s": 1.6431676725154984,
+      "height_m": 60,
+      "time_s": 1.8,
       "tilt_deg": 0,
       "tail": "crackle",
       "sparks": 180,

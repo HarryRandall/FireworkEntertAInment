@@ -653,3 +653,5 @@ export const effectTemplates: readonly EffectTemplate[] = [
     design: upgradeDesign(rocketFlowers.design, 1),
   },
 ];
+
+export { TEMPLATE_HEIGHT_BANDS, templateApexM } from './height-bands';

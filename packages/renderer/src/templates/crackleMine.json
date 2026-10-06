@@ -5,8 +5,8 @@
   "design": {
     "kind": "mine",
     "launch": {
-      "height_m": 60,
-      "time_s": 1.8,
+      "height_m": 48,
+      "time_s": 1.6099689437998486,
       "tilt_deg": 0,
       "tail": "gold",
       "sparks": 180,

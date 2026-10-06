@@ -12,8 +12,8 @@
         "count": 10,
         "pattern": "sequence",
         "spread_deg": 30,
-        "height_m": 46,
-        "time_s": 1.3,
+        "height_m": 52,
+        "time_s": 1.3821847859851069,
         "colour": {
           "mode": "alternate",
           "stops": [

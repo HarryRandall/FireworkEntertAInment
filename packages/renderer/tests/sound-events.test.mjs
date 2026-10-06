@@ -6,6 +6,7 @@ import { soundEvents, soundDistance } from '../src/sim/events.ts';
 import { effectTemplates } from '../src/templates/index.ts';
 import { reviewFixtureDesign } from '../src/fixtures/index.ts';
 import { resolveDesign } from '../src/schema/index.ts';
+import { prototypeTemplate } from './prototype-template.mjs';
 const golden = JSON.parse(readFileSync(new URL('./fixtures/sound-goldens.json', import.meta.url)));
 const TOLERANCE = 1e-9;
 function compare(actual, expected) {
@@ -23,7 +24,9 @@ function compare(actual, expected) {
 }
 for (const reference of golden.templates) {
   test(`sound cues match the prototype: ${reference.key}`, () => {
-    const design = effectTemplates.find((template) => template.key === reference.key).design;
+    const design = prototypeTemplate(
+      effectTemplates.find((template) => template.key === reference.key),
+    );
     const events = soundEvents([{ design }], golden.listener);
     assert.equal(events.length, reference.events.length);
     events.forEach((event, index) => compare(event, reference.events[index]));

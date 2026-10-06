@@ -12,8 +12,8 @@
         "count": 3,
         "pattern": "fan",
         "spread_deg": 40,
-        "height_m": 55,
-        "time_s": 2,
+        "height_m": 52,
+        "time_s": 1.9446897392175908,
         "colour": {
           "mode": "alternate",
           "stops": [

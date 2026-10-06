@@ -12,8 +12,8 @@
         "count": 25,
         "pattern": "sweep",
         "spread_deg": 80,
-        "height_m": 45,
-        "time_s": 1.5,
+        "height_m": 52,
+        "time_s": 1.6124515496597098,
         "colour": {
           "mode": "alternate",
           "stops": [

@@ -12,8 +12,8 @@
         "count": 6,
         "pattern": "random",
         "spread_deg": 44,
-        "height_m": 40,
-        "time_s": 2.4,
+        "height_m": 52,
+        "time_s": 2.7364210202379313,
         "colour": {
           "mode": "alternate",
           "stops": [

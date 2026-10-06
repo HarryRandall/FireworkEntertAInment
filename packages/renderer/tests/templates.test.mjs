@@ -11,6 +11,9 @@ import {
   shotDuration,
 } from '../src/index.ts';
 
+import { prototypeTemplate } from './prototype-template.mjs';
+import { TEMPLATE_HEIGHT_BANDS, templateApexM } from '../src/templates/height-bands.ts';
+
 const schema = JSON.parse(readFileSync(new URL('../schema/design.v1.json', import.meta.url)));
 const ajv = new Ajv({ allErrors: true, strict: true });
 const validate = ajv.compile(schema);
@@ -73,7 +76,8 @@ for (const entry of effectTemplates) {
     const reference = golden.templates.find((e) => e.key === entry.key);
     for (const f of reference.frames) {
       const label = `${entry.key} t=${f.time_s}`;
-      const p = simulate(d, f.time_s);
+      const original = prototypeTemplate(entry);
+      const p = simulate(original, f.time_s);
       assert.equal(p.kinds.length, f.count, label);
       f.samples.forEach((s) => compare(row(p, s.index), s.values, `${label} particle=${s.index}`));
       assert.equal(p.smoke.sizes.length, f.smoke.count, `${label} smoke`);
@@ -91,10 +95,41 @@ for (const entry of effectTemplates) {
         p.smoke.alphas,
       ])
         assert.ok(values.every(Number.isFinite), label);
-      simulate(d, shotDuration(d));
-      simulate(d, 0);
-      assert.deepEqual(simulate(d, f.time_s), p, `${label} scrub`);
+      simulate(original, shotDuration(original));
+      simulate(original, 0);
+      assert.deepEqual(simulate(original, f.time_s), p, `${label} scrub`);
     }
     assert.deepEqual(entry.design, before);
+  });
+}
+
+for (const entry of effectTemplates) {
+  test(`${entry.key}: authored apex and burst top satisfy the kind height band`, () => {
+    const d = entry.design;
+    const apex = templateApexM(d);
+    const radius = Math.max(0, ...d.breaks.flatMap((b) => b.layers.map((l) => l.radius_m)));
+    const band = TEMPLATE_HEIGHT_BANDS[d.kind];
+    for (const [value, limits, label] of [
+      [apex, band.apex_m, 'apex'],
+      [apex + radius, band.burst_top_m, 'burst top'],
+    ])
+      assert.ok(value >= limits[0] && value <= limits[1], `${entry.key} ${label}: ${value} m`);
+    const original = prototypeTemplate(entry);
+    const block = d.launch ?? d.ground?.comets;
+    const old = original.launch ?? original.ground?.comets;
+    if (old) {
+      assert.equal(block.time_s, old.time_s * Math.sqrt(block.height_m / old.height_m));
+      Object.assign(original.launch ?? original.ground.comets, {
+        height_m: block.height_m,
+        time_s: block.time_s,
+      });
+    }
+    assert.deepEqual(original, d, 'only height and climb time change');
+    for (const t of [0, shotDuration(d) * 0.4, shotDuration(d) * 0.8]) {
+      const frame = simulate(d, t);
+      simulate(d, 0);
+      assert.deepEqual(simulate(d, t), frame, 'tuned template scrubs exactly');
+      assert.ok(frame.positions.every(Number.isFinite));
+    }
   });
 }
