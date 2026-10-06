@@ -36,7 +36,6 @@ type Props = {
   antialias?: boolean;
   primeSnapshots?: boolean;
   primeOnCueChanges?: boolean;
-  showStarfield?: boolean;
   autoFrame?: boolean;
   preserveDrawingBuffer?: boolean;
   showFps?: boolean;

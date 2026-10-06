@@ -17,7 +17,7 @@
   /* The splash sits flush under the app's top bar, so only the bottom
      corners follow the content-area rounding. */
   border-radius: 0 0 16px 16px;
-  background: linear-gradient(180deg, #03050b 0%, #0b1226 100%);
+  background: linear-gradient(180deg, #000000 0%, #111111 100%);
 }
 
 @media (max-width: 1023px) {
