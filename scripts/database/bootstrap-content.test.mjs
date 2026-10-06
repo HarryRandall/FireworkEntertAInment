@@ -71,3 +71,31 @@ test('bootstrap SQL is transactional and refuses a populated application databas
   assert.doesNotMatch(sql, /truncate |delete from |disable trigger all|session_replication_role/i);
   assert.match(sql, /assert_all_published_show_presets/);
 });
+
+test('renderer designs and Finale mappings survive snapshot SQL generation', () => {
+  const snapshot = readSnapshot(directory);
+  for (const table of ['firework_effects', 'fireworks']) {
+    for (const row of snapshot.tables[table]) {
+      assert.equal(row.design, null);
+      assert.equal(row.design_schema, 1);
+      if (table === 'firework_effects') assert.equal(row.template_key, null);
+    }
+  }
+  const products = snapshot.tables.catalogue_items.filter((row) => row.manufacturer !== null);
+  const generated = snapshot.tables.catalogue_items.filter((row) => row.manufacturer === null);
+  assert.equal(products.length, 51);
+  assert.equal(generated.length, 93);
+  for (const row of products) assert.equal(row.finale_product_id, row.part_number);
+  for (const row of generated) assert.equal(row.finale_product_id, null);
+  for (const row of snapshot.tables.catalogue_items) assert.equal(row.finale_effect_name, null);
+  // Exercise populated documents and explicit mappings, rather than defaults alone.
+  snapshot.tables.firework_effects[0].design = { kind: 'shell' };
+  snapshot.tables.firework_effects[0].template_key = 'peony';
+  snapshot.tables.catalogue_items[0].finale_effect_name = 'Supplier effect';
+  const sql = snapshotSql(snapshot);
+  assert.match(sql, /"design", "design_schema", "template_key"/);
+  assert.match(sql, /"finale_product_id", "finale_effect_name"/);
+  assert.match(sql, /"design":\{"kind":"shell"\}/);
+  assert.match(sql, /"template_key":"peony"/);
+  assert.match(sql, /"finale_effect_name":"Supplier effect"/);
+});

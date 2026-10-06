@@ -23,6 +23,24 @@ export const snapshotTables = [
   ['show_presets', 'id'],
 ];
 
+const REQUIRED_DESIGN_COLUMNS = {
+  firework_effects: ['design', 'design_schema', 'template_key'],
+  fireworks: ['design', 'design_schema'],
+  catalogue_items: ['finale_product_id', 'finale_effect_name'],
+};
+
+/** Refuse older snapshots or exports that silently omit the new storage fields. */
+export function assertSnapshotColumns(table, rows) {
+  const columns = REQUIRED_DESIGN_COLUMNS[table] ?? [];
+  for (const row of rows) {
+    for (const column of columns) {
+      if (!Object.hasOwn(row, column)) {
+        throw new Error(`Snapshot ${table} is missing ${column}. Export from the current schema.`);
+      }
+    }
+  }
+}
+
 export function selectSnapshotContent(tables, selection) {
   const result = { ...tables };
   result.supplier_profiles = tables.supplier_profiles.filter(

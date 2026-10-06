@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { sha256, snapshotTables, storageObjectPath } from './snapshot.mjs';
+import { sha256, snapshotTables, storageObjectPath, assertSnapshotColumns } from './snapshot.mjs';
 
 export function readSnapshot(directory) {
   const manifestBytes = readFileSync(join(directory, 'manifest.json'));
@@ -16,6 +16,7 @@ export function readSnapshot(directory) {
     if (!Array.isArray(tables[table]) || tables[table].length !== manifest.tables[table].rows) {
       throw new Error(`Snapshot row count is invalid for ${table}.`);
     }
+    assertSnapshotColumns(table, tables[table]);
   }
   for (const media of manifest.media) {
     if (

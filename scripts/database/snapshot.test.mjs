@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   portableRow,
+  assertSnapshotColumns,
   readTable,
   snapshotTables,
   storageObjectPath,
@@ -104,4 +105,19 @@ test('storage paths cannot escape their bucket or local export directory', () =>
   }
   assert.equal(storageObjectPath('effects/blue shell.png'), 'effects/blue%20shell.png');
   assert.equal(storageObjectPath('effects/%2e%2e.png'), 'effects/%252e%252e.png');
+});
+
+test('snapshot imports and exports require all design and Finale columns', () => {
+  for (const [table, row] of [
+    ['firework_effects', { design: null, design_schema: 1, template_key: null }],
+    ['fireworks', { design: null, design_schema: 1 }],
+    ['catalogue_items', { finale_product_id: null, finale_effect_name: null }],
+  ]) {
+    assert.doesNotThrow(() => assertSnapshotColumns(table, [row]));
+    for (const column of Object.keys(row)) {
+      const missing = { ...row };
+      delete missing[column];
+      assert.throws(() => assertSnapshotColumns(table, [missing]), new RegExp(`missing ${column}`));
+    }
+  }
 });

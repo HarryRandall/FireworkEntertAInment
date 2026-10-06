@@ -13,7 +13,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "029ed1ce-e4a0-468c-a55b-bc3c6fdfc08c",
@@ -29,7 +31,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "03db05bd-33fe-4604-955c-49d3f12b98e0",
@@ -45,7 +49,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "04a9b897-45ef-4df3-bb03-3ab313028d97",
@@ -61,7 +67,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-05-28T11:17:33.156999+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC5A1B",
+    "finale_effect_name": null
   },
   {
     "id": "063c1f4a-db93-4fd5-9d5a-53649c6bfaa3",
@@ -77,7 +85,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC505101",
+    "finale_effect_name": null
   },
   {
     "id": "07bd0bf5-3c90-4a83-a184-9d8ea65bae80",
@@ -93,7 +103,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC201606",
+    "finale_effect_name": null
   },
   {
     "id": "0b224461-a40d-49ff-8538-23fab7132d03",
@@ -109,7 +121,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "0d66594e-f203-4cc2-9c41-56cdb249dbcc",
@@ -125,7 +139,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-08-03T04:18:59.983284+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "CS642401 D",
+    "finale_effect_name": null
   },
   {
     "id": "104873de-0f1d-4049-9455-2b9b53cabcd8",
@@ -141,7 +157,9 @@
     "metadata": {},
     "created_at": "2026-06-15T01:17:54.924191+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "1094c66a-1fa4-49f7-ba14-496ca74e50a8",
@@ -157,7 +175,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC503601",
+    "finale_effect_name": null
   },
   {
     "id": "11055f6b-fdaf-465a-bd74-3cd7350d4ed3",
@@ -173,7 +193,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-05-28T11:17:33.156999+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC503602",
+    "finale_effect_name": null
   },
   {
     "id": "115af7b6-b810-4e88-a81a-79ef14c62599",
@@ -189,7 +211,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "136a816d-bf55-4e8c-9765-821cb937b603",
@@ -205,7 +229,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-08-03T04:18:59.983284+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "CS642401 C",
+    "finale_effect_name": null
   },
   {
     "id": "1a9a1ee1-837a-4adb-b743-1ff8709a5523",
@@ -221,7 +247,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC502406",
+    "finale_effect_name": null
   },
   {
     "id": "1c640f89-6d2f-4b06-98e9-907c9758181e",
@@ -237,7 +265,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "1d41ecc7-90cc-4748-965a-452cfca7a1fe",
@@ -253,7 +283,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "1ddf7778-d029-4aef-ba20-ecb633361e64",
@@ -269,7 +301,9 @@
     "metadata": {},
     "created_at": "2026-06-15T01:17:54.924191+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "2442a4ec-5928-4c8c-bbe9-61390654ae45",
@@ -285,7 +319,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "273eee6e-2c72-4080-8c10-b3abce065069",
@@ -301,7 +337,9 @@
     "metadata": {},
     "created_at": "2026-05-11T05:04:55.382948+00:00",
     "updated_at": "2026-08-03T01:14:09.005069+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "277397f1-3db3-483f-be77-6a22bd71f6a9",
@@ -317,7 +355,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "286df651-c446-4a64-ac3e-4634b8c3a56f",
@@ -333,7 +373,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "2ae0c83c-9e8a-47ab-aba3-c74082366400",
@@ -349,7 +391,9 @@
     "metadata": {},
     "created_at": "2026-07-27T05:18:35.611758+00:00",
     "updated_at": "2026-07-27T05:18:35.611758+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "2ae76f50-a88c-47bd-80cc-f56cfb434809",
@@ -365,7 +409,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "2bbb6ad2-56c6-4b88-ae29-fd00f33040a3",
@@ -381,7 +427,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "2c635ca0-229e-4e74-84a2-6c4f248a3db1",
@@ -397,7 +445,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "2ce36e33-0235-45fa-b701-d0e88016769f",
@@ -413,7 +463,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC505201",
+    "finale_effect_name": null
   },
   {
     "id": "2e55f1f7-2456-4fe6-8e08-4453accc68b0",
@@ -429,7 +481,9 @@
     "metadata": {},
     "created_at": "2026-07-27T04:08:17.210039+00:00",
     "updated_at": "2026-07-27T04:08:17.210039+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "30fc7cf8-2e2c-46c2-95cb-db0bda55c930",
@@ -445,7 +499,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC201608",
+    "finale_effect_name": null
   },
   {
     "id": "31ab8820-3155-487c-8708-f95728548efb",
@@ -461,7 +517,9 @@
     "metadata": {},
     "created_at": "2026-06-15T01:17:54.924191+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "3272fa18-f6ba-4b2c-bc09-1e4e30a3c4b9",
@@ -477,7 +535,9 @@
     "metadata": {},
     "created_at": "2026-05-11T05:04:55.382948+00:00",
     "updated_at": "2026-08-03T01:14:00.942807+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "36238b72-a6d1-446c-89c7-b0705e5fc8a1",
@@ -493,7 +553,9 @@
     "metadata": {},
     "created_at": "2026-07-27T05:17:31.797338+00:00",
     "updated_at": "2026-07-27T05:17:31.797338+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "3c3cff67-9853-4b6b-8382-e60f11e926d1",
@@ -509,7 +571,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "401f77f5-167a-488b-8c9c-030fb1b96565",
@@ -525,7 +589,9 @@
     "metadata": {},
     "created_at": "2026-05-11T05:04:55.382948+00:00",
     "updated_at": "2026-08-03T01:14:04.529057+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "42567432-d110-48fd-80df-135372334b95",
@@ -541,7 +607,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "4343b8af-eb3e-4e66-b4b9-cf25b604931d",
@@ -557,7 +625,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "44dfa11a-a5f9-480d-a024-fe553226f251",
@@ -573,7 +643,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "453a30a0-7f8d-497c-b1b4-2d7d14d087e2",
@@ -589,7 +661,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "45d2ad24-96bc-4176-85fa-42fdf5bf51e2",
@@ -605,7 +679,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "47b3285f-8390-4992-91d1-8269d3e598a8",
@@ -621,7 +697,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "47f5e9cd-86bb-454d-9dab-57c6d5df25db",
@@ -637,7 +715,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-08-03T04:18:59.983284+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "CS642401 L",
+    "finale_effect_name": null
   },
   {
     "id": "4bc3faa5-58f9-4ea1-8e40-94ad0f5abe17",
@@ -653,7 +733,9 @@
     "metadata": {},
     "created_at": "2026-06-15T01:17:54.924191+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "4c3906bc-c634-48fc-ad81-c28287ef5fb2",
@@ -669,7 +751,9 @@
     "metadata": {},
     "created_at": "2026-06-15T01:17:54.924191+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "4d6d8302-9ce6-4c9b-82dd-cb1f05206878",
@@ -685,7 +769,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "520f74ea-559f-4847-971a-ecd0fd9cdfb8",
@@ -701,7 +787,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-05-28T11:17:33.156999+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC502701",
+    "finale_effect_name": null
   },
   {
     "id": "528734bb-0386-454d-93b7-173a0fc1744e",
@@ -717,7 +805,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "537c474e-98c5-4977-bc47-1b266d01acfd",
@@ -733,7 +823,9 @@
     "metadata": {},
     "created_at": "2026-07-27T04:14:38.80719+00:00",
     "updated_at": "2026-07-27T04:14:38.80719+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "5402327e-ae96-4be0-b320-c6c62bfac8dc",
@@ -749,7 +841,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-08-03T04:18:59.983284+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "CS642401 J",
+    "finale_effect_name": null
   },
   {
     "id": "5420fb37-f49c-4a21-8ad9-82ecd92f3b45",
@@ -765,7 +859,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC502401",
+    "finale_effect_name": null
   },
   {
     "id": "55da2f5b-e6e8-4e2b-a348-1b6a3eb96750",
@@ -781,7 +877,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "5b13e0b7-dfbb-4a50-ad4b-b3fb89717cfa",
@@ -797,7 +895,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-05-28T11:17:33.156999+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC5A1C",
+    "finale_effect_name": null
   },
   {
     "id": "5c08cc19-81d3-481c-866f-93684cf7ca06",
@@ -813,7 +913,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC501101",
+    "finale_effect_name": null
   },
   {
     "id": "5cb4329c-37aa-4b65-9cc2-dfeb2d039f58",
@@ -829,7 +931,9 @@
     "metadata": {},
     "created_at": "2026-06-15T01:17:54.924191+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "5d4c8220-80ff-4677-92db-1dc9cccfecb0",
@@ -845,7 +949,9 @@
     "metadata": {},
     "created_at": "2026-06-15T01:17:54.924191+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "62ac75c2-62af-4623-ba4d-8f8ff63761d0",
@@ -861,7 +967,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC502502",
+    "finale_effect_name": null
   },
   {
     "id": "64c4bbdb-d946-402f-bfcd-1fcbeca3d3ae",
@@ -877,7 +985,9 @@
     "metadata": {},
     "created_at": "2026-05-11T05:04:55.382948+00:00",
     "updated_at": "2026-08-03T01:14:18.211511+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "68712d58-c29a-405e-b3f1-108dc795792f",
@@ -893,7 +1003,9 @@
     "metadata": {},
     "created_at": "2026-05-11T05:04:55.382948+00:00",
     "updated_at": "2026-08-03T01:14:21.256361+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "68fc8c29-1245-4079-8b14-2130f2e474ce",
@@ -909,7 +1021,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "6b12be62-d8f3-4277-b536-873ca1f5bb14",
@@ -925,7 +1039,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-05-28T11:17:33.156999+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC502501",
+    "finale_effect_name": null
   },
   {
     "id": "6d014c0d-5255-40f0-ae2a-30e8e90e97a2",
@@ -941,7 +1057,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-08-03T04:18:59.983284+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "CS642401 E",
+    "finale_effect_name": null
   },
   {
     "id": "71653c6f-a217-469a-866f-f5ee5f9df086",
@@ -957,7 +1075,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "71d08dfc-45cc-4657-bfc6-7ce6041faba6",
@@ -973,7 +1093,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "74e8980d-a35f-410e-bb2c-8b53aa51f978",
@@ -989,7 +1111,9 @@
     "metadata": {},
     "created_at": "2026-05-11T05:04:55.382948+00:00",
     "updated_at": "2026-08-03T01:14:24.789447+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "75352aef-8d91-4962-a96b-779e9bd27646",
@@ -1005,7 +1129,9 @@
     "metadata": {},
     "created_at": "2026-05-11T05:04:55.382948+00:00",
     "updated_at": "2026-08-03T01:14:28.118059+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "79889c10-b151-437e-9bc4-ef433f038323",
@@ -1021,7 +1147,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-05-28T11:17:33.156999+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC504601",
+    "finale_effect_name": null
   },
   {
     "id": "7b01e5c4-5c68-423b-9fdf-fbf20f9e6f36",
@@ -1037,7 +1165,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC202301",
+    "finale_effect_name": null
   },
   {
     "id": "7c9380e4-2b3b-435f-ad36-4af2a02ec8f5",
@@ -1053,7 +1183,9 @@
     "metadata": {},
     "created_at": "2026-06-15T01:17:54.924191+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "7f34f647-eb58-4cd2-8b5c-8c918ecbba33",
@@ -1069,7 +1201,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "833f1823-6963-4d5e-be8c-74380d095968",
@@ -1085,7 +1219,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "8480031f-f051-4abb-a3fc-3cef43562531",
@@ -1101,7 +1237,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "888458ac-3d79-4876-aab0-a7dbf4da07b5",
@@ -1117,7 +1255,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "8c35b799-ac6a-4c3c-80a2-12d83452eb0a",
@@ -1133,7 +1273,9 @@
     "metadata": {},
     "created_at": "2026-06-15T01:17:54.924191+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "8c8e052c-75d7-452a-a802-2cd0e75fe302",
@@ -1149,7 +1291,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC203201",
+    "finale_effect_name": null
   },
   {
     "id": "8e793a25-6788-4dc8-a9bb-d12749a014e6",
@@ -1165,7 +1309,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "8f20c48b-1fce-4167-9157-71713fd0cff3",
@@ -1181,7 +1327,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC502409",
+    "finale_effect_name": null
   },
   {
     "id": "915856a4-b68a-467d-8420-3180ed2e2ecc",
@@ -1197,7 +1345,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-08-03T04:18:59.983284+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "CS642401 H",
+    "finale_effect_name": null
   },
   {
     "id": "91cfc188-ecb9-4327-aba7-d30761aa9808",
@@ -1213,7 +1363,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "9420cf17-d110-4ffd-847d-a4fd8046899f",
@@ -1229,7 +1381,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "9462ba01-5fcc-4bc7-ad6b-437c29569ef0",
@@ -1245,7 +1399,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "947c3a2f-dd13-4dec-a9e9-49011dbd0b13",
@@ -1261,7 +1417,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "97da71b0-811c-43fa-be28-cdac5a4c0e3c",
@@ -1277,7 +1435,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "99fc2b1d-35d0-4446-8187-d36b239d7ef2",
@@ -1293,7 +1453,9 @@
     "metadata": {},
     "created_at": "2026-05-11T05:04:55.382948+00:00",
     "updated_at": "2026-08-03T01:14:32.363508+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "9ade2719-2c1f-4f91-a511-e2260ca3a8fe",
@@ -1309,7 +1471,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "9c3fb259-bece-4ff4-a71e-7b0b3026b06a",
@@ -1325,7 +1489,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC201601",
+    "finale_effect_name": null
   },
   {
     "id": "9d1fbe2b-9898-45f1-a9c2-2af087b48284",
@@ -1341,7 +1507,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "9e0f64d0-5e4d-482d-91cc-5cafa65c46b3",
@@ -1357,7 +1525,9 @@
     "metadata": {},
     "created_at": "2026-06-15T01:17:54.924191+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "9f4816b1-3162-4c2a-ba4f-a637aff41489",
@@ -1373,7 +1543,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC201602",
+    "finale_effect_name": null
   },
   {
     "id": "a121cb3a-5ad2-4884-9ed0-bd5ef7e36ed4",
@@ -1389,7 +1561,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "a35dd7d9-df9b-4f84-a812-ac8856949696",
@@ -1405,7 +1579,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-05-28T11:17:33.156999+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC5A1A",
+    "finale_effect_name": null
   },
   {
     "id": "a675dfe2-da9d-4aee-944b-4da1d1c3d9ea",
@@ -1421,7 +1597,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-08-03T04:18:59.983284+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "CS642401 K",
+    "finale_effect_name": null
   },
   {
     "id": "a80a43c4-51ed-4a58-987f-64628a7ce801",
@@ -1437,7 +1615,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC504001",
+    "finale_effect_name": null
   },
   {
     "id": "abd88efa-94af-4958-aa8d-af3e4e3923e4",
@@ -1453,7 +1633,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC201609",
+    "finale_effect_name": null
   },
   {
     "id": "acf8dfd9-de68-467e-9889-db9e7a5b4f43",
@@ -1469,7 +1651,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "aedba30c-9689-4460-a317-9727c1c11e75",
@@ -1485,7 +1669,9 @@
     "metadata": {},
     "created_at": "2026-06-15T01:17:54.924191+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "b1155959-4ebe-4055-9317-8354a0c3f99c",
@@ -1501,7 +1687,9 @@
     "metadata": {},
     "created_at": "2026-06-15T01:17:54.924191+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "b3997444-9f12-4940-a0ec-11a0f403685d",
@@ -1517,7 +1705,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC201605",
+    "finale_effect_name": null
   },
   {
     "id": "b3999a78-0ae3-459c-8181-14276d402c67",
@@ -1533,7 +1723,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC201603",
+    "finale_effect_name": null
   },
   {
     "id": "b6906a44-a2aa-40e6-ad04-55b021148f97",
@@ -1549,7 +1741,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC502405",
+    "finale_effect_name": null
   },
   {
     "id": "b8a46e89-93be-4d47-81b5-48372e63b99a",
@@ -1565,7 +1759,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-08-03T04:18:59.983284+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "CS642401 B",
+    "finale_effect_name": null
   },
   {
     "id": "ba8d4db8-ac10-4b3e-aa8f-ea1eea853e8a",
@@ -1581,7 +1777,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC201607",
+    "finale_effect_name": null
   },
   {
     "id": "bb5367fb-d89f-4e37-b619-3c44f4972216",
@@ -1597,7 +1795,9 @@
     "metadata": {},
     "created_at": "2026-05-11T05:04:55.382948+00:00",
     "updated_at": "2026-08-03T01:14:49.797103+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "bbd9ec20-393c-4b26-9335-c345306f6682",
@@ -1613,7 +1813,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "bc3e98f1-d358-4cf8-82a1-276a2a988d75",
@@ -1629,7 +1831,9 @@
     "metadata": {},
     "created_at": "2026-06-15T01:17:54.924191+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "be5f4ae6-5dfc-40a3-9c94-ae15fff057e6",
@@ -1645,7 +1849,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "bf96b347-08a3-4487-ac26-c2cfd45086f4",
@@ -1661,7 +1867,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC202302",
+    "finale_effect_name": null
   },
   {
     "id": "c265c635-0315-4ccb-9597-e3b31578dc95",
@@ -1677,7 +1885,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "ca44b0c3-5e41-4296-b567-4de5c35deb37",
@@ -1693,7 +1903,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "caf77033-a5cb-4a86-9834-db209477ed48",
@@ -1709,7 +1921,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "ccb8be67-edce-4867-af52-98fc97c586df",
@@ -1725,7 +1939,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "ccf42aa7-fe8c-4ff4-9135-6984b4ae6f84",
@@ -1741,7 +1957,9 @@
     "metadata": {},
     "created_at": "2026-07-27T05:17:04.325593+00:00",
     "updated_at": "2026-07-27T05:17:04.325593+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "cd5a4efa-10cc-4f97-b55f-0649e27bc14d",
@@ -1757,7 +1975,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-05-28T11:17:33.156999+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC503301",
+    "finale_effect_name": null
   },
   {
     "id": "ce3623e8-69fd-4599-872e-962779de396d",
@@ -1773,7 +1993,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-08-03T04:18:59.983284+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "CS642401 G",
+    "finale_effect_name": null
   },
   {
     "id": "cfafb20f-9450-44b4-950b-f14e7f51cfef",
@@ -1789,7 +2011,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "d3807052-af0c-4141-a43b-59da16d59fec",
@@ -1805,7 +2029,9 @@
     "metadata": {},
     "created_at": "2026-05-11T05:04:55.382948+00:00",
     "updated_at": "2026-08-03T01:18:57.830605+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "d84aa2af-cd2a-4ec9-9b7c-93ff54d17d76",
@@ -1821,7 +2047,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-08-03T04:18:59.983284+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "CS642401 I",
+    "finale_effect_name": null
   },
   {
     "id": "da696d9c-cfab-481a-9775-95d8b0eaa6e9",
@@ -1837,7 +2065,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC502403",
+    "finale_effect_name": null
   },
   {
     "id": "da91297c-2ea4-46d3-bbce-106751bfe5de",
@@ -1853,7 +2083,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-08-03T04:18:59.983284+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "CS642401 F",
+    "finale_effect_name": null
   },
   {
     "id": "db4de9a4-c38c-415d-a107-cbb0d5f8fc99",
@@ -1869,7 +2101,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC508001",
+    "finale_effect_name": null
   },
   {
     "id": "dba9aa43-f587-4d34-ace1-e0dfbdbc1e46",
@@ -1885,7 +2119,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "dcba5b29-fa8e-45e6-89af-6d03eace482d",
@@ -1901,7 +2137,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "dcec8fa6-610d-4f61-9ce3-5e60a3010313",
@@ -1917,7 +2155,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "dd42a497-1c02-483e-9908-a4d027e59148",
@@ -1933,7 +2173,9 @@
     "metadata": {},
     "created_at": "2026-07-27T04:19:23.664381+00:00",
     "updated_at": "2026-07-27T04:19:23.664381+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "dd5621f2-bb4f-4259-a2b6-64f08809bde4",
@@ -1949,7 +2191,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-05-28T11:17:33.156999+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC502402",
+    "finale_effect_name": null
   },
   {
     "id": "e0a78b1b-b59a-499a-9571-f1893b19454e",
@@ -1965,7 +2209,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC503401",
+    "finale_effect_name": null
   },
   {
     "id": "e0bc4872-5dcb-4435-bc9c-9139542a298c",
@@ -1981,7 +2227,9 @@
     "metadata": {},
     "created_at": "2026-06-15T01:17:54.924191+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "e3a1b2c3-9183-4bfe-9d38-da52330fdb05",
@@ -1997,7 +2245,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "e5306bd3-c77e-4cba-8031-53badb14f127",
@@ -2013,7 +2263,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-05-28T11:17:33.156999+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC502407",
+    "finale_effect_name": null
   },
   {
     "id": "e84fb55b-3040-4bfe-ac67-253c39864a3f",
@@ -2029,7 +2281,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-05-28T11:17:33.156999+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC502404",
+    "finale_effect_name": null
   },
   {
     "id": "ecedd80d-9338-49cf-b78c-cda16ee1b682",
@@ -2045,7 +2299,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "ee577411-3680-4e2b-9322-78a6e14c3533",
@@ -2061,7 +2317,9 @@
     "metadata": {},
     "created_at": "2026-05-11T05:04:55.382948+00:00",
     "updated_at": "2026-08-03T01:18:57.830605+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "ef17e15d-7e05-4cc3-9c60-0c8b3540f435",
@@ -2077,7 +2335,9 @@
     "metadata": {},
     "created_at": "2026-06-15T13:26:39.089659+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "efd15364-aadc-4c6e-8381-0e6b34bb56f9",
@@ -2093,7 +2353,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-08-03T03:01:18.049134+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "CS642401 A",
+    "finale_effect_name": null
   },
   {
     "id": "efd947b8-35fd-4e91-a18b-8b473e7b0547",
@@ -2109,7 +2371,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC201604",
+    "finale_effect_name": null
   },
   {
     "id": "eff6ecdb-9bf5-4e38-8237-9575fe3b9364",
@@ -2125,7 +2389,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "f0de9b9b-ff9e-4c4f-8caa-8daa4deb6f3c",
@@ -2141,7 +2407,9 @@
     "metadata": {},
     "created_at": "2026-06-15T01:17:54.924191+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "f2831ac3-6c46-4db2-add5-afc8095bc101",
@@ -2157,7 +2425,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "f2bd5bf9-62b8-4e48-a44e-f7388b56374b",
@@ -2173,7 +2443,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "f3476e42-89f0-4534-8995-c7b41a8f4609",
@@ -2189,7 +2461,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "f5533b86-6940-48c1-8006-9819745f166a",
@@ -2205,7 +2479,9 @@
     "metadata": {},
     "created_at": "2026-05-11T05:04:55.382948+00:00",
     "updated_at": "2026-08-03T01:18:57.830605+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "f7cacf0b-059d-4ce6-94c1-a89dce9559bf",
@@ -2221,7 +2497,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "f7cf3e87-69c3-4c71-9a9c-4a7aa4867ff6",
@@ -2237,7 +2515,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "fb5be4fb-78e7-4b52-93a4-4ef6684a26a8",
@@ -2253,7 +2533,9 @@
     "metadata": {},
     "created_at": "2026-06-29T04:40:53.139518+00:00",
     "updated_at": "2026-06-29T12:05:40.51516+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": null,
+    "finale_effect_name": null
   },
   {
     "id": "fd8182da-9a14-4077-a1d6-8fb131db4c5b",
@@ -2269,7 +2551,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC502408",
+    "finale_effect_name": null
   },
   {
     "id": "fdcca2dd-f77a-4dc3-934f-76fe70d86328",
@@ -2285,7 +2569,9 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC503001",
+    "finale_effect_name": null
   },
   {
     "id": "fe7438da-36d5-46ad-9b83-d3282a53da00",
@@ -2301,6 +2587,8 @@
     "metadata": {},
     "created_at": "2026-05-04T00:52:32.330839+00:00",
     "updated_at": "2026-07-10T02:26:50.876816+00:00",
-    "is_listed": true
+    "is_listed": true,
+    "finale_product_id": "HAC503002",
+    "finale_effect_name": null
   }
 ]
