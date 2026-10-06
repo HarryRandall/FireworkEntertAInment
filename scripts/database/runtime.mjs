@@ -88,6 +88,7 @@ export function executeSql(target, sql) {
     const error = result.stderr.split('\n').find((line) => line.startsWith('ERROR:'));
     throw new Error(error || 'Local SQL execution failed. Check Docker and the database logs.');
   }
+  return result.stdout;
 }
 
 export function storageCredentials(target) {
@@ -106,4 +107,11 @@ export function storageCredentials(target) {
     );
   }
   return { url, key };
+}
+
+const TAP_FAILURE = /^\s*not ok\b|^\s*# Looks like you (?:planned|failed)/m;
+
+/** pgTAP reports failed assertions and plan mismatches as rows, not SQL errors. */
+export function assertSqlTestOutput(output) {
+  if (TAP_FAILURE.test(output)) throw new Error(output.trim());
 }
