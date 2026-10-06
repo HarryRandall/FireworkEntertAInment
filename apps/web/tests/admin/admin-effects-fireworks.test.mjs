@@ -239,7 +239,7 @@ test('admin replay previews opt into FPS diagnostics', () => {
   assert.match(importPreview, /<LazyFireworkReplayCanvas[\s\S]*showFps/);
   const rendererPreview = read('ui/firework-editor/renderer-design/preview-surface.tsx');
   assert.match(rendererPreview, /new Viewer/);
-  assert.match(rendererPreview, /ui: player/);
+  assert.match(rendererPreview, /ui: false/);
   assert.match(rendererPreview, /instance.dispose\(\)/);
   assert.match(canvas, /resumeAudio/);
   assert.match(canvas, /document\.addEventListener\('pointerdown', unlockAudio/);

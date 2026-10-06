@@ -9,13 +9,13 @@ function read(path) {
   return readFileSync(join(root, path), 'utf8');
 }
 
-test('both editors share the renderer timeline and disposable built-in player', () => {
+test('both editors share the renderer timeline and disposable editor transport', () => {
   const tabs = read('ui/firework-editor/renderer-design/tabs.tsx');
   const preview = read('ui/firework-editor/renderer-design/preview-surface.tsx');
   assert.match(tabs, /id: 'timeline'/);
   assert.match(tabs, /TimelineInspector/);
   assert.match(preview, /new Viewer/);
-  assert.match(preview, /ui: player/);
+  assert.match(preview, /ui: false/);
   assert.match(preview, /instance.dispose\(\)/);
   for (const editor of [
     read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx'),

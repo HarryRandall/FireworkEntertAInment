@@ -1,5 +1,4 @@
 'use client';
-import { Button } from '@/ui/patterns/Button';
 import { validateCatalogueRender } from '@/lib/admin/renderer-validation';
 import { fireworkColourMetadata } from '@showcrafter/firework-editor/colour-metadata';
 
@@ -647,15 +646,10 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
   const preview = designResult.ok ? (
     <div className="relative h-full">
       <DesignPreview
+        fullscreen={isFullscreen}
+        onFullscreenToggle={toggleFullscreen}
         document={showSaved && savedDesignResult.ok ? savedDesignResult.value : designResult.value}
       />
-      <Button
-        variant="secondary"
-        onClick={toggleFullscreen}
-        className="absolute top-3 right-3 z-10 h-8"
-      >
-        {isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-      </Button>
     </div>
   ) : (
     <p role="alert" className="text-status-danger p-4 text-sm">

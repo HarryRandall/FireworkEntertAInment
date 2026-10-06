@@ -3,7 +3,7 @@
 import { SOUND_CONTROLS } from '@/lib/renderer-editor/sound-controls';
 import { InspectorSection, RelativeSlider, type InspectorContext } from './inspector-controls';
 
-/** Edits the persisted mix; the built-in player owns preview-only sound preferences. */
+/** Edits the persisted sound mix used by the preview and saved design. */
 export function SoundInspector({ document, disabled, edit }: InspectorContext) {
   return (
     <InspectorSection title="Sound mix">
