@@ -99,17 +99,39 @@ function wireCanvas(
     );
 }
 
-/** Mounts a focusable gesture canvas and returns cleanup for the host's owned positioning style. */
+/** Clips an owned canvas independently of backing-buffer density and restores host styles on cleanup. */
+export function clipCanvasSurface(container: HTMLElement, canvas: HTMLCanvasElement): () => void {
+  const previous = {
+    position: container.style.position,
+    overflow: container.style.overflow,
+    borderRadius: container.style.borderRadius,
+    isolation: container.style.isolation,
+  };
+  const computed = getComputedStyle(container);
+  const inheritedRadius = computed.borderRadius === '0px' ? 'inherit' : computed.borderRadius;
+  const owned = {
+    position: computed.position === 'static' ? 'relative' : previous.position,
+    overflow: 'hidden',
+    borderRadius: previous.borderRadius !== '' ? previous.borderRadius : inheritedRadius,
+    isolation: 'isolate',
+  };
+  Object.assign(container.style, owned);
+  // Absolute percentage sizing uses the untransformed padding box, excluding borders.
+  // Physical DPR dimensions must never participate in CSS layout or intrinsic sizing.
+  canvas.style.cssText =
+    'position:absolute;inset:0;display:block;width:100%;height:100%;max-width:100%;max-height:100%;box-sizing:border-box;';
+  return () => {
+    for (const key of Object.keys(previous) as (keyof typeof previous)[])
+      if (container.style[key] === owned[key]) container.style[key] = previous[key];
+  };
+}
+
+/** Mounts a focusable gesture canvas inside its clipped host. */
 export function mountViewerSurface(container: HTMLElement, canvas: HTMLCanvasElement): () => void {
-  canvas.style.cssText = 'display:block;width:100%;height:100%;touch-action:none';
+  const cleanup = clipCanvasSurface(container, canvas);
+  canvas.style.touchAction = 'none';
   canvas.setAttribute('aria-label', 'Firework preview');
   canvas.tabIndex = 0;
-  const position = container.style.position;
-  const needsPosition = getComputedStyle(container).position === 'static';
-  if (needsPosition) container.style.position = 'relative';
   container.append(canvas);
-  return () => {
-    if (needsPosition && container.style.position === 'relative')
-      container.style.position = position;
-  };
+  return cleanup;
 }

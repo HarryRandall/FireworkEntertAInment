@@ -100,3 +100,46 @@ test('dragging away and back, multi-touch, secondary click and cancellation neve
     globalThis.document = previous;
   }
 });
+
+test('canvas mount clips bordered hosts at every DPR and restores only owned styles', async () => {
+  const { mountViewerSurface } = await import('../src/view/viewer-input.ts');
+  const saved = globalThis.getComputedStyle;
+  globalThis.getComputedStyle = () => ({ position: 'static', borderRadius: '0px' });
+  try {
+    for (const dpr of [1, 1.5, 2, 3]) {
+      const host = {
+        style: { position: '', overflow: '', borderRadius: '', isolation: '' },
+        append(canvas) {
+          this.canvas = canvas;
+        },
+      };
+      const canvas = {
+        style: {},
+        width: Math.round(319.5 * dpr),
+        height: Math.round(199.5 * dpr),
+        setAttribute() {},
+      };
+      const cleanup = mountViewerSurface(host, canvas);
+      assert.deepEqual(host.style, {
+        position: 'relative',
+        overflow: 'hidden',
+        borderRadius: 'inherit',
+        isolation: 'isolate',
+      });
+      assert.match(canvas.style.cssText, /position:absolute;inset:0/);
+      assert.match(canvas.style.cssText, /width:100%;height:100%/);
+      assert.match(canvas.style.cssText, /box-sizing:border-box/);
+      assert.equal(canvas.width, Math.round(319.5 * dpr));
+      host.style.position = 'fixed';
+      cleanup();
+      assert.deepEqual(host.style, {
+        position: 'fixed',
+        overflow: '',
+        borderRadius: '',
+        isolation: '',
+      });
+    }
+  } finally {
+    globalThis.getComputedStyle = saved;
+  }
+});

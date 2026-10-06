@@ -2,7 +2,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { SharedPosterSurface } from '../src/poster/shared.ts';
-import { poster, posterAll, disposePosters, developedTime } from '../src/poster/index.ts';
+import {
+  poster,
+  posterAll,
+  stagePoster,
+  disposePosters,
+  developedTime,
+} from '../src/poster/index.ts';
 import { posterFraming } from '../src/poster/framing.ts';
 import { reviewFixtureDesign } from '../src/fixtures/index.ts';
 import { effectTemplates } from '../src/templates/index.ts';
@@ -279,5 +285,26 @@ test('poster reuse is bounded and changing appearance requires new pixels', asyn
   } finally {
     SETTINGS.ground = savedGround;
     await surface.dispose();
+  }
+});
+
+test('empty backdrops use the shared serial poster surface without allocating another context', async () => {
+  const original = SharedPosterSurface.prototype.capture;
+  const blob = new Blob(['stage'], { type: 'image/png' });
+  let calls = 0;
+  SharedPosterSurface.prototype.capture = async (design, time, options) => {
+    calls++;
+    assert.equal(time, 0);
+    assert.deepEqual(options.shots, []);
+    assert.equal(options.width, 768);
+    assert.equal(options.height, 960);
+    return blob;
+  };
+  try {
+    assert.equal(await stagePoster({ width: 768, height: 960 }), blob);
+    assert.equal(calls, 1);
+    assert.throws(() => stagePoster({ width: -1 }), /dimensions/);
+  } finally {
+    SharedPosterSurface.prototype.capture = original;
   }
 });
