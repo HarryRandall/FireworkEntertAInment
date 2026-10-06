@@ -8,6 +8,9 @@ export const EYE_HEIGHT_M = 1.7;
 export interface Framing {
   position: Vec3;
   target: Vec3;
+  /** Close-up centre and extent radius in metres, derived from the same scene extents.
+   * Aerial bursts use a sphere fit; ground travel uses its vertical/lateral extent plane. */
+  focus?: { target: Vec3; radius_m: number; spherical: boolean };
 }
 interface FramingShot extends ShotPlacement {
   design: Design;
@@ -220,13 +223,58 @@ export function framingFor(
     throw new RangeError('Framing needs a positive aspect and field of view below 180 degrees');
   const resolved = shots.map((shot) => ({ ...shot, design: resolveDesign(shot.design) }));
   const span = Math.max(0, ...resolved.map(horizontalSpan));
-  return tight || needsRaised(resolved)
-    ? raised(resolved, tight, span)
-    : audience(resolved, span, aspect, fov);
+  const framing =
+    tight || needsRaised(resolved)
+      ? raised(resolved, tight, span)
+      : audience(resolved, span, aspect, fov);
+  return { ...framing, focus: focusBounds(resolved) };
 }
 
 function validProjection(aspect: number, fov: number): boolean {
   return (
     Number.isFinite(aspect) && aspect > 0 && Number.isFinite(fov) && fov > 0 && fov < HALF_TURN_DEG
   );
+}
+
+/** Reuses poster shell centres and live extents; other effects retain their whole vertical travel. */
+function focusBounds(shots: readonly FramingShot[]): NonNullable<Framing['focus']> {
+  const bounds = shots.map((shot) => {
+    const bound = extent(shot.design);
+    const aerial = isAerial(shot.design);
+    const low = shot.design.kind === 'wheel' || shot.design.kind === 'spinner';
+    const poster = singleRaised(shot.design);
+    const centre = aerial || low ? poster.target : bound.top / 2;
+    // Ground rotation retains the existing raised poster's framing envelope, not the
+    // shell fallback height used by the audience extent estimator.
+    const groundRadius =
+      poster.distance * POSTER_SCALE * Math.sin((FOV_DEG * Math.PI) / HALF_TURN_DEG / 2);
+    let radius = Math.max(bound.top / 2, bound.reach);
+    if (low) radius = groundRadius;
+    else if (aerial) radius = bound.reach;
+    return {
+      x: shot.position?.[0] ?? 0,
+      z: shot.position?.[1] ?? 0,
+      centre,
+      radius,
+      tilt: horizontalSpan({ ...shot, position: [0, 0] }),
+    };
+  });
+  if (bounds.length === 0)
+    return { target: [0, DEFAULT_HEIGHT_M / 2, 0], radius_m: DEFAULT_REACH_M, spherical: true };
+  const bottom = Math.min(...bounds.map((b) => b.centre - b.radius));
+  const top = Math.max(...bounds.map((b) => b.centre + b.radius));
+  const centre = (top + bottom) / 2;
+  return {
+    target: [0, centre, 0],
+    spherical:
+      shots.length !== 1 || shots[0]?.design.kind === 'shell' || shots[0]?.design.kind === 'rocket',
+    radius_m: Math.max(
+      ...bounds.map((b) => Math.hypot(b.x, b.centre - centre, b.z) + b.radius + b.tilt),
+    ),
+  };
+}
+
+/** Aerial kinds share the poster's apex centre and a spherical burst envelope. */
+function isAerial(design: Design): boolean {
+  return design.kind === 'shell' || design.kind === 'rocket';
 }

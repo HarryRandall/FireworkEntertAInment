@@ -14,6 +14,7 @@ export function posterFraming(shots: readonly Shot[], aspect: number, fov: numbe
   // Increase the camera-target distance to fit the same burst in a narrower frustum.
   const scale = CARD_ASPECT / aspect;
   return {
+    ...framing,
     target: framing.target,
     position: [
       framing.target[0] + (framing.position[0] - framing.target[0]) * scale,

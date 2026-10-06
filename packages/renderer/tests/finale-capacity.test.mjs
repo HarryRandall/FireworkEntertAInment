@@ -22,7 +22,9 @@ test('camera distance preserves every frame count and warm playback retains stor
   assert.deepEqual(new Set(rows.map((row) => row.mode)), new Set(['audience', 'free']));
   const audienceFar = rows.find((row) => row.mode === 'audience' && row.zoom > 1);
   const freeFar = rows.find((row) => row.mode === 'free' && row.zoom > 1);
-  assert.ok(freeFar.distance_m > audienceFar.distance_m * 2);
+  // The profile measures distance to the original audience target, including close-up
+  // centre movement. Exact orbit multiples belong to stage-controls.test.mjs.
+  assert.ok(freeFar.distance_m > audienceFar.distance_m);
   assert.ok(rows.every((row) => row.cameraPosition[1] >= 1.7 - 1e-9));
   assert.ok(rows.every((row) => row.frames > 1000));
   assert.equal(new Set(rows.map((row) => row.countDigest)).size, 1);

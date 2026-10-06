@@ -1,4 +1,4 @@
-/** Audience-height orbit controls preserve the prototype's ground zoom and tilt limits. */
+/** Orbit controls blend audience framing into a close-up of the computed burst bounds. */
 import * as THREE from 'three';
 import { EYE_HEIGHT_M, type Framing } from '../sim/framing';
 // Prototype interaction tuning: radians per pixel, wheel factors, seconds and metre tolerances.
@@ -13,9 +13,15 @@ const TOP_RAD = 0.55;
 const FLOOR_PADDING = 1.02;
 const NEAR_SCALE = 0.3;
 const NEAR_LIMIT = 0.8;
-const FAR_SCALE = 1.8;
+/** Visual tuning, dimensionless multiples of the larger framed/fit distance: generous scene context. */
+export const NORMAL_FAR_SCALE = 4;
 const FREE_NEAR = 0.15;
-const FREE_FAR = 4;
+/** Visual tuning, dimensionless framed/fit-distance multiple for wider free-camera exploration. */
+export const FREE_FAR_SCALE = 8;
+/** Visual tuning, dimensionless margin on the frustum's enclosing-sphere fit. */
+const CLOSE_FIT_MARGIN = 1.05;
+/** Degrees per half turn, for the camera's vertical field of view. */
+const HALF_TURN_DEG = 180;
 const PAN_FLOOR_M = 2;
 const MAX_STEP_S = 0.1;
 const MS_PER_S = 1000;
@@ -50,6 +56,11 @@ export class StageControls {
   private readonly pointers = new Map<number, Pointer>();
   private pinch = 0;
   private base = INITIAL_DISTANCE_M;
+  private readonly focus = new THREE.Vector3();
+  private readonly orbitCentre = new THREE.Vector3();
+  private focusRadiusM = 0;
+  private framedPitchRad = 0;
+  private sphericalFocus = true;
   private goal: Orbit = { yaw: 0, pitch: 0, dist: this.base };
   private current = { ...this.goal };
   private last = performance.now();
@@ -135,11 +146,17 @@ export class StageControls {
     this.panGoal.y = Math.max(-this.target.y + PAN_FLOOR_M, this.panGoal.y);
   }
   private range(): [number, number] {
-    if (this.free) return [this.base * FREE_NEAR, this.base * FREE_FAR];
+    const halfFov = (this.camera.fov * Math.PI) / HALF_TURN_DEG / 2;
+    const limitingAngle = Math.min(halfFov, Math.atan(Math.tan(halfFov) * this.camera.aspect));
+    const fit =
+      (this.focusRadiusM * CLOSE_FIT_MARGIN) /
+      (this.sphericalFocus ? Math.sin(limitingAngle) : Math.tan(limitingAngle));
+    const reference = Math.max(this.base, fit);
+    if (this.free) return [Math.max(this.base * FREE_NEAR, fit), reference * FREE_FAR_SCALE];
     const floor = ((this.target.y - EYE_HEIGHT_M) / Math.sin(UP_NEAR_RAD)) * FLOOR_PADDING;
     return [
-      Math.max(this.base * NEAR_SCALE, Math.min(floor, this.base * NEAR_LIMIT)),
-      this.base * FAR_SCALE,
+      Math.max(this.base * NEAR_SCALE, Math.min(floor, this.base * NEAR_LIMIT), fit),
+      reference * NORMAL_FAR_SCALE,
     ];
   }
   private maxUp(distance: number): number {
@@ -147,7 +164,8 @@ export class StageControls {
     return UP_FAR_RAD + (UP_NEAR_RAD - UP_FAR_RAD) * clamp((high - distance) / (high - low), 0, 1);
   }
   private lowElevation(distance: number): number {
-    const floor = Math.asin(clamp((EYE_HEIGHT_M - this.target.y - this.pan.y) / distance, -1, 1));
+    const centre = this.centreAt(distance);
+    const floor = Math.asin(clamp((EYE_HEIGHT_M - centre.y - this.pan.y) / distance, -1, 1));
     return Math.max(floor, -this.maxUp(distance));
   }
   private clampGoal(): void {
@@ -155,22 +173,33 @@ export class StageControls {
     this.goal.dist = clamp(this.goal.dist, low, high);
     this.goal.pitch = clamp(this.goal.pitch, -this.maxUp(this.goal.dist), TOP_RAD);
   }
-  /** Scales orbit distance by a positive factor, keeping a ground-level eye on the ground. */
+  /** Scales distance for wheel, pinch and buttons using the same burst-centred close-up fit. */
   zoom(factor: number): void {
     if (!Number.isFinite(factor) || factor <= 0) return;
     this.touched = true;
-    const lift = this.lowElevation(this.goal.dist) - this.goal.pitch;
     this.goal.dist *= factor;
     this.clampGoal();
-    if (lift >= -DISTANCE_TOLERANCE_M) {
-      this.goal.pitch = this.lowElevation(this.goal.dist) - Math.max(0, lift);
-      this.clampGoal();
-    }
     this.invalidate();
+  }
+  /** Dimensionless interpolation from the unchanged audience pose to the minimum-distance fit. */
+  private closeBlend(distance: number): number {
+    const [near] = this.range();
+    // Some wide ground posters start closer than a full-extent fit. A zoom gesture
+    // then reaches the safe centre without changing the initial framed pose.
+    if (near > this.base) return clamp((distance - this.base) / (near - this.base), 0, 1);
+    if (near === this.base) return 0;
+    return clamp((this.base - distance) / (this.base - near), 0, 1);
+  }
+  /** Computes the orbit centre in world metres from live and close-up framing. */
+  private centreAt(distance: number): THREE.Vector3 {
+    return this.orbitCentre.copy(this.target).lerp(this.focus, this.closeBlend(distance));
   }
   /** Fits metre framing, clearing user pan; snap applies it without easing. */
   frame(framing: Framing, snap = false): void {
     this.target.fromArray(framing.target);
+    this.focus.fromArray(framing.focus?.target ?? framing.target);
+    this.focusRadiusM = framing.focus?.radius_m ?? 0;
+    this.sphericalFocus = framing.focus?.spherical ?? true;
     const offset = new THREE.Vector3(...framing.position).sub(this.target);
     this.base = Math.max(1, offset.length());
     this.goal = {
@@ -178,6 +207,7 @@ export class StageControls {
       pitch: Math.atan2(offset.y, Math.hypot(offset.x, offset.z)),
       dist: this.base,
     };
+    this.framedPitchRad = this.goal.pitch;
     this.panGoal.set(0, 0, 0);
     this.touched = false;
     if (snap) {
@@ -220,11 +250,12 @@ export class StageControls {
     this.panGoal.copy(this.pan);
   }
   private applyPose(): void {
-    const { yaw, pitch, dist } = this.current;
+    const { yaw, dist } = this.current;
+    const pitch = this.current.pitch - this.framedPitchRad * this.closeBlend(dist);
     const low = this.lowElevation(dist);
     const elevation = Math.max(pitch, low);
     const lift = Math.max(0, low - pitch);
-    const centre = this.look.copy(this.target).add(this.pan);
+    const centre = this.look.copy(this.centreAt(dist)).add(this.pan);
     const horizontal = dist * Math.cos(elevation);
     this.camera.position.set(
       centre.x + Math.sin(yaw) * horizontal,

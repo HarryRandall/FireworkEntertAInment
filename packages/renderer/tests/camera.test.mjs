@@ -51,10 +51,7 @@ test('orbit, wheel and touch pinch wake paused rendering and never lower the eye
   assert.equal(wheel.defaultPrevented, true);
   settle(controls);
   assert.ok(camera.position.distanceTo(beforeZoom) > 1);
-  assert.ok(
-    Math.abs(camera.position.y - EYE_HEIGHT_M) < 1e-5,
-    'ground zoom keeps audience eye height',
-  );
+  assert.ok(camera.position.y >= EYE_HEIGHT_M, 'zoom keeps the ground floor clamp');
   const beforePinch = camera.position.clone();
   pointer(surface, 'pointerdown', { pointerId: 10, clientX: 0 });
   pointer(surface, 'pointerdown', { pointerId: 11, clientX: 100 });
