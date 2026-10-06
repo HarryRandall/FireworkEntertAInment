@@ -1,7 +1,7 @@
 /** Admin fireworks page: every atomic firework (effect + colours + overrides). */
 
 import { NewFireworkButton } from '@/app/(admin)/admin/fireworks/_components/NewFireworkButton';
-import { listAdminFireworks, listEffectOptions } from '@/lib/admin/fireworks.server';
+import { listAdminFireworks } from '@/lib/admin/fireworks.server';
 import { fireworkPreviewImageUrl, withFireworkPreviewRevision } from '@/lib/firework-preview-image';
 import { formatDuration } from '@/lib/show-domain';
 import { FireworkBrowseCard, FireworkBrowseGridSkeleton } from '@/ui/catalogue/FireworkBrowseCard';
@@ -30,7 +30,6 @@ export default async function AdminFireworksPage({ searchParams }: PageProps) {
     redirect(query ? `/admin/fireworks?${query}` : '/admin/fireworks');
   }
 
-  const effects = await listEffectOptions();
   return (
     <div className="mx-auto flex min-h-0 w-full max-w-[1600px] flex-1 flex-col gap-8">
       <Suspense
@@ -44,19 +43,13 @@ export default async function AdminFireworksPage({ searchParams }: PageProps) {
           </>
         }
       >
-        <FireworksData params={params} effects={effects} />
+        <FireworksData params={params} />
       </Suspense>
     </div>
   );
 }
 
-async function FireworksData({
-  params,
-  effects,
-}: {
-  params: FireworksSearchParams;
-  effects: Awaited<ReturnType<typeof listEffectOptions>>;
-}) {
+async function FireworksData({ params }: { params: FireworksSearchParams }) {
   const query = (params.q ?? '').trim().toLowerCase();
   const requestedPage = Number(params.page ?? '1');
   const fireworks = await listAdminFireworks();
@@ -94,10 +87,7 @@ async function FireworksData({
 
   return (
     <>
-      <FilterBar
-        searchPlaceholder="Search fireworks or effects…"
-        action={<NewFireworkButton effects={effects} />}
-      />
+      <FilterBar searchPlaceholder="Search fireworks or effects…" action={<NewFireworkButton />} />
 
       <div className="space-y-5">
         {paginated.length === 0 ? (

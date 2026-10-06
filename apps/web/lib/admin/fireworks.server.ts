@@ -171,12 +171,6 @@ export async function listAdminFireworks(): Promise<AdminFireworkSummary[]> {
   return mapped;
 }
 
-/** Every base effect, ordered for the firework "base effect" selector. */
-export async function listEffectOptions(): Promise<AdminEffectOption[]> {
-  const { options } = await loadEffectOptionsAndModels();
-  return options;
-}
-
 /** Base-effect options plus a map of effect id to `model_json` for previews. */
 async function loadEffectOptionsAndModels(): Promise<{
   options: AdminEffectOption[];

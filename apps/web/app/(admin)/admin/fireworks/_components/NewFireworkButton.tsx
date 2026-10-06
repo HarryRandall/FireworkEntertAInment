@@ -1,7 +1,6 @@
 'use client';
 
 /** Dialog to create a new atomic firework on a chosen base effect. */
-import type { AdminEffectOption } from '@/lib/admin.types';
 import { Button } from '@/ui/patterns/Button';
 import { Field, FieldLabel } from '@/ui/patterns/Field';
 import { Input } from '@/ui/patterns/Input';
@@ -19,18 +18,26 @@ import {
 import { Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState, useTransition } from 'react';
-import { createFirework } from '../actions';
+import { createFireworkFromTemplate } from '../template-actions';
+import { effectTemplates } from '@showcrafter/renderer';
 
-export function NewFireworkButton({ effects }: { effects: AdminEffectOption[] }) {
+/** Creates a catalogue firework from any built-in renderer template. */
+export function NewFireworkButton() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
-  const [effectId, setEffectId] = useState(effects[0]?.id ?? '');
+  const [effectId, setEffectId] = useState<string>(effectTemplates[0].key);
   const [isPending, startTransition] = useTransition();
 
   function create() {
     startTransition(async () => {
-      const result = await createFirework({ name: name.trim(), effectId });
+      let result: Awaited<ReturnType<typeof createFireworkFromTemplate>>;
+      try {
+        result = await createFireworkFromTemplate({ name: name.trim(), templateKey: effectId });
+      } catch {
+        toast.error('Could not create the firework. Try again.');
+        return;
+      }
       if (!result.ok) {
         toast.error(result.error);
         return;
@@ -46,15 +53,15 @@ export function NewFireworkButton({ effects }: { effects: AdminEffectOption[] })
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
-          <Plus size={16} /> New firework
+          <Plus size={16} /> New firework from template
         </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>New firework</DialogTitle>
+          <DialogTitle>New firework from template</DialogTitle>
           <DialogDescription>
-            Pick a base effect to start from. You can customise colours and every renderer detail
-            afterwards.
+            Pick a renderer template to start from. You can customise colours and every renderer
+            detail afterwards.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
@@ -68,15 +75,15 @@ export function NewFireworkButton({ effects }: { effects: AdminEffectOption[] })
             />
           </Field>
           <Field>
-            <FieldLabel>Base effect</FieldLabel>
+            <FieldLabel>Template</FieldLabel>
             <SelectField
               value={effectId}
               onChange={setEffectId}
-              options={effects.map((effect) => ({
-                value: effect.id,
+              options={effectTemplates.map((effect) => ({
+                value: effect.key,
                 label: effect.name,
               }))}
-              ariaLabel="Base effect"
+              ariaLabel="Template"
             />
           </Field>
         </div>
