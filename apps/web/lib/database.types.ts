@@ -1421,6 +1421,41 @@ export type Database = {
         }
         Relationships: []
       }
+      multishot_composition_versions: {
+        Row: {
+          actor_id: string | null
+          after_shots: Json
+          before_shots: Json
+          created_at: string
+          id: string
+          multishot_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          after_shots: Json
+          before_shots: Json
+          created_at?: string
+          id?: string
+          multishot_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          after_shots?: Json
+          before_shots?: Json
+          created_at?: string
+          id?: string
+          multishot_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "multishot_composition_versions_multishot_id_fkey"
+            columns: ["multishot_id"]
+            isOneToOne: false
+            referencedRelation: "multishots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       multishot_fireworks: {
         Row: {
           caliber: string | null
@@ -2887,6 +2922,10 @@ export type Database = {
           p_patch: Json
           p_restore_version_id?: string
         }
+        Returns: Json
+      }
+      save_multishot_composition: {
+        Args: { p_expected_updated_at: string; p_id: string; p_shots: Json }
         Returns: Json
       }
       schedule_cue_generation_retry: {

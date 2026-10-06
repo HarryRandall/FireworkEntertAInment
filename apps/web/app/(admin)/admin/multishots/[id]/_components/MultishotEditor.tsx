@@ -11,6 +11,8 @@
  * Appearance is always locked; a multishot never changes how a firework looks.
  */
 
+import { MultishotFinaleActions } from './MultishotFinaleActions';
+import type { CakeEffect } from '@/lib/finale/document';
 import { useRouter } from 'next/navigation';
 import {
   useCallback,
@@ -73,9 +75,11 @@ import { Inspector } from './MultishotInspector';
 export function MultishotEditor({
   multishot,
   fireworkSpecs,
+  finaleEffects,
 }: {
   multishot: AdminMultishotDetail;
   fireworkSpecs: FireworkSpecification[];
+  finaleEffects: CakeEffect[];
 }) {
   const router = useRouter();
   const setAdminBreadcrumb = useAdminBreadcrumbOverride();
@@ -276,7 +280,7 @@ export function MultishotEditor({
               fireworkId: shot.fireworkId,
               sequenceIndex: shot.sequenceIndex,
               timelineTrackIndex: shot.timelineTrackIndex,
-              timeOffsetSeconds: Number(shot.timeOffsetSeconds.toFixed(2)),
+              timeOffsetSeconds: Number(shot.timeOffsetSeconds.toFixed(3)),
               panDegrees: Math.round(clampMultishotPanDegrees(shot.panDegrees)),
               tiltDegrees: Math.round(clampMultishotTiltDegrees(shot.tiltDegrees)),
               launchPositionIndex: 0,
@@ -686,6 +690,51 @@ export function MultishotEditor({
       className="flex min-h-0 flex-1 flex-col gap-5"
       onPointerDownCapture={handleEditorPointerDownCapture}
     >
+      <MultishotFinaleActions
+        id={multishot.id}
+        effects={finaleEffects}
+        importDisabled={metaDirty || isSavingMeta}
+        onImported={(rows, savedDuration) => {
+          const imported: LocalShot[] = rows.map((row) => ({
+            uid: makeUid(),
+            id: row.id,
+            fireworkId: row.firework_id,
+            sequenceIndex: row.sequence_index,
+            timelineTrackIndex: row.timeline_track_index,
+            timeOffsetSeconds: row.time_offset_seconds,
+            panDegrees: row.pan_degrees,
+            tiltDegrees: row.tilt_degrees,
+            caliber: row.caliber,
+            notes: row.notes ?? '',
+            saveState: 'saved',
+          }));
+          commitShots(() => imported);
+          saveRevisionsRef.current.clear();
+          persistedShotIdsRef.current = new Map(imported.map((shot) => [shot.uid, shot.id ?? '']));
+          setVisibleTrackCount(Math.max(1, rows.length));
+          setSelectedUid(null);
+          setDurationSeconds(savedDuration === null ? '' : String(savedDuration));
+          handleReset();
+        }}
+        shots={shots.map((shot) => ({
+          sequence_index: shot.sequenceIndex,
+          time_offset_seconds: shot.timeOffsetSeconds,
+          pan_degrees: shot.panDegrees,
+          tilt_degrees: shot.tiltDegrees,
+          firework_id: shot.fireworkId,
+        }))}
+        prepare={async () => {
+          await flushPendingSaves();
+          await Promise.all([...saveChainsRef.current.values()]);
+          if (
+            shotsRef.current.some(
+              (shot) => !shot.id || shot.saveState === 'error' || shot.saveState === 'saving',
+            )
+          )
+            return { ok: false, error: 'Save every shot before importing.' };
+          return { ok: true };
+        }}
+      />
       {!hasFireworks ? (
         <InlineAlert tone="info" title="No fireworks yet">
           Create a firework first, then come back to place it in this multishot.
