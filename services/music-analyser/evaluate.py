@@ -9,7 +9,6 @@ the evaluation.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import importlib.metadata
 import json
 import platform
@@ -20,6 +19,9 @@ from difflib import SequenceMatcher
 from pathlib import Path
 from typing import Any
 
+import numpy as np
+
+from asset_integrity import file_sha256
 from showcrafter import SCHEMA_VERSION, analyse_song, validate_analysis_result
 
 
@@ -27,6 +29,13 @@ ANALYSER_DIR = Path(__file__).resolve().parent
 REPO_ROOT = ANALYSER_DIR.parents[1]
 DEFAULT_BASELINE = ANALYSER_DIR / "evals" / "baseline_v1.json"
 DEFAULT_REPORT = ANALYSER_DIR / "evaluation-report.json"
+DEFAULT_TRACKER_MANIFEST = ANALYSER_DIR / "evals" / "guitarset.json"
+DEFAULT_TRACKER_REPORT = ANALYSER_DIR / "evals" / "report-local-cpu.json"
+# Corpus size budget from the labelled evaluation design, before inference starts.
+MIN_EVALUATION_TRACKS = 20
+MAX_EVALUATION_TRACKS = 40
+# The analysis contract records durations in milliseconds; this report uses seconds.
+MILLISECONDS_PER_SECOND = 1000
 DEPENDENCIES = (
     "numpy",
     "scipy",
@@ -48,14 +57,6 @@ REQUIRED_PROVENANCE_FIELDS = (
     "size_bytes",
     "sha256",
 )
-
-
-def file_sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as source:
-        for chunk in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def ordered(values: list[float], *, strict: bool = False) -> bool:
@@ -500,7 +501,7 @@ def evaluate_fixture(
     )
 
     try:
-        result = analyse_song(str(audio_path))
+        result = analyse_song(str(audio_path), beat_tracker="librosa")
         fixture_report["checks"].append(
             make_check("analysis_completed", True, "successful", "successful")
         )
@@ -547,8 +548,100 @@ def parse_args() -> argparse.Namespace:
         description="Evaluate ShowCrafter analysis against real-audio baselines"
     )
     parser.add_argument("--baseline", type=Path, default=DEFAULT_BASELINE)
-    parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
+    parser.add_argument("--report", type=Path)
+    parser.add_argument(
+        "--compare-trackers",
+        action="store_true",
+        help=(
+            "compare both trackers against independent GuitarSet labels and write "
+            "a labelled accuracy report instead of the Jamendo regression report"
+        ),
+    )
+    parser.add_argument(
+        "--tracker-manifest",
+        type=Path,
+        default=DEFAULT_TRACKER_MANIFEST,
+        help="manifest containing pinned GuitarSet audio and independent beat labels",
+    )
     return parser.parse_args()
+
+
+def labelled_tracker_comparison(manifest_path: Path) -> dict[str, Any]:
+    """Measure both CPU trackers against pinned, independent GuitarSet clocks.
+
+    Runtime includes full analysis and first-call imports or model loading, but
+    excludes downloads. Provider spend is zero for offline models, while compute
+    spend remains null because no billing measurement is available.
+    """
+    from beat_metrics import is_better, score_track
+    from beat_tracking import BeatGrid, CPU_THREADS, MODEL_MANIFEST
+
+    manifest = load_json(manifest_path)
+    if manifest.get("label_source") != "guitarset-1.1.0-jams":
+        raise ValueError("Independent public annotations required")
+    if not MIN_EVALUATION_TRACKS <= len(manifest["tracks"]) <= MAX_EVALUATION_TRACKS:
+        raise ValueError("Evaluation needs 20 to 40 independent labelled recordings")
+    rows = []
+    for fixture in manifest["tracks"]:
+        audio_path = ANALYSER_DIR / fixture["audio_path"]
+        if file_sha256(audio_path) != fixture["audio_sha256"]:
+            raise ValueError("Evaluation audio checksum mismatch")
+        for tracker in ("librosa", "beat-this"):
+            started = time.perf_counter()
+            result = analyse_song(str(audio_path), beat_tracker=tracker)
+            result = validate_analysis_result(result)
+            elapsed = time.perf_counter() - started
+            grid = BeatGrid(
+                np.asarray(result["beat_times"]),
+                np.asarray(result["downbeat_times"]),
+                result["tempo_bpm"],
+                result["beats_per_bar"],
+            )
+            rows.append(
+                {
+                    "track": fixture["id"],
+                    "tracker": tracker,
+                    **score_track(fixture, grid),
+                    "runtime_seconds": elapsed,
+                    "tracking_runtime_seconds": result["analysis_meta"]["timings_ms"][
+                        "beat_ms"
+                    ]
+                    / MILLISECONDS_PER_SECOND,
+                    "compute_usd": None,
+                    "provider_usd": 0,
+                }
+            )
+            print(json.dumps(rows[-1]), flush=True)
+    summary = {}
+    for tracker in ("librosa", "beat-this"):
+        selected = [row for row in rows if row["tracker"] == tracker]
+        summary[tracker] = {
+            key: float(np.mean([row[key] for row in selected]))
+            for key in (
+                "beat_f_measure",
+                "downbeat_f_measure",
+                "tempo_correct",
+                "runtime_seconds",
+                "tracking_runtime_seconds",
+            )
+        }
+    return {
+        "neural_improves": is_better(summary),
+        "environment": {
+            "platform": platform.platform(),
+            "python": platform.python_version(),
+            "neural_cpu_threads": CPU_THREADS,
+            "dependencies": {
+                name: importlib.metadata.version(name)
+                for name in ("beat-this", "torch", "librosa", "numpy", "soxr")
+            },
+        },
+        "model": load_json(MODEL_MANIFEST),
+        "manifest_sha256": file_sha256(manifest_path),
+        "scope": "local CPU full analysis; first track includes cold loading; not Modal billing",
+        "summary": summary,
+        "tracks": rows,
+    }
 
 
 def load_json(path: Path) -> dict[str, Any]:
@@ -557,8 +650,18 @@ def load_json(path: Path) -> dict[str, Any]:
 
 def main() -> None:
     args = parse_args()
+    if args.compare_trackers:
+        report_path = (args.report or DEFAULT_TRACKER_REPORT).resolve()
+        report = labelled_tracker_comparison(args.tracker_manifest.resolve())
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+        print(f"Labelled tracker comparison report: {report_path}")
+        if not report["neural_improves"]:
+            raise SystemExit("Beat This! does not pass the labelled comparison gate")
+        return
+
     baseline_path = args.baseline.resolve()
-    report_path = args.report.resolve()
+    report_path = (args.report or DEFAULT_REPORT).resolve()
     report: dict[str, Any] = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "baseline": str(baseline_path),

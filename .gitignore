@@ -56,3 +56,4 @@ htmlcov/
 .pytest_cache/
 .ruff_cache/
 services/music-analyser/evaluation-report.json
+services/music-analyser/.cache/

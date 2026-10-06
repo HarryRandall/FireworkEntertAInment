@@ -1,0 +1,11 @@
+{
+  "package": "beat-this",
+  "package_version": "1.1.0",
+  "checkpoint": "fold0",
+  "algorithm": "beat-this-1.1.0-fold0",
+  "url": "https://cloud.cp.jku.at/public.php/dav/files/7ik4RrBKTS273gp/fold0.ckpt",
+  "sha256": "f5c6b6726179e20710e4be6a0fba4018f6cbc89f32f9c0dfd15072cb047578ad",
+  "licence": "MIT",
+  "source": "https://github.com/CPJKU/beat_this",
+  "held_out_fold": 0
+}

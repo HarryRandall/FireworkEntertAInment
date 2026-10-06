@@ -22,6 +22,7 @@ import soundfile as sf
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 from scipy.signal import find_peaks, savgol_filter
 
+from beat_tracking import DEFAULT_TRACKER, HOP_LENGTH, algorithm_for, track_audio
 
 # Bumped when the output contract changes. Downstream harnesses can read
 # `schema_version` from the result / LLM payload to gate compatibility.
@@ -39,7 +40,6 @@ from scipy.signal import find_peaks, savgol_filter
 #         block (finale window, anchor windows, energy rank) on the result.
 SCHEMA_VERSION = "1.4.0"
 ANALYSER_MODE = "fast"
-ANALYSER_RUNNER_VERSION = "local-librosa-2"
 
 TIMING_FIELDS = (
     "download_ms",
@@ -76,6 +76,9 @@ MAX_BUILDUPS = 6
 PRE_CHORUS_MAX_DURATION_SEC = 24.0
 MIN_SPECTRAL_BEATS = 8
 MIN_SPECTRAL_DURATION_SEC = 20.0
+# Librosa returns a zero onset envelope for stationary content; retain the
+# existing terminal behaviour before accepting neural clock predictions.
+MIN_RHYTHMIC_ONSET_ENERGY = 0.0
 
 # The Modal image has 4 GiB of memory and librosa decodes to an in-memory
 # float waveform before computing substantially larger feature matrices.
@@ -1158,14 +1161,15 @@ def analyse_song(
     personality_preset: str = "balanced",
     *,
     analysis_mode: str = ANALYSER_MODE,
-    runner_version: str = ANALYSER_RUNNER_VERSION,
+    runner_version: str | None = None,
+    beat_tracker: str = DEFAULT_TRACKER,
     initial_timings_ms: dict[str, float] | None = None,
 ) -> dict:
     """
-    Analyse a song and return structured data for firework choreography.
-    Uses Laplacian spectral clustering for accurate structural segmentation.
+    Analyse audio into the stable choreography schema using the selected beat tracker.
     """
     total_start = time.perf_counter()
+    runner_version = runner_version or algorithm_for(beat_tracker)
     timings = normalise_timings(initial_timings_ms)
     mode = analysis_mode if analysis_mode == ANALYSER_MODE else ANALYSER_MODE
 
@@ -1206,7 +1210,7 @@ def analyse_song(
         y = np.nan_to_num(y, nan=0.0, posinf=0.0, neginf=0.0)
     enforce_audio_limits(duration_seconds=duration, decoded_samples=int(y.size))
     timings["decode_ms"] += elapsed_ms(decode_start)
-    hop_length = 512
+    hop_length = HOP_LENGTH
 
     # ──────────────────────────────────────────────
     # 1. TEMPO & BEATS
@@ -1218,14 +1222,20 @@ def analyse_song(
         hop_length=hop_length,
         aggregate=np.median,
     )
-    tempo, beat_frames = librosa.beat.beat_track(
-        onset_envelope=onset_env,
-        sr=sr,
-        hop_length=hop_length,
-        trim=False,
+    if float(np.max(onset_env, initial=0.0)) <= MIN_RHYTHMIC_ONSET_ENERGY:
+        raise AudioInputError(
+            "The audio does not contain a reliable rhythmic grid for cue generation.",
+            status_code=422,
+            error_code="insufficient_musical_content",
+        )
+    grid = track_audio(y, sr, beat_tracker, onset_env)
+    beat_times = grid.beats
+    tempo_value = grid.tempo
+    beat_frames = (
+        grid.frames
+        if grid.frames is not None
+        else librosa.time_to_frames(beat_times, sr=sr, hop_length=hop_length)
     )
-    beat_times = refine_event_times(beat_frames, onset_env, sr, hop_length)
-    tempo_value = float(np.atleast_1d(tempo)[0])
     if not np.isfinite(tempo_value) or tempo_value <= 0 or len(beat_times) < 2:
         raise AudioInputError(
             "The audio does not contain a reliable rhythmic grid for cue generation.",
@@ -1234,9 +1244,8 @@ def analyse_song(
         )
     timings["beat_ms"] += elapsed_ms(beat_start)
 
-    # Bar/downbeat grid (schema 1.4.0) so cues can lock to musical bars
-    # instead of firing on every kick-drum beat.
-    downbeat_times, beats_per_bar = estimate_downbeats(beat_times, onset_env, sr, hop_length)
+    downbeat_times = [round(float(value), 3) for value in grid.downbeats]
+    beats_per_bar = grid.beats_per_bar
 
     # ──────────────────────────────────────────────
     # 2. ENERGY CURVE (RMS, normalised 0-1)
