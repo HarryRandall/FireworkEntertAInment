@@ -136,7 +136,7 @@ test('firework admin lists use paginated hover-preview card grids', () => {
   assert.doesNotMatch(multishots, /\{multishot\.description\s*\?\?/);
 });
 
-test('base effects and style defaults both use renderer preview card grids', () => {
+test('base effects use renderer preview card grids', () => {
   const source = readFileSync(
     join(root, 'app/(admin)/admin/effects/_components/EffectsBrowser.tsx'),
     'utf8',
@@ -153,12 +153,8 @@ test('base effects and style defaults both use renderer preview card grids', () 
     /persistedPosterUrl=\{fireworkPreviewImageUrl\(effect\.previewImagePath\)\}/,
   );
   assert.match(source, /\bpersistPoster\b/);
-  assert.match(source, /filteredDefaults\.map/);
-  assert.match(source, /\/api\/admin\/firework-previews\/style-default\//);
-  assert.match(
-    source,
-    /href=\{`\/admin\/effects\/defaults\/\$\{item\.id\}\?view=\$\{item\.kind\}`\}/,
-  );
+  assert.doesNotMatch(source, /posterBackfillTargets/);
+  assert.doesNotMatch(source, /style-default|defaults\//);
   assert.match(source, /grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4/);
   assert.match(source, /effect\.patternKey/);
   assert.match(source, /effect\.variantCount\.toLocaleString\(\)/);

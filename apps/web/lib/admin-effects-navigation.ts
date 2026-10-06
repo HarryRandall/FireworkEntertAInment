@@ -22,8 +22,10 @@ export function parseAdminEffectsView(
   view: string | null | undefined,
   legacyTab?: string | null,
 ): AdminEffectsView {
-  if (isAdminEffectsView(view)) return view;
-  return legacyTab === 'defaults' ? 'star' : ADMIN_EFFECTS_BASE_VIEW;
+  // Both former style views and the older defaults tab now select base effects.
+  if (legacyTab === 'defaults') return ADMIN_EFFECTS_BASE_VIEW;
+  if (view === ADMIN_EFFECTS_BASE_VIEW) return view;
+  return ADMIN_EFFECTS_BASE_VIEW;
 }
 
 export function adminEffectsViewLabel(view: AdminEffectsView): string {
