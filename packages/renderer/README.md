@@ -29,7 +29,26 @@ reignition is optional and applies only to colour changes.
 same values. It does not mutate the document or apply defaults. Invalid documents
 throw a Zod error containing property paths; unknown versions throw a range error.
 The version is stored externally as `design_schema`, not inside the document.
-`RENDERER_VERSION` is `0.4.1`, including an independently positioned fountain muzzle glow.
+`RENDERER_VERSION` is `0.7.1`, with consistent catalogue height bands and burst-centred close zoom.
+
+`TEMPLATE_HEIGHT_BANDS` in `src/templates/height-bands.ts` documents authored apex
+and burst-top limits in metres. Shells/rockets use 55 to 65 m (catalogue apex 60 m),
+with apex plus largest layer radius between 60 and 105 m. Mines use 45 to 50 m
+(catalogue 48 m), with authored tops between 93 and 102 m. Mine particles emit
+from the ground, so that authored top is not a measured trajectory. Comets/candles
+use 50 to 55 m (catalogue 52 m). Fountains, wheels, spinners and tourbillons retain
+their existing scale. Height changes scale climb time by the square root of the
+height ratio; radii, colours and other authored values stay unchanged.
+
+Normal orbit zoom extends to four times the larger of the framed distance and
+minimum fit distance; free mode extends to eight times that reference. These
+dimensionless limits are visual tuning for comfortable scene context, including
+scenes whose original framing is closer than a safe full-extent fit. Minimum distance fits the computed burst sphere, or ground travel
+extent, inside the narrower field of view with a 5% margin. As distance decreases,
+the target moves towards the computed effect centre and audience pitch approaches
+a level burst view, preserving manual orbit offsets and the ground floor clamp.
+At the framed distance, the original camera pose is unchanged. Wheel, pinch and
+UI zoom buttons all call the same control method.
 
 ## Quick adjustments
 
@@ -348,7 +367,12 @@ the capture checks particles and smoke, not audio playback.
 
 `tests/templates.test.mjs` checks catalogue coverage against independently captured
 prototype metadata, both validators, resolution, finite simulation output, sampled
-full-frame parity and deterministic scrubbing. Reference capture executes the original
+full-frame parity with original height/time inputs and deterministic scrubbing.
+`tests/fixtures/prototype-template-heights.json` retains those original inputs so
+particle and sound goldens stay independent and unchanged after visual tuning.
+Separate tests enforce every tuned template's height band, square-root climb timing,
+unchanged remaining fields and deterministic scrubbing. Historical poster PNGs are
+unchanged and do not represent current visual approval. Reference capture executes the original
 `design(key)` and simulation without converting stored designs back into the prototype
 format. Provenance records the reference source SHA-256. Comparisons use the core
 suite's absolute Float32 tolerance of `0.000001`.
