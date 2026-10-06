@@ -103,7 +103,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -139,7 +139,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -193,7 +193,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -301,7 +301,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -319,7 +319,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -337,7 +337,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -427,7 +427,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -445,7 +445,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -481,7 +481,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -499,7 +499,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -517,7 +517,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -643,7 +643,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -679,7 +679,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -733,7 +733,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -751,7 +751,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -769,7 +769,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -841,7 +841,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -877,7 +877,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -913,7 +913,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -931,7 +931,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -967,7 +967,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -1075,7 +1075,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -1111,7 +1111,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -1147,7 +1147,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -1219,7 +1219,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -1291,7 +1291,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -1363,7 +1363,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -1381,7 +1381,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -1471,7 +1471,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -1489,7 +1489,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -1525,7 +1525,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -1561,7 +1561,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -1615,7 +1615,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -1705,7 +1705,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -1741,7 +1741,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -1777,7 +1777,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -1795,7 +1795,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -1849,7 +1849,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -1885,7 +1885,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -1903,7 +1903,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -1939,7 +1939,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -1957,7 +1957,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -1975,7 +1975,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -2029,7 +2029,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -2047,7 +2047,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -2083,7 +2083,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -2101,7 +2101,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -2155,7 +2155,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -2299,7 +2299,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -2371,7 +2371,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -2461,7 +2461,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -2479,7 +2479,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -2497,7 +2497,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -2587,7 +2587,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -2605,7 +2605,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -2623,7 +2623,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -2713,7 +2713,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -2875,7 +2875,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -2947,7 +2947,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -2965,7 +2965,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -3019,7 +3019,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -3109,7 +3109,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -3145,7 +3145,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -3163,7 +3163,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -3199,7 +3199,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -3307,7 +3307,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -3397,7 +3397,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -3415,7 +3415,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -3505,7 +3505,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -3541,7 +3541,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -3559,7 +3559,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -3613,7 +3613,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -3703,7 +3703,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -3793,7 +3793,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -3829,7 +3829,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },
@@ -3901,7 +3901,7 @@
     "metadata": {},
     "created_at": "2026-10-06T00:00:00+00:00",
     "updated_at": "2026-10-06T00:00:00+00:00",
-    "is_listed": false,
+    "is_listed": true,
     "finale_product_id": null,
     "finale_effect_name": null
   },

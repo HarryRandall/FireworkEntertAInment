@@ -5,7 +5,7 @@ import { readSnapshot, snapshotSql } from '../database/bootstrap-content.mjs';
 import { executeSql, query, repositoryRoot } from '../database/runtime.mjs';
 import { effectTemplates, upgradeDesign } from '../../packages/renderer/src/index.ts';
 import { catalogueDesign } from './designs.mjs';
-import { buildCatalogue, MIGRATION_PATH } from './generate.mjs';
+import { buildCatalogue, MIGRATION_PATH, LISTING_MIGRATION_PATH } from './generate.mjs';
 
 const LOCAL_TARGET = { local: true, flags: ['--local'] };
 const TABLES = ['firework_effects', 'fireworks', 'catalogue_items', 'firework_preview_images'];
@@ -31,7 +31,7 @@ export function verifyInstalledDesigns() {
   assert.equal(
     query(
       LOCAL_TARGET,
-      "select count(*)::int as count from public.catalogue_items where part_number like 'renderer-%' and not is_listed",
+      "select count(*)::int as count from public.catalogue_items where part_number like 'renderer-%' and is_listed",
     )[0].count,
     76,
   );
@@ -41,7 +41,7 @@ export function verifyInstalledDesigns() {
     307,
   );
   console.log(
-    'Valid designs: 102 effects, 166 fireworks; 76 unlisted library items; 307 preview manifests.',
+    'Valid designs: 102 effects, 166 fireworks; 76 listed library items; 307 preview manifests.',
   );
 }
 
@@ -97,6 +97,7 @@ function verifyPrevious(directory) {
     rollback;`,
   );
   executeSql(LOCAL_TARGET, migration);
+  executeSql(LOCAL_TARGET, readFileSync(join(repositoryRoot, LISTING_MIGRATION_PATH), 'utf8'));
   verifyInstalledDesigns();
   // Conversion must leave old-renderer evidence and product specifications intact.
   const sourceColumns = [
@@ -122,6 +123,7 @@ function verifyPrevious(directory) {
   }
   const before = digest();
   executeSql(LOCAL_TARGET, migration);
+  executeSql(LOCAL_TARGET, readFileSync(join(repositoryRoot, LISTING_MIGRATION_PATH), 'utf8'));
   assert.deepEqual(digest(), before);
   const generated = readSnapshot(join(repositoryRoot, 'supabase/bootstrap'));
   for (const table of ['firework_effects', 'fireworks']) {
