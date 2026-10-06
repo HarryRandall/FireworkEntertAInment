@@ -1,0 +1,39 @@
+{
+  "kind": "comet",
+  "launch": null,
+  "breaks": [],
+  "ground": {
+    "kind": "comet",
+    "comets": {
+      "count": 1,
+      "pattern": "straight",
+      "spread_deg": 0,
+      "height_m": 50,
+      "time_s": 2.2,
+      "colour": {
+        "mode": "solid",
+        "stops": [
+          [0, "#ff3048"],
+          [0.55, "#ff3048"],
+          [0.65, "#ffffff"],
+          [1, "#ffffff"]
+        ],
+        "reignition": { "at": 0.55, "duration": 0.1, "amount": 0 }
+      },
+      "trail": "house",
+      "size": 2.2,
+      "sparks": 200,
+      "tail_life_s": 1.4,
+      "glitter": 0,
+      "gap_s": 0.5,
+      "spin_rad_s": 0,
+      "spin_radius_m": 2.2,
+      "pop": false,
+      "split": null,
+      "halo": 1,
+      "whistle": false
+    }
+  },
+  "sound": { "lift": 0.7, "break": 0, "crackle": 0, "whistle": 0 },
+  "seed": 11
+}

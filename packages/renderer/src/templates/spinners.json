@@ -1,0 +1,28 @@
+{
+  "key": "spinners",
+  "name": "Ground spinners",
+  "group": "Ground",
+  "design": {
+    "kind": "spinner",
+    "launch": null,
+    "breaks": [],
+    "ground": {
+      "kind": "spinner",
+      "spinner": {
+        "count": 4,
+        "duration_s": 4,
+        "spin_rad_s": 70,
+        "wander_m": 1,
+        "sparks": 260,
+        "colours": ["#ff4655", "#35d06b"]
+      }
+    },
+    "sound": {
+      "lift": 0.7,
+      "break": 0.85,
+      "crackle": 0.6,
+      "whistle": 0
+    },
+    "seed": 11
+  }
+}
