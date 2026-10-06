@@ -180,10 +180,6 @@ export type AdminStyleDefaultSummary = AdminStyleDefaultOption & {
   updatedAt: string;
 };
 
-export type AdminStyleDefaultDetail = AdminStyleDefaultSummary & {
-  history: AdminEditorVersion[];
-};
-
 export type AdminEffectSummary = {
   renderDiagnostics: RenderDiagnostic[];
   id: string;

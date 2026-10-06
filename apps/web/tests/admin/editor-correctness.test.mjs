@@ -205,15 +205,10 @@ test('optimistic editor versions map exactly one target before persistence', () 
 test('editor saves are optimistic while history persistence stays observed and live', () => {
   const effectActions = read('app/(admin)/admin/effects/actions.ts');
   const fireworkActions = read('app/(admin)/admin/fireworks/actions.ts');
-  const styleDefaultActions = read('app/(admin)/admin/effects/style-default-actions.ts');
   const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
-  const styleDefaultEditor = read(
-    'app/(admin)/admin/effects/defaults/[id]/_components/StyleDefaultEditor.tsx',
-  );
   const effectServer = read('lib/admin/effects.server.ts');
   const fireworkServer = read('lib/admin/fireworks.server.ts');
-  const styleDefaultServer = read('lib/admin/style-defaults.server.ts');
   const editorVersions = read('lib/admin/editor-versions.server.ts');
   const editorHistoryState = read('ui/firework-editor/useEditorHistory.ts');
   const historyPanel = read('ui/firework-editor/EditorInspectorPanels.tsx');
@@ -224,10 +219,6 @@ test('editor saves are optimistic while history persistence stays observed and l
   for (const [actions, names] of [
     [effectActions, ['updateEffect', 'restoreEffectEditorVersion']],
     [fireworkActions, ['updateFirework', 'restoreFireworkEditorVersion']],
-    [
-      styleDefaultActions,
-      ['updateStyleDefault', 'archiveStyleDefault', 'restoreStyleDefaultEditorVersion'],
-    ],
   ]) {
     for (const name of names) {
       const body = functionBody(actions, name);
@@ -239,7 +230,7 @@ test('editor saves are optimistic while history persistence stays observed and l
     assert.doesNotMatch(actions, /record(?:Effect|Firework|StyleDefault)Version/);
   }
 
-  for (const editor of [effectEditor, fireworkEditor, styleDefaultEditor]) {
+  for (const editor of [effectEditor, fireworkEditor]) {
     assert.match(editor, /canApplySavedEditorSnapshot/);
     assert.match(editor, /newer edits remain unsaved/);
     assert.match(editor, /savedSnapshotRef/);
@@ -268,7 +259,6 @@ test('editor saves are optimistic while history persistence stays observed and l
   const optimisticSaves = [
     [effectEditor, 'saveEffect', 'persistEffect'],
     [fireworkEditor, 'save', 'persistFirework'],
-    [styleDefaultEditor, 'save', 'updateStyleDefault'],
   ];
   for (const [editor, saveName, persistCall] of optimisticSaves) {
     const body = functionBody(editor, saveName);
@@ -294,8 +284,6 @@ test('editor saves are optimistic while history persistence stays observed and l
   for (const [editor, name] of [
     [effectEditor, 'restoreVersion'],
     [fireworkEditor, 'restoreVersion'],
-    [styleDefaultEditor, 'restoreVersion'],
-    [styleDefaultEditor, 'archiveDefault'],
   ]) {
     const body = functionBody(editor, name);
     assertBefore(
@@ -308,15 +296,6 @@ test('editor saves are optimistic while history persistence stays observed and l
     assert.match(body, /rollbackOptimisticMutation\(mutation\)/);
   }
 
-  assert.match(
-    styleDefaultEditor,
-    /archiveStyleDefault\(\{[\s\S]*?id: styleDefault\.id,[\s\S]*?historyVersionId: mutation\.historyVersionId/,
-  );
-  assert.match(styleDefaultEditor, /archiveStartedClean/);
-  assert.match(styleDefaultEditor, /styleDefaultSavedSnapshotFromFields\(result\.saved\)/);
-  assert.match(styleDefaultEditor, /restoreStyleDefaultEditorVersion/);
-  assert.match(styleDefaultEditor, /id: 'history'/);
-  assert.match(styleDefaultEditor, /versions=\{editorHistory\.versions\}/);
   assert.doesNotMatch(historyPanel, />\s*Preview\s*</);
   assert.doesNotMatch(historyPanel, /onPreview|selectedVersionId/);
   assert.match(historyPanel, /pendingVersionIds\?: ReadonlySet<string>/);
@@ -329,7 +308,6 @@ test('editor saves are optimistic while history persistence stays observed and l
   for (const [source, name] of [
     [effectServer, 'getAdminEffectById'],
     [fireworkServer, 'getAdminFireworkById'],
-    [styleDefaultServer, 'getAdminStyleDefaultById'],
   ]) {
     assert.doesNotMatch(
       functionBody(source, name),
@@ -338,14 +316,9 @@ test('editor saves are optimistic while history persistence stays observed and l
   }
   assert.match(effectServer, /listEffectEditorVersions\(supabase, row.id\)/);
   assert.match(fireworkServer, /listFireworkEditorVersions\(supabase, row.id\)/);
-  assert.match(
-    styleDefaultServer,
-    /history: await listStyleDefaultEditorVersions\(supabase, defaultId\)/,
-  );
   assert.match(editorVersions, /function throwHistoryReadError\(/);
   assert.match(editorVersions, /throwHistoryReadError\('listFireworkEditorVersions', error\)/);
   assert.match(editorVersions, /throwHistoryReadError\('listEffectEditorVersions', error\)/);
-  assert.match(editorVersions, /throwHistoryReadError\('listStyleDefaultEditorVersions', error\)/);
 
   assert.match(sliderField, /SliderPrimitive\.Thumb/);
   assert.match(sliderField, /SliderPrimitive\.Thumb\s*\n\s*id=\{sliderId\}/);

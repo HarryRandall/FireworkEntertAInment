@@ -3,7 +3,6 @@ import 'server-only';
 
 import { getCachedJson, setCachedJson } from '@/lib/server-cache';
 import type {
-  AdminStyleDefaultDetail,
   AdminStyleDefaultOption,
   AdminStyleDefaultOptions,
   AdminStyleDefaultSummary,
@@ -11,7 +10,6 @@ import type {
 import type { Database, Json } from '@/lib/database.types';
 import { ADMIN_CACHE_TTL_SECONDS, getAdminStyleDefaultsCacheKey } from './cache-keys';
 import { requirePermission } from '@/lib/access/current-profile.server';
-import { listStyleDefaultEditorVersions } from './editor-versions.server';
 import { describeSupabaseError, isMissingStyleDefaultSchemaError } from './style-default-schema';
 import { getServerClient } from './supabase';
 import {
@@ -78,7 +76,7 @@ function toOptionFromSummary(summary: AdminStyleDefaultSummary): AdminStyleDefau
   };
 }
 
-export async function listAdminStyleDefaults(): Promise<AdminStyleDefaultSummary[]> {
+async function listAdminStyleDefaults(): Promise<AdminStyleDefaultSummary[]> {
   if (!(await requirePermission('admin.manage_catalogue'))) return [];
 
   const cacheKey = getAdminStyleDefaultsCacheKey();
@@ -108,39 +106,6 @@ export async function listAdminStyleDefaults(): Promise<AdminStyleDefaultSummary
   return mapped;
 }
 
-export async function getAdminStyleDefaultPreviewSourceById(
-  defaultId: string,
-): Promise<AdminStyleDefaultSummary | null> {
-  if (!(await requirePermission('admin.manage_catalogue'))) return null;
-
-  const supabase = await getServerClient();
-  const result = await supabase
-    .from('firework_style_defaults')
-    .select(STYLE_DEFAULT_SUMMARY_SELECT)
-    .eq('id', defaultId)
-    .maybeSingle();
-
-  if (result.error) {
-    throw new Error('Could not load the style default preview source.', {
-      cause: result.error,
-    });
-  }
-  return result.data ? toSummary(result.data as StyleDefaultRow) : null;
-}
-
 export async function listAdminStyleDefaultOptions(): Promise<AdminStyleDefaultOptions> {
   return groupedOptions(await listAdminStyleDefaults());
-}
-
-export async function getAdminStyleDefaultById(
-  defaultId: string,
-): Promise<AdminStyleDefaultDetail | null> {
-  const styleDefault = await getAdminStyleDefaultPreviewSourceById(defaultId);
-  if (!styleDefault) return null;
-
-  const supabase = await getServerClient();
-  return {
-    ...styleDefault,
-    history: await listStyleDefaultEditorVersions(supabase, defaultId),
-  };
 }

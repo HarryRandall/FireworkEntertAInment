@@ -4,7 +4,6 @@ import type { AdminEditorVersion } from '@/lib/admin.types';
 import type { Database } from '@/lib/database.types';
 import {
   describeSupabaseError,
-  isMissingEditorVersionSchemaError,
   isMissingEditorVersionTableError,
   isMissingStyleDefaultEditorVersionColumnError,
 } from './style-default-schema';
@@ -119,28 +118,6 @@ export async function listEffectEditorVersions(
     }
     if (isMissingEditorVersionTableError(error)) return [];
     throwHistoryReadError('listEffectEditorVersions', error);
-  }
-
-  return ((data ?? []) as EditorVersionRow[])
-    .filter((row) => !isSyntheticCurrentVersion(row))
-    .map(mapEditorVersion);
-}
-
-export async function listStyleDefaultEditorVersions(
-  supabase: ServerClient,
-  styleDefaultId: string,
-  limit = 24,
-): Promise<AdminEditorVersion[]> {
-  const { data, error } = await supabase
-    .from('firework_editor_versions')
-    .select(EDITOR_VERSION_SELECT)
-    .eq('firework_style_default_id', styleDefaultId)
-    .order('created_at', { ascending: false })
-    .limit(limit);
-
-  if (error) {
-    if (isMissingEditorVersionSchemaError(error)) return [];
-    throwHistoryReadError('listStyleDefaultEditorVersions', error);
   }
 
   return ((data ?? []) as EditorVersionRow[])
