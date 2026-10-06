@@ -1,4 +1,5 @@
 'use client';
+import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
 
 /**
  * Shared hover preview for firework browse cards.
@@ -965,28 +966,31 @@ export function FireworkBrowsePreviewProvider({
         style={{ transform: 'translate(-9999px, -9999px)' }}
       >
         {mountedPreview ? (
-          <LazyFireworkReplayCanvas
-            cues={mountedPreview.cues}
-            prop={
-              mountedPreview.cues.length > 1 &&
-              mountedPreview.cues.every(
-                (cue) => cue.launchPositionIndex === 0 && !cue.shotPositionOverride,
-              )
-                ? 'cake'
-                : 'mortar'
-            }
-            elapsed={0}
-            playbackRef={playbackRef}
-            interactive={false}
-            allowWheelZoom={false}
-            controlsVisible={false}
-            showCameraControls={false}
-            muted
-            maxDevicePixelRatio={2}
-            antialias
-            showLoadingBar={false}
-            onReady={handleCanvasReady}
-          />
+          <CanvasSurface className="absolute inset-0">
+            <LazyFireworkReplayCanvas
+              cues={mountedPreview.cues}
+              prop={
+                mountedPreview.cues.length > 1 &&
+                mountedPreview.cues.every(
+                  (cue) => cue.launchPositionIndex === 0 && !cue.shotPositionOverride,
+                )
+                  ? 'cake'
+                  : 'mortar'
+              }
+              elapsed={0}
+              playbackRef={playbackRef}
+              playing={Boolean(active) && !prefersReducedMotion}
+              interactive={false}
+              allowWheelZoom={false}
+              controlsVisible={false}
+              showCameraControls={false}
+              muted
+              maxDevicePixelRatio={2}
+              antialias
+              showLoadingBar={false}
+              onReady={handleCanvasReady}
+            />
+          </CanvasSurface>
         ) : null}
       </div>
     </FireworkBrowsePreviewContext.Provider>

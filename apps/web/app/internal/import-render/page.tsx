@@ -1,3 +1,4 @@
+import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { ImportRenderHarness } from '@/app/internal/import-render/ImportRenderHarness';
@@ -35,5 +36,9 @@ export default async function ImportRenderPage({ searchParams }: { searchParams:
     notFound();
   }
 
-  return <ImportRenderHarness />;
+  return (
+    <CanvasSurface className="min-h-screen">
+      <ImportRenderHarness />
+    </CanvasSurface>
+  );
 }

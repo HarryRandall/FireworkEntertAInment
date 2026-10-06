@@ -108,7 +108,9 @@ test('replay canvases are lazy loaded without console warning monkey patches', (
   );
 
   assert.match(viewer, /dynamic\(/);
-  assert.match(template, /IntersectionObserver/);
+  assert.match(template, /dynamic\(/);
+  assert.match(template, /shouldMountCanvas = isDetail \|\| cardPlaybackActive/);
+  assert.match(read('ui/renderer/visible-clock.ts'), /IntersectionObserver/);
   assert.match(importPreview, /dynamic\(/);
   for (const source of [viewer, template, importPreview]) {
     assert.doesNotMatch(source, /console\.warn\s*=/);

@@ -1,4 +1,5 @@
 'use client';
+import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
 
 /** Client preview of frames and products extracted by an import job. */
 
@@ -508,15 +509,17 @@ export function FireworkImportPreview({
           <div className="border-border bg-muted relative aspect-video w-full overflow-hidden rounded-lg border">
             <div className="absolute inset-0 min-h-[200px]">
               {reconstruction || spec ? (
-                <LazyFireworkReplayCanvas
-                  cues={cues}
-                  elapsed={elapsed}
-                  interactive
-                  showFps={false}
-                  primeSnapshots
-                  showLoadingBar
-                  loadingBarPosition="bottom"
-                />
+                <CanvasSurface className="absolute inset-0">
+                  <LazyFireworkReplayCanvas
+                    cues={cues}
+                    elapsed={elapsed}
+                    interactive
+                    showFps={false}
+                    primeSnapshots
+                    showLoadingBar
+                    loadingBarPosition="bottom"
+                  />
+                </CanvasSurface>
               ) : (
                 <div className="text-muted-foreground flex h-full items-center justify-center p-6 text-center text-sm">
                   The generated 3D reconstruction will appear after processing.

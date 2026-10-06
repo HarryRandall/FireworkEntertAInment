@@ -1,5 +1,6 @@
 'use client';
 
+import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { RendererPlayer } from '@/ui/renderer/RendererPlayer';
@@ -92,14 +93,16 @@ export default function ComparisonPair({ row }: { row: ComparisonRow }) {
             ref={oldContainer}
             className="border-border relative isolate aspect-video overflow-hidden rounded border"
           >
-            <OldCanvas
-              cues={cues}
-              elapsed={elapsed}
-              muted
-              interactive
-              controlsVisible={false}
-              showCameraControls={false}
-            />
+            <CanvasSurface className="absolute inset-0">
+              <OldCanvas
+                cues={cues}
+                elapsed={elapsed}
+                muted
+                interactive
+                controlsVisible={false}
+                showCameraControls={false}
+              />
+            </CanvasSurface>
           </div>
         </div>
         <div>

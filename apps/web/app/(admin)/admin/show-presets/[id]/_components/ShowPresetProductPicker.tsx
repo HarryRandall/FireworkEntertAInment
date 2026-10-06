@@ -1,5 +1,7 @@
-/** Searchable dialog for inserting or replacing a cue's product. */
 'use client';
+
+import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
+/** Searchable dialog for inserting or replacing a cue's product. */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Search, Sparkles } from 'lucide-react';
@@ -191,17 +193,19 @@ export function ProductPickerDialog({
 
           <aside className="bg-stage-night relative min-h-[360px] overflow-hidden">
             {selectedProduct ? (
-              <LazyFireworkReplayCanvas
-                cues={previewCue}
-                elapsed={previewElapsed}
-                playbackRef={previewRef}
-                muted
-                interactive
-                controlsVisible={false}
-                showCameraControls={false}
-                primeSnapshots={false}
-                showLoadingBar={false}
-              />
+              <CanvasSurface className="absolute inset-0">
+                <LazyFireworkReplayCanvas
+                  cues={previewCue}
+                  elapsed={previewElapsed}
+                  playbackRef={previewRef}
+                  muted
+                  interactive
+                  controlsVisible={false}
+                  showCameraControls={false}
+                  primeSnapshots={false}
+                  showLoadingBar={false}
+                />
+              </CanvasSurface>
             ) : (
               <div className="flex h-full min-h-[360px] items-center justify-center text-sm text-white/60">
                 Select an item to preview it

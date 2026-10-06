@@ -1,5 +1,7 @@
-/** Multishot preview stage: the replay canvas with burst guides and transport. */
 'use client';
+
+import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
+/** Multishot preview stage: the replay canvas with burst guides and transport. */
 
 import dynamic from 'next/dynamic';
 import {
@@ -164,19 +166,22 @@ export function PreviewStage({
           )}
         >
           <div className="relative h-full w-full">
-            <LazyFireworkReplayCanvas
-              prop="cake"
-              cues={cues}
-              elapsed={elapsed}
-              playbackRef={playbackRef}
-              muted={!isPlaying}
-              interactive
-              controlsVisible={!loading}
-              cameraMenuActions={previewMenuActions}
-              showLoadingBar
-              onPrimeProgress={onPreviewLoadingProgress}
-              onReady={onPreviewReady}
-            />
+            <CanvasSurface className="absolute inset-0">
+              <LazyFireworkReplayCanvas
+                prop="cake"
+                cues={cues}
+                elapsed={elapsed}
+                playbackRef={playbackRef}
+                playing={isPlaying}
+                muted={!isPlaying}
+                interactive
+                controlsVisible={!loading}
+                cameraMenuActions={previewMenuActions}
+                showLoadingBar
+                onPrimeProgress={onPreviewLoadingProgress}
+                onReady={onPreviewReady}
+              />
+            </CanvasSurface>
             <div
               className={cn(
                 'pointer-events-none absolute inset-x-0 bottom-5 z-30 transition-all duration-300',

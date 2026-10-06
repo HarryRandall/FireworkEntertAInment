@@ -1,4 +1,5 @@
 'use client';
+import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
 
 import dynamic from 'next/dynamic';
 import {
@@ -109,7 +110,6 @@ function ShowReplayPreviewSurface({
         setElapsed(previewStart);
       } else {
         elapsedRef.current = next;
-        setElapsed(next);
       }
       frame = requestAnimationFrame(tick);
     }
@@ -121,17 +121,20 @@ function ShowReplayPreviewSurface({
   if (preview.cues.length === 0) return null;
 
   return (
-    <LazyFireworkReplayCanvas
-      cues={preview.cues}
-      elapsed={elapsed}
-      playbackRef={elapsedRef}
-      interactive={false}
-      muted
-      maxDevicePixelRatio={2}
-      antialias
-      showLoadingBar={false}
-      onReady={onReady}
-    />
+    <CanvasSurface className="absolute inset-0">
+      <LazyFireworkReplayCanvas
+        cues={preview.cues}
+        elapsed={elapsed}
+        playbackRef={elapsedRef}
+        playing={active}
+        interactive={false}
+        muted
+        maxDevicePixelRatio={2}
+        antialias
+        showLoadingBar={false}
+        onReady={onReady}
+      />
+    </CanvasSurface>
   );
 }
 

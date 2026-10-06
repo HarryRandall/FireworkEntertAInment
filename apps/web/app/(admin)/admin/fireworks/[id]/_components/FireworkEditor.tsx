@@ -1,4 +1,6 @@
 'use client';
+
+import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
 import { validateCatalogueRender } from '@/lib/admin/renderer-validation';
 import { fireworkColourMetadata } from '@showcrafter/firework-editor/colour-metadata';
 
@@ -644,13 +646,13 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     [savedPreviewSnapshot.design],
   );
   const preview = designResult.ok ? (
-    <div className="relative h-full">
+    <CanvasSurface className="h-full">
       <DesignPreview
         fullscreen={isFullscreen}
         onFullscreenToggle={toggleFullscreen}
         document={showSaved && savedDesignResult.ok ? savedDesignResult.value : designResult.value}
       />
-    </div>
+    </CanvasSurface>
   ) : (
     <p role="alert" className="text-status-danger p-4 text-sm">
       {designResult.error}
