@@ -18,59 +18,25 @@ bring the total to 307; the existing captured previews and media stay intact.
 [The generated review](../scripts/catalogue/review.json) records every old effect's
 geometry and trail profile beside its template kind, patterns and modifiers.
 
-Each original firework resolves its saved `render_snapshot_json`, falling back to
-`compileFireworkDesign` with its effect model and overrides. Outer and enabled
-inner stars become independent layers with individual counts, spread, lifetime,
-variation, heads, colours, trails and modifiers. Calibre uses the old engine's
-30 mm baseline and scaling exponents, without changing launch height.
+Each original firework matches the first suitable keyword rule in
+`scripts/catalogue/designs.mjs`. Compound effects take priority. Names outrank
+descriptions, base effects and legacy behaviour hints. Equally suitable template
+variants use a deterministic least-used tie break in slug order. The review lists
+the chosen key, template name and matching reason for all 90 records.
 
-Radius and head size use visual calibration against the peony template: old
-speed 3.2 corresponds to 26 metres, and old head size 170 to v1 size 1.1. Gravity
-uses mean old gravity with inverted y; old -0.24 corresponds to 9 metres per
-second squared. These are approximations between different simulation models,
-not measured physical reconstruction. Shape life, gravity, drag and spread
-multipliers are retained where v1 exposes a corresponding control.
-
-Layer palettes retain explicit inner/outer colours, secondary colours, random
-selection, and opening/closing colour stops. Spatial bands and stripes use
-alternating palettes and are flagged. Trail presets retain density, lifetime,
-metallic or star colour, flicker and glitter. Strobe, crackle, split, fish and
-whirl settings become modifiers; template-only ghost and falling-leaf behaviours
-retain their modifiers. Inner stars are not duplicated in burst-core sparks.
-
-The review records unsupported spatial colour masks, sprite shape and width
-curves, detailed fragment controls, animated head size, gravity ranges, custom
-tracer/smoke colours and ground-kind limits. `double_break` still uses the
-multi-break template's three independent breaks; old aerial `pearls` still uses
-a ground comet sequence. v1 fountains retain one colour. Nishiki's library
-entry retains its denser template, while original Nishiki fireworks use their
-own old star and trail settings.
-
-Shell heights use `height_meters` with the existing square-root lift-time
-adjustment. Zero-height shells use 0.001 seconds. Other template heights, lift
-times, break offsets and ground sequence timing remain intact. Each original
-firework has a deterministic seed derived from its slug. Every resulting
-design passes `upgradeDesign` validation.
-
-To measure variety, run:
-
-```sh
-node scripts/catalogue/variety.mjs /private/tmp/catalogue-variety-before/fireworks.json supabase/bootstrap/fireworks.json
-```
-
-It reports full distinct designs, distinct designs excluding seed, and unordered pairs equal after
-removing colour controls and seed. The before data is the original conversion
-at commit `466b2aae`. Across the 90 fireworks it had 88 distinct designs and
-94 pairs equal apart from colour. The updated conversion has 90 distinct
-designs (88 excluding seed) and 88 pairs equal apart from colour. Many old
-colour-only siblings intentionally retain the same tuning; no extra variation
-is invented to inflate this measure.
+Designs clone the matched template. Primary colour, palette and secondary colour
+replace authored colour identities in main star layers and ground emitters, retaining
+stop times, scalar/palette structure, modes and relationships between layers.
+Metallic trails and flashes remain authored. No old sizes, counts, halos, droop,
+trails or launch tuning are copied. Height bands and climb times come from the
+already calibrated template. Each firework has a distinct deterministic seed.
+Base effects retain their existing mapped template, independently of product matching.
 
 ## Delivery and invariants
 
 The generated migration fills only null designs and template keys. It matches
-existing effects and fireworks by slug, adapts generated snapshot designs to
-current database colours and heights, and preserves existing designs, keys and catalogue edits. New effects
+existing effects and fireworks by slug, adapts matched template colours to
+current database colours, and preserves existing designs, keys and catalogue edits. New effects
 are inserted only if their key and slug are absent. Fireworks and catalogue
 items use their stable slug or part number. A second application makes no row
 changes. Empty databases skip content delivery and receive the same content
@@ -106,8 +72,9 @@ products. The raw effect/firework table read policies remain unchanged.
 `/admin/renderer-compare` requires catalogue administration permission in addition
 to the admin layout boundary. It reads current saved designs and overrides for
 the original 90 slugs. Only one comparison pair can be open. Closing or replacing
-it disposes both viewers and explicitly releases their WebGL contexts. Playback
-starts paused, with a shared silent playhead and scrubber. The owner performs the
+it disposes both viewers and explicitly releases their WebGL contexts. The new renderer uses the same shared full-width aspect-video viewer as the
+preview page, including its built-in player and default camera controls. The old
+renderer has independent playback controls. The owner performs the
 browser and visual review.
 
 The following checks use only the disposable local stack:
@@ -134,9 +101,8 @@ node --import ./scripts/renderer/register-typescript.mjs scripts/catalogue/verif
 ```
 
 This imports the previous snapshot, checks admin design/key preservation and
-current colour/height adaptation with different UUIDs inside a rolled-back
+current colour substitution with different UUIDs inside a rolled-back
 transaction, then applies the migration twice and compares full-table hashes.
 It validates every installed design and compares them with generated bootstrap
-designs. PostgreSQL and JavaScript square-root results allow a final-bit
-floating-point difference of less than 0.000000000001 seconds. Reset afterwards
+designs. Template structure is compared against the generated snapshot. Reset afterwards
 to exercise a fresh bootstrap independently.

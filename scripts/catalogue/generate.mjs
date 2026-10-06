@@ -5,8 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { format } from 'prettier';
 import { effectTemplates, upgradeDesign, shotDuration } from '../../packages/renderer/src/index.ts';
 import { FireworkDesignSchema } from '../../packages/fireworks/src/model/design-schema.ts';
-import { catalogueDesign, templateSlug } from './designs.mjs';
-import { measureVariety } from './variety.mjs';
+import { catalogueDesign, matchTemplate, templateSlug } from './designs.mjs';
 
 const ROOT = fileURLToPath(new URL('../../', import.meta.url));
 const BOOTSTRAP = join(ROOT, 'supabase/bootstrap');
@@ -19,20 +18,6 @@ const MAPPING = {
   silverFish: 'fish',
   whirl: 'whirlwind',
   five_point_star: 'fivePointStar',
-};
-const CAUTIONS = {
-  double_break:
-    'Old split-cross stars split into fragments. Multi-break uses three independent timed breaks, not two secondary splits.',
-  pearls:
-    'Old pearls geometry is an aerial cluster. String of pearls is a ground-fired comet sequence.',
-  bowtie:
-    'Old bowtie splitting is retained; the v1 planar silhouette approximates the old opposed lobes.',
-  waterfall:
-    'Both fall downwards; the template uses an aerial bottom hemisphere rather than the old wide falling scatter.',
-  whirl:
-    'Both swirl; the template uses a ring and a spin modifier rather than the old whirl geometry.',
-  nishiki:
-    'Brocade-family silhouette with individual old star and trail tuning. Motion and sprite units are visually calibrated approximations.',
 };
 
 function read(table) {
@@ -102,29 +87,28 @@ export function buildCatalogue() {
       templateModifiers: template.design.breaks.flatMap((burst) =>
         burst.layers.flatMap((layer) => layer.modifiers.map((modifier) => modifier.kind)),
       ),
-      review:
-        CAUTIONS[effect.pattern_key] ??
-        'Template provides the family silhouette; firework snapshots supply individual star tuning. Motion units use documented visual calibration.',
+      review: 'Base effect retains its mapped renderer template unchanged.',
     };
   });
-  const review = fireworks.map((firework) => {
-    const effect = effectById.get(firework.firework_effect_id);
-    if (!effect) throw new Error(`Missing effect for ${firework.slug}`);
-    const notes = [];
-    firework.design = catalogueDesign(effect.design, firework, effect.model_json, notes);
-    return {
-      slug: firework.slug,
-      name: firework.name,
-      templateKey: effect.template_key,
-      source: firework.render_snapshot_json ? 'render_snapshot_json' : 'compileFireworkDesign',
-      notes: [
-        ...new Set([
-          ...(CAUTIONS[effect.pattern_key] ? [CAUTIONS[effect.pattern_key]] : []),
-          ...notes,
-        ]),
-      ],
-    };
-  });
+  const usage = new Map();
+  const review = [...fireworks]
+    .sort((a, b) => a.slug.localeCompare(b.slug))
+    .map((firework) => {
+      const effect = effectById.get(firework.firework_effect_id);
+      if (!effect) throw new Error(`Missing effect for ${firework.slug}`);
+      const match = matchTemplate(firework, effect, usage);
+      const template = templates.get(match.key);
+      if (!template) throw new Error(`Missing template ${match.key}`);
+      firework.design = catalogueDesign(template.design, firework);
+      return {
+        slug: firework.slug,
+        name: firework.name,
+        templateKey: match.key,
+        templateName: template.name,
+        reason: match.reason,
+        notes: [match.reason],
+      };
+    });
   const used = new Set(effects.map((effect) => effect.template_key));
   const additions = [];
   const oldPlaceholder = FireworkDesignSchema.parse({ geometry: 'sphere', trailProfile: 'none' });
@@ -220,13 +204,10 @@ export function buildCatalogue() {
   // Match live effects by slug as well as fireworks. Never assume the exported UUIDs exist.
   for (const firework of fireworks.slice(0, review.length)) {
     const effect = effectById.get(firework.firework_effect_id);
-    const mapped = catalogueDesign(
-      effect.design,
-      { ...firework, height_meters: null },
-      effect.model_json,
-    );
+    const mapping = review.find((row) => row.slug === firework.slug);
+    const mapped = templates.get(mapping.templateKey).design;
     sql.push(
-      `update public.fireworks f set design = pg_temp.catalogue_design(${literal(mapped)}, f.color_palette, f.primary_color, ${literal(firework.color_palette)}, ${firework.primary_color ? "'" + firework.primary_color + "'" : 'null'})\nwhere f.slug = '${firework.slug.replaceAll("'", "''")}' and f.design is null\nand exists (select 1 from public.firework_effects e where e.id = f.firework_effect_id and e.slug = '${effect.slug.replaceAll("'", "''")}');`,
+      `update public.fireworks f set design = pg_temp.catalogue_design(${literal(mapped)}, f.color_palette, f.primary_color, f.secondary_color, ${firework.design.seed})\nwhere f.slug = '${firework.slug.replaceAll("'", "''")}' and f.design is null\nand exists (select 1 from public.firework_effects e where e.id = f.firework_effect_id and e.slug = '${effect.slug.replaceAll("'", "''")}');`,
     );
   }
   for (const { effect, firework, item } of additions) {
@@ -251,7 +232,7 @@ on conflict do nothing;`);
   sql.push(
     'end if;',
     'end $catalogue$;',
-    'drop function pg_temp.catalogue_design(jsonb, text[], text, jsonb, text);',
+    'drop function pg_temp.catalogue_design(jsonb, text[], text, text, bigint);',
     'commit;',
   );
   return {
@@ -266,18 +247,6 @@ on conflict do nothing;`);
       effectMappings,
       fireworks: review,
       newRowsPerTable: additions.length,
-      variety: {
-        baseline: {
-          sourceCommit: '466b2aae',
-          fireworks: 90,
-          distinctDesigns: 88,
-          distinctDesignsIgnoringSeed: 88,
-          identicalApartFromColourPairsIgnoringSeed: 94,
-        },
-        converted: measureVariety(fireworks),
-        method:
-          'Canonical key ordering. Colour-only unordered pairs exclude colour controls and seed; distinct designs are also reported without seed.',
-      },
     },
   };
 }

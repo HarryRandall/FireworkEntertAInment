@@ -3,8 +3,9 @@ import { readFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { readSnapshot, snapshotSql } from '../database/bootstrap-content.mjs';
 import { executeSql, query, repositoryRoot } from '../database/runtime.mjs';
-import { upgradeDesign } from '../../packages/renderer/src/index.ts';
-import { MIGRATION_PATH } from './generate.mjs';
+import { effectTemplates, upgradeDesign } from '../../packages/renderer/src/index.ts';
+import { catalogueDesign } from './designs.mjs';
+import { buildCatalogue, MIGRATION_PATH } from './generate.mjs';
 
 const LOCAL_TARGET = { local: true, flags: ['--local'] };
 const TABLES = ['firework_effects', 'fireworks', 'catalogue_items', 'firework_preview_images'];
@@ -67,6 +68,13 @@ function verifyPrevious(directory) {
     color_palette: ['#abcdef', '#123456'],
     height_meters: 100,
   };
+  const matchedKey = buildCatalogue().report.fireworks.find(
+    (row) => row.slug === liveFirework.slug,
+  ).templateKey;
+  const expectedLiveDesign = catalogueDesign(
+    effectTemplates.find((template) => template.key === matchedKey).design,
+    liveFirework,
+  );
   const liveEffect = { ...effect, id: liveFirework.firework_effect_id };
   const json = (value) => `'${JSON.stringify(value).replaceAll("'", "''")}'::jsonb`;
   const body = migration.replace(/^begin;$/m, '').replace(/^commit;$/m, '');
@@ -84,7 +92,7 @@ function verifyPrevious(directory) {
       if (select design from public.fireworks where slug = 'peony-default') <> ${json(customDesign)} then raise exception 'Admin design changed'; end if;
       if (select template_key from public.firework_effects where slug = 'brocade') <> 'owner-custom' then raise exception 'Admin template key changed'; end if;
       if (select design #>> '{launch,height_m}' from public.fireworks where slug = '${firework.slug}')::numeric <> 60 then raise exception 'Band apex or slug remapping failed'; end if;
-      if (select design #> '{breaks,0,layers,0,colour,stops,0,1}' from public.fireworks where slug = '${firework.slug}') <> '["#abcdef","#123456"]'::jsonb then raise exception 'Live palette failed'; end if;
+      if (select design from public.fireworks where slug = '${firework.slug}') <> ${json(expectedLiveDesign)} then raise exception 'Live palette or template structure failed'; end if;
     end $probe$;
     rollback;`,
   );

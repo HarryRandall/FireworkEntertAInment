@@ -1,38 +1,49 @@
--- Adapt generated per-firework snapshot designs to current colours.
--- Unchanged palettes retain authored opening/closing curves and inner-star contrast.
-create function pg_temp.catalogue_design(template jsonb, palette text[], primary_colour text, exported_palette jsonb, exported_primary text)
+-- Substitute authored colour identities without altering template structure or tuning.
+create function pg_temp.catalogue_design(template jsonb, palette text[], primary_colour text, secondary_colour text, seed bigint)
 returns jsonb language plpgsql as $adapt$
 declare
-  result jsonb := template;
-  colours jsonb;
-  colour jsonb;
+  result jsonb := template || jsonb_build_object('seed', seed);
+  colours text[] := '{}';
+  identities text[] := '{}';
+  colour text;
   part record;
-  burst_index integer;
-  layer_index integer;
+  control record;
+  stop record;
+  slot record;
+  path text[];
+  replacement text;
 begin
-  if cardinality(palette) >= 2 then colours := to_jsonb(palette);
-  elsif primary_colour is not null then colours := jsonb_build_array(primary_colour);
-  end if;
-  if colours is not null and (to_jsonb(palette) is distinct from exported_palette or primary_colour is distinct from exported_primary) then
-    colour := jsonb_build_object('mode', case when jsonb_array_length(colours) >= 2 then 'alternate' else 'solid' end,
-      'stops', jsonb_build_array(jsonb_build_array(0, colours), jsonb_build_array(1, colours)));
-    for burst_index in 0..jsonb_array_length(result -> 'breaks') - 1 loop
-      for layer_index in 0..jsonb_array_length(result #> array['breaks', burst_index::text, 'layers']) - 1 loop
-        if result #>> array['breaks', burst_index::text, 'layers', layer_index::text, 'name'] <> 'Inner stars' then
-          result := jsonb_set(result, array['breaks', burst_index::text, 'layers', layer_index::text, 'colour'], colour);
-        end if;
-      end loop;
-    end loop;
-    if jsonb_typeof(result -> 'ground') = 'object' then
-      for part in select key, value from jsonb_each(result -> 'ground') loop
-        if jsonb_typeof(part.value) = 'object' and part.value ? 'colour' then
-          result := jsonb_set(result, array['ground', part.key, 'colour'],
-            case when jsonb_typeof(part.value -> 'colour') = 'string'
-              then to_jsonb(coalesce(primary_colour, colours ->> 0)) else colour end);
-        end if;
+  foreach colour in array array[primary_colour] || coalesce(palette, '{}') || array[secondary_colour] loop
+    if colour is not null and not colour = any(colours) then colours := array_append(colours, colour); end if;
+  end loop;
+  if cardinality(colours) = 0 then return result; end if;
+  for control in
+    select array['breaks', (b.ordinality - 1)::text, 'layers', (l.ordinality - 1)::text, 'colour'] as path, l.value -> 'colour' as value
+    from jsonb_array_elements(result -> 'breaks') with ordinality b,
+    lateral jsonb_array_elements(b.value -> 'layers') with ordinality l
+    union all
+    select array['ground', g.key, 'colour'], g.value -> 'colour'
+    from jsonb_each(coalesce(nullif(result -> 'ground', 'null'::jsonb), '{}'::jsonb)) g
+    where jsonb_typeof(g.value) = 'object' and g.value ? 'colour'
+  loop
+    if jsonb_typeof(control.value) = 'string' then
+      colour := control.value #>> '{}';
+      if not colour = any(identities) then identities := array_append(identities, colour); end if;
+      replacement := colours[1 + (array_position(identities, colour) - 1) % cardinality(colours)];
+      result := jsonb_set(result, control.path, to_jsonb(replacement));
+    else
+      for stop in select value, ordinality from jsonb_array_elements(control.value -> 'stops') with ordinality loop
+        for slot in select value, ordinality from jsonb_array_elements_text(case when jsonb_typeof(stop.value -> 1) = 'array' then stop.value -> 1 else jsonb_build_array(stop.value -> 1) end) with ordinality loop
+          colour := slot.value;
+          if not colour = any(identities) then identities := array_append(identities, colour); end if;
+          replacement := colours[1 + (array_position(identities, colour) - 1) % cardinality(colours)];
+          path := control.path || array['stops', (stop.ordinality - 1)::text, '1'];
+          if jsonb_typeof(stop.value -> 1) = 'array' then path := path || (slot.ordinality - 1)::text; end if;
+          result := jsonb_set(result, path, to_jsonb(replacement));
+        end loop;
       end loop;
     end if;
-  end if;
+  end loop;
   return result;
 end;
 $adapt$;
