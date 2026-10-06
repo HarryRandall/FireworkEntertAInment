@@ -13,6 +13,7 @@ type TablePaginationProps = {
   searchParams: SearchParams;
   pageKey?: string;
   className?: string;
+  pageSize?: number;
   visibleItems?: number;
   totalItems?: number;
   itemLabel?: string;
@@ -48,11 +49,13 @@ function itemSummary({
   totalPages,
   visibleItems,
   totalItems,
+  pageSize = TABLE_PAGE_SIZE,
   itemLabel = 'item',
   itemLabelPlural,
 }: {
   currentPage: number;
   totalPages: number;
+  pageSize?: number;
   visibleItems?: number;
   totalItems?: number;
   itemLabel?: string;
@@ -60,7 +63,9 @@ function itemSummary({
 }) {
   if (totalItems != null) {
     const label = totalItems === 1 ? itemLabel : (itemLabelPlural ?? `${itemLabel}s`);
-    return `Viewing ${(visibleItems ?? totalItems).toLocaleString()} out of ${totalItems.toLocaleString()} ${label}`;
+    const start = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+    const end = Math.min(totalItems, (currentPage - 1) * pageSize + (visibleItems ?? pageSize));
+    return `Viewing ${start.toLocaleString()} to ${end.toLocaleString()} of ${totalItems.toLocaleString()} ${label}`;
   }
 
   return `Page ${currentPage} of ${totalPages}`;
@@ -88,6 +93,7 @@ export function TablePagination({
   searchParams,
   pageKey = 'page',
   className,
+  pageSize,
   visibleItems,
   totalItems,
   itemLabel,
@@ -99,6 +105,7 @@ export function TablePagination({
   const summary = itemSummary({
     currentPage,
     totalPages,
+    pageSize,
     visibleItems,
     totalItems,
     itemLabel,
@@ -110,7 +117,7 @@ export function TablePagination({
     <nav
       aria-label="Table pagination"
       className={cn(
-        'flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between',
+        'border-border flex shrink-0 flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between',
         className,
       )}
     >

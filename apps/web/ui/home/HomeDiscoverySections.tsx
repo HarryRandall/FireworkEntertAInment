@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { BadgeDollarSign, ChevronRight, Clock3, ListMusic, Play } from 'lucide-react';
 import { CoverPoster } from '@/ui/covers/CoverPoster';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
@@ -69,16 +69,32 @@ function collectionLayerCover(
   };
 }
 
-function FeaturedShowCard({ template, index }: { template: ShowTemplateSummary; index: number }) {
+function FeaturedShowCard({
+  template,
+  index,
+  previewActive,
+  activate,
+  release,
+}: {
+  template: ShowTemplateSummary;
+  index: number;
+  previewActive: boolean;
+  activate: (id: string) => void;
+  release: (id: string) => void;
+}) {
   const prefersReducedMotion = usePrefersReducedMotion();
-  const [isPreviewHovered, setIsPreviewHovered] = useState(false);
+  const [hovered, setIsPreviewHovered] = useState(false);
+  const isPreviewHovered = hovered && previewActive;
   const [isPreviewReady, setIsPreviewReady] = useState(false);
   const [preview, setPreview] = useState<ExplorePreviewPayload | null>(null);
   const intentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const requestAbortRef = useRef<AbortController | null>(null);
   const requestSerialRef = useRef(0);
   const isPreviewVisible = isPreviewReady && isPreviewHovered;
-  const replayTemplate = preview ? { ...template, previewCues: preview.previewCues } : null;
+  const replayTemplate = useMemo(
+    () => (preview ? { ...template, previewCues: preview.previewCues } : null),
+    [preview, template],
+  );
 
   const cancelPendingPreview = useCallback(() => {
     requestSerialRef.current += 1;
@@ -107,6 +123,7 @@ function FeaturedShowCard({ template, index }: { template: ShowTemplateSummary; 
 
   const startPreview = useCallback(() => {
     if (prefersReducedMotion) return;
+    activate(template.id);
     setIsPreviewHovered(true);
     if (preview) return;
 
@@ -132,12 +149,14 @@ function FeaturedShowCard({ template, index }: { template: ShowTemplateSummary; 
           if (requestAbortRef.current === controller) requestAbortRef.current = null;
         });
     }, EXPLORE_PREVIEW_INTENT_MS);
-  }, [cancelPendingPreview, prefersReducedMotion, preview, template.slug]);
+  }, [activate, cancelPendingPreview, prefersReducedMotion, preview, template.id, template.slug]);
 
   const stopPreview = useCallback(() => {
+    release(template.id);
     setIsPreviewHovered(false);
+    setIsPreviewReady(false);
     if (!preview) cancelPendingPreview();
-  }, [cancelPendingPreview, preview]);
+  }, [cancelPendingPreview, preview, release, template.id]);
 
   const handlePreviewReady = useCallback(() => {
     setIsPreviewReady(true);
@@ -168,7 +187,6 @@ function FeaturedShowCard({ template, index }: { template: ShowTemplateSummary; 
           specifications={preview.specifications}
           isCardHovered={isPreviewHovered}
           isCardPlaybackActive={isPreviewHovered}
-          keepCardCanvasMounted
           resetCardPlayheadOnIdle={false}
           showCardOverlays={false}
           lazyHoverMount
@@ -227,6 +245,11 @@ function FeaturedShowCard({ template, index }: { template: ShowTemplateSummary; 
 }
 
 export function HomeFeaturedShows({ templates }: { templates: ShowTemplateSummary[] }) {
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const activate = useCallback((id: string) => setActiveId(id), []);
+  const release = useCallback((id: string) => {
+    setActiveId((current) => (current === id ? null : current));
+  }, []);
   const featured = templates.slice(0, 2);
   if (featured.length === 0) return null;
 
@@ -244,7 +267,14 @@ export function HomeFeaturedShows({ templates }: { templates: ShowTemplateSummar
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         {featured.map((template, index) => (
-          <FeaturedShowCard key={template.id} template={template} index={index} />
+          <FeaturedShowCard
+            key={template.id}
+            template={template}
+            index={index}
+            previewActive={activeId === template.id}
+            activate={activate}
+            release={release}
+          />
         ))}
       </div>
     </section>

@@ -17,9 +17,10 @@ export function syncViewerClock(
   const next = Math.max(0, Math.min(viewer.duration, time_s));
   if (Math.abs(next - viewer.t) > CLOCK_JUMP_S || playing !== viewer.playing) sound.reset(next);
   if (!playing && viewer.playing) sound.hush();
+  const changed = next !== viewer.t || playing !== viewer.playing;
   viewer.playing = playing;
   if (next !== viewer.t) viewer.t = next;
-  viewer.invalidate();
+  if (changed) viewer.invalidate();
 }
 
 /** Subscribes to viewer transport changes, emitting the initial state exactly once. */

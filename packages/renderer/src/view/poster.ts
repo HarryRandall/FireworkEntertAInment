@@ -71,7 +71,6 @@ export class PosterRenderer {
     this.layers.uniforms.uScale.value =
       (height * dpr) / (2 * Math.tan((FOV_DEG * Math.PI) / HALF_TURN_DEG / 2));
     this.layers.uniforms.uDpr.value = dpr;
-    this.world.resize(height, dpr);
   }
 
   /** Samples non-negative sequence seconds from the first firing, without mutating validated designs.
@@ -87,7 +86,7 @@ export class PosterRenderer {
     disposeTree(this.props);
     this.props = makeProps(this.shots, this.options.prop ?? 'mortar');
     this.scene.add(this.props);
-    this.world.setSettings(SETTINGS.stars, SETTINGS.grid);
+    this.world.setSettings(SETTINGS.ground);
     const framing =
       options.framing ?? posterFraming(this.shots, this.camera.aspect, this.camera.fov);
     if (![...framing.position, ...framing.target].every(Number.isFinite))

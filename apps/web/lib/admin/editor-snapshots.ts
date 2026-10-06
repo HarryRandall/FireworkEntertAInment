@@ -38,7 +38,7 @@ export type EffectEditorSnapshot = {
   updatedAt: string | null;
 };
 
-export type StyleDefaultEditorSnapshot = {
+type StyleDefaultEditorSnapshot = {
   kind: 'style_default';
   id: string;
   name: string;

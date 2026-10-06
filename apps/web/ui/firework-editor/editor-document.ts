@@ -1,5 +1,5 @@
 /** Save and style-default helpers shared by the effect, firework and style-default editors. */
-import type { JsonRecord } from '@/ui/firework-editor/FireworkRenderControls';
+import type { JsonRecord } from '@showcrafter/firework-editor/types';
 import {
   FIREWORK_STYLE_DEFAULT_KINDS,
   NO_STYLE_DEFAULT_VALUE,

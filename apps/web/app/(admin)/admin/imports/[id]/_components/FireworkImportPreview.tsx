@@ -1,4 +1,5 @@
 'use client';
+import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
 
 /** Client preview of frames and products extracted by an import job. */
 
@@ -30,7 +31,7 @@ type FireworkImportPreviewProps = {
 
 function ReplayCanvasSkeleton() {
   return (
-    <div className="absolute inset-0 h-full w-full animate-pulse overflow-hidden bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.12),transparent_28%),linear-gradient(180deg,#05070d,#101522)] motion-reduce:animate-none">
+    <div className="absolute inset-0 h-full w-full animate-pulse overflow-hidden bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.12),transparent_28%),linear-gradient(180deg,#000000,#111111)] motion-reduce:animate-none">
       <ReplayLoadingBar progress={null} position="bottom" />
     </div>
   );
@@ -508,15 +509,17 @@ export function FireworkImportPreview({
           <div className="border-border bg-muted relative aspect-video w-full overflow-hidden rounded-lg border">
             <div className="absolute inset-0 min-h-[200px]">
               {reconstruction || spec ? (
-                <LazyFireworkReplayCanvas
-                  cues={cues}
-                  elapsed={elapsed}
-                  interactive
-                  showFps={false}
-                  primeSnapshots
-                  showLoadingBar
-                  loadingBarPosition="bottom"
-                />
+                <CanvasSurface className="absolute inset-0">
+                  <LazyFireworkReplayCanvas
+                    cues={cues}
+                    elapsed={elapsed}
+                    interactive
+                    showFps={false}
+                    primeSnapshots
+                    showLoadingBar
+                    loadingBarPosition="bottom"
+                  />
+                </CanvasSurface>
               ) : (
                 <div className="text-muted-foreground flex h-full items-center justify-center p-6 text-center text-sm">
                   The generated 3D reconstruction will appear after processing.

@@ -1,5 +1,7 @@
-/** Multishot preview stage: the replay canvas with burst guides and transport. */
 'use client';
+
+import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
+/** Multishot preview stage: the replay canvas with burst guides and transport. */
 
 import dynamic from 'next/dynamic';
 import {
@@ -19,17 +21,12 @@ import {
 } from '@/ui/firework-editor/previewFullscreen';
 import { EditorPreviewTransport } from '@/ui/firework-editor/FireworkEditorShell';
 import { ReplayCanvasSkeleton } from '@/ui/replay/ReplayCanvasSkeleton';
-import type { AimMarker } from '@/ui/replay/FireworkReplayCanvas';
 import type { ReplayCue } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';
-import {
-  SINGLE_MORTAR,
-  PREVIEW_TRANSPORT_IDLE_MS,
-  INSPECTOR_RENDER_OVERSCAN_PX,
-} from './multishot-model';
+import { PREVIEW_TRANSPORT_IDLE_MS } from './multishot-model';
 
 const LazyFireworkReplayCanvas = dynamic(
-  () => import('@/ui/replay/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
+  () => import('@/ui/replay/ShowRendererCanvas').then((mod) => mod.ShowRendererCanvas),
   { ssr: false, loading: () => <ReplayCanvasSkeleton /> },
 );
 
@@ -38,7 +35,6 @@ export function PreviewStage({
   elapsed,
   playbackRef,
   duration,
-  fullWidth,
   isPlaying,
   isLooping,
   fullscreen,
@@ -47,9 +43,6 @@ export function PreviewStage({
   loading,
   loadingProgress,
   ticks,
-  aimMarkers,
-  selectedUid,
-  onSelectMarker,
   onPlayPause,
   onReset,
   onLoopToggle,
@@ -63,7 +56,6 @@ export function PreviewStage({
   elapsed: number;
   playbackRef: MutableRefObject<number>;
   duration: number;
-  fullWidth: boolean;
   isPlaying: boolean;
   isLooping: boolean;
   fullscreen: boolean;
@@ -72,9 +64,6 @@ export function PreviewStage({
   loading: boolean;
   loadingProgress: number | null;
   ticks: { timeSeconds: number; label: string }[];
-  aimMarkers: AimMarker[];
-  selectedUid: string | null;
-  onSelectMarker: (id: string | null) => void;
   onPlayPause: () => void;
   onReset: () => void;
   onLoopToggle: () => void;
@@ -177,25 +166,23 @@ export function PreviewStage({
           )}
         >
           <div className="relative h-full w-full">
-            <LazyFireworkReplayCanvas
-              cues={cues}
-              elapsed={elapsed}
-              playbackRef={playbackRef}
-              launchPositions={SINGLE_MORTAR}
-              muted={!isPlaying}
-              interactive
-              controlsVisible={!loading}
-              cameraMenuActions={previewMenuActions}
-              primeSnapshots
-              primeOnCueChanges={false}
-              showLoadingBar
-              renderOverscanPx={!fullscreen && !fullWidth ? INSPECTOR_RENDER_OVERSCAN_PX : 0}
-              onPrimeProgress={onPreviewLoadingProgress}
-              onReady={onPreviewReady}
-              aimMarkers={aimMarkers}
-              selectedMarkerId={selectedUid}
-              onSelectMarker={onSelectMarker}
-            />
+            <CanvasSurface className="absolute inset-0">
+              <LazyFireworkReplayCanvas
+                prop="cake"
+                cues={cues}
+                elapsed={elapsed}
+                playbackRef={playbackRef}
+                playing={isPlaying}
+                muted={!isPlaying}
+                startDistance="farthest"
+                interactive
+                controlsVisible={!loading}
+                cameraMenuActions={previewMenuActions}
+                showLoadingBar
+                onPrimeProgress={onPreviewLoadingProgress}
+                onReady={onPreviewReady}
+              />
+            </CanvasSurface>
             <div
               className={cn(
                 'pointer-events-none absolute inset-x-0 bottom-5 z-30 transition-all duration-300',
@@ -207,6 +194,8 @@ export function PreviewStage({
                   elapsed={elapsed}
                   duration={duration}
                   isPlaying={isPlaying}
+                  isLooping={isLooping}
+                  onLoopToggle={onLoopToggle}
                   fullscreen={fullscreen}
                   loading={loading}
                   loadingProgress={loadingProgress}

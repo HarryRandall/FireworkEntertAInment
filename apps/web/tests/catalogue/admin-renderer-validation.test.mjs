@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import ts from 'typescript';
+import { createHash } from 'node:crypto';
 await import('../../../../scripts/renderer/register-typescript.mjs');
 const { validateCatalogueRender } = await import('../../lib/admin/renderer-validation.ts');
 const renderer = await import('@showcrafter/fireworks/design');
@@ -38,9 +39,9 @@ function fixtureModule(path, dependencies) {
   return loadedModule.exports;
 }
 
-function previewLoader({ effect, firework, preset }) {
+function previewLoader({ effect, firework }) {
   return fixtureModule('../../lib/firework-card-preview.server.ts', {
-    'node:crypto': {},
+    'node:crypto': { createHash },
     '@showcrafter/renderer': newRenderer,
     '@/lib/shows/renderer-design': showDesign,
     '@/lib/utils': utils,
@@ -48,11 +49,8 @@ function previewLoader({ effect, firework, preset }) {
     '@/lib/admin/effects.server': { getAdminEffectById: async () => effect },
     '@/lib/admin/fireworks.server': { getAdminFireworkById: async () => firework },
     '@/lib/admin/multishots.server': {},
-    '@/lib/admin/style-defaults.server': {
-      getAdminStyleDefaultPreviewSourceById: async () => preset,
-    },
     '@/lib/firework-card-preview': previewConstants,
-    '@/lib/firework-preview-image': {},
+    '@/lib/firework-preview-image': { FIREWORK_PREVIEW_RENDERER_VERSION: 'fixture' },
     '@showcrafter/fireworks/design': renderer,
     '@showcrafter/fireworks/style-defaults': styles,
     '@showcrafter/fireworks/spec': { DEFAULT_FIREWORK_SPEC: {} },
@@ -66,7 +64,13 @@ function previewLoader({ effect, firework, preset }) {
           select: () => ({
             eq: () => ({
               maybeSingle: async () => ({
-                data: { variant_json: {}, design: storedDesign, design_schema: 1 },
+                data: {
+                  variant_json: {},
+                  design: storedDesign,
+                  design_schema: 1,
+                  source_revision: 1,
+                  storage_path: null,
+                },
                 error: null,
               }),
             }),
@@ -129,17 +133,19 @@ test('all supported preset types validate and inner trail cards use an inner car
 });
 
 test('invalid card sources reject with structured diagnostics rather than a substituted firework or transient read error', async () => {
-  for (const kind of ['effect', 'firework', 'style-default']) {
+  for (const kind of ['effect', 'firework']) {
     const loader = previewLoader({
       effect: { id: 'bad', modelJson: null },
       firework: { id: 'bad', renderOverridesJson: null },
-      preset: { id: 'bad', kind: 'star', defaultsJson: null },
     });
-    await assert.rejects(loader.loadAdminFireworkCardPreview(kind, 'bad'), (error) => {
-      assert.ok(error instanceof renderer.RendererValidationError);
-      assert.equal(error.diagnostics[0].recordId, 'bad');
-      return true;
-    });
+    await assert.rejects(
+      loader.loadAdminFireworkCardPreviewForPersistence(kind, 'bad'),
+      (error) => {
+        assert.ok(error instanceof renderer.RendererValidationError);
+        assert.equal(error.diagnostics[0].recordId, 'bad');
+        return true;
+      },
+    );
   }
 });
 
@@ -158,11 +164,11 @@ test('a saved firework preview is independent of changed or invalid source effec
     colorPalette: ['#0000ff'],
   };
   const loader = previewLoader({ firework });
-  const first = await loader.loadAdminFireworkCardPreview('firework', 'copied');
+  const first = await loader.loadAdminFireworkCardPreviewForPersistence('firework', 'copied');
   assert.equal(first.specifications[0].renderDesign.stars.outer.head.size, 123);
   assert.deepEqual(first.specifications[0].renderDesign.color, snapshot.color);
   firework.effectModelJson = { stars: { outer: { head: { size: 999 } } } };
-  const second = await loader.loadAdminFireworkCardPreview('firework', 'copied');
+  const second = await loader.loadAdminFireworkCardPreviewForPersistence('firework', 'copied');
   assert.deepEqual(second.specifications[0].renderDesign, first.specifications[0].renderDesign);
 });
 
@@ -197,7 +203,7 @@ test('admin preview API returns a non-retryable 422 with record and renderer dia
   assert.deepEqual(response.body.diagnostics, [issue]);
 });
 
-test('invalid cards hide cached images and remain repairable, while valid cards retain their cached poster', async () => {
+test('invalid cards hide cached images and remain repairable, while valid cards prefer stored posters and fall back to cached posters', async () => {
   const React = await import('react');
   const runtime = await import('react/jsx-runtime');
   const { renderToStaticMarkup } = await import('react-dom/server');
@@ -238,7 +244,11 @@ test('invalid cards hide cached images and remain repairable, while valid cards 
   );
   assert.match(invalidButton, /<button[^>]+disabled=""/);
   const valid = renderToStaticMarkup(React.createElement(FireworkBrowseCard, props));
-  assert.match(valid, /src="\/cached.webp"/);
+  assert.match(valid, /src="\/saved.webp"/);
+  const fallback = renderToStaticMarkup(
+    React.createElement(FireworkBrowseCard, { ...props, persistedPosterUrl: null }),
+  );
+  assert.match(fallback, /src="\/cached.webp"/);
   assert.doesNotMatch(valid, /Invalid render settings/);
 });
 

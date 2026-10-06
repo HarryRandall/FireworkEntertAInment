@@ -108,7 +108,6 @@ test('editor version history migration is permission-gated and typed', () => {
   const adminTypes = read('lib/admin.types.ts');
   const effectsServer = read('lib/admin/effects.server.ts');
   const fireworksServer = read('lib/admin/fireworks.server.ts');
-  const styleDefaultsServer = read('lib/admin/style-defaults.server.ts');
   const editorVersions = read('lib/admin/editor-versions.server.ts');
   const styleDefaultSchema = read('lib/admin/style-default-schema.ts');
 
@@ -127,18 +126,12 @@ test('editor version history migration is permission-gated and typed', () => {
   assert.match(adminTypes, /history: AdminEditorVersion\[\]/);
   assert.match(effectsServer, /listEffectEditorVersions/);
   assert.match(fireworksServer, /listFireworkEditorVersions/);
-  assert.match(styleDefaultsServer, /listStyleDefaultEditorVersions/);
-  assert.match(
-    styleDefaultsServer,
-    /history: await listStyleDefaultEditorVersions\(supabase, defaultId\)/,
-  );
+
   assert.match(effectsServer, /listEffectEditorVersions\(supabase, row.id\)/);
   assert.match(fireworksServer, /listFireworkEditorVersions\(supabase, row.id\)/);
   assert.match(editorVersions, /isSyntheticCurrentVersion/);
   assert.match(editorVersions, /row\.changes_json\.currentVersion === true/);
   assert.match(editorVersions, /\.filter\(\(row\) => !isSyntheticCurrentVersion\(row\)\)/);
-  assert.match(editorVersions, /listStyleDefaultEditorVersions/);
-  assert.match(editorVersions, /\.eq\('firework_style_default_id', styleDefaultId\)/);
   assert.match(editorVersions, /function throwHistoryReadError\(/);
   assert.match(editorVersions, /const LEGACY_EDITOR_VERSION_SELECT/);
   assert.match(editorVersions, /isMissingStyleDefaultEditorVersionColumnError/);

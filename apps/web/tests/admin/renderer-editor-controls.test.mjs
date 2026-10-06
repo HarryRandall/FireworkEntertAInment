@@ -124,3 +124,17 @@ test('design-only edits change both editor dirty signatures', async () => {
     assert.equal(JSON.parse(signature(next)).design.seed, 12345);
   }
 });
+
+test('shape hover documents resolve the selected layer by id and preserve authored siblings', async () => {
+  const { layerChipPreview } =
+    await import('../../ui/firework-editor/renderer-design/chip-preview.ts');
+  const document = structuredClone(peony);
+  const layer = document.breaks[0].layers[0];
+  const before = structuredClone(document);
+  const preview = layerChipPreview(document, structuredClone(layer), { shape: 'heart' });
+  assert.ok(preview);
+  assert.equal(preview.breaks[0].layers[0].pattern, 'heart');
+  assert.deepEqual(document, before);
+  assert.deepEqual(preview.launch, document.launch);
+  assert.equal(layerChipPreview(document, { ...layer, id: 'missing' }, { shape: 'heart' }), null);
+});

@@ -5,7 +5,6 @@ import sharp from 'sharp';
 import { requirePermission } from '@/lib/access/current-profile.server';
 import {
   FireworkCardPreviewReadError,
-  loadAdminFireworkCardPreview,
   loadAdminFireworkCardPreviewForPersistence,
   type AdminFireworkCardPreviewKind,
   type AdminFireworkCardPreviewSourceKind,
@@ -26,7 +25,6 @@ const ADMIN_PREVIEW_KINDS = new Set<AdminFireworkCardPreviewSourceKind>([
   'effect',
   'firework',
   'multishot',
-  'style-default',
 ]);
 const PERSISTABLE_ADMIN_PREVIEW_KINDS = new Set<AdminFireworkCardPreviewKind>([
   'effect',
@@ -179,13 +177,10 @@ export async function GET(_request: Request, context: RouteContext) {
   }
 
   try {
-    const preview =
-      kind === 'style-default'
-        ? await loadAdminFireworkCardPreview('style-default', id)
-        : await loadAdminFireworkCardPreviewForPersistence(
-            kind as AdminFireworkCardPreviewKind,
-            id,
-          );
+    const preview = await loadAdminFireworkCardPreviewForPersistence(
+      kind as AdminFireworkCardPreviewKind,
+      id,
+    );
     if (!preview) return response({ error: 'not_found' }, 404);
     return response(preview);
   } catch (error) {

@@ -1,4 +1,5 @@
 'use client';
+import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
 
 /**
  * TemplateReplayPreview — small 3D replay preview used on template
@@ -36,8 +37,6 @@ type TemplateReplayPreviewProps = {
   isCardHovered?: boolean;
   /** Card mode only: override whether the replay playhead is currently advancing. */
   isCardPlaybackActive?: boolean;
-  /** Card mode only: keep the Three.js preview mounted after playback pauses. */
-  keepCardCanvasMounted?: boolean;
   /** Card mode only: reset to the poster frame when playback stops. */
   resetCardPlayheadOnIdle?: boolean;
   /** Override the card-mode container classes (e.g. for a portrait cover). */
@@ -63,7 +62,7 @@ const CARD_PREVIEW_SECONDS = 18;
 const SCRUB_COMMIT_INTERVAL_MS = 67;
 
 const LazyFireworkReplayCanvas = dynamic(
-  () => import('@/ui/replay/ShowRendererCanvas').then((mod) => mod.FireworkReplayCanvas),
+  () => import('@/ui/replay/ShowRendererCanvas').then((mod) => mod.ShowRendererCanvas),
   {
     ssr: false,
     loading: () => <ReplayCanvasSkeleton />,
@@ -104,7 +103,6 @@ export function TemplateReplayPreview({
   audioUrl = null,
   isCardHovered = false,
   isCardPlaybackActive,
-  keepCardCanvasMounted = false,
   resetCardPlayheadOnIdle = true,
   cardClassName,
   showCardOverlays = true,
@@ -152,7 +150,6 @@ export function TemplateReplayPreview({
   const [displayElapsed, setDisplayElapsed] = useState(posterTime);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isScrubbing, setIsScrubbing] = useState(false);
-  const [isVisible, setIsVisible] = useState(isDetail);
   const [isReplayReady, setIsReplayReady] = useState(!isDetail);
   const {
     isFullscreen,
@@ -209,26 +206,6 @@ export function TemplateReplayPreview({
     };
     window.dispatchEvent(new CustomEvent(TEMPLATE_REPLAY_ACTIVE_CUE_EVENT, { detail }));
   }, [activeCue?.id, isDetail, template.slug]);
-
-  useEffect(() => {
-    if (isDetail || isVisible) return;
-    const element = containerRef.current;
-    if (!element || typeof IntersectionObserver === 'undefined') {
-      setIsVisible(true);
-      return;
-    }
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) {
-          setIsVisible(true);
-          observer.disconnect();
-        }
-      },
-      { rootMargin: '160px' },
-    );
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [containerRef, isDetail, isVisible]);
 
   useEffect(() => {
     hoverStartTimeRef.current = hoverStartTime;
@@ -400,11 +377,8 @@ export function TemplateReplayPreview({
     setPlayhead(0);
   }
 
-  const shouldMountCanvas =
-    isDetail ||
-    (lazyHoverMount
-      ? cardPlaybackActive || keepCardCanvasMounted
-      : isVisible || cardPlaybackActive);
+  // Card posters remain cheap DOM surfaces; only active hover playback owns WebGL.
+  const shouldMountCanvas = isDetail || cardPlaybackActive;
 
   return (
     <div
@@ -429,21 +403,25 @@ export function TemplateReplayPreview({
         }
       >
         {shouldMountCanvas ? (
-          <MemoizedFireworkReplayCanvas
-            compactPreview
-            cues={cues}
-            elapsed={elapsed}
-            playbackRef={elapsedRef}
-            scrubbing={isScrubbing}
-            interactive={isDetail}
-            muted={isDetail ? !isPlaying : true}
-            maxDevicePixelRatio={2}
-            antialias
-            primeSnapshots={isDetail}
-            loadingBarPosition="bottom"
-            showLoadingBar={isDetail}
-            onReady={handleReplayReady}
-          />
+          <CanvasSurface className="absolute inset-0">
+            <MemoizedFireworkReplayCanvas
+              compactPreview
+              cues={cues}
+              elapsed={elapsed}
+              playbackRef={elapsedRef}
+              playing={active}
+              startDistance="farthest"
+              scrubbing={isScrubbing}
+              interactive={isDetail}
+              muted={isDetail ? !isPlaying : true}
+              maxDevicePixelRatio={2}
+              antialias
+              primeSnapshots={isDetail}
+              loadingBarPosition="bottom"
+              showLoadingBar={isDetail}
+              onReady={handleReplayReady}
+            />
+          </CanvasSurface>
         ) : lazyHoverMount ? null : (
           <ReplayCanvasSkeleton />
         )}

@@ -119,7 +119,6 @@ function captureKey(design: Design, time_s: number, options: PosterSurfaceOption
     options,
     typeof window === 'undefined' ? 1 : window.devicePixelRatio,
     SETTINGS.smoke,
-    SETTINGS.stars,
-    SETTINGS.grid,
+    SETTINGS.ground,
   ]);
 }

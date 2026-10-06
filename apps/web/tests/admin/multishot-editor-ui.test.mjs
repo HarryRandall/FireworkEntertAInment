@@ -69,7 +69,6 @@ test('multishot inspector only opens for a selected shot', () => {
   assert.doesNotMatch(inspector, /No shot selected/);
   assert.match(editor, /selectedShot \? 'xl:grid-cols-\[minmax\(0,1fr\)_340px\]' : 'grid-cols-1'/);
   assert.match(editor, /selectedShot \? \(\s*<Inspector/);
-  assert.match(editor, /fullWidth=\{!selectedShot\}/);
   assert.doesNotMatch(editor, /hasShots=\{shots\.length > 0\}/);
   assert.doesNotMatch(inspector, /Select a clip on the timeline/);
   assert.match(inspector, /overflow-y-auto/);
@@ -233,23 +232,11 @@ test('multishot preview uses shared admin transport fullscreen and loading chrom
   assert.match(previewStage, /fixed inset-\[5vmin\] z-\[100\]/);
   assert.match(previewStage, /PreviewFullscreenBackdrop/);
   assert.match(previewStage, /showLoadingBar/);
-  assert.match(previewStage, /primeSnapshots/);
-  assert.match(previewStage, /primeOnCueChanges=\{false\}/);
   assert.match(previewStage, /onPrimeProgress=\{onPreviewLoadingProgress\}/);
   assert.match(previewStage, /onReady=\{onPreviewReady\}/);
   assert.match(previewStage, /cameraMenuActions=\{previewMenuActions\}/);
   assert.match(previewStage, /onClick: onLoopToggle/);
   assert.match(editor, /const PREVIEW_TRANSPORT_IDLE_MS = 2000;/);
-  assert.match(editor, /const INSPECTOR_RAIL_WIDTH_PX = 340;/);
-  assert.match(editor, /const INSPECTOR_RAIL_GAP_PX = 20;/);
-  assert.match(
-    editor,
-    /const INSPECTOR_RENDER_OVERSCAN_PX = INSPECTOR_RAIL_WIDTH_PX \+ INSPECTOR_RAIL_GAP_PX/,
-  );
-  assert.match(
-    previewStage,
-    /renderOverscanPx=\{!fullscreen && !fullWidth \? INSPECTOR_RENDER_OVERSCAN_PX : 0\}/,
-  );
   assert.match(previewStage, /: 'relative h-\[560px\]'/);
   assert.match(previewStage, /<div className="relative h-full w-full">/);
   assert.doesNotMatch(previewStage, /aspect-video|cameraViewOffset/);
@@ -273,14 +260,13 @@ test('multishot preview uses shared admin transport fullscreen and loading chrom
   assert.match(previewStage, /onPointerMoveCapture=\{wakePreviewTransport\}/);
   assert.match(previewStage, /onPointerLeave=\{hidePreviewTransport\}/);
   assert.match(previewStage, /transition-all duration-300/);
-  assert.match(previewStage, /fullWidth/);
   assert.match(previewStage, /h-\[560px\]/);
   assert.match(editor, /max-h-\[560px\]/);
   assert.match(previewStage, /absolute inset-x-0 bottom-5 z-30/);
   assert.match(previewStage, /fullscreen=\{fullscreen\}/);
   assert.match(previewStage, /loading=\{loading\}/);
   assert.match(previewStage, /onFullscreenToggle=\{onFullscreenToggle\}/);
-  assert.doesNotMatch(previewStage, /onLoopToggle=\{onLoopToggle\}/);
+  assert.match(previewStage, /onLoopToggle=\{onLoopToggle\}/);
   assert.match(loading, /AdminMultishotEditorSkeleton/);
   assert.match(routeSkeletons, /export function AdminMultishotEditorSkeleton/);
   assert.match(routeSkeletons, /Loading multishot editor/);

@@ -1,4 +1,5 @@
 'use client';
+import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
 
 /**
  * Shared hover preview for firework browse cards.
@@ -24,7 +25,6 @@ import {
   type FireworkCardPreviewPersistence,
   type FireworkCardPreviewPayload,
 } from '@/lib/firework-card-preview';
-import { estimateFireworkDesignTiming } from '@showcrafter/fireworks/timing';
 import { developedTime, poster as renderPoster } from '@showcrafter/renderer/poster';
 import { shotDuration } from '@showcrafter/renderer';
 import { resolvedShowDesign, showLiftTimeSeconds } from '@/lib/shows/renderer-design';
@@ -48,7 +48,7 @@ const BACKGROUND_CAPTURE_DELAY_MS = 350;
 const SAME_PREVIEW_SEEK_EPSILON_SECONDS = 0.001;
 
 const LazyFireworkReplayCanvas = dynamic(
-  () => import('@/ui/replay/ShowRendererCanvas').then((mod) => mod.FireworkReplayCanvas),
+  () => import('@/ui/replay/ShowRendererCanvas').then((mod) => mod.ShowRendererCanvas),
   { ssr: false, loading: () => null },
 );
 
@@ -67,7 +67,6 @@ type PosterBackfillTarget = Pick<PreviewTarget, 'id' | 'previewUrl'> & {
 };
 
 type LoadedPreview = {
-  renderer?: 'legacy-editor';
   id: string;
   previewUrl: string;
   cues: ReplayCue[];
@@ -75,7 +74,7 @@ type LoadedPreview = {
   persistence: FireworkCardPreviewPersistence | null;
 };
 
-type CachedPreview = Pick<LoadedPreview, 'cues' | 'durationSeconds' | 'persistence' | 'renderer'>;
+type CachedPreview = Pick<LoadedPreview, 'cues' | 'durationSeconds' | 'persistence'>;
 
 type FireworkBrowsePreviewContextValue = {
   activeId: string | null;
@@ -96,7 +95,12 @@ type FireworkBrowsePreviewContextValue = {
     element: HTMLElement,
     options?: { persist?: boolean },
   ) => void;
-  queuePosterCapture: (id: string, previewUrl: string, element: HTMLElement) => void;
+  queuePosterCapture: (
+    id: string,
+    previewUrl: string,
+    element: HTMLElement,
+    persist?: boolean,
+  ) => void;
   unqueuePosterCapture: (id: string) => void;
 };
 
@@ -140,16 +144,7 @@ type CueVisualWindow = {
   endSeconds: number;
 };
 
-function cueVisualWindow(cue: ReplayCue, legacyEditor = false): CueVisualWindow {
-  if (legacyEditor) {
-    if (!cue.firework.renderDesign) throw new Error('The style default has no editor design.');
-    const timing = estimateFireworkDesignTiming(cue.firework.renderDesign);
-    return {
-      startSeconds: cue.timeSeconds + timing.effectStartSeconds,
-      representativeSeconds: cue.timeSeconds + timing.effectStartSeconds + 0.5,
-      endSeconds: cue.timeSeconds + timing.fadeFinishSeconds,
-    };
-  }
+function cueVisualWindow(cue: ReplayCue): CueVisualWindow {
   const design = resolvedShowDesign(cue.firework, cue.emphasis ?? 'normal');
   return {
     startSeconds: cue.timeSeconds + showLiftTimeSeconds(design),
@@ -159,9 +154,7 @@ function cueVisualWindow(cue: ReplayCue, legacyEditor = false): CueVisualWindow 
 }
 
 function staticPreviewTime(preview: CachedPreview): number {
-  const windows = preview.cues.map((cue) =>
-    cueVisualWindow(cue, preview.renderer === 'legacy-editor'),
-  );
+  const windows = preview.cues.map((cue) => cueVisualWindow(cue));
   if (windows.length === 0) return 0;
 
   const representative = windows.reduce((best, candidate) => {
@@ -333,20 +326,23 @@ export function FireworkBrowsePreviewProvider({
     setFailedId(id);
   }, []);
 
-  const queuePosterCapture = useCallback((id: string, previewUrl: string, element: HTMLElement) => {
-    if (persistedPosterCaptures.has(previewUrl)) return;
-    const current = posterQueueRef.current.get(id);
-    if (current?.previewUrl === previewUrl && current.element === element) return;
-    posterQueueRef.current.set(id, {
-      id,
-      previewUrl,
-      element,
-      persist: true,
-      background: true,
-      displayPoster: true,
-    });
-    setPosterQueueVersion((version) => version + 1);
-  }, []);
+  const queuePosterCapture = useCallback(
+    (id: string, previewUrl: string, element: HTMLElement, persist = true) => {
+      if (persistedPosterCaptures.has(previewUrl)) return;
+      const current = posterQueueRef.current.get(id);
+      if (current?.previewUrl === previewUrl && current.element === element) return;
+      posterQueueRef.current.set(id, {
+        id,
+        previewUrl,
+        element,
+        persist,
+        background: true,
+        displayPoster: true,
+      });
+      setPosterQueueVersion((version) => version + 1);
+    },
+    [],
+  );
 
   const unqueuePosterCapture = useCallback((id: string) => {
     if (!posterQueueRef.current.delete(id)) return;
@@ -421,34 +417,28 @@ export function FireworkBrowsePreviewProvider({
           canvas.height = POSTER_HEIGHT;
           const context = canvas.getContext('2d');
           if (!context) return false;
-          if (preview.renderer === 'legacy-editor') {
-            const source = overlayRef.current?.querySelector('canvas');
-            if (!source) return false;
-            context.drawImage(source, 0, 0, POSTER_WIDTH, POSTER_HEIGHT);
-          } else {
-            const result = buildShowRendererShots(preview.cues);
-            if (!result.ok || result.shots.length === 0) return false;
-            const first = result.shots[0];
-            if (!first) return false;
-            const png = await renderPoster(null, first.design, {
-              shots: result.shots,
-              t: staticPreviewTime(preview),
-              width: POSTER_WIDTH,
-              height: POSTER_HEIGHT,
-              prop:
-                preview.cues.length > 1 &&
-                preview.cues.every(
-                  (cue) => cue.launchPositionIndex === 0 && !cue.shotPositionOverride,
-                )
-                  ? 'cake'
-                  : 'mortar',
-            });
-            const image = await createImageBitmap(png);
-            try {
-              context.drawImage(image, 0, 0, POSTER_WIDTH, POSTER_HEIGHT);
-            } finally {
-              image.close();
-            }
+          const result = buildShowRendererShots(preview.cues);
+          if (!result.ok || result.shots.length === 0) return false;
+          const first = result.shots[0];
+          if (!first) return false;
+          const png = await renderPoster(null, first.design, {
+            shots: result.shots,
+            t: staticPreviewTime(preview),
+            width: POSTER_WIDTH,
+            height: POSTER_HEIGHT,
+            prop:
+              preview.cues.length > 1 &&
+              preview.cues.every(
+                (cue) => cue.launchPositionIndex === 0 && !cue.shotPositionOverride,
+              )
+                ? 'cake'
+                : 'mortar',
+          });
+          const image = await createImageBitmap(png);
+          try {
+            context.drawImage(image, 0, 0, POSTER_WIDTH, POSTER_HEIGHT);
+          } finally {
+            image.close();
           }
           blob = await new Promise<Blob | null>((resolve) =>
             canvas.toBlob(resolve, 'image/webp', POSTER_WEBP_QUALITY),
@@ -474,9 +464,14 @@ export function FireworkBrowsePreviewProvider({
         if (persistedPosterCaptures.has(target.previewUrl)) return true;
         if (!preview.persistence) return false;
         return persistPosterBlob(target.previewUrl, preview.persistence, blob);
-      })().finally(() => {
-        pendingPosterCaptures.delete(target.previewUrl);
-      });
+      })()
+        .catch((cause: unknown) => {
+          console.error('[firework-browse-preview] poster capture failed:', cause);
+          return false;
+        })
+        .finally(() => {
+          pendingPosterCaptures.delete(target.previewUrl);
+        });
 
       pendingPosterCaptures.set(target.previewUrl, task);
       return task;
@@ -609,6 +604,10 @@ export function FireworkBrowsePreviewProvider({
       const cached = cachedPreview(target.previewUrl);
       if (cached) {
         const canvasAlreadyMounted = mountedPreviewRef.current?.previewUrl === target.previewUrl;
+        if (target.background) {
+          completePreviewFrame(target, cached, serial);
+          return;
+        }
         installPreview(target, cached);
         if (canvasAlreadyMounted) {
           scheduleMountedCanvasReady(target, cached, serial);
@@ -632,7 +631,6 @@ export function FireworkBrowsePreviewProvider({
         if (cues.length === 0) throw new Error('Preview contains no playable cues');
 
         const loaded: CachedPreview = {
-          renderer: payload.renderer,
           cues,
           durationSeconds: previewDuration(payload.durationSeconds),
           persistence: payload.persistence ?? null,
@@ -648,7 +646,11 @@ export function FireworkBrowsePreviewProvider({
           return;
         }
         positionOverlay(target);
-        installPreview(target, loaded);
+        if (target.background) {
+          completePreviewFrame(target, loaded, serial);
+        } else {
+          installPreview(target, loaded);
+        }
       } catch (error) {
         if (controller.signal.aborted || requestSerialRef.current !== serial) return;
         console.error('[firework-browse-preview] preview load failed:', error);
@@ -665,6 +667,7 @@ export function FireworkBrowsePreviewProvider({
     [
       clearIntentTimer,
       clearReadyFrames,
+      completePreviewFrame,
       finishBackgroundCapture,
       installPreview,
       positionOverlay,
@@ -963,29 +966,31 @@ export function FireworkBrowsePreviewProvider({
         style={{ transform: 'translate(-9999px, -9999px)' }}
       >
         {mountedPreview ? (
-          <LazyFireworkReplayCanvas
-            cues={mountedPreview.cues}
-            legacyEditor={mountedPreview.renderer === 'legacy-editor'}
-            prop={
-              mountedPreview.cues.length > 1 &&
-              mountedPreview.cues.every(
-                (cue) => cue.launchPositionIndex === 0 && !cue.shotPositionOverride,
-              )
-                ? 'cake'
-                : 'mortar'
-            }
-            elapsed={0}
-            playbackRef={playbackRef}
-            interactive={false}
-            allowWheelZoom={false}
-            controlsVisible={false}
-            showCameraControls={false}
-            muted
-            maxDevicePixelRatio={2}
-            antialias
-            showLoadingBar={false}
-            onReady={handleCanvasReady}
-          />
+          <CanvasSurface className="absolute inset-0">
+            <LazyFireworkReplayCanvas
+              cues={mountedPreview.cues}
+              prop={
+                mountedPreview.cues.length > 1 &&
+                mountedPreview.cues.every(
+                  (cue) => cue.launchPositionIndex === 0 && !cue.shotPositionOverride,
+                )
+                  ? 'cake'
+                  : 'mortar'
+              }
+              elapsed={0}
+              playbackRef={playbackRef}
+              playing={Boolean(active) && !prefersReducedMotion}
+              interactive={false}
+              allowWheelZoom={false}
+              controlsVisible={false}
+              showCameraControls={false}
+              muted
+              maxDevicePixelRatio={2}
+              antialias
+              showLoadingBar={false}
+              onReady={handleCanvasReady}
+            />
+          </CanvasSurface>
         ) : null}
       </div>
     </FireworkBrowsePreviewContext.Provider>

@@ -1,4 +1,5 @@
 'use client';
+import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
 
 /** Curated show preset editor: replay, timeline, catalogue insertion and publish controls. */
 
@@ -417,18 +418,21 @@ export function ShowPresetEditor({
               : 'h-[520px]',
           )}
         >
-          <LazyFireworkReplayCanvas
-            cues={replayCues}
-            elapsed={elapsed}
-            playbackRef={playbackRef}
-            muted={!isPlaying}
-            interactive
-            controlsVisible={isReplayReady}
-            primeSnapshots
-            primeOnCueChanges={false}
-            showLoadingBar
-            onReady={() => setIsReplayReady(true)}
-          />
+          <CanvasSurface className="absolute inset-0">
+            <LazyFireworkReplayCanvas
+              cues={replayCues}
+              elapsed={elapsed}
+              playbackRef={playbackRef}
+              muted={!isPlaying}
+              startDistance="farthest"
+              interactive
+              controlsVisible={isReplayReady}
+              primeSnapshots
+              primeOnCueChanges={false}
+              showLoadingBar
+              onReady={() => setIsReplayReady(true)}
+            />
+          </CanvasSurface>
           <div className="pointer-events-none absolute inset-x-0 bottom-5 z-30">
             <div className="pointer-events-auto">
               <EditorPreviewTransport

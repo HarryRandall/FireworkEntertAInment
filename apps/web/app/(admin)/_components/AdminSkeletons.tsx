@@ -644,16 +644,6 @@ export function AdminMultishotEditorSkeleton() {
   );
 }
 
-/** Shared preview, inspector and parts layout while editor records load. */
-export function AdminStyleDefaultEditorSkeleton() {
-  return (
-    <AdminVisualEditorSkeleton
-      label="Loading style default editor"
-      parts={['Preset settings', 'Utilities']}
-    />
-  );
-}
-
 function AdminVisualEditorSkeleton({
   label,
   parts = ['Launch', 'Burst', 'Trails', 'Extra effects', 'Timing', 'Sound', 'Utilities'],

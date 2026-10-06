@@ -1,4 +1,7 @@
 'use client';
+
+import { playbackReadoutGate } from '@/ui/renderer/playback-readout';
+import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
 import { useEffect, useRef, useState } from 'react';
 import type { Design } from '@showcrafter/renderer';
 import { Viewer } from '@showcrafter/renderer/view';
@@ -37,7 +40,9 @@ export default function PreviewSurface({
     try {
       const instance = new Viewer(container.current, { design: initial.current, ui: false, loop });
       viewer.current = instance;
+      const readout = playbackReadoutGate();
       const unsubscribe = instance.on((state) => {
+        if (!readout({ time: state.t, duration: state.duration, playing: state.playing })) return;
         setPlayback({
           elapsed: state.t,
           duration: state.duration,
@@ -57,11 +62,12 @@ export default function PreviewSurface({
     }
   }, [player, loop]);
   useEffect(() => {
-    viewer.current?.setDesign(document, true);
+    const instance = viewer.current;
+    if (instance && instance.shots[0]?.design !== document) instance.setDesign(document, true);
   }, [document]);
   return (
-    <div className="relative h-full min-h-48 w-full">
-      <div className="absolute inset-0" ref={container} />
+    <CanvasSurface className="h-full min-h-48 w-full">
+      <CanvasSurface className="absolute inset-0" ref={container} />
       {player && transport && !failure && (
         <div className="absolute inset-x-0 bottom-5 z-30">
           <EditorPreviewTransport
@@ -88,6 +94,6 @@ export default function PreviewSurface({
           {failure}
         </p>
       )}
-    </div>
+    </CanvasSurface>
   );
 }

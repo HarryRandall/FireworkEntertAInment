@@ -22,6 +22,8 @@ export interface ViewerOptions {
   autoplay?: boolean;
   loop?: boolean;
   startAt?: number;
+  /** Starts and resets at the framed view, furthest normal orbit distance, or elevated single-shot pose. */
+  startDistance?: 'framed' | 'farthest' | 'elevated';
   /** Forces the portable 8-bit output target, useful for fallback verification. */
   forceLdr?: boolean;
 }

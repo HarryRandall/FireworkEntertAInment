@@ -356,6 +356,7 @@ export function AdminShell({
 
   return (
     <WorkspaceShell
+      phoneSheet
       initialSidebarCollapsed={initialSidebarCollapsed}
       hasInitialSidebarCollapsedCookie={hasInitialSidebarCollapsedCookie}
       themePreference={profile.themePreference}
@@ -406,7 +407,10 @@ export function AdminShell({
       </Sidebar>
 
       <AdminBreadcrumbOverrideContext.Provider value={setBreadcrumbOverride}>
-        <WorkspaceContent header={<ShellTopBar breadcrumbs={breadcrumbs} />}>
+        <WorkspaceContent
+          header={<ShellTopBar breadcrumbs={breadcrumbs} />}
+          insetClassName="md:peer-data-[variant=inset]:m-0 md:peer-data-[variant=inset]:h-svh md:peer-data-[variant=inset]:max-h-svh md:peer-data-[variant=inset]:rounded-none"
+        >
           {children}
         </WorkspaceContent>
       </AdminBreadcrumbOverrideContext.Provider>

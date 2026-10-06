@@ -17,6 +17,33 @@ import { ViewerSound } from '../src/view/sound/scheduler.ts';
 // Replay instants are show seconds; RAF timestamps below are wall-clock milliseconds.
 const SHOW_TIME_S = 2.2;
 
+test('static world uses a midnight sky, static stars above the horizon and the polar grid', () => {
+  const scene = new THREE.Scene();
+  const world = makeWorld(scene);
+  const [sky, ground] = scene.children;
+  assert.equal(scene.children.length, 2, 'the static world contains only sky and ground');
+  assert.equal(sky.type, 'Mesh');
+  assert.equal(ground.type, 'Mesh');
+  assert.match(sky.material.fragmentShader, /VISUAL_TUNING_HORIZON_COLOUR/);
+  assert.match(sky.material.fragmentShader, /VISUAL_TUNING_HORIZON_BAND_HALF_WIDTH/);
+  assert.match(sky.material.fragmentShader, /VISUAL_TUNING_OVERHEAD_COLOUR/);
+  assert.match(sky.material.fragmentShader, /vec3\(0.0020, 0.0040, 0.0100\)/);
+  assert.match(sky.material.fragmentShader, /step\(VISUAL_TUNING_STAR_MIN_ELEVATION,direction.y\)/);
+  assert.doesNotMatch(sky.material.fragmentShader, /uniform.*time/);
+  assert.equal(
+    scene.children.some((child) => child.isPoints),
+    false,
+    'stars share the sky pass',
+  );
+  assert.match(ground.material.fragmentShader, /VISUAL_TUNING_RING_SPACING_M/);
+  assert.match(ground.material.fragmentShader, /VISUAL_TUNING_SPOKE_SPACING_DEG/);
+  assert.match(ground.material.fragmentShader, /fwidth\(distanceToLineM\)/);
+  assert.doesNotMatch(ground.material.fragmentShader, /DOT_/);
+  world.setSettings(false);
+  assert.equal(ground.material.uniforms.uGrid.value, 0, 'the polar grid remains user-toggleable');
+  disposeTree(scene);
+});
+
 test('wheel live viewer seek replay preserves every render input at 2.2 seconds', () => {
   const saved = {
     window: globalThis.window,
@@ -95,7 +122,6 @@ test('wheel live viewer seek replay preserves every render input at 2.2 seconds'
   const sprays = new GpuSprays(layers.uniforms);
   const scene = new THREE.Scene();
   const world = makeWorld(scene);
-  world.resize(844, 1);
   scene.add(layers.group, sprays.points, makeProps([{ design }], 'mortar'));
   const renderObjects = [];
   scene.traverse((object) => {

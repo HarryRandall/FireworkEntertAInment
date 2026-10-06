@@ -1,65 +1,66 @@
-/** Night sky, fixed stars and ground provide a shared world for every firework view. */
+/** A midnight sky and ground lattice provide a shared world for every firework view. */
 import * as THREE from 'three';
 
 // Prototype scene dimensions in metres, and tessellation chosen for a smooth horizon.
 const SKY_RADIUS_M = 1400;
-const STAR_RADIUS_M = 1300;
 const GROUND_RADIUS_M = 1350;
 const SKY_SEGMENTS = 48;
 const SKY_RINGS = 24;
 const GROUND_SEGMENTS = 96;
-// Prototype starfield count, seed and magnitude exponent (dimensionless visual tuning).
-const STAR_COUNT = 1300;
-const STAR_SEED = 20260930;
-const MAGNITUDE_POWER = 6;
-// Prototype star horizon cutoff, normalised unit-sphere height.
-const STAR_MIN_ELEVATION = 0.06;
-// Prototype thumbnail scaling: full sky detail at 820 CSS pixels, minimum scale 0.35.
-const STAR_REFERENCE_HEIGHT_PX = 820;
-const STAR_MIN_SCALE = 0.35;
-// Packed star positions and colours each have three scalar components.
-const VECTOR_COMPONENTS = 3;
-// Prototype Mulberry32 starfield sequence: unsigned 32-bit arithmetic constants and shifts.
-const RANDOM_INCREMENT = 0x6d2b79f5;
-const RANDOM_MIX = 61;
-const UINT32_RANGE = 4294967296;
-const MIX_SHIFT_A = 15;
-const MIX_SHIFT_B = 7;
-const MIX_SHIFT_C = 14;
 const skyVertex =
   'varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }';
 const skyFragment = `
-// Prototype linear RGB sky palette and elevation bands, in unit sphere heights.
-const vec3 GROUND = vec3(0.0009,0.0010,0.0014);
-const vec3 HORIZON = vec3(0.0012,0.0032,0.0100);
-const vec3 MID = vec3(0.0008,0.0013,0.0034);
-const vec3 TOP = vec3(0.0002,0.0003,0.0009);
-const float HORIZON_LOW = -0.01, HORIZON_HIGH = 0.03, MID_HIGH = 0.18, TOP_HIGH = 0.7;
+// Visual tuning: dim linear RGB sky colours and elevation fade stops.
+// Horizon band bounds are unit-sphere elevations, centred at the ground-sky boundary.
+const vec3 VISUAL_TUNING_HORIZON_COLOUR = vec3(0.0020, 0.0040, 0.0100);
+const vec3 VISUAL_TUNING_MID_SKY_COLOUR = vec3(0.0003, 0.0006, 0.0015);
+const vec3 VISUAL_TUNING_OVERHEAD_COLOUR = vec3(0.0);
+const float VISUAL_TUNING_HORIZON_START = -0.02;
+const float VISUAL_TUNING_HORIZON_END = 0.10;
+const float VISUAL_TUNING_OVERHEAD_START = 0.18;
+const float VISUAL_TUNING_OVERHEAD_END = 0.72;
+const float VISUAL_TUNING_HORIZON_BAND_CENTRE = 0.0;
+const float VISUAL_TUNING_HORIZON_BAND_HALF_WIDTH = 0.035;
+const vec3 VISUAL_TUNING_HORIZON_BAND_COLOUR = vec3(0.0035);
+// Visual tuning: angular cells per unit direction, occupied fraction, linear RGB intensity.
+const float VISUAL_TUNING_STAR_CELLS = 180.0;
+const float VISUAL_TUNING_STAR_DENSITY = 0.003;
+const float VISUAL_TUNING_STAR_INTENSITY = 0.055;
+const float VISUAL_TUNING_STAR_RADIUS_CELLS = 0.055;
+const float VISUAL_TUNING_STAR_MIN_ELEVATION = 0.025;
 varying vec3 vD;
-void main(){ vec3 c = mix(GROUND,HORIZON,smoothstep(HORIZON_LOW,HORIZON_HIGH,vD.y)); c = mix(c,MID,smoothstep(HORIZON_HIGH,MID_HIGH,vD.y)); c = mix(c,TOP,smoothstep(MID_HIGH,TOP_HIGH,vD.y)); gl_FragColor = vec4(c,1.0); }`;
+float starHash(vec2 cell){return fract(sin(dot(cell,vec2(127.1,311.7)))*43758.5453);}
+float starfield(vec3 direction){
+  if(direction.y<VISUAL_TUNING_STAR_MIN_ELEVATION)return 0.0;
+  vec2 angular=vec2(atan(direction.z,direction.x),asin(clamp(direction.y,-1.0,1.0)))*VISUAL_TUNING_STAR_CELLS;
+  vec2 cell=floor(angular);
+  float selected=step(1.0-VISUAL_TUNING_STAR_DENSITY,starHash(cell));
+  if(selected==0.0)return 0.0;
+  vec2 centre=vec2(starHash(cell+17.0),starHash(cell+43.0))*0.6+0.2;
+  float distanceCells=length(fract(angular)-centre);
+  float coverage=max(fwidth(distanceCells),0.001);
+  float dotCoverage=1.0-smoothstep(VISUAL_TUNING_STAR_RADIUS_CELLS,VISUAL_TUNING_STAR_RADIUS_CELLS+coverage,distanceCells);
+  return selected*dotCoverage*VISUAL_TUNING_STAR_INTENSITY*step(VISUAL_TUNING_STAR_MIN_ELEVATION,direction.y);
+}
+void main(){ vec3 c = mix(VISUAL_TUNING_HORIZON_COLOUR,VISUAL_TUNING_MID_SKY_COLOUR,smoothstep(VISUAL_TUNING_HORIZON_START,VISUAL_TUNING_HORIZON_END,vD.y)); c = mix(c,VISUAL_TUNING_OVERHEAD_COLOUR,smoothstep(VISUAL_TUNING_OVERHEAD_START,VISUAL_TUNING_OVERHEAD_END,vD.y)); float horizonBand=1.0-smoothstep(0.0,VISUAL_TUNING_HORIZON_BAND_HALF_WIDTH,abs(vD.y-VISUAL_TUNING_HORIZON_BAND_CENTRE)); gl_FragColor = vec4(c+VISUAL_TUNING_HORIZON_BAND_COLOUR*horizonBand+vec3(starfield(normalize(vD))),1.0); }`;
 const groundVertex =
   'varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }';
 const groundFragment = `
-// Prototype grid intervals and fade distances in metres; palette is linear RGB.
-const float FINE_M = 5.0, COARSE_M = 25.0, FADE_START_M = 15.0, FADE_END_M = 140.0;
-const float FINE_FADE_START_M = 20.0, FINE_FADE_END_M = 60.0;
-const float FINE_GAIN = 0.3, COARSE_GAIN = 0.9;
-const vec3 BASE = vec3(0.0022,0.0024,0.0032), GRID = vec3(0.005,0.008,0.014);
+// Visual tuning: polar rings/spokes are measured from the launch origin in metres/degrees.
+const float VISUAL_TUNING_RING_SPACING_M = 10.0;
+const float VISUAL_TUNING_SPOKE_SPACING_DEG = 15.0;
+const float VISUAL_TUNING_RADIANS_PER_DEGREE = 0.01745329252;
+// Line width is expressed in screen pixels via derivative-sized world-metre coverage.
+const float VISUAL_TUNING_LINE_WIDTH_PX = 0.85;
+const float VISUAL_TUNING_GRID_FADE_START_M = 18.0;
+const float VISUAL_TUNING_GRID_FADE_END_M = 150.0;
+const vec3 VISUAL_TUNING_GROUND_COLOUR = vec3(0.0015);
+const vec3 VISUAL_TUNING_GRID_COLOUR = vec3(0.018);
 varying vec3 vW; uniform float uGrid;
-float line(vec2 p,float s){vec2 q=p/s;vec2 g=abs(fract(q-0.5)-0.5)/fwidth(q);return 1.0-min(min(g.x,g.y),1.0);}
-void main(){float d=length(vW.xz);float fade=1.0-smoothstep(FADE_START_M,FADE_END_M,d);float g=max(line(vW.xz,FINE_M)*FINE_GAIN*(1.0-smoothstep(FINE_FADE_START_M,FINE_FADE_END_M,d)),line(vW.xz,COARSE_M)*COARSE_GAIN);gl_FragColor=vec4(BASE+GRID*g*fade*uGrid,1.0);}`;
-const starVertex = `
-// Prototype star size, in CSS pixels, and magnitude gain (normalised).
-const float BASE_PX = 0.8, MAG_GAIN_PX = 1.4;
-attribute float mag; uniform float uDpr; uniform float uView; varying float vM;
-void main(){vM=mag*uView;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);gl_PointSize=max(1.0,(BASE_PX+mag*MAG_GAIN_PX)*uDpr*uView);}`;
-const starFragment = `
-// Prototype soft star edge radius, linear RGB tint and normalised brightness.
-const float EDGE = 0.4, BASE = 0.03, GAIN = 0.42;
-const vec3 TINT = vec3(0.55,0.6,0.75);
-varying float vM;void main(){vec2 c=gl_PointCoord*2.0-1.0;float a=1.0-smoothstep(EDGE,1.0,length(c));gl_FragColor=vec4(TINT*(BASE+vM*GAIN)*a,a);}`;
+float polarLine(float distanceToLineM){float antialiasWidthM=max(fwidth(distanceToLineM)*VISUAL_TUNING_LINE_WIDTH_PX,0.00001);return 1.0-smoothstep(0.0,antialiasWidthM,distanceToLineM);}
+void main(){float radiusM=length(vW.xz);float ringDistanceM=abs(fract(radiusM/VISUAL_TUNING_RING_SPACING_M+0.5)-0.5)*VISUAL_TUNING_RING_SPACING_M;float angleRad=atan(vW.z,vW.x);float spokePhase=angleRad/(VISUAL_TUNING_SPOKE_SPACING_DEG*VISUAL_TUNING_RADIANS_PER_DEGREE);float spokeDistanceM=abs(sin(spokePhase*3.14159265359))*radiusM;float polarGrid=max(polarLine(ringDistanceM),polarLine(spokeDistanceM));float horizonFade=1.0-smoothstep(VISUAL_TUNING_GRID_FADE_START_M,VISUAL_TUNING_GRID_FADE_END_M,radiusM);gl_FragColor=vec4(VISUAL_TUNING_GROUND_COLOUR+VISUAL_TUNING_GRID_COLOUR*polarGrid*horizonFade*uGrid,1.0);}`;
 
-/** Creates the static world and returns its starfield uniforms for viewport scaling. */
+/** Creates the static world shared by the live viewer and detached poster renderer. */
 export function makeWorld(scene: THREE.Scene) {
   scene.add(
     new THREE.Mesh(
@@ -72,29 +73,21 @@ export function makeWorld(scene: THREE.Scene) {
       }),
     ),
   );
-  const { stars, uniforms } = makeStars();
-  scene.add(stars);
+  const groundUniforms = { uGrid: { value: 1 } };
+  const groundMaterial = new THREE.ShaderMaterial({
+    uniforms: groundUniforms,
+    vertexShader: groundVertex,
+    fragmentShader: groundFragment,
+  });
   const ground = new THREE.Mesh(
     new THREE.CircleGeometry(GROUND_RADIUS_M, GROUND_SEGMENTS),
-    new THREE.ShaderMaterial({
-      uniforms: { uGrid: { value: 1 } },
-      vertexShader: groundVertex,
-      fragmentShader: groundFragment,
-    }),
+    groundMaterial,
   );
   ground.rotation.x = -Math.PI / 2;
   scene.add(ground);
   return {
-    setSettings(showStars: boolean, showGrid: boolean) {
-      stars.visible = showStars;
-      ground.material.uniforms.uGrid = { value: showGrid ? 1 : 0 };
-    },
-    resize(height: number, dpr: number) {
-      uniforms.uDpr.value = dpr;
-      uniforms.uView.value = Math.max(
-        STAR_MIN_SCALE,
-        Math.min(1, height / STAR_REFERENCE_HEIGHT_PX),
-      );
+    setSettings(showGround: boolean) {
+      groundUniforms.uGrid.value = showGround ? 1 : 0;
     },
   };
 }
@@ -120,48 +113,4 @@ export function disposeTree(root: THREE.Object3D): void {
   });
   for (const geometry of geometries) geometry.dispose();
   for (const material of materials) material.dispose();
-}
-
-function makeStars() {
-  const positions = new Float32Array(STAR_COUNT * VECTOR_COMPONENTS);
-  const magnitudes = new Float32Array(STAR_COUNT);
-  let seed = STAR_SEED;
-  const random = () => {
-    seed = (seed + RANDOM_INCREMENT) | 0;
-    let value = Math.imul(seed ^ (seed >>> MIX_SHIFT_A), 1 | seed);
-    value = (value + Math.imul(value ^ (value >>> MIX_SHIFT_B), RANDOM_MIX | value)) ^ value;
-    return ((value ^ (value >>> MIX_SHIFT_C)) >>> 0) / UINT32_RANGE;
-  };
-  for (let i = 0; i < STAR_COUNT; i++) {
-    const elevation = STAR_MIN_ELEVATION + random() * (1 - STAR_MIN_ELEVATION);
-    const azimuth = random() * Math.PI * 2;
-    const radius = Math.sqrt(1 - elevation * elevation);
-    positions.set(
-      [
-        radius * Math.cos(azimuth) * STAR_RADIUS_M,
-        elevation * STAR_RADIUS_M,
-        radius * Math.sin(azimuth) * STAR_RADIUS_M,
-      ],
-      i * VECTOR_COMPONENTS,
-    );
-    magnitudes[i] = random() ** MAGNITUDE_POWER;
-  }
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, VECTOR_COMPONENTS));
-  geometry.setAttribute('mag', new THREE.BufferAttribute(magnitudes, 1));
-  const uniforms = { uDpr: { value: 1 }, uView: { value: 1 } };
-  const stars = new THREE.Points(
-    geometry,
-    new THREE.ShaderMaterial({
-      transparent: true,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-      uniforms,
-      vertexShader: starVertex,
-      fragmentShader: starFragment,
-    }),
-  );
-  stars.frustumCulled = false;
-
-  return { stars, uniforms };
 }

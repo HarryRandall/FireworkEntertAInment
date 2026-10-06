@@ -190,7 +190,6 @@ export class Viewer {
     this.layers.uniforms.uScale.value =
       (height * dpr) / (2 * Math.tan((FOV_DEG * Math.PI) / HALF_TURN_DEG / 2));
     this.layers.uniforms.uDpr.value = dpr;
-    this.world.resize(height, dpr);
     if (!this.controls.touched) this.resetCamera(true);
     else this.invalidate();
   }
@@ -284,10 +283,14 @@ export class Viewer {
   setDesign(design: Design, keepCamera = false): void {
     this.setShots([{ design }], keepCamera);
   }
-  /** Restores prototype framing in world metres; snap skips camera easing. */
+  /** Restores the configured starting framing in world metres; snap skips camera easing. */
   resetCamera(snap = false): void {
     if (this.disposed) return;
-    this.controls.frame(framingFor(this.shots, false, this.camera.aspect, this.camera.fov), snap);
+    this.controls.frame(
+      framingFor(this.shots, false, this.camera.aspect, this.camera.fov),
+      snap,
+      this.options.startDistance ?? (this.shots.length === 1 ? 'elevated' : 'framed'),
+    );
   }
   /** Whether live drawing owns the frame budget; background posters yield throughout playback. */
   get liveDrawPending(): boolean {

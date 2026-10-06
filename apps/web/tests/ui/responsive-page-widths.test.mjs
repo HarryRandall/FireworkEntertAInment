@@ -62,7 +62,6 @@ test('admin routes cap data workspaces without constraining full-bleed editors',
   for (const path of [
     'app/(admin)/admin/fireworks/[id]/page.tsx',
     'app/(admin)/admin/effects/[id]/page.tsx',
-    'app/(admin)/admin/effects/defaults/[id]/page.tsx',
   ]) {
     assert.doesNotMatch(read(path), /max-w-\[(?:1200|1400|1600)px\]/);
   }

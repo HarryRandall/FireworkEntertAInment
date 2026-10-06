@@ -1,4 +1,5 @@
 /** Browser publishing and thumbnail APIs share one detached, serial WebGL renderer. */
+import { clipCanvasSurface } from '../view/viewer-input';
 import type { Design } from '../schema/index';
 import { effectTemplates } from '../templates/index';
 import type { PosterCaptureOptions } from '../view/poster';
@@ -34,8 +35,20 @@ export async function poster(
   const surface = surfaceOptions(canvas, options);
   const time = posterTime(design, options);
   const blob = await shared.capture(design, time, surface);
-  if (canvas !== null) await copyPoster(canvas, blob);
+  if (canvas !== null) {
+    if (canvas.parentElement) clipCanvasSurface(canvas.parentElement, canvas);
+    await copyPoster(canvas, blob);
+  }
   return blob;
+}
+
+/** Captures the empty shared world through the same serial surface as firework thumbnails. */
+export function stagePoster(
+  options: Pick<PosterOptions, 'width' | 'height' | 'forceLdr'> = {},
+): Promise<Blob> {
+  const design = effectTemplates[0]?.design;
+  if (!design) throw new Error('No renderer template is available for stage framing.');
+  return shared.capture(design, 0, { ...surfaceOptions(null, options), shots: [] });
 }
 
 /** Renders built-in template canvases marked data-poster in DOM order, using one shared context.

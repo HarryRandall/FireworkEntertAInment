@@ -74,9 +74,13 @@ export function FireworkBrowseCard({
   const mediaRef = useRef<HTMLDivElement | null>(null);
   const posterRef = useRef<HTMLImageElement | null>(null);
   const sessionPosterUrl = browsePreview?.posterUrls.get(previewUrl) ?? null;
-  const posterUrl = previewError ? null : (sessionPosterUrl ?? persistedPosterUrl);
   const [loadedPosterUrl, setLoadedPosterUrl] = useState<string | null>(null);
   const [failedPosterUrl, setFailedPosterUrl] = useState<string | null>(null);
+  const posterUrl = previewError
+    ? null
+    : failedPosterUrl === persistedPosterUrl
+      ? sessionPosterUrl
+      : (persistedPosterUrl ?? sessionPosterUrl);
   const isActive = browsePreview?.activeId === previewId;
   const isReady = browsePreview?.readyId === previewId;
   const isFailed = browsePreview?.failedId === previewId;
@@ -108,11 +112,34 @@ export function FireworkBrowseCard({
   }, [posterUrl]);
 
   useEffect(() => {
-    if (!shouldPersistPoster || !mediaRef.current) return;
+    if (
+      previewError ||
+      (posterUrl && failedPosterUrl !== posterUrl && !shouldPersistPoster) ||
+      !mediaRef.current
+    )
+      return;
 
-    queuePosterCapture?.(previewId, previewUrl, mediaRef.current);
-    return () => unqueuePosterCapture?.(previewId);
-  }, [previewId, previewUrl, queuePosterCapture, shouldPersistPoster, unqueuePosterCapture]);
+    const element = mediaRef.current;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry?.isIntersecting)
+        queuePosterCapture?.(previewId, previewUrl, element, shouldPersistPoster);
+      else unqueuePosterCapture?.(previewId);
+    });
+    observer.observe(mediaRef.current);
+    return () => {
+      observer.disconnect();
+      unqueuePosterCapture?.(previewId);
+    };
+  }, [
+    previewError,
+    posterUrl,
+    failedPosterUrl,
+    previewId,
+    previewUrl,
+    queuePosterCapture,
+    shouldPersistPoster,
+    unqueuePosterCapture,
+  ]);
 
   const startPreview = () => {
     if (previewError || !mediaRef.current) return;
@@ -131,7 +158,7 @@ export function FireworkBrowseCard({
   const media = (
     <div
       ref={mediaRef}
-      className="bg-stage-night border-border relative aspect-[16/10] overflow-hidden border-b"
+      className="bg-stage-night border-border relative isolate aspect-[16/10] overflow-hidden rounded-t-xl border-b"
     >
       {/* Shimmer only while a real poster is loading. Cards without a
           persisted poster show the stage backdrop, not a permanent skeleton. */}

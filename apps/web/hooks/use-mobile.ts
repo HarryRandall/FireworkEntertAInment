@@ -1,19 +1,20 @@
 import * as React from 'react';
 
-const MOBILE_BREAKPOINT = 768;
+/** CSS pixels: Tailwind md is the default sheet boundary; admin uses sm for phones. */
+const MOBILE_BREAKPOINT_PX = 768;
 
-export function useIsMobile() {
+export function useIsMobile(breakpointPx = MOBILE_BREAKPOINT_PX) {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined);
 
   React.useEffect(() => {
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+    const mql = window.matchMedia(`(max-width: ${breakpointPx - 1}px)`);
     const onChange = () => {
-      setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+      setIsMobile(mql.matches);
     };
     mql.addEventListener('change', onChange);
-    setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+    setIsMobile(mql.matches);
     return () => mql.removeEventListener('change', onChange);
-  }, []);
+  }, [breakpointPx]);
 
   return !!isMobile;
 }

@@ -1,4 +1,5 @@
 'use client';
+import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
 
 /**
  * ShowPreviewPanel is the signature dark "night sky" preview surface. It
@@ -17,7 +18,7 @@ import { DEMO_SHOW_CUES, DEMO_SHOW_DURATION_SECONDS } from './demoShow';
 import styles from './landing.module.css';
 
 const FireworkReplayCanvas = dynamic(
-  () => import('@/ui/replay/ShowRendererCanvas').then((m) => m.FireworkReplayCanvas),
+  () => import('@/ui/replay/ShowRendererCanvas').then((m) => m.ShowRendererCanvas),
   { ssr: false, loading: () => null },
 );
 
@@ -192,17 +193,21 @@ export function ShowPreviewPanel({
             isCanvasReady ? styles.skyCanvasReady : styles.skyCanvasLoading,
           ].join(' ')}
         >
-          <FireworkReplayCanvas
-            compactPreview
-            cues={DEMO_SHOW_CUES}
-            elapsed={elapsed}
-            playbackRef={playbackRef}
-            interactive={false}
-            allowWheelZoom={false}
-            controlsVisible={false}
-            muted
-            onReady={() => setIsCanvasReady(true)}
-          />
+          <CanvasSurface className="absolute inset-0">
+            <FireworkReplayCanvas
+              compactPreview
+              cues={DEMO_SHOW_CUES}
+              elapsed={elapsed}
+              playbackRef={playbackRef}
+              playing={active}
+              startDistance="farthest"
+              interactive={false}
+              allowWheelZoom={false}
+              controlsVisible={false}
+              muted
+              onReady={() => setIsCanvasReady(true)}
+            />
+          </CanvasSurface>
         </div>
       ) : null}
 

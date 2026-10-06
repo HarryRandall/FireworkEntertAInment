@@ -29,11 +29,13 @@ reignition is optional and applies only to colour changes.
 same values. It does not mutate the document or apply defaults. Invalid documents
 throw a Zod error containing property paths; unknown versions throw a range error.
 The version is stored externally as `design_schema`, not inside the document.
-`RENDERER_VERSION` is `0.8.0`, adding tilted planar bowtie and five-point star outlines.
-The star uses ten equal-length edges with a 0.44 inner/outer radius ratio. Bowtie
-uses two opposed 60-degree circular fans. Both are visual tuning based on the
-legacy shell intent, with unit directions and a separate outline radius. Existing
-patterns retain their previous geometry.
+`RENDERER_VERSION` is `0.9.1`. It refreshes stored poster captures for the midnight blue horizon fading to a black overhead sky, soft horizon band and distance-faded polar ground grid. The grid has
+10 m concentric rings and 15 degree radial spokes around the launch origin. The
+static sky has sparse, dim stars above the horizon, sampled in the sky pass with no animation or extra draw call. Firework star outlines are unchanged: the star uses ten equal-length
+edges with a 0.44 inner/outer radius ratio, while bowtie uses two opposed 60-degree
+circular fans. Both are visual tuning based on the legacy shell intent, with unit
+directions and a separate outline radius. Existing patterns retain their previous
+geometry.
 
 `TEMPLATE_HEIGHT_BANDS` in `src/templates/height-bands.ts` documents authored apex
 and burst-top limits in metres. Shells/rockets use 55 to 65 m (catalogue apex 60 m),
@@ -46,14 +48,21 @@ height ratio; radii, colours and other authored values stay unchanged.
 
 Normal orbit zoom extends to 1.8 times the framed distance; free mode extends to
 four times the framed distance. These dimensionless limits preserve the original
-scene context. The close-fit minimum can exceed a cap only when needed to fit an
-unusually large computed burst or ground-travel extent, rather than widening the
-zoom-out range for normal templates. Minimum distance fits the computed burst sphere,
-or ground travel extent, inside the narrower field of view with a 5% margin. As distance decreases,
-the target moves towards the computed effect centre and audience pitch approaches
-a level burst view, preserving manual orbit offsets and the ground floor clamp.
-At the framed distance, the original camera pose is unchanged. Wheel, pinch and
-UI zoom buttons all call the same control method.
+scene context. The normal close limit is 20% of framed distance, subject to a 10%
+margin outside a single-shot burst sphere. Ground-travel extents retain their narrower-
+frustum fit. The default orbit target is the computed vertical centre of the burst, or
+the combined show bounds, so wheel, pinch and UI zoom buttons perform a straight dolly:
+they change distance only, never target, yaw or pitch. The ground floor clamp still
+prevents the camera entering the ground. Visual tuning sets wheel response to 0.004 per
+pixel delta (0.16 per line) and pinch response to a power of 2, so ordinary gestures
+cover the useful range in a few steps.
+
+Single-firework `Viewer` instances start, and return via Reset view, at the furthest normal
+orbit distance with a 12-degree elevated pitch aimed at the computed burst centre. This keeps
+the whole burst centred while leaving the polar grid visible below. Whole-show views retain the
+framed start by default; set `startDistance: 'farthest'` to begin and reset at the furthest
+normal orbit distance without changing their existing pitch. Posters do not use this browser-view
+option.
 
 ## Quick adjustments
 
@@ -429,6 +438,15 @@ node packages/renderer/scripts/capture-sound-goldens.mjs /Users/harry/projects/F
 corepack pnpm exec prettier --write packages/renderer/tests/fixtures/sound-goldens.json
 ```
 
+Viewer mounts clip their canvas in an isolated stacking context. Canvas CSS dimensions
+fill the host's padding box independently of physical DPR dimensions, and the host
+retains its rounded shape. Page integrations also contain overlays in a shared
+clipping surface.
+
+`stagePoster({ width, height })` from `./poster` captures the empty world through
+the same serial surface as `poster`, without another WebGL context. Shared captures
+have concurrency one and reuse their surface across dimensions.
+
 Review readiness mounts the native transport before any poster capture. Cards fill
 progressively using one detached thumbnail renderer with fixed CSS dimensions and
 the live viewer's capped DPR. Its canvas and output target are allocated once;
@@ -462,8 +480,8 @@ renderer or starting another capture.
 An unresolved poster PNG encoder does not hold the live viewer's draw scheduling.
 
 Static launch hardware bakes transforms and linear colours into one opaque mesh,
-without per-face groups. The forty-shot fixture has a maximum of nine live draw
-submissions: sky, ground, stars, hardware, CPU sparks, additive glow billboards,
+without per-face groups. The forty-shot fixture has a maximum of eight live draw
+submissions: sky with static stars, ground, hardware, CPU sparks, additive glow billboards,
 smoke billboards, GPU sprays and output. Empty or culled layers may draw fewer.
 Pause clears playback state, cancels the queued callback and stops camera easing
 before requesting one unshaken paused redraw. That draw keeps show time fixed;

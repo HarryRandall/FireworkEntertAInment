@@ -227,7 +227,10 @@ export function framingFor(
     tight || needsRaised(resolved)
       ? raised(resolved, tight, span)
       : audience(resolved, span, aspect, fov);
-  return { ...framing, focus: focusBounds(resolved) };
+  const focus = focusBounds(resolved);
+  // The orbit target is the computed effect centre from the first frame. Zooming then
+  // remains a straight dolly, instead of needing a close-range target correction.
+  return { ...framing, target: focus.target, focus };
 }
 
 function validProjection(aspect: number, fov: number): boolean {

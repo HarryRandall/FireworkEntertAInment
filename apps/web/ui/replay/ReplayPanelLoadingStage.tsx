@@ -1,4 +1,5 @@
 'use client';
+import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
 
 import dynamic from 'next/dynamic';
 import { useState } from 'react';
@@ -7,7 +8,7 @@ import { ReplayLoadingBar } from './ReplayLoadingBar';
 import { ReplayStageBackdrop } from './ReplayStageBackdrop';
 
 const LazyFireworkReplayCanvas = dynamic(
-  () => import('@/ui/replay/ShowRendererCanvas').then((mod) => mod.FireworkReplayCanvas),
+  () => import('@/ui/replay/ShowRendererCanvas').then((mod) => mod.ShowRendererCanvas),
   {
     ssr: false,
     loading: () => null,
@@ -29,18 +30,21 @@ export function ReplayPanelLoadingStage({ className }: { className?: string }) {
       <ReplayStageBackdrop
         className={cn('transition-opacity duration-500', sceneReady && 'opacity-0')}
       />
-      <LazyFireworkReplayCanvas
-        cues={[]}
-        elapsed={0}
-        muted
-        interactive={false}
-        controlsVisible={false}
-        showCameraControls={false}
-        showLoadingBar={false}
-        cuesFinal={false}
-        maxDevicePixelRatio={1}
-        onSceneReady={() => setSceneReady(true)}
-      />
+      <CanvasSurface className="absolute inset-0">
+        <LazyFireworkReplayCanvas
+          cues={[]}
+          elapsed={0}
+          startDistance="farthest"
+          muted
+          interactive={false}
+          controlsVisible={false}
+          showCameraControls={false}
+          showLoadingBar={false}
+          cuesFinal={false}
+          maxDevicePixelRatio={1}
+          onSceneReady={() => setSceneReady(true)}
+        />
+      </CanvasSurface>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_42%,rgba(0,0,0,0.36)_100%)]" />
       <ReplayLoadingBar progress={null} position="bottom" />
     </div>

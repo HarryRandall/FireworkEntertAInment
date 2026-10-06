@@ -3,7 +3,6 @@
 import { EffectsBrowser } from '@/app/(admin)/admin/effects/_components/EffectsBrowser';
 import { parseAdminEffectsView } from '@/lib/admin-effects-navigation';
 import { listAdminEffects } from '@/lib/admin/effects.server';
-import { listAdminStyleDefaults } from '@/lib/admin/style-defaults.server';
 
 // Effect creation writes full model_json payloads through RLS checks, so it needs the
 // same longer budget as catalogue reads/uploads instead of the platform default (see
@@ -18,17 +17,7 @@ export default async function AdminEffectsPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const initialView = parseAdminEffectsView(params.view, params.tab);
 
-  const [effects, styleDefaults] = await Promise.all([
-    listAdminEffects(),
-    listAdminStyleDefaults(),
-  ]);
+  const effects = await listAdminEffects();
 
-  return (
-    <EffectsBrowser
-      key={initialView}
-      effects={effects}
-      styleDefaults={styleDefaults}
-      initialView={initialView}
-    />
-  );
+  return <EffectsBrowser key={initialView} effects={effects} initialView={initialView} />;
 }

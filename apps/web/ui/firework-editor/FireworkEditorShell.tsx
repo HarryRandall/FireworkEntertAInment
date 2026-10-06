@@ -1,5 +1,7 @@
 'use client';
 
+import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
+
 import { cn } from '@/lib/utils';
 import { PreviewFullscreenBackdrop } from '@/ui/firework-editor/previewFullscreen';
 import { Button } from '@/ui/patterns/Button';
@@ -183,18 +185,18 @@ export function FireworkEditorShell({
           if (event.key === 'Escape') history?.cancel();
         }}
       >
-        <section
+        <CanvasSurface
           className={cn(
             'bg-stage-night relative min-h-[320px] min-w-0 overflow-hidden text-white lg:min-h-0',
             fullscreen && 'fixed inset-[5vmin] z-[100] rounded-xl',
           )}
         >
-          <div className="absolute inset-0">{preview}</div>
+          <CanvasSurface className="absolute inset-0">{preview}</CanvasSurface>
           <div className="absolute inset-x-0 bottom-5 z-30">{transport}</div>
           {fullscreen && onExitFullscreen ? (
             <PreviewFullscreenBackdrop onExit={onExitFullscreen} />
           ) : null}
-        </section>
+        </CanvasSurface>
         <aside
           className="border-border bg-background flex min-h-0 min-w-0 flex-col border-t lg:border-t-0 lg:border-l"
           onPointerDownCapture={(event) => {

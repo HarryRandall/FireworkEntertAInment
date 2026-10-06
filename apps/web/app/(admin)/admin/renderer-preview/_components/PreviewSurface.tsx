@@ -1,5 +1,7 @@
 'use client';
 
+import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
+
 import { useEffect, useRef, useState } from 'react';
 import type { EffectTemplate } from '@showcrafter/renderer';
 import { poster, disposePosters } from '@showcrafter/renderer/view';
@@ -32,12 +34,14 @@ export function PreviewSurface({ template }: { template: EffectTemplate }) {
       <SectionHeader title={template.name} size="sm" />
       <RendererPlayer design={template.design} name={template.name} />
       <SectionHeader title="Poster still" size="sm" />
-      <canvas
-        ref={still}
-        className="border-border aspect-video w-full rounded-lg border"
-        role="img"
-        aria-label={`${template.name} poster still`}
-      />
+      <CanvasSurface className="border-border aspect-video w-full rounded-lg border">
+        <canvas
+          ref={still}
+          className="absolute inset-0 h-full w-full"
+          role="img"
+          aria-label={`${template.name} poster still`}
+        />
+      </CanvasSurface>
     </div>
   );
 }

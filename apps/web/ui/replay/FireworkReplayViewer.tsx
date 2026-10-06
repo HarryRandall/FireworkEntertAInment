@@ -1,4 +1,5 @@
 'use client';
+import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
 
 /**
  * FireworkReplayViewer: interactive replay and cue editor used on the
@@ -140,7 +141,7 @@ function ReplayCanvasPlaceholder() {
 }
 
 const LazyFireworkReplayCanvas = dynamic(
-  () => import('@/ui/replay/ShowRendererCanvas').then((mod) => mod.FireworkReplayCanvas),
+  () => import('@/ui/replay/ShowRendererCanvas').then((mod) => mod.ShowRendererCanvas),
   {
     ssr: false,
     loading: () => null,
@@ -799,22 +800,26 @@ export function FireworkReplayViewer({
             onPointerMove={wakePlaybackControls}
             aria-busy={!replayReady}
           >
-            <LazyFireworkReplayCanvas
-              compactPreview
-              cues={sortedCues}
-              elapsed={elapsed}
-              playbackRef={elapsedRef}
-              scrubbing={isScrubbing}
-              launchPositions={launchPositions}
-              muted={!isPlaying}
-              controlsVisible={isSceneReady && playbackControlsVisible}
-              primeSnapshots={hasReplayCues}
-              cuesFinal={replayDataReady}
-              onSceneReady={() => setIsSceneReady(true)}
-              showLoadingBar
-              loadingBarPosition="bottom"
-              onReady={() => setIsCanvasReady(true)}
-            />
+            <CanvasSurface className="absolute inset-0">
+              <LazyFireworkReplayCanvas
+                compactPreview
+                cues={sortedCues}
+                elapsed={elapsed}
+                playbackRef={elapsedRef}
+                playing={isPlaying}
+                startDistance="farthest"
+                scrubbing={isScrubbing}
+                launchPositions={launchPositions}
+                muted={!isPlaying}
+                controlsVisible={isSceneReady && playbackControlsVisible}
+                primeSnapshots={hasReplayCues}
+                cuesFinal={replayDataReady}
+                onSceneReady={() => setIsSceneReady(true)}
+                showLoadingBar
+                loadingBarPosition="bottom"
+                onReady={() => setIsCanvasReady(true)}
+              />
+            </CanvasSurface>
 
             {!isSceneReady ? <ReplayCanvasPlaceholder /> : null}
             {replayReady && !hasReplayCues ? <EmptyPreview /> : null}

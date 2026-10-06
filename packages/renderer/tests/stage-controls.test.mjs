@@ -2,7 +2,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { StageControls, FAR_SCALE, FREE_FAR } from '../src/view/stage-controls.ts';
+import {
+  StageControls,
+  CLOSE_ORBIT_SPHERE_MARGIN,
+  FAR_SCALE,
+  FREE_FAR,
+  MIN_ORBIT_DISTANCE_SCALE,
+  PINCH_ZOOM_RESPONSE,
+  SINGLE_FIREWORK_START_PITCH_DEG,
+  WHEEL_ZOOM_PER_PIXEL,
+} from '../src/view/stage-controls.ts';
 import { framingFor, EYE_HEIGHT_M } from '../src/sim/framing.ts';
 import { effectTemplates } from '../src/templates/index.ts';
 
@@ -56,50 +65,92 @@ test('normal and free zoom-out limits restore the framed-distance caps', () => {
   }
 });
 
-test('closest normal and free views fit every aerial burst in landscape and portrait', () => {
+test('framed and farthest starts preserve the target and pitch, and reset to their selected start', () => {
+  for (const [startDistance, factor] of [
+    ['framed', 1],
+    ['farthest', FAR_SCALE],
+  ]) {
+    const r = rig(shots);
+    try {
+      r.controls.frame(r.framing, true, startDistance);
+      const target = vector(r.framing.target);
+      const initialDirection = r.camera.position.clone().sub(target).normalize();
+      const base = vector(r.framing.position).distanceTo(target);
+      assert.ok(Math.abs(r.camera.position.distanceTo(target) - base * factor) < 1e-6);
+
+      r.controls.zoom(0.2);
+      r.settle();
+      r.controls.frame(r.framing, true, startDistance);
+      assert.ok(Math.abs(r.camera.position.distanceTo(target) - base * factor) < 1e-6);
+      assert.ok(
+        r.camera.position.clone().sub(target).normalize().distanceTo(initialDirection) < 1e-10,
+      );
+    } finally {
+      r.controls.dispose();
+    }
+  }
+});
+
+test('the elevated single-firework start uses the furthest normal distance and restores its pose', () => {
+  const r = rig(shots);
+  try {
+    const target = vector(r.framing.target);
+    const base = vector(r.framing.position).distanceTo(target);
+    r.controls.frame(r.framing, true, 'elevated');
+    const pose = r.camera.position.clone().sub(target);
+    assert.ok(Math.abs(pose.length() - base * FAR_SCALE) < 1e-6);
+    assert.ok(
+      Math.abs(
+        Math.asin(pose.y / pose.length()) - (SINGLE_FIREWORK_START_PITCH_DEG * Math.PI) / 180,
+      ) < 1e-10,
+    );
+    assert.deepEqual(r.controls.target.toArray(), r.framing.target);
+
+    r.controls.zoom(0.2);
+    r.settle();
+    r.controls.frame(r.framing, true, 'elevated');
+    const resetPose = r.camera.position.clone().sub(target);
+    assert.ok(Math.abs(resetPose.length() - base * FAR_SCALE) < 1e-6);
+    assert.ok(
+      Math.abs(
+        Math.asin(resetPose.y / resetPose.length()) -
+          (SINGLE_FIREWORK_START_PITCH_DEG * Math.PI) / 180,
+      ) < 1e-10,
+    );
+  } finally {
+    r.controls.dispose();
+  }
+});
+
+test('zoom is a straight dolly that preserves target, pitch and yaw', () => {
   for (const entry of effectTemplates.filter((e) => e.design.kind === 'shell')) {
     for (const aspect of [1.6, 390 / 844]) {
       for (const free of [false, true]) {
         const r = rig([{ design: entry.design }], aspect);
         try {
           const initialPosition = r.camera.position.clone();
-          const initialQuaternion = r.camera.quaternion.clone();
+          const target = vector(r.framing.target);
+          const initialGoal = { ...r.controls.goal };
           r.controls.setFree(free);
           r.controls.zoom(0.0001);
           r.settle();
-          const centre = r.framing.focus.target;
-          const radius = r.framing.focus.radius_m;
-          for (const [dx, dy, dz] of [
-            [0, radius, 0],
-            [0, -radius, 0],
-            [radius, 0, 0],
-            [-radius, 0, 0],
-            [0, 0, radius],
-          ])
-            inside(
-              r.camera,
-              [centre[0] + dx, centre[1] + dy, centre[2] + dz],
-              `${entry.key} free=${free}`,
-            );
+          assert.deepEqual(r.controls.target.toArray(), r.framing.target);
+          assert.equal(r.controls.goal.yaw, initialGoal.yaw);
+          assert.equal(r.controls.goal.pitch, initialGoal.pitch);
+          assert.ok(
+            r.camera.position
+              .clone()
+              .sub(target)
+              .normalize()
+              .distanceTo(initialPosition.sub(target).normalize()) < 1e-10,
+          );
+          const base = vector(r.framing.position).distanceTo(target);
+          const minimum = Math.max(
+            base * (free ? 0.15 : MIN_ORBIT_DISTANCE_SCALE),
+            r.framing.focus.radius_m * CLOSE_ORBIT_SPHERE_MARGIN,
+          );
+          assert.ok(Math.abs(r.camera.position.distanceTo(target) - minimum) < 1e-6);
           assert.ok(r.camera.position.y >= EYE_HEIGHT_M);
-          assert.ok(
-            r.camera.position.y > EYE_HEIGHT_M,
-            'close-up raises the eye towards the burst',
-          );
-          assert.ok(r.camera.position.z < initialPosition.z, 'zoom in moves closer');
-          r.controls.zoom(
-            vector(r.framing.position).distanceTo(vector(r.framing.target)) /
-              r.camera.position.distanceTo(vector(centre)),
-          );
-          r.settle();
-          assert.ok(
-            r.camera.position.distanceTo(initialPosition) < 1e-5,
-            'framed position unchanged',
-          );
-          assert.ok(
-            r.camera.quaternion.angleTo(initialQuaternion) < 1e-5,
-            'framed pitch unchanged',
-          );
         } finally {
           r.controls.dispose();
         }
@@ -108,7 +159,7 @@ test('closest normal and free views fit every aerial burst in landscape and port
   }
 });
 
-test('wheel, pinch and UI zoom share the same minimum fit', () => {
+test('wheel, pinch and UI zoom use the faster visual-tuning response', () => {
   const poses = [];
   for (const gesture of ['button', 'wheel', 'pinch']) {
     const r = rig(shots);
@@ -128,6 +179,22 @@ test('wheel, pinch and UI zoom share the same minimum fit', () => {
   }
   assert.deepEqual(poses[0], poses[1]);
   assert.deepEqual(poses[0], poses[2]);
+
+  const r = rig(shots);
+  try {
+    const base = r.controls.goal.dist;
+    event(r.element, 'wheel', { deltaY: -100, deltaMode: 0 });
+    assert.equal(r.controls.goal.dist, base * Math.exp(-100 * WHEEL_ZOOM_PER_PIXEL));
+    event(r.element, 'pointerdown', { pointerId: 1, clientX: 0, clientY: 0, button: 0 });
+    event(r.element, 'pointerdown', { pointerId: 2, clientX: 100, clientY: 0, button: 0 });
+    event(r.element, 'pointermove', { pointerId: 2, clientX: 120, clientY: 0 });
+    assert.equal(
+      r.controls.goal.dist,
+      base * Math.exp(-100 * WHEEL_ZOOM_PER_PIXEL) * 1.2 ** -PINCH_ZOOM_RESPONSE,
+    );
+  } finally {
+    r.controls.dispose();
+  }
 });
 
 test('ground clamp survives close zoom, downward orbit and free pan', () => {
@@ -149,7 +216,7 @@ test('ground clamp survives close zoom, downward orbit and free pan', () => {
   }
 });
 
-test('ground extent tops and rocket aliases remain visible at the closest zoom', () => {
+test('close zoom remains outside each single-shot spherical burst margin', () => {
   const rocket = structuredClone(shots[0].design);
   rocket.kind = 'rocket';
   for (const design of [
@@ -162,8 +229,11 @@ test('ground extent tops and rocket aliases remain visible at the closest zoom',
         r.controls.setFree(free);
         r.controls.zoom(0.0001);
         r.settle();
-        const { target, radius_m } = r.framing.focus;
-        inside(r.camera, [target[0], target[1] + radius_m, target[2]], `${design.kind} top`);
+        const { target, radius_m, spherical } = r.framing.focus;
+        if (spherical)
+          assert.ok(
+            r.camera.position.distanceTo(vector(target)) >= radius_m * CLOSE_ORBIT_SPHERE_MARGIN,
+          );
         assert.ok(r.camera.position.y >= EYE_HEIGHT_M);
       } finally {
         r.controls.dispose();
@@ -172,20 +242,20 @@ test('ground extent tops and rocket aliases remain visible at the closest zoom',
   }
 });
 
-test('a scene larger than its original framing preserves its close-fit floor without widening normal zoom-out', () => {
+test('a scene larger than its original framing preserves its close safety floor without widening normal zoom-out', () => {
   const r = rig(shots);
   try {
     r.controls.frame(
       {
         position: [0, EYE_HEIGHT_M, 100],
-        target: [0, 30, 0],
+        target: [0, 60, 0],
         focus: { target: [0, 60, 0], radius_m: 200, spherical: true },
       },
       true,
     );
     r.controls.zoom(0.0001);
     r.settle();
-    const base = vector([0, EYE_HEIGHT_M, 100]).distanceTo(vector([0, 30, 0]));
+    const base = vector([0, EYE_HEIGHT_M, 100]).distanceTo(vector([0, 60, 0]));
     const near = r.camera.position.distanceTo(vector([0, 60, 0]));
     for (const [free, scale] of [
       [false, FAR_SCALE],
@@ -197,7 +267,6 @@ test('a scene larger than its original framing preserves its close-fit floor wit
       assert.ok(r.camera.position.toArray().every(Number.isFinite));
       const far = r.camera.position.distanceTo(vector([0, 60, 0]));
       assert.ok(Math.abs(far - Math.max(base * scale, near)) < 1e-6);
-      inside(r.camera, [0, 260, 0], 'large scene top');
     }
   } finally {
     r.controls.dispose();

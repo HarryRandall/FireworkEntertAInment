@@ -1,92 +1,27 @@
-/** Focused guards for the URL-backed effects sidebar and preview gallery. */
-
+/** Guards for the effects gallery after retiring legacy style-default editing. */
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
 import { test } from 'node:test';
+await import('../../../../scripts/renderer/register-typescript.mjs');
+const { parseAdminEffectsView } = await import('../../lib/admin-effects-navigation.ts');
+const read = (path) => readFileSync(path, 'utf8');
 
-const root = process.cwd();
-
-function read(path) {
-  return readFileSync(join(root, path), 'utf8');
-}
-
-test('effects navigation retains its submenu and hides legacy defaults', () => {
-  const shell = read('ui/shell/AdminShell.tsx');
-  const navigation = read('lib/admin-effects-navigation.ts');
-
-  assert.match(navigation, /\.\.\.FIREWORK_STYLE_DEFAULT_KINDS/);
-  assert.match(navigation, /ADMIN_EFFECTS_BASE_VIEW/);
-  assert.match(navigation, /adminEffectsViewHref/);
-  assert.match(navigation, /styleDefaultKindLabel/);
-  assert.match(shell, /function AdminEffectsNavItem/);
-  assert.match(shell, /const submenuVisible = expanded/);
-  assert.match(shell, /<SidebarMenuButton[\s\S]*aria-expanded=\{submenuVisible\}/);
-  assert.match(shell, /aria-controls="admin-effects-navigation"/);
-  assert.match(shell, /<SidebarMenuSub id="admin-effects-navigation">/);
-  assert.match(shell, /<SidebarMenuSubItem/);
-  assert.match(shell, /<SidebarMenuSubButton/);
-  assert.match(shell, /ADMIN_EFFECTS_VIEWS[\s\S]*\.filter\(\(view\) => view === 'base'\)/);
-  assert.match(shell, /aria-current=\{selected \? 'page' : undefined\}/);
-  assert.match(shell, /setOpen\(true\)/);
-  assert.match(shell, /if \(isMobile\) setOpenMobile\(false\)/);
-  assert.match(shell, /className="h-11 md:h-7"/);
-  assert.match(shell, /link\.href === '\/admin\/effects'/);
-  assert.match(shell, /href: '\/admin\/effects',[\s\S]*permission: 'admin\.manage_catalogue'/);
+test('old style-default URLs select the active base-effects gallery', () => {
+  assert.equal(parseAdminEffectsView('star'), 'base');
+  assert.equal(parseAdminEffectsView(undefined, 'defaults'), 'base');
+  assert.equal(parseAdminEffectsView('base'), 'base');
+  assert.equal(parseAdminEffectsView('unknown'), 'base');
 });
 
-test('effects category selection is URL-backed with a safe legacy fallback', () => {
-  const page = read('app/(admin)/admin/effects/page.tsx');
+test('the gallery and preview endpoint cannot reach legacy style-default editing', () => {
   const browser = read('app/(admin)/admin/effects/_components/EffectsBrowser.tsx');
-  const shell = read('ui/shell/AdminShell.tsx');
-  const navigation = read('lib/admin-effects-navigation.ts');
-  const styleActions = read('app/(admin)/admin/effects/style-default-actions.ts');
-  const effectActions = read('app/(admin)/admin/effects/actions.ts');
-
-  assert.match(page, /searchParams: Promise<\{ view\?: string; tab\?: string \}>/);
-  assert.match(page, /parseAdminEffectsView\(params\.view, params\.tab\)/);
-  assert.match(page, /key=\{initialView\}/);
-  assert.match(page, /initialView=\{initialView\}/);
-  assert.match(navigation, /isFireworkStyleDefaultKind\(view\)/);
-  assert.match(navigation, /legacyTab === 'defaults' \? 'star' : ADMIN_EFFECTS_BASE_VIEW/);
-  assert.match(browser, /initialView: AdminEffectsView/);
-  assert.match(browser, /styleDefault\.kind === activeKind/);
-  assert.match(browser, /defaults\/\$\{item\.id\}\?view=\$\{item\.kind\}/);
-  assert.match(shell, /\[currentSearch, pathname\]/);
-  assert.match(shell, /isAdminEffectsView\(requestedEffectsView\)/);
-  assert.match(shell, /adminEffectsViewHref\(effectsView\)/);
-  assert.match(styleActions, /defaults\/\$\{result\.id\}\?view=\$\{parsedKind\}/);
-  assert.doesNotMatch(browser, /EffectsTab|initialTab|function Tabs\(|role="tablist"/);
-  assert.doesNotMatch(styleActions, /tab=defaults/);
-  assert.doesNotMatch(effectActions, /tab=defaults/);
-});
-
-test('style defaults use real non-persisted renderer previews and visual cards', () => {
-  const browser = read('app/(admin)/admin/effects/_components/EffectsBrowser.tsx');
-  const previewServer = read('lib/firework-card-preview.server.ts');
-  const previewRoute = read('app/api/admin/firework-previews/[kind]/[id]/route.ts');
-  const styleDefaults = read('../../packages/fireworks/src/style-defaults.ts');
-  const styleDefaultsServer = read('lib/admin/style-defaults.server.ts');
-
+  const route = read('app/api/admin/firework-previews/[kind]/[id]/route.ts');
+  const preview = read('ui/catalogue/FireworkBrowsePreviewContext.tsx');
   assert.match(browser, /<FireworkBrowseCard/);
-  assert.match(browser, /filteredDefaults\.map/);
-  assert.match(browser, /\/api\/admin\/firework-previews\/style-default\//);
-  assert.match(browser, /persist: false/);
-  assert.match(browser, /displayPoster: true/);
-  assert.doesNotMatch(browser, /<DataTableShell|<table/);
-  assert.match(styleDefaults, /export function compileStyleDefaultPreviewDesign/);
-  assert.match(styleDefaults, /kind === 'launch' \|\| kind === 'smoke'/);
-  assert.match(previewServer, /getAdminStyleDefaultPreviewSourceById/);
-  assert.match(previewServer, /if \(kind === 'style-default'\)/);
-  assert.match(styleDefaultsServer, /getAdminStyleDefaultPreviewSourceById/);
-  assert.match(
-    styleDefaultsServer,
-    /if \(result\.error\)[\s\S]*throw new Error\('Could not load the style default preview source\.'/,
-  );
-  assert.match(previewRoute, /ADMIN_PREVIEW_KINDS[\s\S]*'style-default'/);
-  assert.match(previewRoute, /kind === 'style-default'[\s\S]*loadAdminFireworkCardPreview/);
-  assert.doesNotMatch(
-    previewRoute.match(/const PERSISTABLE_ADMIN_PREVIEW_KINDS[\s\S]*?\]\);/)?.[0] ?? '',
-    /style-default/,
-  );
+  assert.doesNotMatch(browser, /style-default|defaults\/|StyleDefaultCreateAction/);
+  assert.doesNotMatch(route, /'style-default'/);
+  assert.doesNotMatch(preview, /legacy-editor|legacyEditor|estimateFireworkDesignTiming/);
+  assert.equal(existsSync('app/(admin)/admin/effects/defaults/[id]/page.tsx'), false);
+  assert.equal(existsSync('app/(admin)/admin/effects/style-default-actions.ts'), false);
+  assert.match(read('lib/database.types.ts'), /firework_style_defaults:/);
 });

@@ -58,3 +58,20 @@ test('mine and comet shots retain tube aiming without changing ignition', () => 
     assert.notDeepEqual(neutral.positions, aimed.positions);
   }
 });
+
+test('sixty unchanged paused soundtrack samples request no draws, while seeks request one', () => {
+  let draws = 0;
+  const viewer = {
+    t: 2,
+    duration: 20,
+    playing: false,
+    invalidate() {
+      draws++;
+    },
+  };
+  const sound = { reset() {}, hush() {} };
+  for (let index = 0; index < 60; index++) syncViewerClock(viewer, sound, 2, false);
+  assert.equal(draws, 0);
+  syncViewerClock(viewer, sound, 3, false);
+  assert.equal(draws, 1);
+});

@@ -2,7 +2,7 @@
 
 /**
  * Shared fullscreen helpers for the firework replay surfaces. The show viewer
- * and the admin firework/effect editors all wrap a `FireworkReplayCanvas` in a
+ * and the admin editors wrap their renderer preview in a
  * positioned container; the owner calls `usePreviewFullscreen()` for the state,
  * accessibility, Esc and scroll-lock wiring, flips the container into a fixed
  * overlay via className, and renders `PreviewFullscreenBackdrop` behind it.

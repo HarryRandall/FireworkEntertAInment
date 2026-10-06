@@ -66,7 +66,10 @@ test('table pagination follows the reference count and ellipsis behaviour', () =
 
   assert.match(source, /export const TABLE_PAGE_SIZE = 25/);
   assert.match(source, /MoreHorizontal/);
-  assert.match(source, /Viewing \$\{\(visibleItems \?\? totalItems\)\.toLocaleString\(\)\} out of/);
+  assert.match(
+    source,
+    /Viewing \$\{start\.toLocaleString\(\)\} to \$\{end\.toLocaleString\(\)\} of/,
+  );
   assert.match(source, /if \(currentPage <= 2\) return \[1, 2, 3\]/);
   assert.match(source, /if \(currentPage >= totalPages - 1\)/);
   assert.match(source, /aria-label="Go to previous page"/);
@@ -110,12 +113,7 @@ test('firework admin lists use paginated hover-preview card grids', () => {
     assert.match(source, /persistedPosterUrl=\{fireworkPreviewImageUrl\(/, page);
     assert.match(source, /previewImagePath/, page);
     assert.match(source, /\bpersistPoster\b/, page);
-    assert.match(source, /posterBackfillTargets/, page);
-    assert.match(
-      source,
-      /<FireworkBrowsePreviewProvider posterBackfillTargets=\{posterBackfillTargets\}>/,
-      page,
-    );
+    assert.match(source, /<FireworkBrowsePreviewProvider>/, page);
     assert.match(source, /<TablePagination/, page);
     assert.match(source, /visibleItems=\{paginated\.length\}/, page);
     assert.match(source, /totalItems=\{filtered\.length\}/, page);
@@ -138,17 +136,14 @@ test('firework admin lists use paginated hover-preview card grids', () => {
   assert.doesNotMatch(multishots, /\{multishot\.description\s*\?\?/);
 });
 
-test('base effects and style defaults both use renderer preview card grids', () => {
+test('base effects use renderer preview card grids', () => {
   const source = readFileSync(
     join(root, 'app/(admin)/admin/effects/_components/EffectsBrowser.tsx'),
     'utf8',
   );
   const loading = readFileSync(join(root, 'app/(admin)/admin/effects/loading.tsx'), 'utf8');
 
-  assert.match(
-    source,
-    /<FireworkBrowsePreviewProvider posterBackfillTargets=\{posterBackfillTargets\}>/,
-  );
+  assert.match(source, /<FireworkBrowsePreviewProvider>/);
   assert.match(source, /<FireworkBrowseCard/);
   assert.match(source, /\/api\/admin\/firework-previews\/effect\//);
   assert.match(source, /withFireworkPreviewRevision\(/);
@@ -158,15 +153,8 @@ test('base effects and style defaults both use renderer preview card grids', () 
     /persistedPosterUrl=\{fireworkPreviewImageUrl\(effect\.previewImagePath\)\}/,
   );
   assert.match(source, /\bpersistPoster\b/);
-  assert.match(source, /posterBackfillTargets/);
-  assert.match(source, /filteredDefaults\.map/);
-  assert.match(source, /\/api\/admin\/firework-previews\/style-default\//);
-  assert.match(source, /persist: false/);
-  assert.match(source, /displayPoster: true/);
-  assert.match(
-    source,
-    /href=\{`\/admin\/effects\/defaults\/\$\{item\.id\}\?view=\$\{item\.kind\}`\}/,
-  );
+  assert.doesNotMatch(source, /posterBackfillTargets/);
+  assert.doesNotMatch(source, /style-default|defaults\//);
   assert.match(source, /grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4/);
   assert.match(source, /effect\.patternKey/);
   assert.match(source, /effect\.variantCount\.toLocaleString\(\)/);

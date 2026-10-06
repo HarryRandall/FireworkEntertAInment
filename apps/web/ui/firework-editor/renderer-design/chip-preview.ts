@@ -12,7 +12,12 @@ export function libraryChipPreview(
   category: 'tails' | 'trails',
   option: string,
 ): Design | null {
-  const index = layer ? document.breaks.findIndex((burst) => burst.layers.includes(layer)) : 0;
+  const index = layer
+    ? document.breaks.findIndex((burst) =>
+        burst.layers.some((candidate) => candidate.id === layer.id),
+      )
+    : 0;
+  if (index < 0) return null;
   const result = editDesign(document, (draft) => {
     if (category === 'tails' && draft.launch) {
       const tail = launchSchema.shape.tail.safeParse(option);
@@ -31,7 +36,10 @@ export function layerChipPreview(
   layer: Layer,
   option: { shape: string } | { modifier: Modifier['kind'] },
 ): Design | null {
-  const index = document.breaks.findIndex((burst) => burst.layers.includes(layer));
+  const index = document.breaks.findIndex((burst) =>
+    burst.layers.some((candidate) => candidate.id === layer.id),
+  );
+  if (index < 0) return null;
   const result = editDesign(document, (draft) => {
     const target = inspectorLayer(draft, { breakIndex: index, layerId: layer.id });
     if (!target) return;

@@ -1,5 +1,4 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import {
   applyFireworkTimelineBoundaryEdit,
@@ -205,16 +204,6 @@ test('zero-height aerial smoke retains only the mortar smoke tail', () => {
   });
 
   assert.equal(estimateFireworkLaunchSmokeEndSeconds(aerial), 7);
-});
-
-test('preview ticks consume the shared design-aware timing helper', () => {
-  const source = readFileSync(
-    new URL('../../ui/firework-editor/editor-preview-timing.ts', import.meta.url),
-    'utf8',
-  );
-
-  assert.match(source, /estimateFireworkDesignTiming/);
-  assert.doesNotMatch(source, /lifeScaleForGeometry|2\.25/);
 });
 
 test('effect canonicalisation routes geometry tuning into render defaults', async () => {

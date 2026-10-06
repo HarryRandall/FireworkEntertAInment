@@ -8,8 +8,7 @@ export interface ViewerSettings {
   sound: boolean;
   volume: number;
   smoke: boolean;
-  stars: boolean;
-  grid: boolean;
+  ground: boolean;
   free: boolean;
   shake: boolean;
 }
@@ -20,14 +19,13 @@ export const SETTINGS: ViewerSettings = {
   // Prototype master gain, normalised to the browser volume range.
   volume: DEFAULT_VOLUME,
   smoke: true,
-  stars: true,
-  grid: true,
+  ground: true,
   free: false,
   shake: true,
 };
 const defaults = { ...SETTINGS };
 // Only these preferences affect rendered pixels or camera controls.
-const VISUAL_KEYS = ['smoke', 'stars', 'grid', 'free', 'shake'] as const;
+const VISUAL_KEYS = ['smoke', 'ground', 'free', 'shake'] as const;
 const listeners = new Set<() => void>();
 let loaded = false;
 function readSettings(encoded: string | null): void {
