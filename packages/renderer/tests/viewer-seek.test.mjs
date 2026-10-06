@@ -17,7 +17,7 @@ import { ViewerSound } from '../src/view/sound/scheduler.ts';
 // Replay instants are show seconds; RAF timestamps below are wall-clock milliseconds.
 const SHOW_TIME_S = 2.2;
 
-test('static world uses a neutral sky, soft horizon and distance-faded polar grid without stars', () => {
+test('static world uses a midnight sky, static stars above the horizon and the polar grid', () => {
   const scene = new THREE.Scene();
   const world = makeWorld(scene);
   const [sky, ground] = scene.children;
@@ -27,11 +27,13 @@ test('static world uses a neutral sky, soft horizon and distance-faded polar gri
   assert.match(sky.material.fragmentShader, /VISUAL_TUNING_HORIZON_COLOUR/);
   assert.match(sky.material.fragmentShader, /VISUAL_TUNING_HORIZON_BAND_HALF_WIDTH/);
   assert.match(sky.material.fragmentShader, /VISUAL_TUNING_OVERHEAD_COLOUR/);
-  assert.doesNotMatch(sky.material.fragmentShader, /blue|TINT/i);
+  assert.match(sky.material.fragmentShader, /vec3\(0.0020, 0.0040, 0.0100\)/);
+  assert.match(sky.material.fragmentShader, /step\(VISUAL_TUNING_STAR_MIN_ELEVATION,direction.y\)/);
+  assert.doesNotMatch(sky.material.fragmentShader, /uniform.*time/);
   assert.equal(
     scene.children.some((child) => child.isPoints),
     false,
-    'no decorative star pass',
+    'stars share the sky pass',
   );
   assert.match(ground.material.fragmentShader, /VISUAL_TUNING_RING_SPACING_M/);
   assert.match(ground.material.fragmentShader, /VISUAL_TUNING_SPOKE_SPACING_DEG/);

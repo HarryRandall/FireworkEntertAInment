@@ -25,7 +25,7 @@ test('forty-shot hardware uses one draw, with no per-face or per-shot groups', (
   assert.equal(drawables[0].geometry.groups.length, 0);
   assert.equal(Array.isArray(drawables[0].material), false);
   // The original 21 unique positions each had a body, lip and foot: 63 draws.
-  // Two static-world draws after removing decorative stars, three CPU layers, one GPU spray
+  // Two static-world draws with stars in the sky pass, three CPU layers, one GPU spray
   // and one output add seven fixed draws; the batched hardware remains the eighth.
   const scene = new THREE.Scene();
   makeWorld(scene);

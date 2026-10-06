@@ -29,10 +29,9 @@ reignition is optional and applies only to colour changes.
 same values. It does not mutate the document or apply defaults. Invalid documents
 throw a Zod error containing property paths; unknown versions throw a range error.
 The version is stored externally as `design_schema`, not inside the document.
-`RENDERER_VERSION` is `0.9.0`. It refreshes stored poster captures for the neutral
-black sky, soft horizon band and distance-faded polar ground grid. The grid has
+`RENDERER_VERSION` is `0.9.1`. It refreshes stored poster captures for the midnight blue horizon fading to a black overhead sky, soft horizon band and distance-faded polar ground grid. The grid has
 10 m concentric rings and 15 degree radial spokes around the launch origin. The
-static sky has no decorative starfield. Firework star outlines are unchanged: the star uses ten equal-length
+static sky has sparse, dim stars above the horizon, sampled in the sky pass with no animation or extra draw call. Firework star outlines are unchanged: the star uses ten equal-length
 edges with a 0.44 inner/outer radius ratio, while bowtie uses two opposed 60-degree
 circular fans. Both are visual tuning based on the legacy shell intent, with unit
 directions and a separate outline radius. Existing patterns retain their previous
@@ -432,6 +431,15 @@ node packages/renderer/scripts/capture-sound-goldens.mjs /Users/harry/projects/F
 corepack pnpm exec prettier --write packages/renderer/tests/fixtures/sound-goldens.json
 ```
 
+Viewer mounts clip their canvas in an isolated stacking context. Canvas CSS dimensions
+fill the host's padding box independently of physical DPR dimensions, and the host
+retains its rounded shape. Page integrations also contain overlays in a shared
+clipping surface.
+
+`stagePoster({ width, height })` from `./poster` captures the empty world through
+the same serial surface as `poster`, without another WebGL context. Shared captures
+have concurrency one and reuse their surface across dimensions.
+
 Review readiness mounts the native transport before any poster capture. Cards fill
 progressively using one detached thumbnail renderer with fixed CSS dimensions and
 the live viewer's capped DPR. Its canvas and output target are allocated once;
@@ -465,8 +473,8 @@ renderer or starting another capture.
 An unresolved poster PNG encoder does not hold the live viewer's draw scheduling.
 
 Static launch hardware bakes transforms and linear colours into one opaque mesh,
-without per-face groups. The forty-shot fixture has a maximum of nine live draw
-submissions: sky, ground, stars, hardware, CPU sparks, additive glow billboards,
+without per-face groups. The forty-shot fixture has a maximum of eight live draw
+submissions: sky with static stars, ground, hardware, CPU sparks, additive glow billboards,
 smoke billboards, GPU sprays and output. Empty or culled layers may draw fewer.
 Pause clears playback state, cancels the queued callback and stops camera easing
 before requesting one unshaken paused redraw. That draw keeps show time fixed;

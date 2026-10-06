@@ -1,4 +1,4 @@
-/** A neutral night sky and ground lattice provide a shared world for every firework view. */
+/** A midnight sky and ground lattice provide a shared world for every firework view. */
 import * as THREE from 'three';
 
 // Prototype scene dimensions in metres, and tessellation chosen for a smooth horizon.
@@ -10,10 +10,10 @@ const GROUND_SEGMENTS = 96;
 const skyVertex =
   'varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }';
 const skyFragment = `
-// Visual tuning: neutral linear RGB sky colours and elevation fade stops.
+// Visual tuning: dim linear RGB sky colours and elevation fade stops.
 // Horizon band bounds are unit-sphere elevations, centred at the ground-sky boundary.
-const vec3 VISUAL_TUNING_HORIZON_COLOUR = vec3(0.0060);
-const vec3 VISUAL_TUNING_MID_SKY_COLOUR = vec3(0.0008);
+const vec3 VISUAL_TUNING_HORIZON_COLOUR = vec3(0.0020, 0.0040, 0.0100);
+const vec3 VISUAL_TUNING_MID_SKY_COLOUR = vec3(0.0003, 0.0006, 0.0015);
 const vec3 VISUAL_TUNING_OVERHEAD_COLOUR = vec3(0.0);
 const float VISUAL_TUNING_HORIZON_START = -0.02;
 const float VISUAL_TUNING_HORIZON_END = 0.10;
@@ -22,8 +22,27 @@ const float VISUAL_TUNING_OVERHEAD_END = 0.72;
 const float VISUAL_TUNING_HORIZON_BAND_CENTRE = 0.0;
 const float VISUAL_TUNING_HORIZON_BAND_HALF_WIDTH = 0.035;
 const vec3 VISUAL_TUNING_HORIZON_BAND_COLOUR = vec3(0.0035);
+// Visual tuning: angular cells per unit direction, occupied fraction, linear RGB intensity.
+const float VISUAL_TUNING_STAR_CELLS = 180.0;
+const float VISUAL_TUNING_STAR_DENSITY = 0.003;
+const float VISUAL_TUNING_STAR_INTENSITY = 0.055;
+const float VISUAL_TUNING_STAR_RADIUS_CELLS = 0.055;
+const float VISUAL_TUNING_STAR_MIN_ELEVATION = 0.025;
 varying vec3 vD;
-void main(){ vec3 c = mix(VISUAL_TUNING_HORIZON_COLOUR,VISUAL_TUNING_MID_SKY_COLOUR,smoothstep(VISUAL_TUNING_HORIZON_START,VISUAL_TUNING_HORIZON_END,vD.y)); c = mix(c,VISUAL_TUNING_OVERHEAD_COLOUR,smoothstep(VISUAL_TUNING_OVERHEAD_START,VISUAL_TUNING_OVERHEAD_END,vD.y)); float horizonBand=1.0-smoothstep(0.0,VISUAL_TUNING_HORIZON_BAND_HALF_WIDTH,abs(vD.y-VISUAL_TUNING_HORIZON_BAND_CENTRE)); gl_FragColor = vec4(c+VISUAL_TUNING_HORIZON_BAND_COLOUR*horizonBand,1.0); }`;
+float starHash(vec2 cell){return fract(sin(dot(cell,vec2(127.1,311.7)))*43758.5453);}
+float starfield(vec3 direction){
+  if(direction.y<VISUAL_TUNING_STAR_MIN_ELEVATION)return 0.0;
+  vec2 angular=vec2(atan(direction.z,direction.x),asin(clamp(direction.y,-1.0,1.0)))*VISUAL_TUNING_STAR_CELLS;
+  vec2 cell=floor(angular);
+  float selected=step(1.0-VISUAL_TUNING_STAR_DENSITY,starHash(cell));
+  if(selected==0.0)return 0.0;
+  vec2 centre=vec2(starHash(cell+17.0),starHash(cell+43.0))*0.6+0.2;
+  float distanceCells=length(fract(angular)-centre);
+  float coverage=max(fwidth(distanceCells),0.001);
+  float dotCoverage=1.0-smoothstep(VISUAL_TUNING_STAR_RADIUS_CELLS,VISUAL_TUNING_STAR_RADIUS_CELLS+coverage,distanceCells);
+  return selected*dotCoverage*VISUAL_TUNING_STAR_INTENSITY*step(VISUAL_TUNING_STAR_MIN_ELEVATION,direction.y);
+}
+void main(){ vec3 c = mix(VISUAL_TUNING_HORIZON_COLOUR,VISUAL_TUNING_MID_SKY_COLOUR,smoothstep(VISUAL_TUNING_HORIZON_START,VISUAL_TUNING_HORIZON_END,vD.y)); c = mix(c,VISUAL_TUNING_OVERHEAD_COLOUR,smoothstep(VISUAL_TUNING_OVERHEAD_START,VISUAL_TUNING_OVERHEAD_END,vD.y)); float horizonBand=1.0-smoothstep(0.0,VISUAL_TUNING_HORIZON_BAND_HALF_WIDTH,abs(vD.y-VISUAL_TUNING_HORIZON_BAND_CENTRE)); gl_FragColor = vec4(c+VISUAL_TUNING_HORIZON_BAND_COLOUR*horizonBand+vec3(starfield(normalize(vD))),1.0); }`;
 const groundVertex =
   'varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }';
 const groundFragment = `
