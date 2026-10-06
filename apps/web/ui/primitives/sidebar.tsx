@@ -25,6 +25,9 @@ import { PanelLeftCloseIcon, PanelLeftOpenIcon } from 'lucide-react';
 const SIDEBAR_WIDTH = '15rem';
 const SIDEBAR_WIDTH_ICON = '3rem';
 const SIDEBAR_KEYBOARD_SHORTCUT = 'b';
+// CSS pixels: Tailwind sm keeps tablet navigation visible; md ends the forced icon rail.
+const PHONE_SHEET_BREAKPOINT_PX = 640;
+const DESKTOP_SHEET_BREAKPOINT_PX = 768;
 
 type SidebarWidthValue = string | number;
 
@@ -35,6 +38,7 @@ type SidebarContextProps = {
   openMobile: boolean;
   setOpenMobile: (open: boolean | ((open: boolean) => boolean)) => void;
   isMobile: boolean;
+  phoneSheet: boolean;
   sidebarWidth: SidebarWidthValue;
   toggleSidebar: () => void;
 };
@@ -60,6 +64,7 @@ function getSidebarWidth(style: React.CSSProperties | undefined): SidebarWidthVa
 
 function SidebarProvider({
   defaultOpen = true,
+  phoneSheet = false,
   open: openProp,
   onOpenChange: setOpenProp,
   className,
@@ -68,17 +73,21 @@ function SidebarProvider({
   ...props
 }: React.ComponentProps<'div'> & {
   defaultOpen?: boolean;
+  phoneSheet?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }) {
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobile(
+    phoneSheet ? PHONE_SHEET_BREAKPOINT_PX : DESKTOP_SHEET_BREAKPOINT_PX,
+  );
+  const belowDesktop = useIsMobile();
   const [openMobile, setOpenMobile] = React.useState(false);
   const sidebarWidth = getSidebarWidth(style);
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
   const [_open, _setOpen] = React.useState(defaultOpen);
-  const open = openProp ?? _open;
+  const open = phoneSheet && belowDesktop && !isMobile ? false : (openProp ?? _open);
   const setOpen = React.useCallback(
     (value: boolean | ((value: boolean) => boolean)) => {
       const openState = typeof value === 'function' ? value(open) : value;
@@ -119,12 +128,23 @@ function SidebarProvider({
       open,
       setOpen,
       isMobile,
+      phoneSheet,
       sidebarWidth,
       openMobile,
       setOpenMobile,
       toggleSidebar,
     }),
-    [state, open, setOpen, isMobile, sidebarWidth, openMobile, setOpenMobile, toggleSidebar],
+    [
+      state,
+      open,
+      setOpen,
+      isMobile,
+      phoneSheet,
+      sidebarWidth,
+      openMobile,
+      setOpenMobile,
+      toggleSidebar,
+    ],
   );
 
   return (
@@ -163,7 +183,7 @@ function Sidebar({
   variant?: 'sidebar' | 'floating' | 'inset';
   collapsible?: 'offcanvas' | 'icon' | 'none';
 }) {
-  const { isMobile, state, openMobile, setOpenMobile, sidebarWidth } = useSidebar();
+  const { isMobile, phoneSheet, state, openMobile, setOpenMobile, sidebarWidth } = useSidebar();
 
   if (collapsible === 'none') {
     return (
@@ -210,7 +230,7 @@ function Sidebar({
 
   return (
     <div
-      className="group peer text-sidebar-foreground hidden md:block"
+      className={cn('group peer text-sidebar-foreground hidden md:block', phoneSheet && 'sm:block')}
       data-state={state}
       data-collapsible={state === 'collapsed' ? collapsible : ''}
       data-variant={variant}
@@ -234,6 +254,7 @@ function Sidebar({
         data-side={side}
         className={cn(
           'fixed inset-y-0 z-10 hidden h-svh w-(--sidebar-width) overflow-x-hidden transition-[left,right,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] data-[side=left]:left-0 data-[side=left]:group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)] data-[side=right]:right-0 data-[side=right]:group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)] md:flex',
+          phoneSheet && 'sm:flex',
           // Adjust the padding for floating and inset variants.
           variant === 'floating' || variant === 'inset'
             ? 'p-2 group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)+(--spacing(4))+2px)]'

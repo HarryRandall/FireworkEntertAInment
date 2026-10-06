@@ -14,12 +14,14 @@ export function WorkspaceShell({
   initialSidebarCollapsed = false,
   hasInitialSidebarCollapsedCookie = false,
   sidebarWidth = 60,
+  phoneSheet = false,
 }: {
   children: ReactNode;
   themePreference?: ThemePreference | null;
   initialSidebarCollapsed?: boolean;
   hasInitialSidebarCollapsedCookie?: boolean;
   sidebarWidth?: 60 | 64;
+  phoneSheet?: boolean;
 }) {
   const { sidebarCollapsed, sidebarTransitionReady, setSidebarCollapsedPreference } =
     useSidebarPreference({
@@ -29,6 +31,7 @@ export function WorkspaceShell({
 
   return (
     <SidebarProvider
+      phoneSheet={phoneSheet}
       defaultOpen={!initialSidebarCollapsed}
       open={!sidebarCollapsed}
       onOpenChange={(open) => setSidebarCollapsedPreference(!open)}
