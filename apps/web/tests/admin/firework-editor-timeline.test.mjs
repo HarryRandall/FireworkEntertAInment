@@ -9,64 +9,38 @@ function read(path) {
   return readFileSync(join(root, path), 'utf8');
 }
 
-test('firework and effect editors share the master timeline panel', () => {
-  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
-  const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
-
-  for (const editor of [fireworkEditor, effectEditor]) {
-    assert.match(editor, /id: 'timeline'/);
-    assert.match(editor, /<FireworkTimelineControls/);
-    assert.doesNotMatch(editor, /A master timeline[\s\S]*will live here|title="Coming soon"/);
-  }
-
-  assert.match(fireworkEditor, /onMutate=\{mutateOverridesForTimeline\}/);
-  assert.match(effectEditor, /onMutate=\{updateModelDefaultsForTimeline\}/);
-  assert.match(effectEditor, /durationLabel="Render duration"/);
+test('both editors share the renderer timeline and disposable editor transport', () => {
+  const tabs = read('ui/firework-editor/renderer-design/tabs.tsx');
+  const preview = read('ui/firework-editor/renderer-design/preview-surface.tsx');
+  assert.match(tabs, /id: 'timeline'/);
+  assert.match(tabs, /TimelineInspector/);
+  assert.match(preview, /new Viewer/);
+  assert.match(preview, /ui: false/);
+  assert.match(preview, /instance.dispose\(\)/);
+  for (const editor of [
+    read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx'),
+    read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx'),
+  ])
+    assert.match(editor, /useDesignTabs/);
 });
 
-test('timeline panel exposes an accessible total and slider for every lifecycle phase', () => {
-  const panel = read('ui/firework-editor/FireworkTimelineControls.tsx');
-
-  assert.match(panel, /label=\{durationLabel\}/);
-  for (const phase of ['ascent', 'burn', 'fade', 'tail']) {
-    assert.match(panel, new RegExp(`key: '${phase}'`));
-  }
-  assert.match(panel, /inputAriaLabel=\{`\$\{phase\.label\} duration value`\}/);
-  assert.match(panel, /role="img"/);
-  assert.match(panel, /SliderPrimitive\.Thumb/);
-  assert.match(panel, /applyFireworkTimelineBoundaryEdit/);
-  assert.match(panel, /aria-label=\{`\$\{phase\.label\} end`\}/);
-  assert.match(panel, /font-mono/);
-  assert.match(panel, /bg-primary/);
-  assert.match(panel, /Ground emitters start at the tube/);
-  assert.match(panel, /Crackle adds up to/);
+test('renderer timeline exposes labelled sliders and numeric inputs for authored lifecycle phases', () => {
+  const panel = read('ui/firework-editor/renderer-design/timeline-inspector.tsx');
+  const controls = read('ui/firework-editor/renderer-design/inspector-controls.tsx');
+  for (const phase of ['time_s', 'delay_s', 'life_s']) assert.match(panel, new RegExp(phase));
+  assert.match(panel, /BREAK_CONTROLS.map/);
+  assert.match(controls, /aria-label=\{control.label\}/);
+  assert.match(controls, /aria-label=\{`\$\{control.label\} value`\}/);
+  assert.match(controls, /htmlFor=\{id\}/);
+  assert.match(controls, /type="number"/);
+  assert.match(controls, /Number.isFinite\(next\)/);
 });
 
-test('timeline mutations update copied firework settings and affected effect presets once', () => {
-  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
-  const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
-
-  assert.match(
-    fireworkEditor,
-    /function mutateOverridesForTimeline\([\s\S]*const draft = cloneRecord\(parsedOverrides\.value\)[\s\S]*updater\(draft\)[\s\S]*setOverridesText/,
-  );
-  assert.match(
-    effectEditor,
-    /function updateModelDefaultsForTimeline\([\s\S]*const draft = cloneRecord\(canonicaliseEffectModelJson\(parsedModel\.value\)\)[\s\S]*const defaults = ensureRecord\(draft, 'renderDefaults'\)[\s\S]*kinds\.filter\(\(kind\) => materialiseStyleDefault\(kind, defaults\)\)[\s\S]*updater\(defaults\)[\s\S]*setModelText/,
-  );
-  for (const editor of [fireworkEditor, effectEditor]) {
-    assert.match(editor, /for \(const kind of customKinds\) next\[kind\] = NO_STYLE_DEFAULT_VALUE/);
-  }
-});
-
-test('firework timeline changes synchronise scheduling duration to the achieved render end', () => {
-  const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
-
-  assert.match(fireworkEditor, /timelineDurationSyncPendingRef\.current = true/);
-  assert.match(
-    fireworkEditor,
-    /if \(!timelineDurationSyncPendingRef\.current\) return;[\s\S]*setDurationSeconds\(String\(roundTimelineSeconds\(estimateDesignDurationSeconds\(previewDesign\)\)\)\)/,
-  );
+test('new timeline authors design seconds without changing legacy scheduling fields', () => {
+  const panel = read('ui/firework-editor/renderer-design/timeline-inspector.tsx');
+  assert.match(panel, /draft.launch.time_s = value/);
+  assert.match(panel, /draft.breaks\[index\]/);
+  assert.doesNotMatch(panel, /setDurationSeconds|render_overrides_json|model_json/);
 });
 
 test('timeline timing logic edits existing renderer fields without a parallel schema', () => {

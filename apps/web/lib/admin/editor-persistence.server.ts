@@ -12,11 +12,13 @@ const CommonRow = z.object({
   updated_at: z.string(),
 });
 const EffectRow = CommonRow.extend({
+  design: z.json().nullable(),
   pattern_key: z.string(),
   sort_order: z.number(),
   model_json: z.json(),
 });
 const FireworkRow = CommonRow.extend({
+  design: z.json().nullable(),
   firework_effect_id: z.string(),
   caliber: z.string().nullable(),
   duration_seconds: z.number().nullable(),
@@ -78,6 +80,7 @@ type SaveResult<K extends Kind> =
   | Extract<z.infer<typeof SavedResponse>, { kind: K }>
   | { ok: false; error: string };
 
+/** Saves and confirms a record and its database-authored history through one atomic RPC. */
 export async function saveEditorRecord<K extends Kind>(
   supabase: ReturnType<typeof createClient>,
   input: {

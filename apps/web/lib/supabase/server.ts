@@ -6,7 +6,8 @@ import { getSupabaseServerEnv } from '@/lib/supabase/env';
 import { supabaseFetch } from '@/lib/supabase/fetch';
 import type { Database } from '@/lib/database.types';
 
-export const createClient = (
+/** Creates a request-scoped client with an optional additive database contract. */
+export const createClient = <Schema extends Database = Database>(
   cookieStore: Awaited<ReturnType<typeof cookies>>,
   fetchImpl: typeof fetch = supabaseFetch,
 ) => {
@@ -17,7 +18,7 @@ export const createClient = (
     );
   }
 
-  return createServerClient<Database>(env.url, env.key, {
+  return createServerClient<Schema>(env.url, env.key, {
     global: { fetch: fetchImpl },
     cookies: {
       getAll() {

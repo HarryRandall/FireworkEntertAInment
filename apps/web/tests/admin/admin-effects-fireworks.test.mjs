@@ -155,9 +155,9 @@ test('effect and product editors compose the shared parts tree and draft tools',
   const fireworks = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
   const shell = read('ui/firework-editor/FireworkEditorShell.tsx');
   for (const editor of [effects, fireworks]) {
-    assert.match(editor, /rendererTabs/);
+    assert.match(editor, /useDesignTabs/);
     assert.match(editor, /useDraftHistory/);
-    assert.match(editor, /validateFireworkDesign/);
+    assert.match(editor, /validateEditorDesign/);
     assert.match(editor, /EditorHistoryPanel/);
     assert.match(editor, /JsonReadOnlyPanel/);
     assert.doesNotMatch(editor, /Math\.random/);
@@ -234,17 +234,13 @@ test('admin replay previews opt into FPS diagnostics', () => {
   assert.match(canvas, /Math\.min\(\.\.\.values\)/);
   assert.match(canvas, /stroke-white/);
   assert.match(canvas, /drop-shadow-\[0_0_5px_rgba\(255,255,255,0\.65\)\]/);
-  assert.match(effectEditor, /<LazyFireworkReplayCanvas[\s\S]*showFps/);
-  assert.match(fireworkEditor, /<LazyFireworkReplayCanvas[\s\S]*showFps/);
+  assert.match(effectEditor, /<DesignPreview/);
+  assert.match(fireworkEditor, /<DesignPreview/);
   assert.match(importPreview, /<LazyFireworkReplayCanvas[\s\S]*showFps/);
-  assert.match(effectEditor, /muted=\{!isPlaying\}/);
-  assert.match(fireworkEditor, /muted=\{!isPlaying\}/);
-  assert.match(effectEditor, /const previewCues = useMemo/);
-  assert.match(fireworkEditor, /const previewCues = useMemo/);
-  assert.match(effectEditor, /cues=\{previewCues\}/);
-  assert.match(fireworkEditor, /cues=\{previewCues\}/);
-  assert.doesNotMatch(effectEditor, /cues=\{\[previewCue\]\}/);
-  assert.doesNotMatch(fireworkEditor, /cues=\{\[previewCue\]\}/);
+  const rendererPreview = read('ui/firework-editor/renderer-design/preview-surface.tsx');
+  assert.match(rendererPreview, /new Viewer/);
+  assert.match(rendererPreview, /ui: false/);
+  assert.match(rendererPreview, /instance.dispose\(\)/);
   assert.match(canvas, /resumeAudio/);
   assert.match(canvas, /document\.addEventListener\('pointerdown', unlockAudio/);
   // The trail width-guide overlay was removed with the Motion settings sheet,

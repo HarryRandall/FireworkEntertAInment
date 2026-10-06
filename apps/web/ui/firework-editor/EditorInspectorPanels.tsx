@@ -1,5 +1,7 @@
 'use client';
 
+import { designChanges } from '@/lib/renderer-editor/diff';
+import { validateEditorDesign } from '@/lib/renderer-editor/validation';
 import type { AdminEditorVersion } from '@/lib/admin.types';
 import type { Json } from '@/lib/database.types';
 import { cn, isRecord } from '@/lib/utils';
@@ -98,6 +100,15 @@ function formatChangeValue(value: unknown): string {
 }
 
 function versionDetail(version: AdminEditorVersion): string {
+  const snapshot = isRecord(version.snapshotJson) ? version.snapshotJson : {};
+  const previous = isRecord(version.previousSnapshotJson) ? version.previousSnapshotJson : {};
+  const afterDesign = validateEditorDesign(snapshot.design);
+  const beforeDesign = validateEditorDesign(previous.design);
+  if (afterDesign.ok) {
+    const changes = designChanges(beforeDesign.ok ? beforeDesign.value : null, afterDesign.value);
+    if (changes.length)
+      return `${changes[0].label}: ${changes[0].from} -> ${changes[0].to}${changes.length > 1 ? ` +${changes.length - 1} more` : ''}`;
+  }
   const changes = isRecord(version.changesJson) ? Object.entries(version.changesJson) : [];
   const visibleChanges = changes.filter(([, change]) => isRecord(change) && 'after' in change);
   if (visibleChanges.length === 0) return version.summary;

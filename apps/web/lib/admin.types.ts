@@ -202,6 +202,7 @@ export type AdminEffectSummary = {
 };
 
 export type AdminEffectDetail = AdminEffectSummary & {
+  design: Json | null;
   modelJson: Json;
   starStyleDefault: AdminStyleDefaultOption | null;
   trailStyleDefault: AdminStyleDefaultOption | null;
@@ -248,6 +249,8 @@ export type AdminFireworkSummary = {
 };
 
 export type AdminFireworkDetail = AdminFireworkSummary & {
+  design: Json | null;
+  effectDesigns: Record<string, Json | null>;
   /** Resolved saved render snapshot. The field name is shared with editor save actions. */
   renderOverridesJson: Json;
   /** Source effect settings, available only for explicit whole-effect replacement. */

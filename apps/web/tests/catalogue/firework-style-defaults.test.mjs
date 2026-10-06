@@ -117,18 +117,18 @@ test('style default saves, archives, and restores record live editor history', (
   assert.doesNotMatch(editor, /router\.refresh\(\)/);
 });
 
-test('inline style-default creation and parent editor saves are atomic', () => {
+test('renderer editors save through the atomic transaction without inline legacy preset actions', () => {
   const effectActions = read('app/(admin)/admin/effects/actions.ts');
   const fireworkActions = read('app/(admin)/admin/fireworks/actions.ts');
   const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
 
-  assert.match(effectActions, /export async function createStyleDefaultAndUpdateEffect/);
+  assert.doesNotMatch(effectActions, /createStyleDefaultAndUpdateEffect/);
   assert.match(effectActions, /saveEditorRecord/);
-  assert.match(fireworkActions, /export async function createStyleDefaultAndUpdateFirework/);
+  assert.doesNotMatch(fireworkActions, /createStyleDefaultAndUpdateFirework/);
   assert.match(fireworkActions, /saveEditorRecord/);
-  assert.match(effectEditor, /createStyleDefaultAndUpdateEffect\(\{/);
-  assert.match(fireworkEditor, /createStyleDefaultAndUpdateFirework\(\{/);
+  assert.match(effectEditor, /useDesignTabs/);
+  assert.match(fireworkEditor, /useDesignTabs/);
   assert.doesNotMatch(effectEditor, /await createStyleDefault\(\{/);
   assert.doesNotMatch(fireworkEditor, /await createStyleDefault\(\{/);
 });

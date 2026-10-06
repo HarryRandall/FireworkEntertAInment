@@ -9,6 +9,7 @@ import { isRecord } from '@/lib/utils';
 
 export type FireworkEditorSnapshot = {
   kind: 'firework';
+  design?: Json | null;
   id: string;
   name: string;
   description: string | null;
@@ -26,6 +27,7 @@ export type FireworkEditorSnapshot = {
 
 export type EffectEditorSnapshot = {
   kind: 'effect';
+  design?: Json | null;
   id: string;
   name: string;
   description: string | null;
@@ -75,6 +77,7 @@ export function normaliseSnapshotStyleDefaultIds(value: unknown): AdminStyleDefa
 export function makeFireworkEditorSnapshot(input: FireworkEditorSnapshot): Json {
   return {
     kind: 'firework',
+    design: input.design ?? null,
     id: input.id,
     name: input.name,
     description: input.description,
@@ -94,6 +97,7 @@ export function makeFireworkEditorSnapshot(input: FireworkEditorSnapshot): Json 
 export function makeEffectEditorSnapshot(input: EffectEditorSnapshot): Json {
   return {
     kind: 'effect',
+    design: input.design ?? null,
     id: input.id,
     name: input.name,
     description: input.description,
@@ -131,6 +135,7 @@ export function parseFireworkEditorSnapshot(value: Json | unknown): FireworkEdit
 
   return {
     kind: 'firework',
+    design: isRecord(value.design) ? (value.design as Json) : null,
     id: value.id,
     name,
     description: stringOrNull(value.description),
@@ -157,6 +162,7 @@ export function parseEffectEditorSnapshot(value: Json | unknown): EffectEditorSn
 
   return {
     kind: 'effect',
+    design: isRecord(value.design) ? (value.design as Json) : null,
     id: value.id,
     name,
     description: stringOrNull(value.description),
