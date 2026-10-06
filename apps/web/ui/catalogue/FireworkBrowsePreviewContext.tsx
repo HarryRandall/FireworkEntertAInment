@@ -24,21 +24,22 @@ import {
   type FireworkCardPreviewPersistence,
   type FireworkCardPreviewPayload,
 } from '@/lib/firework-card-preview';
-import {
-  estimateFireworkDesignTiming,
-  isGroundFireworkEffect,
-} from '@showcrafter/fireworks/timing';
+import { estimateFireworkDesignTiming } from '@showcrafter/fireworks/timing';
+import { developedTime, poster as renderPoster } from '@showcrafter/renderer/poster';
+import { shotDuration } from '@showcrafter/renderer';
+import { resolvedShowDesign, showLiftTimeSeconds } from '@/lib/shows/renderer-design';
+import { buildShowRendererShots } from '@/lib/shows/renderer-shots';
 import type { ReplayCue } from '@/lib/show-domain';
 import { clamp } from '@/lib/utils';
 
 const HOVER_INTENT_MS = 500;
-const MAX_STATIC_PREVIEW_SECONDS = 1.8;
 // Posters are shown up to ~800 CSS px wide on wide grids, so 2x density needs
 // ~1600 physical px; smaller captures leave the browser upscaling into mush.
 // The background capture stage below is sized so a 2x display renders exactly
 // these dimensions, avoiding any resample of the persisted frame.
 const POSTER_WIDTH = 1600;
 const POSTER_HEIGHT = 1000;
+// Existing WebP persistence contract, normalised encoding quality.
 const POSTER_WEBP_QUALITY = 0.9;
 const MAX_PREVIEW_CACHE_ENTRIES = 64;
 const MAX_POSTER_CACHE_ENTRIES = 48;
@@ -47,7 +48,7 @@ const BACKGROUND_CAPTURE_DELAY_MS = 350;
 const SAME_PREVIEW_SEEK_EPSILON_SECONDS = 0.001;
 
 const LazyFireworkReplayCanvas = dynamic(
-  () => import('@/ui/replay/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
+  () => import('@/ui/replay/ShowRendererCanvas').then((mod) => mod.FireworkReplayCanvas),
   { ssr: false, loading: () => null },
 );
 
@@ -66,6 +67,7 @@ type PosterBackfillTarget = Pick<PreviewTarget, 'id' | 'previewUrl'> & {
 };
 
 type LoadedPreview = {
+  renderer?: 'legacy-editor';
   id: string;
   previewUrl: string;
   cues: ReplayCue[];
@@ -73,7 +75,7 @@ type LoadedPreview = {
   persistence: FireworkCardPreviewPersistence | null;
 };
 
-type CachedPreview = Pick<LoadedPreview, 'cues' | 'durationSeconds' | 'persistence'>;
+type CachedPreview = Pick<LoadedPreview, 'cues' | 'durationSeconds' | 'persistence' | 'renderer'>;
 
 type FireworkBrowsePreviewContextValue = {
   activeId: string | null;
@@ -138,49 +140,28 @@ type CueVisualWindow = {
   endSeconds: number;
 };
 
-function cueVisualWindow(cue: ReplayCue): CueVisualWindow {
-  const design = cue.firework.renderDesign;
-  if (!design) {
+function cueVisualWindow(cue: ReplayCue, legacyEditor = false): CueVisualWindow {
+  if (legacyEditor) {
+    if (!cue.firework.renderDesign) throw new Error('The style default has no editor design.');
+    const timing = estimateFireworkDesignTiming(cue.firework.renderDesign);
     return {
-      startSeconds: cue.timeSeconds,
-      representativeSeconds: cue.timeSeconds + MAX_STATIC_PREVIEW_SECONDS,
-      endSeconds: cue.timeSeconds + MAX_STATIC_PREVIEW_SECONDS * 2,
+      startSeconds: cue.timeSeconds + timing.effectStartSeconds,
+      representativeSeconds: cue.timeSeconds + timing.effectStartSeconds + 0.5,
+      endSeconds: cue.timeSeconds + timing.fadeFinishSeconds,
     };
   }
-
-  const timing = estimateFireworkDesignTiming(design);
-  const hasVisibleBurstLayer = [design.stars.outer, design.stars.core].some(
-    (layer) =>
-      layer.enabled &&
-      (layer.head.visible || (layer.burstTrail.enabled && layer.burstTrail.particlesPerStar > 0)),
-  );
-  if (!isGroundFireworkEffect(design) && timing.liftTimeSeconds > 0 && !hasVisibleBurstLayer) {
-    const launchOffset = clamp(
-      timing.liftTimeSeconds * 0.55,
-      0.2,
-      Math.max(0.2, timing.liftTimeSeconds * 0.85),
-    );
-    return {
-      startSeconds: cue.timeSeconds,
-      representativeSeconds: cue.timeSeconds + launchOffset,
-      endSeconds: cue.timeSeconds + timing.liftTimeSeconds,
-    };
-  }
-
-  const visibleDuration = Math.max(0.25, timing.fadeFinishSeconds - timing.effectStartSeconds);
-  const developedOffset = isGroundFireworkEffect(design)
-    ? clamp(visibleDuration * 0.38, 0.45, 4)
-    : clamp(visibleDuration * 0.34, 0.35, 1.4);
-
+  const design = resolvedShowDesign(cue.firework, cue.emphasis ?? 'normal');
   return {
-    startSeconds: cue.timeSeconds + timing.effectStartSeconds,
-    representativeSeconds: cue.timeSeconds + timing.effectStartSeconds + developedOffset,
-    endSeconds: cue.timeSeconds + timing.fadeFinishSeconds,
+    startSeconds: cue.timeSeconds + showLiftTimeSeconds(design),
+    representativeSeconds: cue.timeSeconds + developedTime(design),
+    endSeconds: cue.timeSeconds + shotDuration(design),
   };
 }
 
 function staticPreviewTime(preview: CachedPreview): number {
-  const windows = preview.cues.map(cueVisualWindow);
+  const windows = preview.cues.map((cue) =>
+    cueVisualWindow(cue, preview.renderer === 'legacy-editor'),
+  );
   if (windows.length === 0) return 0;
 
   const representative = windows.reduce((best, candidate) => {
@@ -227,76 +208,6 @@ function cachePosterUrl(previewUrl: string, posterUrl: string): void {
     posterBlobCache.delete(oldestKey);
     if (oldestUrl) URL.revokeObjectURL(oldestUrl);
   }
-}
-
-function copyCanvasToPoster(source: HTMLCanvasElement): HTMLCanvasElement | null {
-  if (source.width <= 0 || source.height <= 0) return null;
-  const poster = document.createElement('canvas');
-  poster.width = POSTER_WIDTH;
-  poster.height = POSTER_HEIGHT;
-  const context = poster.getContext('2d');
-  if (!context) return null;
-
-  const sourceRatio = source.width / source.height;
-  const posterRatio = POSTER_WIDTH / POSTER_HEIGHT;
-  let sourceX = 0;
-  let sourceY = 0;
-  let sourceWidth = source.width;
-  let sourceHeight = source.height;
-  if (sourceRatio > posterRatio) {
-    sourceWidth = source.height * posterRatio;
-    sourceX = (source.width - sourceWidth) / 2;
-  } else if (sourceRatio < posterRatio) {
-    sourceHeight = source.width / posterRatio;
-    sourceY = (source.height - sourceHeight) / 2;
-  }
-
-  context.fillStyle = '#020409';
-  context.fillRect(0, 0, POSTER_WIDTH, POSTER_HEIGHT);
-  context.imageSmoothingEnabled = true;
-  context.imageSmoothingQuality = 'high';
-  context.drawImage(
-    source,
-    sourceX,
-    sourceY,
-    sourceWidth,
-    sourceHeight,
-    0,
-    0,
-    POSTER_WIDTH,
-    POSTER_HEIGHT,
-  );
-  return poster;
-}
-
-function posterHasVisualDetail(poster: HTMLCanvasElement): boolean {
-  const context = poster.getContext('2d', { willReadFrequently: true });
-  if (!context) return false;
-  const pixels = context.getImageData(0, 0, poster.width, poster.height).data;
-  let highlightedSamples = 0;
-  let darkest = 255;
-  let brightest = 0;
-
-  // The stage itself is deliberately dark. A developed firework contributes
-  // enough bright or saturated samples to distinguish it from an empty frame.
-  for (let index = 0; index < pixels.length; index += 4 * 16) {
-    const red = pixels[index] ?? 0;
-    const green = pixels[index + 1] ?? 0;
-    const blue = pixels[index + 2] ?? 0;
-    const high = Math.max(red, green, blue);
-    const low = Math.min(red, green, blue);
-    const luminance = red * 0.2126 + green * 0.7152 + blue * 0.0722;
-    darkest = Math.min(darkest, luminance);
-    brightest = Math.max(brightest, luminance);
-    if (high >= 96 && (high - low >= 22 || luminance >= 145)) highlightedSamples += 1;
-  }
-  return highlightedSamples >= 12 && brightest - darkest >= 55;
-}
-
-function posterBlob(poster: HTMLCanvasElement): Promise<Blob | null> {
-  return new Promise((resolve) => {
-    poster.toBlob(resolve, 'image/webp', POSTER_WEBP_QUALITY);
-  });
 }
 
 async function persistPosterBlob(
@@ -505,11 +416,43 @@ export function FireworkBrowsePreviewProvider({
       const task = (async () => {
         let blob = posterBlobCache.get(target.previewUrl) ?? null;
         if (!blob) {
-          const source = overlayRef.current?.querySelector('canvas');
-          if (!source) return false;
-          const poster = copyCanvasToPoster(source);
-          if (!poster || !posterHasVisualDetail(poster)) return false;
-          blob = await posterBlob(poster);
+          const canvas = document.createElement('canvas');
+          canvas.width = POSTER_WIDTH;
+          canvas.height = POSTER_HEIGHT;
+          const context = canvas.getContext('2d');
+          if (!context) return false;
+          if (preview.renderer === 'legacy-editor') {
+            const source = overlayRef.current?.querySelector('canvas');
+            if (!source) return false;
+            context.drawImage(source, 0, 0, POSTER_WIDTH, POSTER_HEIGHT);
+          } else {
+            const result = buildShowRendererShots(preview.cues);
+            if (!result.ok || result.shots.length === 0) return false;
+            const first = result.shots[0];
+            if (!first) return false;
+            const png = await renderPoster(null, first.design, {
+              shots: result.shots,
+              t: staticPreviewTime(preview),
+              width: POSTER_WIDTH,
+              height: POSTER_HEIGHT,
+              prop:
+                preview.cues.length > 1 &&
+                preview.cues.every(
+                  (cue) => cue.launchPositionIndex === 0 && !cue.shotPositionOverride,
+                )
+                  ? 'cake'
+                  : 'mortar',
+            });
+            const image = await createImageBitmap(png);
+            try {
+              context.drawImage(image, 0, 0, POSTER_WIDTH, POSTER_HEIGHT);
+            } finally {
+              image.close();
+            }
+          }
+          blob = await new Promise<Blob | null>((resolve) =>
+            canvas.toBlob(resolve, 'image/webp', POSTER_WEBP_QUALITY),
+          );
           if (!blob) return false;
 
           if (target.displayPoster) {
@@ -689,6 +632,7 @@ export function FireworkBrowsePreviewProvider({
         if (cues.length === 0) throw new Error('Preview contains no playable cues');
 
         const loaded: CachedPreview = {
+          renderer: payload.renderer,
           cues,
           durationSeconds: previewDuration(payload.durationSeconds),
           persistence: payload.persistence ?? null,
@@ -1021,6 +965,15 @@ export function FireworkBrowsePreviewProvider({
         {mountedPreview ? (
           <LazyFireworkReplayCanvas
             cues={mountedPreview.cues}
+            legacyEditor={mountedPreview.renderer === 'legacy-editor'}
+            prop={
+              mountedPreview.cues.length > 1 &&
+              mountedPreview.cues.every(
+                (cue) => cue.launchPositionIndex === 0 && !cue.shotPositionOverride,
+              )
+                ? 'cake'
+                : 'mortar'
+            }
             elapsed={0}
             playbackRef={playbackRef}
             interactive={false}

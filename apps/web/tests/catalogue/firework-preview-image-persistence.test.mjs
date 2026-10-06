@@ -24,8 +24,8 @@ function loadPreviewImageModule(path = 'lib/firework-preview-image.ts') {
     'require',
     output,
   )(loadedModule.exports, loadedModule, (specifier) => {
-    assert.equal(specifier, './firework-import/renderer-contract');
-    return loadPreviewImageModule('lib/firework-import/renderer-contract.ts');
+    assert.equal(specifier, '@showcrafter/renderer');
+    return loadPreviewImageModule('../../packages/renderer/src/version.ts');
   });
   return loadedModule.exports;
 }
@@ -79,10 +79,9 @@ test('preview URL helpers expose only the current renderer version', () => {
 
     assert.equal(FIREWORK_PREVIEW_BUCKET, 'firework-previews');
     const currentPath = `${FIREWORK_PREVIEW_RENDERER_VERSION}/firework/item/poster.webp`;
-    const contract = loadPreviewImageModule('lib/firework-import/renderer-contract.ts');
     assert.equal(
       FIREWORK_PREVIEW_RENDERER_VERSION,
-      `1280x800-${contract.FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION.slice(-64)}`,
+      `1600x1000-design-v1-${loadPreviewImageModule('../../packages/renderer/src/version.ts').RENDERER_VERSION}`,
     );
     assert.equal(isCurrentFireworkPreviewImagePath('v2/firework/item/poster.webp'), false);
     assert.equal(isCurrentFireworkPreviewImagePath(currentPath), true);

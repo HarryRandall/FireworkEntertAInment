@@ -23,6 +23,15 @@ begin
     raise exception 'Snapshot-only edit kept stale multishot posters';
   end if;
   before_revision := after_revision;
+  update public.fireworks set design = jsonb_set(design, '{seed}', to_jsonb(((design->>'seed')::bigint + 1) % 4294967295)),
+    render_snapshot_json = jsonb_set(render_snapshot_json, '{stars,outer,count}', '21'::jsonb)
+    where id = target.id;
+  select source_revision into after_revision from public.firework_preview_images where firework_id = target.id;
+  if after_revision <> before_revision + 1 then raise exception 'Design and legacy snapshot edit must invalidate once'; end if;
+  before_revision := after_revision;
+  update public.fireworks set design = design where id = target.id;
+  select source_revision into after_revision from public.firework_preview_images where firework_id = target.id;
+  if after_revision <> before_revision then raise exception 'Unchanged designs invalidate posters'; end if;
   update public.fireworks set render_snapshot_json = render_snapshot_json where id = target.id;
   select source_revision into after_revision from public.firework_preview_images where firework_id = target.id;
   if after_revision <> before_revision then raise exception 'Unchanged snapshots invalidate posters'; end if;

@@ -44,6 +44,8 @@ export type FireworkCardPreviewCue = {
  * by cues so a multishot does not repeat the same render design for every shot.
  */
 export type FireworkCardPreviewPayload = {
+  /** Style-default controls remain part of the legacy admin editor. Never used for shows. */
+  renderer?: 'legacy-editor';
   specifications: FireworkSpecification[];
   cues: FireworkCardPreviewCue[];
   durationSeconds: number;
