@@ -22,8 +22,9 @@ const golden = JSON.parse(
 );
 // Float32 reference outputs use the same absolute tolerance as the core simulation goldens.
 const FLOAT32_TOLERANCE = 1e-6;
-// Catalogue size audited from the reference PRESETS, including all six library groups.
-const TEMPLATE_COUNT = 99;
+// Captured prototype catalogue plus two visually tuned planar shells.
+const TEMPLATE_COUNT = 101;
+const NEW_TEMPLATE_KEYS = ['bowtie', 'fivePointStar'];
 const compare = (actual, expected, label) => {
   assert.equal(actual.length, expected.length, label);
   actual.forEach((v, i) =>
@@ -49,10 +50,13 @@ const smokeRow = (p, i) => [
   p.ages[i],
 ];
 
-test('catalogue covers every captured preset exactly once in prototype order', () => {
+test('catalogue preserves captured preset order and adds two planar shells exactly once', () => {
   const metadata = ({ key, name, group }) => ({ key, name, group });
   assert.equal(effectTemplates.length, TEMPLATE_COUNT);
-  assert.deepEqual(effectTemplates.map(metadata), golden.templates.map(metadata));
+  assert.deepEqual(
+    effectTemplates.filter((entry) => !NEW_TEMPLATE_KEYS.includes(entry.key)).map(metadata),
+    golden.templates.map(metadata),
+  );
   assert.equal(new Set(effectTemplates.map((e) => e.key)).size, effectTemplates.length);
   assert.deepEqual(
     readdirSync(new URL('../src/templates/', import.meta.url))
@@ -62,7 +66,7 @@ test('catalogue covers every captured preset exactly once in prototype order', (
   );
 });
 for (const entry of effectTemplates) {
-  test(`${entry.key}: stored template validates, resolves and matches full prototype frames`, () => {
+  test(`${entry.key}: stored template validates, resolves and reproduces deterministic frames`, () => {
     const raw = JSON.parse(
       readFileSync(new URL(`../src/templates/${entry.key}.json`, import.meta.url)),
     );
@@ -74,16 +78,25 @@ for (const entry of effectTemplates) {
     assert.deepEqual(d, entry.design);
     assert.ok(Number.isFinite(shotDuration(d)) && shotDuration(d) > 0);
     const reference = golden.templates.find((e) => e.key === entry.key);
-    for (const f of reference.frames) {
+    assert.ok(reference || NEW_TEMPLATE_KEYS.includes(entry.key), `${entry.key}: missing capture`);
+    // New shells have no prototype capture: verify finite, deterministic frames without inventing goldens.
+    const frames =
+      reference?.frames ?? [0, 0.5, 1.4, 3].map((age) => ({ time_s: d.launch.time_s + age }));
+    for (const f of frames) {
       const label = `${entry.key} t=${f.time_s}`;
-      const original = prototypeTemplate(entry);
+      // Captured templates replay their original inputs; new shells check finite frames only.
+      const original = reference ? prototypeTemplate(entry) : d;
       const p = simulate(original, f.time_s);
-      assert.equal(p.kinds.length, f.count, label);
-      f.samples.forEach((s) => compare(row(p, s.index), s.values, `${label} particle=${s.index}`));
-      assert.equal(p.smoke.sizes.length, f.smoke.count, `${label} smoke`);
-      f.smoke.samples.forEach((s) =>
-        compare(smokeRow(p.smoke, s.index), s.values, `${label} smoke=${s.index}`),
-      );
+      if (reference) {
+        assert.equal(p.kinds.length, f.count, label);
+        f.samples.forEach((s) =>
+          compare(row(p, s.index), s.values, `${label} particle=${s.index}`),
+        );
+        assert.equal(p.smoke.sizes.length, f.smoke.count, `${label} smoke`);
+        f.smoke.samples.forEach((s) =>
+          compare(smokeRow(p.smoke, s.index), s.values, `${label} smoke=${s.index}`),
+        );
+      }
       for (const values of [
         p.positions,
         p.colours,

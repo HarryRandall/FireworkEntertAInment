@@ -415,6 +415,8 @@
             "ring",
             "double_ring",
             "heart",
+            "bowtie",
+            "star",
             "spiral",
             "random",
             "fan",
@@ -444,7 +446,7 @@
           "minimum": -2,
           "maximum": 2,
           "default": 0.4,
-          "description": "Dimensionless ring tilt: angle = tilt * pi / 2 + 0.3 radians. The range -2 to 2 permits a half turn in either direction around the fixed offset."
+          "description": "Dimensionless plane tilt: bowtie and star use angle = tilt * pi / 2 radians; ring adds 0.3 radians. The range -2 to 2 permits a half turn in either direction around the fixed offset."
         },
         "speed_var": {
           "type": "number",

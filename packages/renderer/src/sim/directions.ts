@@ -47,7 +47,23 @@ const RANDOM_UPWARD_WEIGHT = 0.7;
 const RANDOM_UPWARD_BIAS = 0.2;
 const SPHERE_LATITUDE_JITTER = 2.4;
 const SPHERE_AZIMUTH_JITTER_RAD = 0.9;
+// Visual tuning from the legacy opposed-lobe intent: each circular arc spans 60 degrees.
+const BOWTIE_HALF_FAN_DEG = 30;
+// Angular unit conversion: degrees in a mathematical half turn.
+const HALF_TURN_DEG = 180;
+const BOWTIE_HALF_FAN_RAD = (BOWTIE_HALF_FAN_DEG * Math.PI) / HALF_TURN_DEG;
+// Legacy fivePointStar defaults: dimensionless inner/outer radius ratio and point count.
+const STAR_INNER_RADIUS_RATIO = 0.44;
+const STAR_POINT_COUNT = 5;
+// Polygon mathematics: one inner and one outer vertex for each point, dimensionless.
+const STAR_VERTICES_PER_POINT = 2;
+// Plane control convention: tilt=1 rotates the vertical axis by a quarter turn, radians.
+const PLANE_TILT_RAD_PER_UNIT = Math.PI / 2;
+// Cartesian convention: start the star at its upward tip, radians.
+const STAR_START_ANGLE_RAD = Math.PI / 2;
 export interface StarDirection {
+  /** Optional dimensionless outline radius; unit directions retain the authored silhouette. */
+  radius?: number;
   /** Unit-vector horizontal x component used by closed-form star motion. */
   x: number;
   /** Unit-vector vertical y component used by closed-form star motion. */
@@ -76,11 +92,11 @@ export function unit(index: number, seed: number): Vec3 {
 }
 
 /**
- * Computes deterministic unit directions for a burst pattern.
+ * Computes deterministic burst directions; outline patterns also carry a radial scale.
  * @param count - Number of directions.
  * @param pattern - Stored pattern name.
  * @param seed - Design random seed, dimensionless.
- * @param tilt - Stored ring tilt, dimensionless.
+ * @param tilt - Stored plane tilt, dimensionless; new outlines rotate by tilt * pi / 2.
  * @returns Direction vectors and per-star random values.
  */
 export function directions(
@@ -91,7 +107,7 @@ export function directions(
 ): StarDirection[] {
   const out: StarDirection[] = [];
   const yaw =
-    pattern === 'heart' || pattern === 'spiral'
+    pattern === 'heart' || pattern === 'spiral' || pattern === 'bowtie' || pattern === 'star'
       ? 0
       : hash(seed, PATTERN_YAW_HASH_STREAM, PATTERN_YAW_PHASE_STREAM) * Math.PI * 2;
   const scratch: DirectionScratch = { index: 0, count, seed, tilt, x: 0, y: 0, z: 0 };
@@ -105,6 +121,7 @@ export function directions(
       x: x * yawCosine + z * yawSine,
       y,
       z: -x * yawSine + z * yawCosine,
+      ...(scratch.radius === undefined ? {} : { radius: scratch.radius }),
       h: hash(seed, index, STAR_SPEED_VARIATION_STREAM),
       h2: hash(seed, index, STAR_SECONDARY_VARIATION_STREAM),
       ph: hash(seed, index, STAR_PHASE_STREAM) * PROTOTYPE_TAU_RAD,
@@ -122,11 +139,20 @@ interface DirectionScratch {
   x: number;
   y: number;
   z: number;
+  radius?: number;
 }
 function patternDirection(state: DirectionScratch, pattern: string): void {
   switch (pattern) {
     case 'ring': {
       ringDirection(state);
+      return;
+    }
+    case 'bowtie': {
+      bowtieDirection(state);
+      return;
+    }
+    case 'star': {
+      starDirection(state);
       return;
     }
     case 'heart': {
@@ -177,6 +203,41 @@ function heartDirection(state: DirectionScratch): void {
       Math.cos(HEART_FOURTH_HARMONIC * angleRad)) /
     HEART_NORMALISER;
   state.z = 0;
+}
+/** Samples equal-length opposed circular arcs, balancing odd counts between the lobes. */
+function bowtieDirection(state: DirectionScratch): void {
+  const firstLobeCount = Math.ceil(state.count / 2);
+  const firstLobe = state.index < firstLobeCount;
+  const lobeCount = firstLobe ? firstLobeCount : state.count - firstLobeCount;
+  const lobeIndex = firstLobe ? state.index : state.index - firstLobeCount;
+  // Midpoint samples avoid doubling endpoints and keep one-particle lobes centred.
+  const angleRad = (((lobeIndex + 0.5) / lobeCount) * 2 - 1) * BOWTIE_HALF_FAN_RAD;
+  planarDirection(state, (firstLobe ? 1 : -1) * Math.cos(angleRad), Math.sin(angleRad));
+}
+/** Samples the ten equal-length polygon edges at equal arc-length intervals. */
+function starDirection(state: DirectionScratch): void {
+  const vertexCount = STAR_POINT_COUNT * STAR_VERTICES_PER_POINT;
+  const cursor = (state.index / state.count) * vertexCount;
+  const vertex = Math.floor(cursor);
+  const fraction = cursor - vertex;
+  const angleRad = STAR_START_ANGLE_RAD + (vertex / vertexCount) * Math.PI * 2;
+  const nextAngleRad = STAR_START_ANGLE_RAD + ((vertex + 1) / vertexCount) * Math.PI * 2;
+  const radius = vertex % STAR_VERTICES_PER_POINT === 0 ? 1 : STAR_INNER_RADIUS_RATIO;
+  const nextRadius = vertex % STAR_VERTICES_PER_POINT === 0 ? STAR_INNER_RADIUS_RATIO : 1;
+  planarDirection(
+    state,
+    radius * Math.cos(angleRad) * (1 - fraction) + nextRadius * Math.cos(nextAngleRad) * fraction,
+    radius * Math.sin(angleRad) * (1 - fraction) + nextRadius * Math.sin(nextAngleRad) * fraction,
+  );
+}
+/** Separates outline radius from unit direction, then rotates about the horizontal axis. */
+function planarDirection(state: DirectionScratch, x: number, y: number): void {
+  const radius = Math.hypot(x, y);
+  const angleRad = state.tilt * PLANE_TILT_RAD_PER_UNIT;
+  state.radius = radius;
+  state.x = x / radius;
+  state.y = (y / radius) * Math.cos(angleRad);
+  state.z = (y / radius) * Math.sin(angleRad);
 }
 function spiralDirection(state: DirectionScratch): void {
   const { index, count, seed } = state;

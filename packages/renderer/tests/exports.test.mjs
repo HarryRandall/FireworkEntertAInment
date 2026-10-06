@@ -9,7 +9,7 @@ import { simulate, shotDuration } from '@showcrafter/renderer/sim';
 import * as fixtures from '@showcrafter/renderer/fixtures';
 
 // Catalogue size captured and checked against the supplied template JSON files.
-const TEMPLATE_COUNT = 99;
+const TEMPLATE_COUNT = 101;
 
 const packageRequire = createRequire(new URL('../package.json', import.meta.url));
 const webRequire = createRequire(new URL('../../../apps/web/package.json', import.meta.url));

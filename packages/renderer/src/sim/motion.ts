@@ -47,7 +47,7 @@ export function starPos(layer: Layer, direction: StarDirection, age: number, cen
   const speedFactor = 1 - layer.speed_var + layer.speed_var * direction.h;
   // Analytic exponential drag avoids integration drift during seeking.
   const dragFraction = 1 - Math.exp(-dragPerS * age);
-  const distanceM = layer.radius_m * speedFactor * dragFraction;
+  const distanceM = layer.radius_m * (direction.radius ?? 1) * speedFactor * dragFraction;
   const fallM = (layer.gravity_m_s2 / dragPerS) * (age - dragFraction / dragPerS);
   let directionX = direction.x;
   let directionY = direction.y;
