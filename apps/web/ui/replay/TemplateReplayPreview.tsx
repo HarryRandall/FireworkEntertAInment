@@ -63,7 +63,7 @@ const CARD_PREVIEW_SECONDS = 18;
 const SCRUB_COMMIT_INTERVAL_MS = 67;
 
 const LazyFireworkReplayCanvas = dynamic(
-  () => import('@/ui/replay/FireworkReplayCanvas').then((mod) => mod.FireworkReplayCanvas),
+  () => import('@/ui/replay/ShowRendererCanvas').then((mod) => mod.FireworkReplayCanvas),
   {
     ssr: false,
     loading: () => <ReplayCanvasSkeleton />,

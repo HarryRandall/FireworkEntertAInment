@@ -1,11 +1,5 @@
-/**
- * demoShow — a self-contained choreographed firework show used by the
- * landing-page live preview. It produces real `ReplayCue[]` driven by the
- * production fireworks engine (`compileFireworkDesign`), so the marketing
- * preview renders with the exact same renderer the app uses for shows. No
- * database or network access is required: designs are compiled in-memory.
- */
-import { compileFireworkDesign, type FireworkDesign } from '@showcrafter/fireworks/design';
+/** Self-contained landing show using the stored-design renderer and templates. */
+import { effectTemplates, type Design } from '@showcrafter/renderer';
 import { DEFAULT_FIREWORK_SPEC } from '@showcrafter/fireworks/spec';
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
 
@@ -20,12 +14,23 @@ const PALETTE: { color: string; secondary: string }[] = [
   { color: '#fb7185', secondary: '#efb93f' }, // rose
 ];
 
-const designCache = new Map<number, FireworkDesign>();
-function designFor(paletteIndex: number): FireworkDesign {
+const designCache = new Map<number, Design>();
+function designFor(paletteIndex: number): Design {
   const cached = designCache.get(paletteIndex);
   if (cached) return cached;
   const { color, secondary } = PALETTE[paletteIndex];
-  const design = compileFireworkDesign({ primaryColor: color, colorPalette: [color, secondary] });
+  const template = effectTemplates.find((entry) => entry.key === 'peony');
+  if (!template) throw new Error('The landing show needs the peony template.');
+  const design = structuredClone(template.design);
+  for (const burst of design.breaks)
+    for (const layer of burst.layers)
+      layer.colour = {
+        mode: 'alternate',
+        stops: [
+          [0, [color, secondary]],
+          [1, [color, secondary]],
+        ],
+      };
   designCache.set(paletteIndex, design);
   return design;
 }
@@ -47,7 +52,9 @@ function specFor(paletteIndex: number, caliber: string): FireworkSpecification {
     shotCount: 1,
     spec: DEFAULT_FIREWORK_SPEC,
     rawSpec: null,
-    renderDesign: designFor(paletteIndex),
+    renderDesign: null,
+    design: designFor(paletteIndex),
+    kind: 'shell',
     baseEffect: null,
     variant: null,
   };
@@ -59,13 +66,13 @@ function specFor(paletteIndex: number, caliber: string): FireworkSpecification {
 type CueSeed = [number, number, string, number];
 
 const SEEDS: CueSeed[] = [
-  // opening — single shells, alternating sides, building height
+  // opening - single shells, alternating sides, building height
   [0.6, 0, '50mm', 1],
   [1.7, 3, '50mm', 0],
   [2.8, 2, '60mm', 2],
   [3.9, 0, '75mm', 1],
   [5.1, 4, '60mm', 0],
-  // mid — layered pairs, richer colours
+  // mid - layered pairs, richer colours
   [6.3, 1, '75mm', 2],
   [7.3, 2, '75mm', 1],
   [8.4, 3, '60mm', 0],
@@ -79,7 +86,7 @@ const SEEDS: CueSeed[] = [
   [18.1, 1, '100mm', 1],
   [19.4, 2, '100mm', 0],
   [20.7, 0, '125mm', 2],
-  // finale — rapid wall across every position
+  // finale - rapid wall across every position
   [23.0, 0, '125mm', 0],
   [23.4, 4, '100mm', 1],
   [23.8, 2, '125mm', 2],
