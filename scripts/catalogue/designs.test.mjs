@@ -4,6 +4,10 @@ import { measureVariety } from './variety.mjs';
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { effectTemplates, upgradeDesign, shotDuration } from '../../packages/renderer/src/index.ts';
+import {
+  TEMPLATE_HEIGHT_BANDS,
+  templateApexM,
+} from '../../packages/renderer/src/templates/height-bands.ts';
 import { buildCatalogue } from './generate.mjs';
 import { catalogueDesign, resolvedOldDesign } from './designs.mjs';
 
@@ -52,6 +56,20 @@ test('all stored designs validate; each template has exactly one effect and miss
     3,
   );
   assert.deepEqual(result, buildCatalogue());
+});
+
+test('generated effects and fireworks retain the renderer kind height bands', () => {
+  const result = buildCatalogue();
+  for (const table of ['firework_effects', 'fireworks']) {
+    for (const row of result.tables[table]) {
+      const band = TEMPLATE_HEIGHT_BANDS[row.design.kind];
+      const apex = templateApexM(row.design);
+      assert.ok(
+        apex >= band.apex_m[0] && apex <= band.apex_m[1],
+        `${table}/${row.slug} apex: ${apex} m`,
+      );
+    }
+  }
 });
 
 test('Nishiki is an honestly labelled denser, longer-burning brocade approximation', () => {
@@ -236,7 +254,7 @@ for (const [preset, colourMode, expected] of [
   });
 }
 
-test('launch adapts tail and smoke while height and timing keep existing logic', () => {
+test('launch adapts tail and smoke while height and timing retain the template band apex', () => {
   const result = convert(
     { launch: { liftParticles: { enabled: false }, smoke: { enabled: false } } },
     'peony',
@@ -244,13 +262,13 @@ test('launch adapts tail and smoke while height and timing keep existing logic',
   );
   assert.equal(result.launch.tail, 'dark');
   assert.equal(result.launch.smoke, 0);
-  assert.equal(result.launch.height_m, peony.launch.height_m * 4);
-  assert.equal(result.launch.time_s, peony.launch.time_s * 2);
+  assert.equal(result.launch.height_m, peony.launch.height_m);
+  assert.equal(result.launch.time_s, peony.launch.time_s);
   assert.deepEqual(
     result.breaks.map((burst) => burst.at_s),
     peony.breaks.map((burst) => burst.at_s),
   );
-  assert.equal(convert({}, 'peony', { height_meters: 0 }).launch.time_s, 0.001);
+  assert.equal(convert({}, 'peony', { height_meters: 0 }).launch.time_s, peony.launch.time_s);
 });
 
 test('siblings with different old settings retain structural variation independently of seeds', () => {

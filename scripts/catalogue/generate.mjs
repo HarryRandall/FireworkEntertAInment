@@ -226,7 +226,7 @@ export function buildCatalogue() {
       effect.model_json,
     );
     sql.push(
-      `update public.fireworks f set design = pg_temp.catalogue_design(${literal(mapped)}, f.color_palette, f.primary_color, f.height_meters, ${literal(firework.color_palette)}, ${firework.primary_color ? "'" + firework.primary_color + "'" : 'null'})\nwhere f.slug = '${firework.slug.replaceAll("'", "''")}' and f.design is null\nand exists (select 1 from public.firework_effects e where e.id = f.firework_effect_id and e.slug = '${effect.slug.replaceAll("'", "''")}');`,
+      `update public.fireworks f set design = pg_temp.catalogue_design(${literal(mapped)}, f.color_palette, f.primary_color, ${literal(firework.color_palette)}, ${firework.primary_color ? "'" + firework.primary_color + "'" : 'null'})\nwhere f.slug = '${firework.slug.replaceAll("'", "''")}' and f.design is null\nand exists (select 1 from public.firework_effects e where e.id = f.firework_effect_id and e.slug = '${effect.slug.replaceAll("'", "''")}');`,
     );
   }
   for (const { effect, firework, item } of additions) {
@@ -251,7 +251,7 @@ on conflict do nothing;`);
   sql.push(
     'end if;',
     'end $catalogue$;',
-    'drop function pg_temp.catalogue_design(jsonb, text[], text, numeric, jsonb, text);',
+    'drop function pg_temp.catalogue_design(jsonb, text[], text, jsonb, text);',
     'commit;',
   );
   return {

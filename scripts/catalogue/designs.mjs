@@ -10,10 +10,6 @@ import {
   parseCaliberMm,
 } from '../../packages/fireworks/src/model/scaling.ts';
 
-// Existing renderer height adjustment: time scales with square root of height.
-const HEIGHT_TIME_EXPONENT = 0.5;
-// v1 schema minimum lift time, seconds.
-const MIN_LAUNCH_TIME_S = 0.001;
 // Visual calibration: old speed 3.2 corresponds to the peony template's 26 m spread.
 const SPREAD_M_PER_OLD_SPEED = 26 / 3.2;
 // Visual calibration: old head budget 170 corresponds to the peony's 1.1 renderer size.
@@ -393,21 +389,6 @@ export function catalogueDesign(templateDesign, firework, effectModel = {}, note
         'v1 fountain colour accepts one hex colour only. Primary colour retained; alternate palettes and life-relative colour fades need renderer support.',
       );
     }
-  }
-  if (
-    design.kind === 'shell' &&
-    firework.height_meters !== null &&
-    firework.height_meters !== undefined
-  ) {
-    const heightM = Number(firework.height_meters);
-    const referenceHeightM = design.launch.height_m;
-    if (referenceHeightM <= 0)
-      throw new Error('A shell template needs a positive reference height.');
-    design.launch.time_s = Math.max(
-      MIN_LAUNCH_TIME_S,
-      design.launch.time_s * (heightM / referenceHeightM) ** HEIGHT_TIME_EXPONENT,
-    );
-    design.launch.height_m = heightM;
   }
   return upgradeDesign(design, 1);
 }

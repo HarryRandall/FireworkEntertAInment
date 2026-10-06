@@ -1387,7 +1387,7 @@
       "fireworks": 90,
       "distinctDesigns": 90,
       "distinctDesignsIgnoringSeed": 88,
-      "identicalApartFromColourPairsIgnoringSeed": 88
+      "identicalApartFromColourPairsIgnoringSeed": 102
     },
     "method": "Canonical key ordering. Colour-only unordered pairs exclude colour controls and seed; distinct designs are also reported without seed."
   }

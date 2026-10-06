@@ -1,6 +1,6 @@
--- Adapt generated per-firework snapshot designs to current colours and heights.
+-- Adapt generated per-firework snapshot designs to current colours.
 -- Unchanged palettes retain authored opening/closing curves and inner-star contrast.
-create function pg_temp.catalogue_design(template jsonb, palette text[], primary_colour text, height_m numeric, exported_palette jsonb, exported_primary text)
+create function pg_temp.catalogue_design(template jsonb, palette text[], primary_colour text, exported_palette jsonb, exported_primary text)
 returns jsonb language plpgsql as $adapt$
 declare
   result jsonb := template;
@@ -9,7 +9,6 @@ declare
   part record;
   burst_index integer;
   layer_index integer;
-  reference_height_m numeric;
 begin
   if cardinality(palette) >= 2 then colours := to_jsonb(palette);
   elsif primary_colour is not null then colours := jsonb_build_array(primary_colour);
@@ -33,12 +32,6 @@ begin
         end if;
       end loop;
     end if;
-  end if;
-  if result ->> 'kind' = 'shell' and height_m is not null then
-    reference_height_m := (result #>> '{launch,height_m}')::numeric;
-    result := jsonb_set(result, '{launch,time_s}', to_jsonb(greatest(0.001,
-      (result #>> '{launch,time_s}')::double precision * sqrt(height_m::double precision / reference_height_m::double precision))));
-    result := jsonb_set(result, '{launch,height_m}', to_jsonb(height_m));
   end if;
   return result;
 end;

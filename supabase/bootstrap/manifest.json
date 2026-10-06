@@ -21,11 +21,11 @@
     },
     "firework_effects": {
       "rows": 102,
-      "sha256": "f2538deb324abe768df7e8ce05bbe4b9c7a8a8b0b1c65bebcf5d4c5e2fc4cd19"
+      "sha256": "ba7502e62d2d20a0e614497e963c87b82b64cd6e6caccefd9e3d5cdeef62cbe2"
     },
     "fireworks": {
       "rows": 166,
-      "sha256": "593a6823a2406a280a66ef811f6e86216ee652c673b17a47bf69f45fe866edd1"
+      "sha256": "db24771099ee52ad34c0e598694318ec6b4eb20afed2d284a28421faceb492b4"
     },
     "multishots": {
       "rows": 39,
@@ -37,7 +37,7 @@
     },
     "catalogue_items": {
       "rows": 220,
-      "sha256": "8e9edc1ecedf14d719d8bfbad8baea7ce48a7d33d595879f4fad85933b2e3a85"
+      "sha256": "3e2f6128ec87d1da8068df83f1cc33f5f6a75539650a93f4b2f229d7b76d9ae5"
     },
     "supplier_profiles": {
       "rows": 2,

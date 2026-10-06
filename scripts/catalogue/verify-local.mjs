@@ -83,7 +83,7 @@ function verifyPrevious(directory) {
     do $probe$ begin
       if (select design from public.fireworks where slug = 'peony-default') <> ${json(customDesign)} then raise exception 'Admin design changed'; end if;
       if (select template_key from public.firework_effects where slug = 'brocade') <> 'owner-custom' then raise exception 'Admin template key changed'; end if;
-      if (select design #>> '{launch,height_m}' from public.fireworks where slug = '${firework.slug}')::numeric <> 100 then raise exception 'Live height or slug remapping failed'; end if;
+      if (select design #>> '{launch,height_m}' from public.fireworks where slug = '${firework.slug}')::numeric <> 60 then raise exception 'Band apex or slug remapping failed'; end if;
       if (select design #> '{breaks,0,layers,0,colour,stops,0,1}' from public.fireworks where slug = '${firework.slug}') <> '["#abcdef","#123456"]'::jsonb then raise exception 'Live palette failed'; end if;
     end $probe$;
     rollback;`,

@@ -2540,8 +2540,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 62,
-        "time_s": 1.8297540818372289,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -2672,7 +2672,7 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 5.8,
+    "duration_seconds": 5.882184785985107,
     "height_meters": null,
     "variant_json": {},
     "render_overrides_json": {
@@ -4329,8 +4329,8 @@
           "count": 10,
           "pattern": "sequence",
           "spread_deg": 30,
-          "height_m": 46,
-          "time_s": 1.3,
+          "height_m": 52,
+          "time_s": 1.3821847859851069,
           "colour": {
             "mode": "alternate",
             "stops": [
@@ -7041,8 +7041,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.446737587922817,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -8063,8 +8063,8 @@
     "design": {
       "kind": "mine",
       "launch": {
-        "height_m": 60,
-        "time_s": 1.8,
+        "height_m": 48,
+        "time_s": 1.6099689437998486,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -9096,8 +9096,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.446737587922818,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -9222,8 +9222,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 6.58903200617956,
-    "height_meters": 64,
+    "duration_seconds": 6.53,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -10872,8 +10872,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 64,
-        "time_s": 1.85903200617956,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 180,
@@ -11851,8 +11851,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.446737587922817,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -12808,8 +12808,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 56,
-        "time_s": 1.7389652095427326,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -13808,8 +13808,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -14913,8 +14913,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -16040,8 +16040,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228177,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -16237,8 +16237,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 8.311801207018597,
-    "height_meters": 72,
+    "duration_seconds": 8.139999999999999,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -17887,8 +17887,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 72,
-        "time_s": 1.971801207018598,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "comet",
         "sparks": 160,
@@ -18907,8 +18907,8 @@
           "count": 1,
           "pattern": "fan",
           "spread_deg": 70,
-          "height_m": 55,
-          "time_s": 1.9,
+          "height_m": 52,
+          "time_s": 1.8474552522567111,
           "colour": {
             "mode": "alternate",
             "stops": [
@@ -19857,8 +19857,8 @@
           "count": 4,
           "pattern": "sequence",
           "spread_deg": 10,
-          "height_m": 44,
-          "time_s": 1.5,
+          "height_m": 52,
+          "time_s": 1.6306719195138268,
           "colour": {
             "mode": "alternate",
             "stops": [
@@ -19916,8 +19916,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 10.718999749874923,
-    "height_meters": 74,
+    "duration_seconds": 10.520000000000001,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -21566,8 +21566,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 74,
-        "time_s": 1.9989997498749217,
+        "height_m": 60,
+        "time_s": 1.7999999999999998,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 180,
@@ -22580,8 +22580,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.446737587922817,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -22718,8 +22718,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 9.091801207018598,
-    "height_meters": 72,
+    "duration_seconds": 8.92,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -24368,8 +24368,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 72,
-        "time_s": 1.971801207018598,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "comet",
         "sparks": 140,
@@ -28114,8 +28114,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.446737587922817,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -29131,8 +29131,8 @@
           "count": 11,
           "pattern": "sequence",
           "spread_deg": 6,
-          "height_m": 50,
-          "time_s": 1.6,
+          "height_m": 52,
+          "time_s": 1.6316862443496913,
           "colour": {
             "mode": "alternate",
             "stops": [
@@ -29188,7 +29188,7 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 6.65,
+    "duration_seconds": 6.715332799572906,
     "height_meters": null,
     "variant_json": {},
     "render_overrides_json": {
@@ -30845,8 +30845,8 @@
           "count": 6,
           "pattern": "sequence",
           "spread_deg": 14,
-          "height_m": 48,
-          "time_s": 1.6,
+          "height_m": 52,
+          "time_s": 1.6653327995729061,
           "colour": {
             "mode": "alternate",
             "stops": [
@@ -31770,8 +31770,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -32789,8 +32789,8 @@
           "count": 1,
           "pattern": "fan",
           "spread_deg": 70,
-          "height_m": 55,
-          "time_s": 1.9,
+          "height_m": 52,
+          "time_s": 1.8474552522567111,
           "colour": {
             "mode": "alternate",
             "stops": [
@@ -32846,8 +32846,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 5.649754081837229,
-    "height_meters": 62,
+    "duration_seconds": 5.62,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -34496,8 +34496,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 62,
-        "time_s": 1.8297540818372289,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "comet",
         "sparks": 180,
@@ -34621,7 +34621,7 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 4.2,
+    "duration_seconds": 4.233666634621547,
     "height_meters": null,
     "variant_json": {},
     "render_overrides_json": {
@@ -36278,8 +36278,8 @@
           "count": 5,
           "pattern": "fan",
           "spread_deg": 50,
-          "height_m": 50,
-          "time_s": 1.7,
+          "height_m": 52,
+          "time_s": 1.7336666346215468,
           "colour": {
             "mode": "alternate",
             "stops": [
@@ -36331,7 +36331,7 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 3.9000000000000004,
+    "duration_seconds": 3.8419242261784703,
     "height_meters": null,
     "variant_json": {},
     "render_overrides_json": {
@@ -37988,8 +37988,8 @@
           "count": 5,
           "pattern": "fan",
           "spread_deg": 60,
-          "height_m": 55,
-          "time_s": 2.1,
+          "height_m": 52,
+          "time_s": 2.0419242261784705,
           "colour": {
             "mode": "alternate",
             "stops": [
@@ -43057,8 +43057,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -43195,8 +43195,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 14.329788721915863,
-    "height_meters": 84,
+    "duration_seconds": 14.000000000000002,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -44845,8 +44845,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 84,
-        "time_s": 2.1297887219158618,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "willow",
         "sparks": 180,
@@ -44963,8 +44963,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 5.069745744450316,
-    "height_meters": 58,
+    "duration_seconds": 5.1000000000000005,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -46613,8 +46613,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 58,
-        "time_s": 1.769745744450315,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 180,
@@ -47651,8 +47651,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 48.2,
-        "time_s": 1.6133195591698504,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -48659,8 +48659,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228177,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -49670,8 +49670,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -50686,8 +50686,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228177,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -51900,8 +51900,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -52945,8 +52945,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228177,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -53094,7 +53094,7 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 4.2,
+    "duration_seconds": 4.536421020237931,
     "height_meters": null,
     "variant_json": {},
     "render_overrides_json": {
@@ -54751,8 +54751,8 @@
           "count": 6,
           "pattern": "random",
           "spread_deg": 44,
-          "height_m": 40,
-          "time_s": 2.4,
+          "height_m": 52,
+          "time_s": 2.7364210202379313,
           "colour": {
             "mode": "alternate",
             "stops": [
@@ -59350,8 +59350,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -60350,8 +60350,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -61366,8 +61366,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228177,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -62376,8 +62376,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -63405,8 +63405,8 @@
           "count": 11,
           "pattern": "sequence",
           "spread_deg": 6,
-          "height_m": 50,
-          "time_s": 1.6,
+          "height_m": 52,
+          "time_s": 1.6316862443496913,
           "colour": {
             "mode": "alternate",
             "stops": [
@@ -64338,8 +64338,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -64466,8 +64466,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 12.232315765178448,
-    "height_meters": 78,
+    "duration_seconds": 11.98,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -66116,8 +66116,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 78,
-        "time_s": 2.0523157651784487,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "glitter",
         "sparks": 180,
@@ -66245,8 +66245,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 5.573460969082653,
-    "height_meters": 80,
+    "duration_seconds": 5.295,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -67895,8 +67895,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 80,
-        "time_s": 2.0784609690826525,
+        "height_m": 60,
+        "time_s": 1.7999999999999998,
         "tilt_deg": 0,
         "tail": "silver",
         "sparks": 180,
@@ -68078,8 +68078,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 5.869754081837229,
-    "height_meters": 62,
+    "duration_seconds": 5.84,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -69728,8 +69728,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 62,
-        "time_s": 1.8297540818372289,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "crackle",
         "sparks": 180,
@@ -70743,8 +70743,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 48.2,
-        "time_s": 1.6133195591698506,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -71753,8 +71753,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228177,
+        "height_m": 62,
+        "time_s": 1.8297540818372289,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -72775,8 +72775,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 48.2,
-        "time_s": 1.6133195591698506,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -74561,8 +74561,8 @@
     "design": {
       "kind": "mine",
       "launch": {
-        "height_m": 60,
-        "time_s": 1.8,
+        "height_m": 48,
+        "time_s": 1.6099689437998486,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 180,
@@ -75574,8 +75574,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228177,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -77467,8 +77467,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 5.52903200617956,
-    "height_meters": 64,
+    "duration_seconds": 5.47,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -79117,8 +79117,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 64,
-        "time_s": 1.85903200617956,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "flowers",
         "sparks": 180,
@@ -79250,8 +79250,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 2.714534138012399,
-    "height_meters": 32,
+    "duration_seconds": 3.1999999999999997,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -80900,8 +80900,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 32,
-        "time_s": 1.3145341380123987,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "whistle",
         "sparks": 180,
@@ -85367,8 +85367,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 48.2,
-        "time_s": 1.6133195591698506,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -88077,8 +88077,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -89099,8 +89099,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -89225,8 +89225,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 6.616246330720558,
-    "height_meters": 68,
+    "duration_seconds": 6.5,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -90875,8 +90875,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 68,
-        "time_s": 1.9162463307205575,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 180,
@@ -91004,8 +91004,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 6.9442222095223585,
-    "height_meters": 70,
+    "duration_seconds": 6.8,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -92654,8 +92654,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 70,
-        "time_s": 1.9442222095223582,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "silver",
         "sparks": 180,
@@ -93648,8 +93648,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228177,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -94738,8 +94738,8 @@
           "count": 11,
           "pattern": "sequence",
           "spread_deg": 6,
-          "height_m": 50,
-          "time_s": 1.6,
+          "height_m": 52,
+          "time_s": 1.6316862443496913,
           "colour": {
             "mode": "alternate",
             "stops": [
@@ -99121,8 +99121,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -99282,8 +99282,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 6.537855926706273,
-    "height_meters": 66,
+    "duration_seconds": 6.450000000000001,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -100932,8 +100932,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 66,
-        "time_s": 1.887855926706273,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "silver",
         "sparks": 180,
@@ -101049,8 +101049,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 5.8790320061795605,
-    "height_meters": 64,
+    "duration_seconds": 5.82,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -102699,8 +102699,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 64,
-        "time_s": 1.85903200617956,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "dark",
         "sparks": 180,
@@ -102836,7 +102836,7 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 3.3,
+    "duration_seconds": 3.4124515496597096,
     "height_meters": null,
     "variant_json": {},
     "render_overrides_json": {
@@ -104493,8 +104493,8 @@
           "count": 25,
           "pattern": "sweep",
           "spread_deg": 80,
-          "height_m": 45,
-          "time_s": 1.5,
+          "height_m": 52,
+          "time_s": 1.6124515496597098,
           "colour": {
             "mode": "alternate",
             "stops": [
@@ -105404,8 +105404,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228177,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -106392,8 +106392,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228177,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -109161,8 +109161,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -109386,8 +109386,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 5.281246330720558,
-    "height_meters": 68,
+    "duration_seconds": 5.165000000000001,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -111036,8 +111036,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 68,
-        "time_s": 1.9162463307205575,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "silver",
         "sparks": 180,
@@ -111219,8 +111219,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 6.226801207018598,
-    "height_meters": 72,
+    "duration_seconds": 6.055000000000001,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -112869,8 +112869,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 72,
-        "time_s": 1.971801207018598,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "glitter",
         "sparks": 180,
@@ -114636,8 +114636,8 @@
     "design": {
       "kind": "mine",
       "launch": {
-        "height_m": 60,
-        "time_s": 1.8,
+        "height_m": 48,
+        "time_s": 1.6099689437998486,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 180,
@@ -115584,8 +115584,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 62,
-        "time_s": 1.8297540818372289,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -117483,8 +117483,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 5.289032006179561,
-    "height_meters": 64,
+    "duration_seconds": 5.23,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -119133,8 +119133,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 64,
-        "time_s": 1.85903200617956,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 180,
@@ -120202,8 +120202,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 48.2,
-        "time_s": 1.6133195591698506,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -120328,8 +120328,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 6.4392222095223595,
-    "height_meters": 70,
+    "duration_seconds": 6.295000000000001,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -121978,8 +121978,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 70,
-        "time_s": 1.9442222095223582,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 180,
@@ -122972,8 +122972,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 48.2,
-        "time_s": 1.6133195591698504,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -123098,8 +123098,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 6.928999749874922,
-    "height_meters": 74,
+    "duration_seconds": 6.73,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -124748,8 +124748,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 74,
-        "time_s": 1.9989997498749217,
+        "height_m": 60,
+        "time_s": 1.7999999999999998,
         "tilt_deg": 0,
         "tail": "tiger",
         "sparks": 220,
@@ -124865,7 +124865,7 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 3.8,
+    "duration_seconds": 3.744689739217591,
     "height_meters": null,
     "variant_json": {},
     "render_overrides_json": {
@@ -126522,8 +126522,8 @@
           "count": 7,
           "pattern": "fan",
           "spread_deg": 80,
-          "height_m": 55,
-          "time_s": 2,
+          "height_m": 52,
+          "time_s": 1.9446897392175908,
           "colour": {
             "mode": "alternate",
             "stops": [
@@ -127455,8 +127455,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -127593,8 +127593,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 10.898460969082652,
-    "height_meters": 80,
+    "duration_seconds": 10.62,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -129243,8 +129243,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 80,
-        "time_s": 2.0784609690826525,
+        "height_m": 60,
+        "time_s": 1.7999999999999998,
         "tilt_deg": 0,
         "tail": "glitter",
         "sparks": 180,
@@ -130257,8 +130257,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -130395,8 +130395,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 5.374222209522359,
-    "height_meters": 70,
+    "duration_seconds": 5.23,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -132045,8 +132045,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 70,
-        "time_s": 1.9442222095223582,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "flowers",
         "sparks": 180,
@@ -133046,8 +133046,8 @@
     "design": {
       "kind": "mine",
       "launch": {
-        "height_m": 60,
-        "time_s": 1.8,
+        "height_m": 48,
+        "time_s": 1.6099689437998486,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -134231,8 +134231,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228177,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -135246,8 +135246,8 @@
           "count": 4,
           "pattern": "sequence",
           "spread_deg": 10,
-          "height_m": 44,
-          "time_s": 1.5,
+          "height_m": 52,
+          "time_s": 1.6306719195138268,
           "colour": {
             "mode": "alternate",
             "stops": [
@@ -135303,8 +135303,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 5.443167672515498,
-    "height_meters": 50,
+    "duration_seconds": 5.6000000000000005,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -136953,8 +136953,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 50,
-        "time_s": 1.6431676725154984,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "crackle",
         "sparks": 180,
@@ -137966,8 +137966,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228177,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -138115,8 +138115,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 6.631855926706272,
-    "height_meters": 66,
+    "duration_seconds": 6.5440000000000005,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -139765,8 +139765,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 66,
-        "time_s": 1.887855926706273,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "silver",
         "sparks": 180,
@@ -140744,8 +140744,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228177,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -143502,8 +143502,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 48.2,
-        "time_s": 1.6133195591698504,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -144488,8 +144488,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -145573,8 +145573,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 48.2,
-        "time_s": 1.6133195591698506,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -146658,8 +146658,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 48.2,
-        "time_s": 1.6133195591698506,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -147719,8 +147719,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 76,
-        "time_s": 2.025833161936096,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -150630,8 +150630,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -153341,8 +153341,8 @@
           "count": 1,
           "pattern": "fan",
           "spread_deg": 70,
-          "height_m": 55,
-          "time_s": 1.9,
+          "height_m": 52,
+          "time_s": 1.8474552522567111,
           "colour": {
             "mode": "alternate",
             "stops": [
@@ -154348,8 +154348,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228177,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -155356,8 +155356,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -155599,8 +155599,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 2.9760710643876434,
-    "height_meters": 46,
+    "duration_seconds": 3.2,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -157249,8 +157249,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 46,
-        "time_s": 1.5760710643876437,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "dark",
         "sparks": 180,
@@ -158257,8 +158257,8 @@
           "count": 4,
           "pattern": "sequence",
           "spread_deg": 10,
-          "height_m": 44,
-          "time_s": 1.5,
+          "height_m": 52,
+          "time_s": 1.6306719195138268,
           "colour": {
             "mode": "alternate",
             "stops": [
@@ -158314,8 +158314,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 3.666402170474087,
-    "height_meters": 24,
+    "duration_seconds": 4.475000000000001,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -159964,8 +159964,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 24,
-        "time_s": 1.391402170474087,
+        "height_m": 60,
+        "time_s": 2.2000000000000006,
         "tilt_deg": 0,
         "tail": "heli",
         "sparks": 180,
@@ -160945,8 +160945,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228177,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -161955,8 +161955,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -162977,8 +162977,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228177,
+        "height_m": 62,
+        "time_s": 1.8297540818372289,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -165683,8 +165683,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.446737587922818,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -166695,8 +166695,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -169467,7 +169467,7 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 4.2,
+    "duration_seconds": 4.034278407003031,
     "height_meters": null,
     "variant_json": {},
     "render_overrides_json": {
@@ -171124,8 +171124,8 @@
           "count": 1,
           "pattern": "straight",
           "spread_deg": 0,
-          "height_m": 60,
-          "time_s": 2.4,
+          "height_m": 52,
+          "time_s": 2.2342784070030306,
           "colour": {
             "mode": "alternate",
             "stops": [
@@ -172057,8 +172057,8 @@
     "design": {
       "kind": "mine",
       "launch": {
-        "height_m": 60,
-        "time_s": 1.8,
+        "height_m": 48,
+        "time_s": 1.6099689437998486,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -173973,7 +173973,7 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 3.8,
+    "duration_seconds": 3.744689739217591,
     "height_meters": null,
     "variant_json": {},
     "render_overrides_json": {
@@ -175630,8 +175630,8 @@
           "count": 3,
           "pattern": "fan",
           "spread_deg": 40,
-          "height_m": 55,
-          "time_s": 2,
+          "height_m": 52,
+          "time_s": 1.9446897392175908,
           "colour": {
             "mode": "alternate",
             "stops": [
@@ -176543,8 +176543,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 48.2,
-        "time_s": 1.6133195591698506,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -177648,8 +177648,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.446737587922817,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -178867,8 +178867,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228177,
+        "height_m": 62,
+        "time_s": 1.8297540818372289,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -179895,8 +179895,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228177,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -181028,8 +181028,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 7.154222209522359,
-    "height_meters": 70,
+    "duration_seconds": 7.010000000000001,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -182678,8 +182678,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 70,
-        "time_s": 1.9442222095223582,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "silver",
         "sparks": 180,
@@ -182807,8 +182807,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 11.845833161936097,
-    "height_meters": 76,
+    "duration_seconds": 11.620000000000001,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -184457,8 +184457,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 76,
-        "time_s": 2.025833161936096,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "silver",
         "sparks": 180,
@@ -184574,7 +184574,7 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 3.2,
+    "duration_seconds": 3.3049547796823955,
     "height_meters": null,
     "variant_json": {},
     "render_overrides_json": {
@@ -186231,8 +186231,8 @@
           "count": 9,
           "pattern": "fan",
           "spread_deg": 60,
-          "height_m": 45,
-          "time_s": 1.4,
+          "height_m": 52,
+          "time_s": 1.5049547796823957,
           "colour": {
             "mode": "alternate",
             "stops": [
@@ -188947,8 +188947,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228177,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -189305,8 +189305,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 10.804994199528158,
-    "height_meters": 86,
+    "duration_seconds": 10.450000000000001,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -190955,8 +190955,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 86,
-        "time_s": 2.154994199528157,
+        "height_m": 60,
+        "time_s": 1.8000000000000005,
         "tilt_deg": 0,
         "tail": "silver",
         "sparks": 180,
@@ -191956,8 +191956,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -192978,8 +192978,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.446737587922818,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -195951,8 +195951,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -196971,8 +196971,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228177,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -197168,8 +197168,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 6.777855926706273,
-    "height_meters": 66,
+    "duration_seconds": 6.690000000000001,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -198818,8 +198818,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 66,
-        "time_s": 1.887855926706273,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "strobe",
         "sparks": 180,
@@ -198947,8 +198947,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 4.923629936490926,
-    "height_meters": 54,
+    "duration_seconds": 5.016000000000001,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -200597,8 +200597,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 54,
-        "time_s": 1.7076299364909249,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "crackle",
         "sparks": 180,
@@ -203365,8 +203365,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -205227,8 +205227,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 10.452315765178449,
-    "height_meters": 78,
+    "duration_seconds": 10.200000000000001,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -206877,8 +206877,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 78,
-        "time_s": 2.0523157651784487,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "brocade",
         "sparks": 180,
@@ -209670,8 +209670,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -210660,8 +210660,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 48.2,
-        "time_s": 1.6133195591698506,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -211743,8 +211743,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 48.2,
-        "time_s": 1.6133195591698506,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -211962,8 +211962,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 6.457855926706273,
-    "height_meters": 66,
+    "duration_seconds": 6.370000000000001,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -213612,8 +213612,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 66,
-        "time_s": 1.887855926706273,
+        "height_m": 60,
+        "time_s": 1.8000000000000003,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 180,
@@ -214692,8 +214692,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -215680,8 +215680,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.446737587922817,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -216668,8 +216668,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -219464,8 +219464,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228177,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -220702,8 +220702,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -220947,8 +220947,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 4.994032006179561,
-    "height_meters": 64,
+    "duration_seconds": 4.9350000000000005,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -222597,8 +222597,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 64,
-        "time_s": 1.85903200617956,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "rocket",
         "sparks": 180,
@@ -222716,8 +222716,8 @@
     "secondary_color": null,
     "color_palette": [],
     "caliber": null,
-    "duration_seconds": 5.5840320061795605,
-    "height_meters": 64,
+    "duration_seconds": 5.525,
+    "height_meters": 60,
     "variant_json": {},
     "render_overrides_json": {
       "burstFlashIntensity": 0.5,
@@ -224366,8 +224366,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 64,
-        "time_s": 1.85903200617956,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "silver",
         "sparks": 180,
@@ -225380,8 +225380,8 @@
     "design": {
       "kind": "shell",
       "launch": {
-        "height_m": 220,
-        "time_s": 3.4467375879228173,
+        "height_m": 60,
+        "time_s": 1.8,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 100,
@@ -227168,8 +227168,8 @@
     "design": {
       "kind": "mine",
       "launch": {
-        "height_m": 60,
-        "time_s": 1.8,
+        "height_m": 48,
+        "time_s": 1.6099689437998486,
         "tilt_deg": 0,
         "tail": "gold",
         "sparks": 180,
