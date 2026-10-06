@@ -7,7 +7,7 @@ import { ReplayLoadingBar } from './ReplayLoadingBar';
 import { ReplayStageBackdrop } from './ReplayStageBackdrop';
 
 const LazyFireworkReplayCanvas = dynamic(
-  () => import('@/ui/replay/ShowRendererCanvas').then((mod) => mod.FireworkReplayCanvas),
+  () => import('@/ui/replay/ShowRendererCanvas').then((mod) => mod.ShowRendererCanvas),
   {
     ssr: false,
     loading: () => null,

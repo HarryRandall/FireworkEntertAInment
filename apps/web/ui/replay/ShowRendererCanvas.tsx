@@ -1,33 +1,55 @@
 'use client';
 
-import dynamic from 'next/dynamic';
-import { useEffect, useMemo, useRef, useState, type ComponentProps } from 'react';
+import { useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react';
 import { Viewer, setSetting } from '@showcrafter/renderer/view';
 import { buildShowRendererShots } from '@/lib/shows/renderer-shots';
-import type { FireworkReplayCanvas as LegacyCanvas } from './FireworkReplayCanvas';
+import type { ReplayCue, Show } from '@/lib/show-domain';
+import { ReplayLoadingBar } from './ReplayLoadingBar';
 import { Button } from '@/ui/patterns/Button';
 
-type Props = ComponentProps<typeof LegacyCanvas> & {
+/** Playback inputs shared by shows and catalogue previews, independent of the import canvas. */
+type Props = {
+  cues: ReplayCue[];
+  elapsed: number;
+  playbackRef?: MutableRefObject<number>;
+  launchPositions?: Show['launchPositions'];
   prop?: 'mortar' | 'cake';
-  legacyEditor?: boolean;
+  muted?: boolean;
+  scrubbing?: boolean;
+  interactive?: boolean;
+  controlsVisible?: boolean;
+  showCameraControls?: boolean;
+  cameraMenuActions?: { id: string; label: string; icon: ReactNode; onClick: () => void }[];
+  cuesFinal?: boolean;
+  onSceneReady?: () => void;
+  onPrimeProgress?: (progress: number | null) => void;
+  onReady?: () => void;
+  showLoadingBar?: boolean;
+  loadingBarPosition?: 'bottom' | 'center';
+  allowFullscreen?: boolean;
+  fullscreen?: boolean;
+  onToggleFullscreen?: () => void;
+  // Existing caller preferences retained while Viewer owns rendering and stateless seeks.
+  compactPreview?: boolean;
+  allowWheelZoom?: boolean;
+  maxDevicePixelRatio?: number;
+  antialias?: boolean;
+  primeSnapshots?: boolean;
+  primeOnCueChanges?: boolean;
+  showStarfield?: boolean;
+  autoFrame?: boolean;
+  preserveDrawingBuffer?: boolean;
+  showFps?: boolean;
 };
-const LegacyEditorCanvas = dynamic(
-  () => import('./FireworkReplayCanvas').then((module) => module.FireworkReplayCanvas),
-  { ssr: false },
-);
-
-/** Stateless show playback driven by the parent's soundtrack clock, including exact scrubs. */
-export function FireworkReplayCanvas(props: Props) {
-  return props.legacyEditor ? <LegacyEditorCanvas {...props} /> : <ShowCanvas {...props} />;
-}
-
-function ShowCanvas(props: Props) {
+/** Drives stored-design playback from the parent transport clock. */
+export function ShowRendererCanvas(props: Props) {
   const container = useRef<HTMLDivElement>(null);
   const viewer = useRef<Viewer | null>(null);
   const latest = useRef(props);
   useEffect(() => {
     latest.current = props;
   });
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const shots = useMemo(
     () => buildShowRendererShots(props.cues, props.launchPositions),
@@ -40,10 +62,13 @@ function ShowCanvas(props: Props) {
 
   useEffect(() => {
     if (!container.current || !shots.ok) return;
+    setLoading(true);
+    setError(null);
     let instance: Viewer;
     try {
       instance = new Viewer(container.current, {
         shots: shots.shots,
+        ui: false,
         controls: props.interactive !== false,
         clickToPause: false,
         autoplay: false,
@@ -53,6 +78,7 @@ function ShowCanvas(props: Props) {
     } catch {
       setError('The firework viewer could not start. Please check WebGL support and reload.');
       latest.current.onSceneReady?.();
+      setLoading(false);
       return;
     }
     viewer.current = instance;
@@ -69,6 +95,7 @@ function ShowCanvas(props: Props) {
       }
       if (ready && !reported && current.cuesFinal !== false) {
         reported = true;
+        setLoading(false);
         current.onReady?.();
       }
       instance.syncTime(time, current.muted === false && !current.scrubbing);
@@ -101,7 +128,12 @@ function ShowCanvas(props: Props) {
           {shots.ok ? error : shots.error}
         </div>
       ) : null}
-      {props.interactive !== false && props.showCameraControls !== false ? (
+      {loading && shots.ok && !error && props.showLoadingBar !== false ? (
+        <ReplayLoadingBar progress={null} position={props.loadingBarPosition ?? 'bottom'} />
+      ) : null}
+      {props.interactive !== false &&
+      props.showCameraControls !== false &&
+      props.controlsVisible !== false ? (
         <div className="absolute top-6 right-6 z-10 flex gap-2">
           <Button size="sm" variant="secondary" onClick={() => viewer.current?.resetCamera()}>
             Reset view
