@@ -28,7 +28,13 @@ import {
   validateRefinementProposal,
 } from '@/lib/shows/refinement';
 
-export type CueActionResult = { ok: true; message?: string } | { ok: false; error: string };
+/**
+ * Cue mutation outcome. `committed` marks a failure reported after the cue write
+ * (and any credit settlement) succeeded, so callers must not refund or retry.
+ */
+export type CueActionResult =
+  | { ok: true; message?: string }
+  | { ok: false; error: string; committed?: boolean };
 
 const AddCueSchema = z.object({
   showId: z.string().uuid(),
@@ -161,6 +167,7 @@ export async function refineShowAction(formData: FormData): Promise<CueActionRes
     cueForm.set('aiCreditReferenceId', refinementId);
     cueForm.set('refinementPrompt', parsed.data.prompt);
     const result = await addPreviewCueAction(cueForm);
+    if (!result.ok && result.committed) return result;
     if (!result.ok) {
       // The cue RPC settles credits only when the cue commits, so a rejected
       // placement (for example a busy tube) must release the reservation here.
@@ -374,11 +381,15 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
       });
     } catch (error) {
       console.error('[addPreviewCueAction] derived-field sync failed:', error);
-      // The cue and credit settlement have already committed atomically. Do not
-      // report a retryable failure that could create a second cue.
+      // The cue committed but the totals did not; report the failure rather than
+      // a false success, and tell the user to reload rather than retry the add.
       await invalidateShowCacheForUser(user.id, parsed.data);
       revalidateShowViews(parsed.data.showSlug);
-      return { ok: true, message: 'Cue added. Reload to refresh show totals.' };
+      return {
+        ok: false,
+        error: 'The cue was added, but show totals could not refresh. Reload before retrying.',
+        committed: true,
+      };
     }
     await invalidateShowCacheForUser(user.id, parsed.data);
   }
@@ -426,7 +437,11 @@ export async function deletePreviewCueAction(formData: FormData): Promise<CueAct
         showSlug: parsed.data.showSlug,
       });
       revalidateShowViews(parsed.data.showSlug);
-      return { ok: true, message: 'Cue removed. Reload to refresh show totals.' };
+      return {
+        ok: false,
+        error: 'The cue was removed, but show totals could not refresh. Reload before retrying.',
+        committed: true,
+      };
     }
     await invalidateShowCacheForUser(user.id, {
       showId: deletedShowId,
