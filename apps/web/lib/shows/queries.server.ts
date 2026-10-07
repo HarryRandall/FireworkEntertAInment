@@ -585,18 +585,6 @@ function expandReplayCues(
   return expanded;
 }
 
-/**
- * Lists time-scheduled cues expanded for replay, for a single show. Cached per
- * show so the show detail page reuses the result.
- *
- * Catalogue items that point at a single firework become one replay cue.
- * Catalogue items that point at a multishot fan out into one replay cue per
- * ordered `multishot_fireworks` row.
- */
-export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]> {
-  return rehydrateReplayCues(await getReplayCuePayloadForShow(showId));
-}
-
 /** Loads the deduplicated replay transport without expanding it before client serialisation. */
 export async function getReplayCuePayloadForShow(showId: string): Promise<ReplayCuePayload> {
   const userId = await getCurrentUserId();
