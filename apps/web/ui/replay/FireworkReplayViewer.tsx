@@ -1,4 +1,5 @@
 'use client';
+import { declaredShowLengthSeconds } from '@/lib/cue-generation/show-duration';
 import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
 
 /**
@@ -1258,7 +1259,10 @@ export function FireworkReplayViewer({
                 value={totalCents != null ? formatTotal(totalCents) : '-'}
               />
               <StatChip label="Fireworks" value={String(builderCues.length)} />
-              <StatChip label="Length" value={formatDuration(duration)} />
+              <StatChip
+                label="Length"
+                value={formatDuration(declaredShowLengthSeconds(durationSeconds, duration))}
+              />
             </div>
             <Card radius="md" className="flex flex-col gap-4 p-5 xl:min-h-0 xl:flex-1">
               <div className="flex items-start gap-3">
