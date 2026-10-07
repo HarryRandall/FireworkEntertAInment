@@ -70,6 +70,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/primitives/tabs';
 import { Textarea } from '@/ui/primitives/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/primitives/tooltip';
+import { rehydrateReplayCues, type ReplayCuePayload } from '@/lib/shows/replay-payload';
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
 import { formatDuration, formatTotal } from '@/lib/show-domain';
 import type { LaunchPosition } from '@showcrafter/fireworks/design';
@@ -94,7 +95,7 @@ type FireworkReplayViewerProps = {
   /** Server-streamed replay cues. Resolved on the client via `use()` so the
    * canvas can mount with an empty scene immediately and populate fireworks
    * the moment the cues land, without waiting on the heavier catalogue. */
-  replayCuesPromise: Promise<ReplayCue[]>;
+  replayCuesPromise: Promise<ReplayCuePayload>;
   /** Server-streamed catalogue specifications for the add-firework dialog. */
   fireworkSpecificationsPromise: Promise<FireworkSpecification[]>;
   /** Server-streamed signed audio URL, kept independent from catalogue work. */
@@ -208,8 +209,8 @@ export function FireworkReplayViewer({
   const audioUrl = streamedAudioUrl ?? null;
   const replayDataReady = streamedCues !== null;
   const hasFireworkSpecifications = specifications.length > 0;
-  const handleReplayCuesLoaded = useCallback((data: ReplayCue[]) => {
-    setStreamedCues(data);
+  const handleReplayCuesLoaded = useCallback((data: ReplayCuePayload) => {
+    setStreamedCues(rehydrateReplayCues(data));
   }, []);
   const handleFireworkSpecificationsLoaded = useCallback((data: FireworkSpecification[]) => {
     setStreamedSpecifications(data);
