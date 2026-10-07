@@ -9,7 +9,7 @@ import { getAudioSignedUrl } from '@/lib/shows/audio.server';
 import {
   getShowBySlug,
   listFireworkProducts,
-  listReplayCuesForShow,
+  getReplayCuePayloadForShow,
 } from '@/lib/shows/queries.server';
 
 type PageProps = {
@@ -42,7 +42,7 @@ async function ShowPreviewReplay(props: PageProps) {
   // or delays the other.
   // The show row itself is awaited so notFound/redirect still run on the
   // server before anything renders.
-  const replayCuesPromise = listReplayCuesForShow(show.id);
+  const replayCuesPromise = getReplayCuePayloadForShow(show.id);
   const fireworkSpecificationsPromise = listFireworkProducts();
   const audioUrlPromise = getAudioSignedUrl(show.audioPath);
   const currentProfile = await currentProfilePromise;

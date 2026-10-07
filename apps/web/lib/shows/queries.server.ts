@@ -8,6 +8,8 @@
  */
 import 'server-only';
 
+import { normaliseReplayCues, rehydrateReplayCues, type ReplayCuePayload } from './replay-payload';
+
 import { cache } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
@@ -585,26 +587,19 @@ function expandReplayCues(
   return expanded;
 }
 
-/**
- * Lists time-scheduled cues expanded for replay, for a single show. Cached per
- * show so the show detail page reuses the result.
- *
- * Catalogue items that point at a single firework become one replay cue.
- * Catalogue items that point at a multishot fan out into one replay cue per
- * ordered `multishot_fireworks` row.
- */
-export async function listReplayCuesForShow(showId: string): Promise<ReplayCue[]> {
+/** Loads the deduplicated replay transport without expanding it before client serialisation. */
+export async function getReplayCuePayloadForShow(showId: string): Promise<ReplayCuePayload> {
   const userId = await getCurrentUserId();
-  if (!userId) return [];
+  if (!userId) return normaliseReplayCues([]);
 
   const cacheKey = getShowReplayCuesCacheKey(userId, showId);
-  const cached = await getCachedJson<ReplayCue[]>(cacheKey);
+  const cached = await getCachedJson<ReplayCuePayload>(cacheKey);
   if (cached) return cached;
 
   const supabase = await getServerClient();
-  const expanded = await listReplayCuesForShowWithClient(supabase, showId);
-  await setCachedJson(cacheKey, expanded, SHOWS_TTL_SECONDS);
-  return expanded;
+  const payload = normaliseReplayCues(await listReplayCuesForShowWithClient(supabase, showId));
+  await setCachedJson(cacheKey, payload, SHOWS_TTL_SECONDS);
+  return payload;
 }
 
 /** Trusted-client replay loader for non-dashboard server surfaces such as QR results. */
@@ -630,7 +625,7 @@ export async function listReplayCuesForShowWithClient(
     ...new Set(rows.map((r) => r.catalogue_item_id).filter((id): id is string => id != null)),
   ];
   const shotsByCatalogueItem = await fetchShotsByCatalogueItem(supabase, catalogueItemIds);
-  return expandReplayCues(rows, shotsByCatalogueItem);
+  return rehydrateReplayCues(normaliseReplayCues(expandReplayCues(rows, shotsByCatalogueItem)));
 }
 
 /**
