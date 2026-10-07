@@ -20,10 +20,13 @@ test('unknown prices are excluded explicitly instead of appearing as zero-cost p
   assert.match(source, /with price TBC/);
   assert.match(source, /pricedItemCount > 0/);
   assert.match(source, /: 'Price TBC'/);
-  assert.match(source, /items\.length > 0 \? \(/);
+  assert.match(source, /<tfoot>/);
 });
 
-test('shopping-list rows and totals adapt to narrow screens', () => {
-  assert.match(source, /flex-col items-start[\s\S]*sm:flex-row sm:items-center/);
-  assert.match(source, /flex flex-col gap-2[\s\S]*sm:flex-row/);
+test('shopping-list tables contain horizontal scrolling and print all pages', () => {
+  assert.match(source, /<DataTableShell>/);
+  assert.match(source, /min-w-\[560px\]/);
+  assert.match(source, /hidden print:table-row/);
+  assert.match(source, /print:hidden/);
+  assert.match(source, /<TablePagination/);
 });

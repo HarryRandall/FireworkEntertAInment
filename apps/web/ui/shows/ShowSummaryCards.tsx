@@ -10,8 +10,9 @@ import { CueModelSelect } from '@/ui/shows/CueModelSelect';
 import { Textarea } from '@/ui/patterns/Input';
 import { RANDOM_BRIEFS } from '@/lib/shows/briefs';
 import { FALLBACK_CUE_MODEL } from '@/lib/cue-models';
-import { formatBudget, formatDuration } from '@/lib/show-domain';
+import { formatDuration } from '@/lib/show-domain';
 import type { ShowSummaryCard, TemplateSummaryCard, VisualPalette } from '@/lib/show-summary';
+import { formatShowCurrency } from './show-display';
 import { cn } from '@/lib/utils';
 
 type PaletteStripProps = {
@@ -24,11 +25,14 @@ function gradientForPalette(
   palette?: VisualPalette | null,
   orientation: 'vertical' | 'horizontal' = 'vertical',
 ) {
-  const colours = palette?.hex?.length ? palette.hex : ['#C9CDD3', '#C9CDD3', '#C9CDD3'];
+  const colours = palette?.hex?.length
+    ? palette.hex
+    : ['var(--border)', 'var(--border)', 'var(--border)'];
   const angle = orientation === 'vertical' ? '180deg' : '90deg';
   return `linear-gradient(${angle}, ${colours.join(', ')})`;
 }
 
+/** Render the show palette as a decorative strip. */
 export function PaletteStrip({ palette, className, orientation = 'vertical' }: PaletteStripProps) {
   return (
     <span
@@ -45,6 +49,7 @@ function showMeta(show: ShowSummaryCard) {
     .join(' · ');
 }
 
+/** Render a compact show link with playback and estimated cost. */
 export function ShowSummaryRow({
   show,
   className,
@@ -78,7 +83,7 @@ export function ShowSummaryRow({
             className="text-foreground font-mono text-xs font-medium tabular-nums"
             title="Estimated retail cost of fireworks"
           >
-            {formatBudget(show.totalCostCents)}
+            {formatShowCurrency(show.totalCostCents)}
           </div>
           <div className="text-muted-foreground text-[10px]">
             Est. retail · {show.cueCount} cues
@@ -99,6 +104,7 @@ export function ShowSummaryRow({
   );
 }
 
+/** Render a reusable template card with its palette and cost. */
 export function TemplateSummaryCardView({
   template,
   className,
@@ -130,13 +136,13 @@ export function TemplateSummaryCardView({
           className="border-border relative h-20 shrink-0 overflow-hidden border-b bg-[image:var(--template-gradient)]"
           style={style}
         >
-          <div className="absolute top-2 right-2 z-10 flex flex-col items-end gap-0.5 rounded-md bg-black/35 px-2 py-1 text-right text-[11px] leading-4 text-white shadow-sm backdrop-blur">
+          <div className="bg-card/95 text-foreground absolute top-2 right-2 z-10 flex flex-col items-end gap-0.5 rounded-md px-2 py-1 text-right text-[11px] leading-4 shadow-sm backdrop-blur">
             <span className="inline-flex items-center gap-1">
               <Heart size={12} className="text-destructive shrink-0 fill-current" />
               <span className="tabular-nums">{template.likes}</span>
             </span>
             <span className="tabular-nums" title="Estimated retail cost of fireworks">
-              {formatBudget(template.totalCostCents)}
+              {formatShowCurrency(template.totalCostCents)}
             </span>
           </div>
         </div>
@@ -163,6 +169,7 @@ type PromptHeroProps = {
   headingLevel?: 'h1' | 'h2';
 };
 
+/** Compose a show brief before navigating to the creation wizard. */
 export function PromptHero({ className, headingLevel = 'h2' }: PromptHeroProps) {
   const [prompt, setPrompt] = useState('');
   const [selectedCueModel, setSelectedCueModel] = useState(FALLBACK_CUE_MODEL);
@@ -237,6 +244,7 @@ export function PromptHero({ className, headingLevel = 'h2' }: PromptHeroProps) 
   );
 }
 
+/** Present the creation prompt when no shows are available. */
 export function EmptyShowsPanel({ includePromptHero = true }: { includePromptHero?: boolean }) {
   return <>{includePromptHero ? <PromptHero /> : null}</>;
 }
