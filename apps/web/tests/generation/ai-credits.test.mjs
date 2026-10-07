@@ -186,13 +186,11 @@ test('show refinements reserve, settle, refund, and disclose credits', () => {
   assert.match(previewCues, /showRefinementReservationKey\(parsed\.data\.aiCreditReferenceId\)/);
   assert.match(previewCues, /const refinementCommitted =/);
   assert.match(previewCues, /invalidateSidebarAiUsageCache/);
-  assert.match(replayViewer, /formData\.set\('aiCreditAction', 'show_refinement'\)/);
-  assert.match(replayViewer, /formData\.set\('aiCreditReferenceId', crypto\.randomUUID\(\)\)/);
+  assert.match(previewCues, /export async function refineShowAction/);
+  assert.match(previewCues, /getOpenRouterClient\(\)\.chat\.completions\.create/);
+  assert.match(replayViewer, /const result = await refineShowAction\(formData\)/);
   assert.doesNotMatch(replayViewer, /toast\.success\(`Adding /);
-  assert.match(
-    replayViewer,
-    /const result = await addPreviewCueAction\(formData\)[\s\S]*?toast\.success\(`Added /,
-  );
+  assert.match(replayViewer, /setRefinePrompt\(''\)/);
   assert.match(replayViewer, /This will use \{REFINEMENT_CREDIT_COST\} AI credits/);
   assert.match(
     databaseTypes,
