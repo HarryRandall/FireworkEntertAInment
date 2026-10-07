@@ -11,13 +11,13 @@ function read(path) {
   return readFileSync(join(root, path), 'utf8');
 }
 
-test('show detail chrome keeps an accessible heading without visible title chrome', () => {
+test('show detail chrome keeps one visible shared page heading', () => {
   const layout = read('app/(app)/shows/[id]/layout.tsx');
   const chrome = read('app/(app)/shows/[id]/_components/ShowDetailChrome.tsx');
 
   assert.match(layout, /showTitle=\{show\.title\}/);
-  assert.match(chrome, /<h1[^>]*className="sr-only"/);
-  assert.match(chrome, /\{showTitle\}/);
+  assert.match(chrome, /<SectionHeader[\s\S]*as="h1"/);
+  assert.match(chrome, /title=\{showTitle\}/);
   assert.doesNotMatch(chrome, /section\.description|aria-describedby=\{descriptionId\}/);
 
   for (const path of [
@@ -37,7 +37,8 @@ test('client navigation moves focus to the updated show heading', () => {
   assert.match(chrome, /const routeKey = `\$\{showSlug\}:\$\{segment \?\? section\.segment\}/);
   assert.match(chrome, /previousRouteKeyRef\.current === routeKey/);
   assert.match(chrome, /headingRef\.current\?\.focus\(\{ preventScroll: true \}\)/);
-  assert.match(chrome, /tabIndex=\{-1\}/);
+  assert.match(chrome, /headingRef=\{headingRef\}/);
+  assert.match(read('ui/patterns/SectionHeader.tsx'), /tabIndex=\{headingRef \? -1 : undefined\}/);
   assert.match(tabs, /aria-current=\{active \? 'page' : undefined\}/);
   assert.match(tabs, /setPendingHref\(href\)/);
   assert.match(tabs, /aria-busy=\{pending \|\| undefined\}/);
@@ -61,7 +62,7 @@ test('preview content follows the shared heading hierarchy', () => {
 
   assert.match(viewer, /<h2[^>]*>No typed fireworks yet<\/h2>/);
   assert.match(viewer, /<h2[^>]*>Cues<\/h2>/);
-  assert.match(viewer, /<h2[^>]*>Adjust this show<\/h2>/);
+  assert.match(read('ui/shows/ShowRefinePanel.tsx'), /<h2[^>]*>Adjust this show<\/h2>/);
   assert.doesNotMatch(viewer, /<h3\b/);
 });
 

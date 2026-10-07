@@ -25,17 +25,18 @@ test('app discovery and show grids use their intended wide caps', () => {
   assert.match(showsLoading, /lg:grid-cols-\[repeat\(auto-fill,minmax\(11rem,1fr\)\)\]/);
 });
 
-test('show workspaces expand while focused show content stays readable', () => {
+test('show tabs share the full workspace width', () => {
   const chrome = read('app/(app)/shows/[id]/_components/ShowDetailChrome.tsx');
   const shoppingList = read('app/(app)/shows/[id]/shopping-list/page.tsx');
   const guide = read('app/(app)/shows/[id]/show-guide/page.tsx');
   const skeletons =
     read('ui/shell/RouteSkeletons.tsx') + read('app/(admin)/_components/AdminSkeletons.tsx');
 
-  assert.match(chrome, /max-w-\[1600px\]/);
-  assert.match(shoppingList, /max-w-5xl/);
+  assert.match(chrome, /mx-auto w-full min-w-0/);
+  assert.doesNotMatch(chrome, /max-w-/);
+  assert.match(shoppingList, /w-full min-w-0/);
   assert.match(skeletons, /ShoppingListSkeleton[\s\S]*?max-w-5xl/);
-  assert.match(guide, /max-w-3xl/);
+  assert.match(guide, /w-full min-w-0/);
 });
 
 test('admin routes cap data workspaces without constraining full-bleed editors', () => {
