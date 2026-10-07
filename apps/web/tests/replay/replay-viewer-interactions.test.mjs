@@ -9,12 +9,9 @@ const root = process.cwd();
 const viewer = readFileSync(join(root, 'ui/replay/FireworkReplayViewer.tsx'), 'utf8');
 
 test('cue rows expose a labelled keyboard-operable seek action', () => {
-  const cueTable = viewer.slice(
-    viewer.indexOf('{visibleBuilderCues.map'),
-    viewer.indexOf('</tbody>'),
-  );
+  const cueTable = readFileSync(join(root, 'ui/shows/ShowCueTable.tsx'), 'utf8');
 
-  assert.match(cueTable, /<button\s+type="button"/);
+  assert.match(cueTable, /<Button\s+type="button"/);
   assert.match(cueTable, /aria-label=\{`Seek to \$\{fireworkName\} at \$\{cueTimeLabel\}`\}/);
   assert.match(cueTable, /aria-current=\{isActive \? 'true' : undefined\}/);
   // The time button still seeks paused, but now stops propagation so the row's
@@ -23,7 +20,7 @@ test('cue rows expose a labelled keyboard-operable seek action', () => {
     cueTable,
     /onClick=\{\(event\) => \{\s*event\.stopPropagation\(\);\s*setIsPlaying\(false\);\s*seekTo\(cue\.timeSeconds, false\);/,
   );
-  assert.match(cueTable, /focus-visible:ring-3/);
+  assert.match(cueTable, /variant="ghost"/);
   // Selecting a row plays the show live from that cue (same as the menu action).
   assert.match(cueTable, /onClick=\{\(\) => playFrom\(cue\.timeSeconds\)\}/);
   assert.match(cueTable, /title="Play from here"/);
@@ -57,6 +54,9 @@ test('cue deletion requires cue-specific confirmation and locks repeat submissio
   assert.match(viewer, /<span aria-live="polite">/);
   assert.match(viewer, /event\.preventDefault\(\);\s*deleteCue\(\);/);
   assert.match(viewer, /deletingCueIdRef\.current = null;\s*setDeletingCueId\(null\);/);
-  assert.match(viewer, /onSelect: \(\) =>\s*requestCueDeletion\(\{/);
+  assert.match(
+    readFileSync(join(root, 'ui/shows/ShowCueTable.tsx'), 'utf8'),
+    /onSelect: \(\) =>\s*requestCueDeletion\(\{/,
+  );
   assert.doesNotMatch(viewer, /onSelect: \(\) => deleteCue\(baseCueId\)/);
 });

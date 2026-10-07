@@ -13,15 +13,16 @@ function read(path) {
 
 test('show preview cue table displays the catalogue firework name', () => {
   const viewer = read('ui/replay/FireworkReplayViewer.tsx');
+  const cueTable = read('ui/shows/ShowCueTable.tsx');
 
   assert.match(viewer, /new Map\(specifications\.map\(\(spec\) => \[spec\.id, spec\.name\]\)\)/);
   assert.match(
-    viewer,
+    cueTable,
     /const fireworkName =\s*productNameById\.get\(cue\.productId\) \?\? cue\.firework\.name;/,
   );
-  assert.match(viewer, /<TruncatedCell text=\{fireworkName\} \/>/);
+  assert.match(cueTable, /\{fireworkName\}\s*<\/div>/);
   assert.doesNotMatch(
-    viewer,
+    cueTable,
     /<TruncatedCell text=\{cue\.description \|\| cue\.firework\.name\} \/>/,
   );
 });

@@ -191,7 +191,11 @@ test('show refinements reserve, settle, refund, and disclose credits', () => {
   assert.match(replayViewer, /const result = await refineShowAction\(formData\)/);
   assert.doesNotMatch(replayViewer, /toast\.success\(`Adding /);
   assert.match(replayViewer, /setRefinePrompt\(''\)/);
-  assert.match(replayViewer, /This will use \{REFINEMENT_CREDIT_COST\} AI credits/);
+  assert.match(replayViewer, /creditCost=\{REFINEMENT_CREDIT_COST\}/);
+  assert.match(
+    readFileSync(join(root, 'ui/shows/ShowRefinePanel.tsx'), 'utf8'),
+    /\{creditCost\} AI credits/,
+  );
   assert.match(
     databaseTypes,
     /add_refinement_cue_and_settle_credits: \{[\s\S]*?p_refinement_id: string[\s\S]*?Returns: string/,

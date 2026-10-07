@@ -1,4 +1,6 @@
 'use client';
+import { ShowCueTable } from '@/ui/shows/ShowCueTable';
+import { ShowRefinePanel } from '@/ui/shows/ShowRefinePanel';
 import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
 
 /**
@@ -21,7 +23,7 @@ import {
   useState,
   useTransition,
 } from 'react';
-import { ChevronLeft, ChevronRight, Pencil, Play, Plus, Sparkles, Trash2 } from 'lucide-react';
+import { Plus, Sparkles } from 'lucide-react';
 import {
   addPreviewCueAction,
   deletePreviewCueAction,
@@ -38,16 +40,7 @@ import { ReplayTransportControls } from '@/ui/replay/ReplayTransportControls';
 import { Eyebrow } from '@/ui/patterns/Badge';
 import { Button } from '@/ui/patterns/Button';
 import { Card } from '@/ui/patterns/Card';
-import {
-  DataTableShell,
-  tableCellClasses,
-  tableClasses,
-  tableHeadClasses,
-  tableHeaderCellClasses,
-  tableRowClasses,
-} from '@/ui/patterns/DataTable';
 import { NumberInput } from '@/ui/patterns/NumberInput';
-import { RowActionsMenu } from '@/ui/patterns/RowActionsMenu';
 import { SelectField } from '@/ui/patterns/SelectField';
 import { toast } from '@/ui/patterns/toast';
 import {
@@ -70,9 +63,8 @@ import {
 } from '@/ui/primitives/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/ui/primitives/tabs';
 import { Textarea } from '@/ui/primitives/textarea';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/ui/primitives/tooltip';
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
-import { formatDuration, formatTotal } from '@/lib/show-domain';
+import { formatDuration } from '@/lib/show-domain';
 import type { LaunchPosition } from '@showcrafter/fireworks/design';
 import {
   clearPersistedGenerationCover,
@@ -246,10 +238,8 @@ export function FireworkReplayViewer({
   const [isSceneReady, setIsSceneReady] = useState(false);
   const [refinePrompt, setRefinePrompt] = useState('');
   const [aiPrompt, setAiPrompt] = useState('');
-  const [cuePage, setCuePage] = useState(0);
   const [cueToDelete, setCueToDelete] = useState<CueDeletionTarget | null>(null);
   const [deletingCueId, setDeletingCueId] = useState<string | null>(null);
-  const CUES_PER_PAGE = 5;
   const formRef = useRef<HTMLFormElement>(null);
   const startedAt = useRef<number | null>(null);
   const playheadStart = useRef(0);
@@ -437,14 +427,6 @@ export function FireworkReplayViewer({
     return Array.from(seen.values());
   }, [sortedCues]);
 
-  const pageCount = Math.max(1, Math.ceil(builderCues.length / CUES_PER_PAGE));
-  const safePage = Math.min(cuePage, pageCount - 1);
-  const visibleBuilderCues = useMemo(
-    () => builderCues.slice(safePage * CUES_PER_PAGE, safePage * CUES_PER_PAGE + CUES_PER_PAGE),
-    [builderCues, safePage],
-  );
-  const emptyBuilderCueSlots = Math.max(0, CUES_PER_PAGE - visibleBuilderCues.length);
-
   const activeCue = useMemo(() => {
     for (let i = sortedCues.length - 1; i >= 0; i--) {
       if (sortedCues[i].timeSeconds <= elapsed + 0.35) return sortedCues[i];
@@ -464,18 +446,6 @@ export function FireworkReplayViewer({
     }
     return active;
   }, [activeBaseCueId, builderCues, elapsed]);
-  const activeBuilderIndex = useMemo(
-    () =>
-      activeBaseCueId ? builderCues.findIndex((row) => row.baseCueId === activeBaseCueId) : -1,
-    [builderCues, activeBaseCueId],
-  );
-
-  useEffect(() => {
-    if (activeBuilderIndex < 0) return;
-    const targetPage = Math.floor(activeBuilderIndex / CUES_PER_PAGE);
-    setCuePage((current) => (current === targetPage ? current : targetPage));
-  }, [activeBuilderIndex]);
-
   const hasReplayCues = optimisticCues.length > 0;
   // The timeline slider stays hidden until the streamed replay data has landed
   // and the engine has finished priming the show's fireworks; until then the
@@ -1040,281 +1010,39 @@ export function FireworkReplayViewer({
               </AlertDialog>
             ) : null}
 
-            <div className="space-y-3">
-              {builderCues.length > 0 ? (
-                <div>
-                  <DataTableShell>
-                    <table className={tableClasses('min-w-0 table-fixed')}>
-                      <colgroup>
-                        <col className="w-[88px]" />
-                        <col />
-                        <col className="w-[110px]" />
-                        <col className="w-[56px]" />
-                      </colgroup>
-                      <thead className={tableHeadClasses()}>
-                        <tr>
-                          <th className={tableHeaderCellClasses()}>Time</th>
-                          <th className={tableHeaderCellClasses()}>Firework</th>
-                          <th className={tableHeaderCellClasses()}>Mortar</th>
-                          <th className={tableHeaderCellClasses('text-right')}>
-                            <span className="sr-only">Actions</span>
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {visibleBuilderCues.map((row) => {
-                          const { cue, baseCueId, shotCount } = row;
-                          const fullMortarLabel =
-                            LAUNCH_POSITION_OPTIONS[cue.launchPositionIndex]?.label ??
-                            `Mortar ${cue.launchPositionIndex + 1}`;
-                          const mortarLabel = fullMortarLabel.replace(/^Mortar\s+/i, '');
-                          const fireworkName =
-                            productNameById.get(cue.productId) ?? cue.firework.name;
-                          const cueTimeLabel = formatDuration(cue.timeSeconds);
-                          const isActive = activeBaseCueIds.has(baseCueId);
-                          return (
-                            <tr
-                              key={baseCueId}
-                              // Selecting a row plays the show live from that cue
-                              // (the same as the row menu's "Play from here"). The
-                              // time button and actions menu stop propagation so
-                              // they keep their own seek/menu behaviour.
-                              onClick={() => playFrom(cue.timeSeconds)}
-                              title="Play from here"
-                              className={tableRowClasses(
-                                cn(
-                                  'cursor-pointer',
-                                  isActive && 'bg-muted shadow-[inset_3px_0_0_0_var(--primary)]',
-                                ),
-                              )}
-                            >
-                              <td className={tableCellClasses('h-14')}>
-                                <button
-                                  type="button"
-                                  aria-label={`Seek to ${fireworkName} at ${cueTimeLabel}`}
-                                  aria-current={isActive ? 'true' : undefined}
-                                  onClick={(event) => {
-                                    event.stopPropagation();
-                                    setIsPlaying(false);
-                                    seekTo(cue.timeSeconds, false);
-                                  }}
-                                  className="text-accent hover:bg-muted hover:text-foreground focus-visible:ring-ring -my-2 -ml-2 inline-flex min-h-10 rounded-md px-2 font-mono text-sm font-bold tabular-nums transition-colors focus:outline-none focus-visible:ring-3"
-                                >
-                                  {cueTimeLabel}
-                                </button>
-                              </td>
-                              <td className={tableCellClasses('h-14')}>
-                                <TruncatedCell text={fireworkName} />
-                                {shotCount > 1 && (
-                                  <div className="text-muted-foreground mt-0.5 text-[10px] font-bold tracking-widest uppercase">
-                                    {shotCount} shots
-                                  </div>
-                                )}
-                              </td>
-                              <td className={tableCellClasses('h-14')}>
-                                <span className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
-                                  {mortarLabel}
-                                </span>
-                              </td>
-                              <td
-                                className={tableCellClasses('h-14 text-right')}
-                                onClick={(event) => event.stopPropagation()}
-                              >
-                                <RowActionsMenu
-                                  label="Cue actions"
-                                  items={[
-                                    {
-                                      label: 'Play from here',
-                                      icon: <Play size={14} strokeWidth={2} />,
-                                      onSelect: () => playFrom(cue.timeSeconds),
-                                    },
-                                    ...(canEditFireworks
-                                      ? [
-                                          {
-                                            label: 'Edit firework',
-                                            icon: <Pencil size={14} strokeWidth={2} />,
-                                            onSelect: () =>
-                                              router.push(`/admin/fireworks/${cue.firework.id}`),
-                                          },
-                                        ]
-                                      : []),
-                                    {
-                                      label: 'Insert firework above',
-                                      icon: <Plus size={14} strokeWidth={2} />,
-                                      disabled: !hasFireworkSpecifications,
-                                      onSelect: () => {
-                                        setInsertBeforeTime(cue.timeSeconds);
-                                        openCueDialog('manual');
-                                      },
-                                    },
-                                    {
-                                      label: 'Delete cue',
-                                      icon: <Trash2 size={14} strokeWidth={2} />,
-                                      destructive: true,
-                                      disabled: isPending || deletingCueId !== null,
-                                      onSelect: () =>
-                                        requestCueDeletion({
-                                          cueId: baseCueId,
-                                          fireworkName,
-                                          timeLabel: cueTimeLabel,
-                                        }),
-                                    },
-                                  ]}
-                                />
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </DataTableShell>
-                  {emptyBuilderCueSlots > 0 && (
-                    <div aria-hidden="true" style={{ height: `${emptyBuilderCueSlots * 56}px` }} />
-                  )}
-                </div>
-              ) : (
-                <DataTableShell>
-                  <div className="text-muted-foreground px-4 py-8 text-center text-sm">
-                    No cues yet. Add your first firework above to make the preview playable.
-                  </div>
-                </DataTableShell>
-              )}
-
-              {pageCount > 1 && (
-                <div className="flex items-center justify-between gap-3 pt-1">
-                  <span className="text-muted-foreground text-[11px] font-semibold tracking-widest uppercase tabular-nums">
-                    Page {safePage + 1} of {pageCount} · {builderCues.length} cues
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setCuePage((p) => Math.max(0, p - 1))}
-                      disabled={safePage === 0}
-                      aria-label="Previous page"
-                    >
-                      <ChevronLeft size={14} strokeWidth={2} />
-                      Prev
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setCuePage((p) => Math.min(pageCount - 1, p + 1))}
-                      disabled={safePage >= pageCount - 1}
-                      aria-label="Next page"
-                    >
-                      Next
-                      <ChevronRight size={14} strokeWidth={2} />
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </div>
+            <ShowCueTable
+              builderCues={builderCues}
+              productNameById={productNameById}
+              activeBaseCueIds={activeBaseCueIds}
+              canEditFireworks={canEditFireworks}
+              hasFireworkSpecifications={hasFireworkSpecifications}
+              isPending={isPending}
+              deletingCueId={deletingCueId}
+              playFrom={playFrom}
+              seekTo={seekTo}
+              setIsPlaying={setIsPlaying}
+              setInsertBeforeTime={setInsertBeforeTime}
+              openCueDialog={openCueDialog}
+              requestCueDeletion={requestCueDeletion}
+            />
           </Card>
 
-          <div className="flex flex-col gap-4 xl:sticky xl:top-6 xl:h-full xl:min-h-0">
-            <div className="space-y-2">
-              <StatChip
-                label="Total cost"
-                value={totalCents != null ? formatTotal(totalCents) : '-'}
-              />
-              <StatChip label="Fireworks" value={String(builderCues.length)} />
-              <StatChip label="Length" value={formatDuration(duration)} />
-            </div>
-            <Card radius="md" className="flex flex-col gap-4 p-5 xl:min-h-0 xl:flex-1">
-              <div className="flex items-start gap-3">
-                <div className="bg-accent text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-full">
-                  <Sparkles size={16} strokeWidth={2} />
-                </div>
-                <div>
-                  <Eyebrow tone="muted">Refine with prompt</Eyebrow>
-                  <h2 className="text-foreground mt-1 text-lg font-bold">Adjust this show</h2>
-                  <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-                    Say what you want next: &ldquo;add green firework at the start&rdquo; or
-                    &ldquo;something gold at 1:20&rdquo;, and we&apos;ll drop a matching cue in.
-                  </p>
-                  <p className="text-muted-foreground mt-2 text-xs leading-relaxed">
-                    This will use {REFINEMENT_CREDIT_COST} AI credits.
-                  </p>
-                </div>
-              </div>
-              <form
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  const prompt = refinePrompt.trim();
-                  openCueDialog('ai', prompt || undefined);
-                }}
-                className="flex flex-col gap-3 xl:min-h-0 xl:flex-1"
-              >
-                <Textarea
-                  value={refinePrompt}
-                  onChange={(event) => setRefinePrompt(event.target.value)}
-                  placeholder="e.g. add green firework at the very start"
-                  rows={3}
-                  aria-label="Refinement prompt"
-                  className="min-h-32 xl:[field-sizing:fixed] xl:min-h-0 xl:flex-1 xl:resize-none"
-                />
-                <div className="flex justify-end">
-                  <Button type="submit" size="sm" disabled={isPending || !refinePrompt.trim()}>
-                    <Sparkles size={14} strokeWidth={2} />
-                    Apply refinement
-                  </Button>
-                </div>
-              </form>
-            </Card>
-          </div>
+          <ShowRefinePanel
+            totalCents={totalCents}
+            cueCount={builderCues.length}
+            duration={duration}
+            prompt={refinePrompt}
+            onPromptChange={setRefinePrompt}
+            pending={isPending}
+            creditCost={REFINEMENT_CREDIT_COST}
+            onSubmit={() => {
+              const prompt = refinePrompt.trim();
+              openCueDialog('ai', prompt || undefined);
+            }}
+          />
         </div>
       </div>
       {isFullscreen ? <PreviewFullscreenBackdrop onExit={exitFullscreen} /> : null}
     </>
-  );
-}
-
-function TruncatedCell({ text }: { text: string }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [isOverflowing, setIsOverflowing] = useState(false);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const check = () => setIsOverflowing(el.scrollWidth > el.clientWidth + 1);
-    check();
-    const observer = new ResizeObserver(check);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [text]);
-
-  const content = (
-    <div ref={ref} className="text-foreground truncate font-semibold">
-      {text}
-    </div>
-  );
-
-  if (!isOverflowing) return content;
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>{content}</TooltipTrigger>
-      <TooltipContent
-        side="top"
-        sideOffset={6}
-        className="border-border bg-card text-foreground max-w-sm rounded-md border px-3 py-2 text-xs leading-snug shadow-[var(--shadow-modal)]"
-      >
-        {text}
-      </TooltipContent>
-    </Tooltip>
-  );
-}
-
-function StatChip({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="border-input bg-card flex items-center justify-between gap-3 rounded-lg border px-4 py-3">
-      <span className="text-muted-foreground text-[10px] font-bold tracking-widest uppercase">
-        {label}
-      </span>
-      <span className="text-foreground text-lg font-semibold tabular-nums">{value}</span>
-    </div>
   );
 }
