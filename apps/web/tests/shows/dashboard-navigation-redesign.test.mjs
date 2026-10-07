@@ -190,7 +190,7 @@ test('supporting app routes and workspace summary API are shipped', () => {
   const showLayout = read('app/(app)/shows/[id]/layout.tsx');
   const showChrome = read('app/(app)/shows/[id]/_components/ShowDetailChrome.tsx');
   assert.match(showLayout, /ShowDetailChrome/);
-  assert.match(showChrome, /ShowTabs/);
+  assert.match(showChrome, /TabsList/);
   assert.match(showChrome, /segment === 'generating'/);
   assert.doesNotMatch(showLayout, /AppPageHeader/);
 

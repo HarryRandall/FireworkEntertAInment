@@ -186,13 +186,6 @@ export function formatBudget(cents: number | null | undefined): string {
   })}`;
 }
 
-export function formatTotal(cents: number): string {
-  return `$${(cents / 100).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
-
 export function formatStableDateTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '—';

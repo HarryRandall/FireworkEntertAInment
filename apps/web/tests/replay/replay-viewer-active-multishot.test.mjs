@@ -14,5 +14,8 @@ test('multi-shot builder rows stay active for their whole playback window', () =
   assert.match(viewer, /const activeBaseCueIds = useMemo/);
   assert.match(viewer, /row\.shotCount <= 1/);
   assert.match(viewer, /elapsed <= row\.endTimeSeconds \+ 0\.35/);
-  assert.match(viewer, /activeBaseCueIds\.has\(baseCueId\)/);
+  assert.match(
+    readFileSync(join(root, 'ui/shows/ShowCueTable.tsx'), 'utf8'),
+    /activeBaseCueIds\.has\(baseCueId\)/,
+  );
 });

@@ -6,7 +6,9 @@
  * refreshing the surrounding route.
  */
 import { useEffect, useState } from 'react';
-import { ExternalLink, Music2 } from 'lucide-react';
+import { ChevronDown, ExternalLink, Music2 } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/ui/primitives/collapsible';
+import { Button } from '@/ui/patterns/Button';
 import { Card } from '@/ui/patterns/Card';
 import type { SoundtrackAttribution } from '@/lib/music-library.types';
 import type {
@@ -141,11 +143,11 @@ function buildKpis(analysis: AnalyserResult | null) {
 
 function KpiTile({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
-    <div className="border-border/55 bg-card rounded-lg border p-4">
+    <div className="border-border bg-card rounded-lg border p-3">
       <div className="text-muted-foreground text-xs font-bold tracking-widest uppercase">
         {label}
       </div>
-      <div className="text-foreground mt-2 text-xl font-semibold [overflow-wrap:anywhere] break-words tabular-nums">
+      <div className="text-foreground mt-1 text-lg font-semibold [overflow-wrap:anywhere] break-words tabular-nums">
         {value}
       </div>
       <div className="text-muted-foreground mt-1 min-h-5 text-xs leading-relaxed [overflow-wrap:anywhere] break-words">
@@ -159,9 +161,9 @@ function SoundtrackProfile({ soundtrack }: { soundtrack: SoundtrackAttribution }
   return (
     <section
       aria-labelledby="soundtrack-profile-title"
-      className="border-border/55 bg-card flex flex-col gap-4 rounded-lg border p-4 sm:flex-row sm:items-center"
+      className="border-border bg-card flex flex-col gap-4 rounded-lg border p-3 sm:flex-row sm:items-center"
     >
-      <span className="bg-primary/10 text-primary flex h-12 w-12 shrink-0 items-center justify-center rounded-lg">
+      <span className="bg-primary/10 text-primary flex h-9 w-9 shrink-0 items-center justify-center rounded-lg">
         <Music2 size={20} strokeWidth={1.75} aria-hidden="true" />
       </span>
 
@@ -205,6 +207,7 @@ function SoundtrackProfile({ soundtrack }: { soundtrack: SoundtrackAttribution }
   );
 }
 
+/** Present song statistics and optional, initially collapsed analyser context. */
 export function AudioAnalysisTimeline({
   hasAudio,
   initialAnalysis,
@@ -301,9 +304,9 @@ export function AudioAnalysisTimeline({
         {statusAnnouncement(hasAudio, analysis)}
       </p>
 
-      <Card radius="md" className="relative p-6" aria-busy={analysis?.status === 'running'}>
-        <div className="mb-5 space-y-2">
-          <h2 className="text-foreground text-xl font-extrabold">Song context</h2>
+      <Card radius="md" className="relative p-4" aria-busy={analysis?.status === 'running'}>
+        <div className="mb-3 space-y-1">
+          <h2 className="text-foreground text-sm font-semibold">Song context</h2>
           {showStatusCopy ? (
             <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
               {statusDescription(hasAudio, analysis)}
@@ -312,15 +315,28 @@ export function AudioAnalysisTimeline({
         </div>
 
         {analysis?.status === 'failed' ? (
-          <div className="border-status-danger/35 bg-status-danger/10 text-foreground mb-5 flex items-start gap-3 rounded-lg border p-4 text-sm">
+          <div className="border-status-danger/35 bg-status-danger/10 text-foreground mb-5 flex items-start gap-3 rounded-lg border p-3 text-sm">
             <span>{analysis.errorMessage ?? 'Analysis failed.'}</span>
           </div>
         ) : null}
 
         {contextMarkdown ? (
-          <pre className="bg-card text-foreground max-w-full overflow-visible rounded-md p-4 text-xs leading-relaxed [overflow-wrap:anywhere] break-words whitespace-pre-wrap">
-            {contextMarkdown}
-          </pre>
+          <Collapsible>
+            <CollapsibleTrigger asChild>
+              <Button variant="secondary" size="sm" className="group">
+                <ChevronDown
+                  size={14}
+                  className="transition-transform group-data-[state=open]:rotate-180"
+                />
+                AI context
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <pre className="text-foreground mt-3 max-w-full font-sans text-sm leading-relaxed [overflow-wrap:anywhere] whitespace-pre-wrap">
+                {contextMarkdown}
+              </pre>
+            </CollapsibleContent>
+          </Collapsible>
         ) : (
           <div className="bg-card text-muted-foreground rounded-md p-4 text-sm">
             {hasAudio

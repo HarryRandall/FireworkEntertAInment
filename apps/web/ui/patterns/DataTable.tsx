@@ -20,7 +20,7 @@ export function DataTableShell({
   return (
     <div
       className={cn(
-        'border-border bg-background relative overflow-hidden rounded-lg border shadow-xs',
+        'border-border bg-background relative min-w-0 overflow-hidden rounded-lg border shadow-xs',
         viewport && 'min-h-0 md:flex md:flex-1 md:flex-col',
         className,
       )}
@@ -61,7 +61,7 @@ export function tableHeadClasses(className?: string) {
 /** Classes for `<th>` cells. */
 export function tableHeaderCellClasses(className?: string) {
   return cn(
-    'h-11 px-4 py-3 text-left align-middle text-sm font-medium whitespace-nowrap text-foreground',
+    'h-9 px-3 py-2 text-left align-middle text-sm font-medium whitespace-nowrap text-foreground',
     className,
   );
 }
@@ -76,5 +76,5 @@ export function tableRowClasses(className?: string) {
 
 /** Classes for `<td>` cells. */
 export function tableCellClasses(className?: string) {
-  return cn('px-4 py-3 align-middle text-sm whitespace-nowrap text-foreground', className);
+  return cn('px-3 py-2 align-middle text-sm whitespace-nowrap text-foreground', className);
 }

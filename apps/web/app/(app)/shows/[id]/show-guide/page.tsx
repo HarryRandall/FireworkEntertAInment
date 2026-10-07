@@ -16,7 +16,7 @@ export default async function ShowGuidePage({ params }: PageProps) {
   if (show.generationStatus === 'running') redirect(`/shows/${show.slug}/generating`);
 
   return (
-    <div className="max-w-3xl">
+    <div className="w-full min-w-0">
       <Suspense fallback={<ListSkeleton rows={8} />}>
         <ShowGuide show={show} />
       </Suspense>

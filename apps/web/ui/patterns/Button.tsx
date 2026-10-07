@@ -18,9 +18,9 @@ const variants = {
 
 const sizes = {
   sm: 'h-8 px-3',
-  md: 'h-10 px-4',
+  md: 'h-8 px-3',
   lg: 'h-12 px-6',
-  icon: 'h-10 w-10',
+  icon: 'h-8 w-8',
 } as const;
 
 type CommonProps = {
@@ -43,12 +43,14 @@ type ButtonAsLink = CommonProps &
 
 type ButtonProps = ButtonAsButton | ButtonAsLink;
 
+/** Render compact registry actions with link and loading support. */
 export function Button(props: ButtonProps) {
   const { variant = 'primary', size = 'md', className, children, loading = false } = props;
   const classes = cn(
     buttonVariants({ variant: variants[variant], size: null }),
     'cursor-pointer gap-2 duration-150 aria-disabled:cursor-not-allowed aria-disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:translate-y-0',
     sizes[size],
+    variant === 'primary' && 'hover:bg-primary-hover',
     variant === 'ghost' && 'text-muted-foreground',
     className,
   );

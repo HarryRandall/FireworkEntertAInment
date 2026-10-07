@@ -45,6 +45,7 @@ test('card pages fill 1/2/3/4 columns and pagination reports the actual range', 
     assert.match(source, /pageSize=\{CARD_GRID_PAGE_SIZE\}/);
   }
   const { TablePagination, TABLE_PAGE_SIZE } = load('ui/patterns/TablePagination.tsx', {
+    './Button': { Button: 'button' },
     'next/link': { default: 'link' },
     'lucide-react': { ChevronLeft: 'left', ChevronRight: 'right', MoreHorizontal: 'more' },
     '@/lib/utils': { cn: (...values) => values.filter(Boolean).join(' ') },
@@ -189,6 +190,7 @@ test('browse fallback requests a poster only after entering view, with admin per
       useState: () => [null, () => {}],
       useEffect: (effect) => effects.push(effect),
     },
+    './Button': { Button: 'button' },
     'next/link': { default: 'link' },
     'lucide-react': { CircleAlert: 'alert', Loader2: 'loading', Play: 'play' },
     '@/ui/patterns/Feedback': { Skeleton: 'skeleton' },
@@ -228,4 +230,42 @@ test('browse fallback requests a poster only after entering view, with admin per
   observers[1].callback([{ isIntersecting: true }]);
   assert.deepEqual(queued.pop(), ['heart', '/preview?revision=2', media, false]);
   cleanup.forEach((fn) => fn());
+});
+
+/** Flatten the synthetic JSX tree to inspect controlled pagination actions. */
+function descendants(node) {
+  if (Array.isArray(node)) return node.flatMap(descendants);
+  if (!node || typeof node !== 'object') return [];
+  return [node, ...descendants(node.props?.children)];
+}
+
+test('controlled pagination calls the supplied callback and disables boundary actions', () => {
+  const { TablePagination } = load('ui/patterns/TablePagination.tsx', {
+    './Button': { Button: 'button' },
+    'next/link': { default: 'link' },
+    'lucide-react': { ChevronLeft: 'left', ChevronRight: 'right', MoreHorizontal: 'more' },
+    '@/lib/utils': { cn: (...values) => values.filter(Boolean).join(' ') },
+  });
+  const changes = [];
+  const render = (currentPage) =>
+    descendants(
+      TablePagination({
+        currentPage,
+        totalPages: 3,
+        searchParams: {},
+        totalItems: 60,
+        onPageChange: (page) => changes.push(page),
+      }),
+    );
+  const middle = render(2);
+  assert.equal(
+    middle.some((node) => node.type === 'link'),
+    false,
+  );
+  const buttons = middle.filter((node) => node.type === 'button');
+  buttons[0].props.onClick();
+  buttons[1].props.onClick();
+  assert.deepEqual(changes, [1, 3]);
+  assert.equal(render(1).find((node) => node.type === 'button').props.disabled, true);
+  assert.equal(render(3).filter((node) => node.type === 'button')[1].props.disabled, true);
 });
