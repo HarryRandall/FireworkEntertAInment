@@ -1,21 +1,8 @@
 {
-  "cueCount": 266,
+  "cueCount": 248,
   "distinctProducts": 24,
   "syncErrorP95Ms": 0,
-  "roles": [
-    "opener",
-    "lull",
-    "body",
-    "lull",
-    "body",
-    "build",
-    "peak",
-    "peak",
-    "build",
-    "peak",
-    "finale",
-    "finale"
-  ],
+  "roles": ["opener", "lull", "lull", "body", "peak", "build", "peak", "finale"],
   "opening": [
     {
       "productId": "gold-50",
@@ -25,22 +12,22 @@
       "emphasis": "normal"
     },
     {
-      "productId": "red-75",
-      "launchSeconds": 2.254,
-      "impactSeconds": 4.054,
-      "tube": 1,
-      "emphasis": "normal"
-    },
-    {
       "productId": "green-50",
-      "launchSeconds": 4.438,
-      "impactSeconds": 6.045,
-      "tube": 1,
+      "launchSeconds": 2.447,
+      "impactSeconds": 4.054,
+      "tube": 2,
       "emphasis": "normal"
     },
     {
-      "productId": "purple-75",
-      "launchSeconds": 6.255,
+      "productId": "red-75",
+      "launchSeconds": 4.245,
+      "impactSeconds": 6.045,
+      "tube": 0,
+      "emphasis": "normal"
+    },
+    {
+      "productId": "blue-30",
+      "launchSeconds": 6.536,
       "impactSeconds": 8.055,
       "tube": 1,
       "emphasis": "normal"
@@ -49,86 +36,86 @@
       "productId": "gold-50",
       "launchSeconds": 8.445,
       "impactSeconds": 10.052,
-      "tube": 1,
+      "tube": 2,
       "emphasis": "normal"
     },
     {
-      "productId": "red-75",
+      "productId": "purple-75",
       "launchSeconds": 10.249,
       "impactSeconds": 12.049,
-      "tube": 1,
+      "tube": 0,
       "emphasis": "normal"
     },
     {
-      "productId": "green-50",
-      "launchSeconds": 12.426,
+      "productId": "white-30",
+      "launchSeconds": 12.514,
       "impactSeconds": 14.033,
       "tube": 1,
       "emphasis": "normal"
     },
     {
-      "productId": "blue-30",
-      "launchSeconds": 14.519,
+      "productId": "green-50",
+      "launchSeconds": 14.431,
       "impactSeconds": 16.038,
-      "tube": 1,
+      "tube": 2,
       "emphasis": "normal"
     }
   ],
   "finale": [
     {
-      "productId": "purple-75",
-      "launchSeconds": 195.757,
-      "impactSeconds": 197.557,
-      "tube": 1,
-      "emphasis": "normal"
-    },
-    {
-      "productId": "purple-100",
-      "launchSeconds": 196.14,
+      "productId": "blue-75",
+      "launchSeconds": 196.245,
       "impactSeconds": 198.045,
-      "tube": 0,
+      "tube": 1,
       "emphasis": "accent"
     },
     {
-      "productId": "white-75",
+      "productId": "purple-75",
       "launchSeconds": 196.245,
       "impactSeconds": 198.045,
       "tube": 2,
       "emphasis": "accent"
     },
     {
-      "productId": "white-30",
-      "launchSeconds": 196.526,
-      "impactSeconds": 198.045,
-      "tube": 1,
-      "emphasis": "accent"
-    },
-    {
-      "productId": "purple-30",
-      "launchSeconds": 197.032,
+      "productId": "white-75",
+      "launchSeconds": 196.751,
       "impactSeconds": 198.551,
       "tube": 1,
       "emphasis": "normal"
     },
     {
-      "productId": "blue-100",
+      "productId": "blue-30",
+      "launchSeconds": 197.528,
+      "impactSeconds": 199.047,
+      "tube": 2,
+      "emphasis": "normal"
+    },
+    {
+      "productId": "green-100",
+      "launchSeconds": 197.639,
+      "impactSeconds": 199.544,
+      "tube": 0,
+      "emphasis": "normal"
+    },
+    {
+      "productId": "purple-100",
       "launchSeconds": 198.135,
       "impactSeconds": 200.04,
       "tube": 1,
       "emphasis": "peak"
     },
     {
-      "productId": "purple-100",
-      "launchSeconds": 198.135,
+      "productId": "blue-75",
+      "launchSeconds": 198.24,
       "impactSeconds": 200.04,
-      "tube": 2,
+      "tube": 0,
       "emphasis": "peak"
     },
     {
       "productId": "purple-50",
       "launchSeconds": 198.433,
       "impactSeconds": 200.04,
-      "tube": 0,
+      "tube": 2,
       "emphasis": "peak"
     }
   ]

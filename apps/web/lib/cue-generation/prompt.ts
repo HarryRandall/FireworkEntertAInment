@@ -25,7 +25,23 @@ const MAX_PROMPT_PRODUCTS = 120;
 
 /** Short aliases (p1, p2 ...) keep the reply small and impossible to truncate mid-UUID. */
 export function productAliases(products: readonly FireworkSpecification[]) {
-  const shown = products.slice(0, MAX_PROMPT_PRODUCTS);
+  const groups = new Map<string, FireworkSpecification[]>();
+  for (const product of products) {
+    const key = `${isGroundEffect(product) ? 'low' : (product.shotCount ?? 1) > 1 ? 'mid' : 'high'}:${[...productEffectFamilies(product)].sort().join(',')}:${[...productColourFamilies(product)].sort().join(',')}`;
+    const group = groups.get(key) ?? [];
+    group.push(product);
+    groups.set(key, group);
+  }
+  // A supplier's first hundred similar shells must not hide other kinds.
+  const diverse: FireworkSpecification[] = [];
+  const buckets = [...groups.values()];
+  for (let index = 0; diverse.length < Math.min(products.length, MAX_PROMPT_PRODUCTS); index += 1) {
+    for (const bucket of buckets) {
+      const product = bucket[index];
+      if (product && diverse.length < MAX_PROMPT_PRODUCTS) diverse.push(product);
+    }
+  }
+  const shown = products.length <= MAX_PROMPT_PRODUCTS ? products.slice() : diverse;
   const aliasById = new Map(shown.map((product, index) => [product.id, `p${index + 1}`]));
   const idByAlias = new Map([...aliasById].map(([id, alias]) => [alias, id]));
   return { shown, aliasById, idByAlias };
@@ -51,6 +67,9 @@ function projectCatalogue(
         ...(include('name') ? { name: product.name } : {}),
         ...(description ? { description } : {}),
         colours: [...productColourFamilies(product)],
+        effectFamilies: [...productEffectFamilies(product)],
+        layer: isGroundEffect(product) ? 'low' : shotCount > 1 ? 'mid' : 'high',
+        priceCents: product.minPriceCents ?? null,
         ...(include('effects') ? { effects: [...productEffectFamilies(product)] } : {}),
         ...(include('caliber') && product.caliber ? { caliber: product.caliber } : {}),
         ...(include('heightMeters') && product.heightMeters != null
@@ -96,11 +115,16 @@ function buildSongSummary(analysis: AnalyserResult | null, songDuration: number)
     durationSeconds: analysis.duration_seconds || songDuration,
     tempoBpm: analysis.tempo_bpm,
     beatsPerBar: analysis.beats_per_bar ?? 4,
+    climaxes: analysis.key_moments
+      .filter((moment) => moment.type === 'climax')
+      .map((moment) => ({ time: moment.time, energy: moment.energy })),
+    buildups: analysis.buildups.map((build) => ({ start: build.start, peak: build.peak })),
     genre: analysis.music_profile?.genre_hint ?? null,
     traits: analysis.music_profile?.dominant_traits ?? [],
   };
 }
 
+/** Assemble musical context and catalogue choices for a section-level model plan. */
 export function buildPlanPayload(params: {
   userPrompt: string;
   brief: Record<string, unknown>;
@@ -145,6 +169,7 @@ const DEFAULT_SHOW_CUE_PRODUCT_CONTEXT_TEXT = [
   'Product context:',
   '  - The catalogue is the complete list of products for this show, referred to by alias (p1, p2 ...).',
   '  - Heroes are the products that headline a section: pick one to three whose colours and effects fit that section. Prefer large calibres for peak and finale heroes.',
+  '  - Unless the user requests a specific product or an exclusive family, rotate heroes and effect families. Spend budget on contrasting heights and kinds: ground and mines low, cakes mid, shells high. A palette is not a reason to repeat near-identical palms throughout the song.',
   '  - Multi-shot products (shots above 1) make sustained layers; ground products suit low, gentle passages.',
 ].join('\n');
 
@@ -166,6 +191,7 @@ export function isLegacySlotPrompt(text: string): boolean {
   return /slotIndex/.test(text);
 }
 
+/** Layer saved creative guidance above the fixed plan output contract. */
 export function buildSystemPrompt(
   options: {
     systemPromptText?: string | null;

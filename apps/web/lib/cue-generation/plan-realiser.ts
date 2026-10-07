@@ -21,6 +21,7 @@ import {
 import {
   productColourFamilies,
   productEffectFamilies,
+  productMatchesPromptConstraints,
   type ColourFamily,
   type EffectFamily,
   type PromptConstraints,
@@ -72,7 +73,25 @@ const MAX_REALISED_CUES = 500;
 const FINALE_RESERVE_SHARE = 0.2;
 /** Off-beats are only added when beats are at least this far apart (below about 120 BPM). */
 const MIN_OFFBEAT_GAP_SECONDS = 0.5;
+/** Soft cue shares, relaxed in peaks where repeated heroes create a deliberate payoff. */
+const PRODUCT_SHARE_TARGET = 0.12;
+const EFFECT_FAMILY_SHARE_TARGET = 0.35;
+const PEAK_SHARE_MULTIPLIER = 1.5;
+/** Above-target repetition must outweigh a palette or hero preference, without banning it. */
+const SHARE_PENALTY_WEIGHT = 48;
+/** Leave time for the final burst to fade, but never schedule a barrage beyond the music. */
+const FINAL_FADE_ALLOWANCE_SECONDS = 4;
+/** Low, mid and high layers rotate around the role's centre of gravity. */
+const HEIGHT_LAYER_SPREAD = 0.25;
+/** A named product remains prominent without treating a mention as exclusivity. */
+const REQUESTED_PRODUCT_BONUS = 3;
+/** Sustained layers favour phrase starts, but remain available between them. */
+const MULTISHOT_PULSE_PENALTY = 1.5;
+const MULTISHOT_PHRASE_PENALTY = 0.5;
+/** Price preference must not outweigh musical suitability or explicit intent. */
+const MAX_PRICE_PREFERENCE_PENALTY = 2;
 
+/** Realise musical impact moments with site safety, diversity and budget preferences. */
 export function realiseShowPlan(params: {
   plan: ShowPlan;
   sections: PlanSection[];
@@ -81,6 +100,7 @@ export function realiseShowPlan(params: {
   products: FireworkSpecification[];
   timingProfiles?: ProductTimingProfiles;
   maxTubes: 1 | 2 | 3;
+  budgetCents?: number | null;
   constraints: PromptConstraints;
 }): RealisedShow {
   const { plan, sections, analysis, songDuration, products, timingProfiles, maxTubes } = params;
@@ -89,16 +109,20 @@ export function realiseShowPlan(params: {
   const grid = buildGrid(analysis, songDuration);
   if (!grid.length) return { cues: [], slots: [] };
   const moments = selectMoments({ grid, sections, plan, analysis, songDuration });
-  const catalogue = describeProducts(products);
+  const catalogue = describeProducts(
+    products.filter((product) => productMatchesPromptConstraints(product, params.constraints)),
+  );
   const reserved = finaleReserve(catalogue);
 
   const slots: CueSlot[] = [];
   const cues: PlannedCue[] = [];
   const ignitions: Array<{ start: number; end: number; tube: Tube }> = [];
   const usage = new Map<string, number>();
+  let spentCents = 0;
+  const sustainedWindows = new Map<string, Array<{ start: number; end: number; tube: Tube }>>();
   const recent: string[] = [];
   const bedSections = new Set<number>();
-  const counters = new Map<number, number>();
+
   const finaleStarted = (time: number) =>
     plan.sections.some(
       (direction, index) =>
@@ -107,18 +131,34 @@ export function realiseShowPlan(params: {
 
   // Hits claim their launch positions first; lift compensation can put their
   // ignitions earlier than the pulses around them.
-  const ordered = [
-    ...moments.filter((moment) => moment.kind === 'hit'),
-    ...moments.filter((moment) => moment.kind !== 'hit'),
-  ];
-  for (const moment of ordered) {
+  const counters = new Map<number, number>();
+  const positioned = moments.map((moment) => {
+    const direction = plan.sections[moment.sectionIndex];
+    const counter = counters.get(moment.sectionIndex) ?? 0;
+    counters.set(moment.sectionIndex, counter + 1);
+    return { moment, tubes: tubesForMoment(moment, direction, counter, maxTubes) };
+  });
+  const hits = positioned.filter(({ moment }) => moment.kind === 'hit');
+  const ordinary = positioned.filter(({ moment }) => moment.kind !== 'hit');
+  const hitPositions = hits.reduce((sum, entry) => sum + entry.tubes.length, 0);
+  const ordinaryPositions = ordinary.reduce((sum, entry) => sum + entry.tubes.length, 0);
+  const available = Math.max(0, MAX_REALISED_CUES - hitPositions);
+  let accumulated = 0;
+  let selectedPositions = 0;
+  const sampled = ordinary.filter(({ tubes }) => {
+    // Thin evenly across the whole track, rather than exhausting the cue
+    // ceiling during the first verses and starving the final build.
+    accumulated += tubes.length * Math.min(1, available / Math.max(1, ordinaryPositions));
+    if (selectedPositions + tubes.length > Math.floor(accumulated)) return false;
+    selectedPositions += tubes.length;
+    return true;
+  });
+  const ordered = [...hits, ...sampled];
+  for (const { moment, tubes } of ordered) {
     if (cues.length >= MAX_REALISED_CUES) break;
     const section = sections[moment.sectionIndex];
     const direction = plan.sections[moment.sectionIndex];
     if (!section || !direction) continue;
-    const counter = counters.get(moment.sectionIndex) ?? 0;
-    counters.set(moment.sectionIndex, counter + 1);
-    const tubes = tubesForMoment(moment, direction, counter, maxTubes);
     const emphasis = emphasisFor(moment, direction);
 
     const momentSlots = tubes.map((tube): CueSlot => {
@@ -164,6 +204,11 @@ export function realiseShowPlan(params: {
         recent,
         beatInterval: localBeatIntervalSeconds(analysis, moment.time),
         timingProfiles,
+        constraints: params.constraints,
+        layerIndex: cues.length,
+        targetPriceCents: params.budgetCents
+          ? params.budgetCents / Math.min(MAX_REALISED_CUES, moments.length * maxTubes)
+          : null,
       });
       for (const info of ranked) {
         const timing = scheduleProductForCueSlot({
@@ -172,7 +217,21 @@ export function realiseShowPlan(params: {
           targetTimeSeconds: slot.time,
           timingProfile: timingProfiles?.get(info.product.id)?.[emphasis],
         });
-        if (!timing) continue;
+        if (!timing || timing.impactTimeSeconds > songDuration) continue;
+        const profile = timingProfiles?.get(info.product.id)?.[emphasis];
+        if (
+          profile?.lastImpactOffsetSeconds != null &&
+          timing.launchTimeSeconds + profile.lastImpactOffsetSeconds > songDuration
+        )
+          continue;
+        if (
+          profile?.totalDurationSeconds != null &&
+          timing.launchTimeSeconds + profile.totalDurationSeconds >
+            songDuration + FINAL_FADE_ALLOWANCE_SECONDS
+        )
+          continue;
+        const price = info.product.minPriceCents ?? 0;
+        if (params.budgetCents != null && spentCents + price > params.budgetCents) continue;
         const occupied = occupiedLaunchPositions(info.product, slot.tube, maxTubes);
         if (!occupied) continue;
         const windows = occupied.map((tube) => ({
@@ -181,7 +240,36 @@ export function realiseShowPlan(params: {
           tube,
         }));
         if (windows.some((window) => overlapsIgnition(window, ignitions))) continue;
+        // Hits are allocated first, so use interval overlap rather than a
+        // chronological watermark that would suppress earlier cake layers.
+        const activeEnd =
+          timing.launchTimeSeconds +
+          (profile?.totalDurationSeconds ?? info.product.durationSeconds ?? 0);
+        if (
+          (info.multishot || info.ground) &&
+          occupied.some((tube) =>
+            overlapsIgnition(
+              { start: timing.launchTimeSeconds, end: activeEnd, tube },
+              sustainedWindows.get(info.product.id) ?? [],
+            ),
+          )
+        )
+          continue;
         ignitions.push(...windows);
+        spentCents += price;
+        if (info.multishot || info.ground) {
+          const active = sustainedWindows.get(info.product.id) ?? [];
+          active.push(
+            ...occupied.map((tube) => ({
+              start: timing.launchTimeSeconds,
+              end:
+                timing.launchTimeSeconds +
+                (profile?.totalDurationSeconds ?? info.product.durationSeconds ?? 0),
+              tube,
+            })),
+          );
+          sustainedWindows.set(info.product.id, active);
+        }
         usage.set(info.product.id, (usage.get(info.product.id) ?? 0) + 1);
         recent.unshift(info.product.id);
         recent.length = Math.min(recent.length, 6);
@@ -209,6 +297,8 @@ export function realiseShowPlan(params: {
     constraints: params.constraints,
     timingProfiles,
     maxTubes,
+    songDuration,
+    budgetCents: params.budgetCents,
   });
   completed.sort((a, b) => a.timeSeconds - b.timeSeconds || a.tube - b.tube);
   return { cues: completed, slots };
@@ -391,7 +481,7 @@ function tubesForMoment(
   if (direction.density <= 1 && direction.role !== 'finale' && moment.kind === 'pulse') {
     const path: Tube[] =
       direction.motif === 'unison' || direction.motif === 'mirror'
-        ? [centre]
+        ? all
         : maxTubes === 3
           ? [0, 1, 2, 1]
           : [0, 1];
@@ -402,11 +492,11 @@ function tubesForMoment(
   const motif: Motif = direction.motif;
   switch (motif) {
     case 'unison':
-      return strong ? all : [centre];
+      return strong ? all : [all[counter % all.length] ?? centre];
     case 'mirror':
-      return strong ? (busy ? all : edges) : [centre];
+      return strong ? (busy ? all : edges) : [all[counter % all.length] ?? centre];
     case 'alternate': {
-      const side = edges[counter % 2] ?? 0;
+      const side = all[counter % all.length] ?? 0;
       return strong && busy ? edges : [side];
     }
     case 'chase': {
@@ -486,6 +576,9 @@ function rankProducts(params: {
   recent: readonly string[];
   beatInterval: number | null;
   timingProfiles?: ProductTimingProfiles;
+  constraints: PromptConstraints;
+  layerIndex: number;
+  targetPriceCents: number | null;
 }): ProductInfo[] {
   const { catalogue, direction, moment, emphasis, preferBed, reserved, usage, recent } = params;
   const totalUses = [...usage.values()].reduce((sum, value) => sum + value, 0);
@@ -495,36 +588,72 @@ function rankProducts(params: {
   if (role === 'build') targetSize = 0.35 + 0.45 * moment.progress;
   if (emphasis === 'peak') targetSize = 1;
   else if (emphasis === 'accent') targetSize = Math.min(1, targetSize + 0.15);
+  if (!params.constraints.varietyExempt) {
+    targetSize = Math.max(
+      0,
+      Math.min(1, targetSize + ((params.layerIndex % 3) - 1) * HEIGHT_LAYER_SPREAD),
+    );
+  }
   const heroes = new Set(direction.heroProductIds);
+  const familyUsage = new Map<EffectFamily, number>();
+  const familyProductCount = new Map<EffectFamily, number>();
+  for (const info of catalogue) {
+    for (const family of info.effects) {
+      familyProductCount.set(family, (familyProductCount.get(family) ?? 0) + 1);
+      familyUsage.set(family, (familyUsage.get(family) ?? 0) + (usage.get(info.product.id) ?? 0));
+    }
+  }
+  const shareScale = role === 'peak' || role === 'finale' ? PEAK_SHARE_MULTIPLIER : 1;
 
-  const scored = catalogue
-    .filter((info) => (preferBed ? true : !info.multishot))
-    .map((info) => {
-      const id = info.product.id;
-      let score = 0;
-      if (direction.palette.length) {
-        const matches = direction.palette.filter((colour) => info.colours.has(colour)).length;
-        score += matches > 0 ? 1.2 + 0.4 * Math.min(2, matches - 1) : info.colours.size ? -1 : 0;
-      }
-      if (direction.effects.some((effect) => info.effects.has(effect))) score += 1.1;
-      score -= 2 * Math.abs(info.size - targetSize);
-      if (heroes.has(id) && (moment.kind !== 'pulse' || emphasis !== 'normal')) score += 2.5;
-      if (reserved.has(id) && !params.finaleStarted && moment.kind !== 'hit') score -= 2;
-      if (info.ground)
-        score += role === 'lull' || role === 'opener' || role === 'outro' ? 0.6 : -1.5;
-      const recentIndex = recent.indexOf(id);
-      if (recentIndex === 0) score -= 3;
-      else if (recentIndex > 0) score -= 1.2 / recentIndex;
+  const scored = catalogue.map((info) => {
+    const id = info.product.id;
+    let score = 0;
+    if (direction.palette.length) {
+      const matches = direction.palette.filter((colour) => info.colours.has(colour)).length;
+      score += matches > 0 ? 1.2 + 0.4 * Math.min(2, matches - 1) : info.colours.size ? -1 : 0;
+    }
+    if (direction.effects.some((effect) => info.effects.has(effect))) score += 1.1;
+    score -= 2 * Math.abs(info.size - targetSize);
+    if (params.constraints.requestedProductIds?.includes(id)) score += REQUESTED_PRODUCT_BONUS;
+    if (heroes.has(id) && (moment.kind !== 'pulse' || emphasis !== 'normal')) score += 2.5;
+    if (reserved.has(id) && !params.finaleStarted && moment.kind !== 'hit') score -= 2;
+    if (info.ground) score += role === 'lull' || role === 'opener' || role === 'outro' ? 0.6 : -1.5;
+    const recentIndex = recent.indexOf(id);
+    if (recentIndex === 0) score -= 3;
+    else if (recentIndex > 0) score -= 1.2 / recentIndex;
+    if (!params.constraints.varietyExempt) {
       score -= 0.35 * Math.max(0, (usage.get(id) ?? 0) - averageUses);
-      if (preferBed && info.multishot) {
-        const cadence = cadenceCompatibility(
-          params.timingProfiles?.get(id)?.[emphasis],
-          params.beatInterval,
-        );
-        score += 2 + (cadence ?? 0.5);
+      const denominator = Math.max(1, totalUses + 1);
+      const productTarget = Math.max(PRODUCT_SHARE_TARGET * shareScale, 1 / catalogue.length);
+      score -=
+        SHARE_PENALTY_WEIGHT *
+        Math.max(0, ((usage.get(id) ?? 0) + 1) / denominator - productTarget);
+      for (const family of info.effects) {
+        const unavoidable = familyProductCount.get(family) === catalogue.length;
+        const target = unavoidable ? 1 : EFFECT_FAMILY_SHARE_TARGET * shareScale;
+        score -=
+          SHARE_PENALTY_WEIGHT *
+          Math.max(0, ((familyUsage.get(family) ?? 0) + 1) / denominator - target);
       }
-      return { info, score };
-    });
+    }
+    if (info.multishot && !preferBed)
+      score -= moment.kind === 'pulse' ? MULTISHOT_PULSE_PENALTY : MULTISHOT_PHRASE_PENALTY;
+    if (params.targetPriceCents && info.product.minPriceCents) {
+      // A healthy budget can pay for character instead of maximising cheap shells.
+      score -= Math.min(
+        MAX_PRICE_PREFERENCE_PENALTY,
+        Math.abs(Math.log(info.product.minPriceCents / params.targetPriceCents)),
+      );
+    }
+    if (preferBed && info.multishot) {
+      const cadence = cadenceCompatibility(
+        params.timingProfiles?.get(id)?.[emphasis],
+        params.beatInterval,
+      );
+      score += 2 + (cadence ?? 0.5);
+    }
+    return { info, score };
+  });
   return scored
     .sort((a, b) => b.score - a.score || a.info.product.id.localeCompare(b.info.product.id))
     .map((entry) => entry.info);
@@ -541,11 +670,16 @@ function ensurePromptRequirements(params: {
   constraints: PromptConstraints;
   timingProfiles?: ProductTimingProfiles;
   maxTubes: 1 | 2 | 3;
+  songDuration: number;
+  budgetCents?: number | null;
 }): PlannedCue[] {
   const { cues, slots, catalogue, constraints } = params;
   const byId = new Map(catalogue.map((info) => [info.product.id, info]));
   const used = () => cues.map((cue) => byId.get(cue.productId)).filter((info) => info != null);
   const requirements: Array<(info: ProductInfo) => boolean> = [
+    ...(constraints.requestedProductIds ?? []).map(
+      (id) => (info: ProductInfo) => info.product.id === id,
+    ),
     ...constraints.requiredColours.map((colour) => (info: ProductInfo) => info.colours.has(colour)),
     ...constraints.requestedEffects.map(
       (effect) => (info: ProductInfo) => info.effects.has(effect),
@@ -573,6 +707,19 @@ function ensurePromptRequirements(params: {
         .find(
           ({ info, timing }) =>
             timing != null &&
+            timing.impactTimeSeconds <= params.songDuration &&
+            timing.launchTimeSeconds +
+              (params.timingProfiles?.get(info.product.id)?.[cue.emphasis]
+                ?.lastImpactOffsetSeconds ?? 0) <=
+              params.songDuration &&
+            (params.budgetCents == null ||
+              cues.reduce(
+                (sum, selected) => sum + (byId.get(selected.productId)?.product.minPriceCents ?? 0),
+                0,
+              ) -
+                (byId.get(cue.productId)?.product.minPriceCents ?? 0) +
+                (info.product.minPriceCents ?? 0) <=
+                params.budgetCents) &&
             occupiedLaunchPositions(info.product, cue.tube, params.maxTubes)?.length === 1 &&
             !cues.some(
               (other) =>

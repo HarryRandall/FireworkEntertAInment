@@ -313,6 +313,10 @@ export async function createShowAction(formData: FormData): Promise<NewShowResul
     reservationKey: showGenerationReservationKey(show.id),
     metadata: {
       durationSeconds,
+      // The wizard's "match the track" option sends exact seconds; minute presets are fixed lengths.
+      durationMode: /^\d+(?:\.\d+)?\s+seconds?$/i.test(parsed.data.duration.trim())
+        ? 'song'
+        : 'fixed',
       generationMode,
       model: selectedCueModel,
       showStyle: parsed.data.showStyle,

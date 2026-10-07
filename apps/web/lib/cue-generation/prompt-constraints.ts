@@ -1,3 +1,4 @@
+/** Enforce explicit brief requirements before applying creative variety defaults. */
 import { showProductColours } from '@/lib/shows/renderer-design';
 import type { FireworkSpecification } from '@/lib/show-domain';
 
@@ -14,6 +15,9 @@ const COLOUR_ALIASES = {
 } as const;
 
 const EFFECT_ALIASES = {
+  palm: ['palm', 'palms'],
+  brocade: ['brocade', 'brocades'],
+  peony: ['peony', 'peonies'],
   crackle: ['crackle', 'crackling'],
   strobe: ['strobe', 'strobing'],
   ring: ['ring', 'rings'],
@@ -34,10 +38,17 @@ export type PromptConstraints = {
   requestedEffects: EffectFamily[];
   forbiddenEffects: EffectFamily[];
   multishots: 'required' | 'forbidden' | 'allowed';
+  /** Named products override automatic diversity preferences. */
+  requestedProductIds?: string[];
+  exclusiveProducts?: boolean;
+  /** An exclusive effect request is a catalogue boundary, not a share target. */
+  exclusiveEffects?: EffectFamily[];
+  varietyExempt?: boolean;
 };
 
 export type PromptConstraintViolation = {
   kind:
+    | 'missing_product'
     | 'missing_colour'
     | 'missing_effect'
     | 'forbidden_colour'
@@ -52,7 +63,10 @@ export type PromptConstraintViolation = {
  * wording is evaluated before positive mentions so "no crackle" can never be
  * misread as a request for crackle.
  */
-export function parsePromptConstraints(text: string): PromptConstraints {
+export function parsePromptConstraints(
+  text: string,
+  products: readonly FireworkSpecification[] = [],
+): PromptConstraints {
   const normalised = normalise(text);
   const forbiddenColours = matchingNegatedFamilies(normalised, COLOUR_ALIASES);
   const forbiddenEffects = matchingNegatedFamilies(normalised, EFFECT_ALIASES);
@@ -89,7 +103,21 @@ export function parsePromptConstraints(text: string): PromptConstraints {
       ? 'required'
       : 'allowed';
 
+  const requestedProductIds = products
+    .filter(
+      (product) =>
+        containsPhrase(normalised, normalise(product.name)) &&
+        !isNegated(normalised, normalise(product.name)),
+    )
+    .map((product) => product.id);
+  const exclusive = /\bonly\b|\bexclusively\b/.test(normalised);
   return {
+    ...(requestedProductIds.length
+      ? { requestedProductIds, exclusiveProducts: exclusive, varietyExempt: true }
+      : {}),
+    ...(exclusive && requestedEffects.length
+      ? { exclusiveEffects: requestedEffects, varietyExempt: true }
+      : {}),
     requiredColours,
     forbiddenColours,
     requestedEffects,
@@ -98,10 +126,22 @@ export function parsePromptConstraints(text: string): PromptConstraints {
   };
 }
 
+/** Check the hard catalogue boundary from the brief. */
 export function productMatchesPromptConstraints(
   product: FireworkSpecification,
   constraints: PromptConstraints,
 ): boolean {
+  if (
+    constraints.exclusiveProducts &&
+    constraints.requestedProductIds?.length &&
+    !constraints.requestedProductIds.includes(product.id)
+  )
+    return false;
+  if (
+    constraints.exclusiveEffects?.length &&
+    !constraints.exclusiveEffects.some((effect) => productEffectFamilies(product).has(effect))
+  )
+    return false;
   const isMultishot = (product.shotCount ?? 1) > 1;
   if (constraints.multishots === 'required' && !isMultishot) return false;
   if (constraints.multishots === 'forbidden' && isMultishot) return false;
@@ -120,6 +160,7 @@ export function productMatchesPromptConstraints(
   return true;
 }
 
+/** Report unmet or forbidden requirements in the realised selection. */
 export function validatePromptConstraints(params: {
   productIds: Iterable<string>;
   products: FireworkSpecification[];
@@ -132,6 +173,10 @@ export function validatePromptConstraints(params: {
     .filter((product): product is FireworkSpecification => product != null);
   const violations: PromptConstraintViolation[] = [];
 
+  for (const id of constraints.requestedProductIds ?? []) {
+    if (!selected.some((product) => product.id === id))
+      violations.push({ kind: 'missing_product', value: id });
+  }
   for (const colour of constraints.requiredColours) {
     if (!selected.some((product) => productColourFamilies(product).has(colour))) {
       violations.push({ kind: 'missing_colour', value: colour });
@@ -164,6 +209,7 @@ export function validatePromptConstraints(params: {
   return uniqueViolations(violations);
 }
 
+/** Identify normalised colour families from catalogue and renderer data. */
 export function productColourFamilies(product: FireworkSpecification): Set<ColourFamily> {
   const values = [...showProductColours(product)].filter(
     (value): value is string => typeof value === 'string',
@@ -177,6 +223,7 @@ export function productColourFamilies(product: FireworkSpecification): Set<Colou
   return families;
 }
 
+/** Identify effect families, including near-identical shell designs. */
 export function productEffectFamilies(product: FireworkSpecification): Set<EffectFamily> {
   const effects = new Set<EffectFamily>();
 
