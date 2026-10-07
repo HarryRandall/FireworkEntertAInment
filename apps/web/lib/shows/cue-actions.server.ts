@@ -18,8 +18,23 @@ import {
   showRefinementReservationKey,
 } from '@/lib/ai-credits.server';
 import { addShowTimelineItem, deleteShowTimelineItem } from '@/lib/show-timeline-mutations.server';
+import { getOpenRouterClient, DEFAULT_CUE_MODEL } from '@/lib/openrouter.server';
+import { listFireworkProducts } from '@/lib/shows/queries.server';
+import { invalidateShowCacheForUser } from '@/lib/shows/cache-keys';
+import {
+  parseRefinementIntent,
+  parseRefinementModelReply,
+  parseRefinementTime,
+  validateRefinementProposal,
+} from '@/lib/shows/refinement';
 
-export type CueActionResult = { ok: true; message?: string } | { ok: false; error: string };
+/**
+ * Cue mutation outcome. `committed` marks a failure reported after the cue write
+ * (and any credit settlement) succeeded, so callers must not refund or retry.
+ */
+export type CueActionResult =
+  | { ok: true; message?: string }
+  | { ok: false; error: string; committed?: boolean };
 
 const AddCueSchema = z.object({
   showId: z.string().uuid(),
@@ -41,6 +56,148 @@ const DeleteCueSchema = z.object({
   cueId: z.string().uuid(),
   showSlug: z.string().min(1),
 });
+
+const RefineShowSchema = z.object({
+  showId: z.string().uuid(),
+  showSlug: z.string().min(1).max(160),
+  prompt: z.string().trim().min(1, 'Describe the firework cue you want.').max(1000),
+});
+
+const REFINEMENT_MODEL_TIMEOUT_MS = 20_000;
+
+/** Ask the model to choose one listed product, then add it through the guarded cue transaction. */
+export async function refineShowAction(formData: FormData): Promise<CueActionResult> {
+  const parsed = RefineShowSchema.safeParse({
+    showId: formData.get('showId'),
+    showSlug: formData.get('showSlug'),
+    prompt: formData.get('prompt'),
+  });
+  if (!parsed.success)
+    return { ok: false, error: parsed.error.issues[0]?.message ?? 'Check the request.' };
+
+  const intent = parseRefinementIntent(parsed.data.prompt);
+  if (intent !== 'add') {
+    return {
+      ok: false,
+      error:
+        'Refinement currently adds one cue. Removing, replacing and moving cues are not supported yet.',
+    };
+  }
+
+  const supabase = createClient(await cookies());
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: 'Sign in to refine this show.' };
+  const { data: show, error: showError } = await supabase
+    .from('shows')
+    .select('id, slug, duration_seconds')
+    .eq('id', parsed.data.showId)
+    .eq('slug', parsed.data.showSlug)
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (showError || !show) return { ok: false, error: 'This show is no longer available.' };
+
+  const products = await listFireworkProducts();
+  if (products.length === 0)
+    return { ok: false, error: 'No listed fireworks are available for refinement.' };
+  const refinementId = crypto.randomUUID();
+  const reservationKey = showRefinementReservationKey(refinementId);
+  const reservation = await reserveAiCredits(supabase, {
+    userId: user.id,
+    actionKey: 'show_refinement',
+    referenceType: 'show_refinements',
+    referenceId: refinementId,
+    reservationKey,
+    metadata: { prompt: parsed.data.prompt, showId: show.id, showSlug: show.slug },
+  });
+  if (!reservation.ok)
+    return {
+      ok: false,
+      error: reservation.error ?? 'You do not have enough AI credits to refine this show.',
+    };
+
+  try {
+    const requestedTime = parseRefinementTime(parsed.data.prompt, show.duration_seconds);
+    const completion = await getOpenRouterClient().chat.completions.create(
+      {
+        model: DEFAULT_CUE_MODEL,
+        temperature: 0,
+        response_format: { type: 'json_object' },
+        messages: [
+          {
+            role: 'system',
+            content:
+              'Return JSON only: {"intent":"add","productId":"UUID","timeSeconds":number,"launchPositionIndex":0|1|2,"emphasis":"normal"|"accent"|"peak"}. Select exactly one supplied product. This operation can only add a cue.',
+          },
+          {
+            role: 'user',
+            content: JSON.stringify({
+              request: parsed.data.prompt,
+              requestedTime,
+              durationSeconds: show.duration_seconds,
+              products: products.map((product) => ({
+                id: product.id,
+                name: product.name,
+                description: product.description,
+              })),
+            }),
+          },
+        ],
+      },
+      { timeout: REFINEMENT_MODEL_TIMEOUT_MS, maxRetries: 1 },
+    );
+    const raw = completion.choices[0]?.message.content;
+    if (!raw) throw new Error('The model returned no refinement.');
+    const proposal = validateRefinementProposal(
+      parseRefinementModelReply(raw),
+      new Set(products.map((product) => product.id)),
+      show.duration_seconds,
+    );
+    if (!proposal) throw new Error('The model returned an invalid refinement.');
+
+    const cueForm = new FormData();
+    cueForm.set('showId', show.id);
+    cueForm.set('showSlug', show.slug);
+    cueForm.set('productId', proposal.productId);
+    cueForm.set('timeSeconds', String(requestedTime ?? proposal.timeSeconds));
+    cueForm.set('launchPositionIndex', String(proposal.launchPositionIndex));
+    cueForm.set('emphasis', proposal.emphasis);
+    cueForm.set('aiCreditAction', 'show_refinement');
+    cueForm.set('aiCreditReferenceId', refinementId);
+    cueForm.set('refinementPrompt', parsed.data.prompt);
+    const result = await addPreviewCueAction(cueForm);
+    if (!result.ok && result.committed) return result;
+    if (!result.ok) {
+      // The cue RPC settles credits only when the cue commits, so a rejected
+      // placement (for example a busy tube) must release the reservation here.
+      const refunded = await refundAiCreditReservation(supabase, {
+        userId: user.id,
+        reservationKey,
+        metadata: { reason: 'refinement_cue_rejected', showId: show.id },
+      });
+      if (!refunded.ok) console.error('[refineShowAction] refund failed:', refunded.error);
+      return { ok: false, error: `${result.error} Your AI credits were refunded.` };
+    }
+    const product = products.find((item) => item.id === proposal.productId);
+    return {
+      ok: true,
+      message: `Added ${product?.name ?? 'a firework'} at ${Math.floor((requestedTime ?? proposal.timeSeconds) / 60)}:${String(Math.round((requestedTime ?? proposal.timeSeconds) % 60)).padStart(2, '0')}.`,
+    };
+  } catch (error) {
+    const refunded = await refundAiCreditReservation(supabase, {
+      userId: user.id,
+      reservationKey,
+      metadata: { reason: 'refinement_model_or_validation_failed', showId: show.id },
+    });
+    if (!refunded.ok) console.error('[refineShowAction] refund failed:', refunded.error);
+    console.error('[refineShowAction] failed:', error);
+    return {
+      ok: false,
+      error: 'Could not turn that request into a safe cue. Your AI credits were refunded.',
+    };
+  }
+}
 
 /** Add a new cue through the atomic, overlap-safe database mutation. */
 export async function addPreviewCueAction(formData: FormData): Promise<CueActionResult> {
@@ -224,13 +381,19 @@ export async function addPreviewCueAction(formData: FormData): Promise<CueAction
       });
     } catch (error) {
       console.error('[addPreviewCueAction] derived-field sync failed:', error);
+      // The cue committed but the totals did not; report the failure rather than
+      // a false success, and tell the user to reload rather than retry the add.
+      await invalidateShowCacheForUser(user.id, parsed.data);
+      revalidateShowViews(parsed.data.showSlug);
       return {
         ok: false,
         error: 'The cue was added, but show totals could not refresh. Reload before retrying.',
+        committed: true,
       };
     }
+    await invalidateShowCacheForUser(user.id, parsed.data);
   }
-  revalidatePath(`/shows/${parsed.data.showSlug}/preview`);
+  revalidateShowViews(parsed.data.showSlug);
   return { ok: true, message: 'Cue added.' };
 }
 
@@ -269,12 +432,30 @@ export async function deletePreviewCueAction(formData: FormData): Promise<CueAct
       });
     } catch (error) {
       console.error('[deletePreviewCueAction] derived-field sync failed:', error);
+      await invalidateShowCacheForUser(user.id, {
+        showId: deletedShowId,
+        showSlug: parsed.data.showSlug,
+      });
+      revalidateShowViews(parsed.data.showSlug);
       return {
         ok: false,
         error: 'The cue was removed, but show totals could not refresh. Reload before retrying.',
+        committed: true,
       };
     }
+    await invalidateShowCacheForUser(user.id, {
+      showId: deletedShowId,
+      showSlug: parsed.data.showSlug,
+    });
   }
-  revalidatePath(`/shows/${parsed.data.showSlug}/preview`);
+  revalidateShowViews(parsed.data.showSlug);
   return { ok: true, message: 'Cue removed.' };
+}
+
+/** Refresh each route that renders cue scheduling, shopping or derived totals. */
+function revalidateShowViews(showSlug: string): void {
+  revalidatePath(`/shows/${showSlug}`);
+  revalidatePath(`/shows/${showSlug}/preview`);
+  revalidatePath(`/shows/${showSlug}/timeline`);
+  revalidatePath(`/shows/${showSlug}/shopping-list`);
 }

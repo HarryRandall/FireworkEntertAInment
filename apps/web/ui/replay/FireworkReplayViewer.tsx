@@ -28,6 +28,7 @@ import { ChevronLeft, ChevronRight, Pencil, Play, Plus, Sparkles, Trash2 } from 
 import {
   addPreviewCueAction,
   deletePreviewCueAction,
+  refineShowAction,
   type CueActionResult,
 } from '@/lib/shows/cue-actions.server';
 import {
@@ -690,63 +691,25 @@ export function FireworkReplayViewer({
   function applyRefinement(rawPrompt: string) {
     const prompt = rawPrompt.trim();
     if (!prompt) return;
-
-    const parsed = parsePromptToCue(prompt, specifications, duration, elapsed);
-    if (!parsed) {
-      toast.error('Could not parse that prompt yet', {
-        description:
-          'Try something like "add green firework at the start" or "red strobe at 1:20".',
-      });
-      return;
-    }
-
-    const { product, timeSeconds, launchPositionIndex, description } = parsed;
     const formData = new FormData();
     formData.set('showId', showId);
     formData.set('showSlug', showSlug);
-    formData.set('productId', product.id);
-    formData.set('timeSeconds', String(timeSeconds));
-    formData.set('launchPositionIndex', String(launchPositionIndex));
-    formData.set('description', description);
-    formData.set('aiCreditAction', 'show_refinement');
-    formData.set('aiCreditReferenceId', crypto.randomUUID());
-    formData.set('refinementPrompt', prompt);
-
-    setRefinePrompt('');
-    setAiPrompt('');
-    setShowAddForm(false);
-    setInsertBeforeTime(null);
-    const refinementToastId = toast.loading(
-      `Adding ${product.name} at ${formatDuration(timeSeconds)}...`,
-    );
+    formData.set('prompt', prompt);
+    const refinementToastId = toast.loading('Finding a safe matching firework...');
 
     startTransition(async () => {
-      applyOptimisticCue({
-        type: 'add',
-        cue: {
-          id: `optimistic-${Date.now()}`,
-          position: optimisticCues.length,
-          timeSeconds,
-          description,
-          productId: product.id,
-          launchPositionIndex,
-          firework: product,
-        },
-      });
-      const result = await addPreviewCueAction(formData);
-      if (!result.ok && isTubeBusyError(result)) {
-        setActionResult(null);
-        toast.error(result.error, { id: refinementToastId });
-        return;
-      }
+      const result = await refineShowAction(formData);
       setActionResult(result);
       if (!result.ok) {
         toast.error(result.error, { id: refinementToastId });
         return;
       }
-      toast.success(`Added ${product.name} at ${formatDuration(timeSeconds)}`, {
-        id: refinementToastId,
-      });
+      setRefinePrompt('');
+      setAiPrompt('');
+      setShowAddForm(false);
+      setInsertBeforeTime(null);
+      toast.success(result.message ?? 'Cue added.', { id: refinementToastId });
+      router.refresh();
     });
   }
 
@@ -1053,7 +1016,7 @@ export function FireworkReplayViewer({
                         >
                           Cancel
                         </Button>
-                        <Button type="submit" size="sm" disabled={!aiPrompt.trim()}>
+                        <Button type="submit" size="sm" disabled={isPending || !aiPrompt.trim()}>
                           <Sparkles size={16} strokeWidth={2} />
                           Generate cue
                         </Button>
@@ -1320,7 +1283,7 @@ export function FireworkReplayViewer({
                   className="min-h-32 xl:[field-sizing:fixed] xl:min-h-0 xl:flex-1 xl:resize-none"
                 />
                 <div className="flex justify-end">
-                  <Button type="submit" size="sm" disabled={isPending}>
+                  <Button type="submit" size="sm" disabled={isPending || !refinePrompt.trim()}>
                     <Sparkles size={14} strokeWidth={2} />
                     Apply refinement
                   </Button>
@@ -1380,120 +1343,4 @@ function StatChip({ label, value }: { label: string; value: string }) {
       <span className="text-foreground text-lg font-semibold tabular-nums">{value}</span>
     </div>
   );
-}
-
-function parsePromptToCue(
-  prompt: string,
-  specifications: FireworkSpecification[],
-  duration: number,
-  elapsed: number,
-): {
-  product: FireworkSpecification;
-  timeSeconds: number;
-  launchPositionIndex: number;
-  description: string;
-} | null {
-  if (specifications.length === 0) return null;
-  const lower = prompt.toLowerCase();
-
-  let timeSeconds: number | null = null;
-  if (/\b(very start|the start|beginning|intro|opening)\b/.test(lower)) {
-    timeSeconds = 0.5;
-  } else if (/\b(very end|the end|finale|outro|ending)\b/.test(lower)) {
-    timeSeconds = Math.max(0, duration - 1);
-  }
-  if (timeSeconds === null) {
-    const mmss = lower.match(/\b(\d{1,2}):(\d{2})\b/);
-    if (mmss) timeSeconds = Number(mmss[1]) * 60 + Number(mmss[2]);
-  }
-  if (timeSeconds === null) {
-    const secs = lower.match(/\b(?:at|around|near)\s+(\d{1,3})(?:\s*(?:s|sec|seconds))?\b/);
-    if (secs) timeSeconds = Number(secs[1]);
-    else {
-      const bare = lower.match(/\b(\d{1,3})\s*(?:s|sec|seconds)\b/);
-      if (bare) timeSeconds = Number(bare[1]);
-    }
-  }
-  if (timeSeconds === null) timeSeconds = Math.min(duration, Math.round(elapsed + 1));
-  timeSeconds = Math.max(0, Math.min(duration, timeSeconds));
-
-  let launchPositionIndex = 1;
-  if (/\b(left|mortar\s*1)\b/.test(lower)) launchPositionIndex = 0;
-  else if (/\b(right|mortar\s*3)\b/.test(lower)) launchPositionIndex = 2;
-  else if (/\b(centre|center|middle|mortar\s*2)\b/.test(lower)) launchPositionIndex = 1;
-
-  const stopWords = new Set([
-    'add',
-    'a',
-    'an',
-    'the',
-    'at',
-    'in',
-    'on',
-    'with',
-    'and',
-    'or',
-    'firework',
-    'fireworks',
-    'cue',
-    'effect',
-    'around',
-    'near',
-    'very',
-    'start',
-    'beginning',
-    'intro',
-    'opening',
-    'end',
-    'finale',
-    'outro',
-    'ending',
-    'middle',
-    'centre',
-    'center',
-    'left',
-    'right',
-    'mortar',
-    'please',
-    'show',
-    'something',
-    'some',
-    'me',
-    'i',
-    'want',
-    'need',
-    'put',
-    'insert',
-    'use',
-    'of',
-    'for',
-    'to',
-    'from',
-  ]);
-  const tokens = lower
-    .replace(/[^a-z0-9\s]/g, ' ')
-    .split(/\s+/)
-    .filter((t) => t && !stopWords.has(t) && !/^\d+$/.test(t));
-
-  let bestProduct: FireworkSpecification | null = null;
-  let bestScore = 0;
-  for (const product of specifications) {
-    const name = product.name.toLowerCase();
-    let score = 0;
-    for (const token of tokens) {
-      if (name.includes(token)) score += token.length;
-    }
-    if (score > bestScore) {
-      bestScore = score;
-      bestProduct = product;
-    }
-  }
-
-  if (!bestProduct) return null;
-  return {
-    product: bestProduct,
-    timeSeconds,
-    launchPositionIndex,
-    description: bestProduct.name,
-  };
 }
