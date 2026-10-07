@@ -89,12 +89,12 @@ test('app and admin routes have granular loading coverage and streaming boundari
   assert.match(previewShell, /<ShowPreviewReplay params=\{params\} \/>/);
   assert.doesNotMatch(previewShell, /await params/);
   assert.doesNotMatch(previewShell, /getShowBySlug\(/);
-  assert.doesNotMatch(previewShell, /listReplayCuesForShow\(/);
+  assert.doesNotMatch(previewShell, /getReplayCuePayloadForShow\(/);
   assert.doesNotMatch(previewShell, /listFireworkProducts\(/);
   assert.doesNotMatch(previewShell, /getAudioSignedUrl\(/);
   assert.match(previewLoader, /const \{ id \} = await params/);
   assert.match(previewLoader, /getShowBySlug\(id\)/);
-  assert.match(previewLoader, /const replayCuesPromise = listReplayCuesForShow\(show\.id\)/);
+  assert.match(previewLoader, /const replayCuesPromise = getReplayCuePayloadForShow\(show\.id\)/);
   assert.match(previewLoader, /const fireworkSpecificationsPromise = listFireworkProducts\(\)/);
   assert.match(previewLoader, /const audioUrlPromise = getAudioSignedUrl\(show\.audioPath\)/);
   assert.doesNotMatch(previewLoader, /Promise\.all\(/);

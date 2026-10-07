@@ -45,6 +45,9 @@ function resolveUpstashRestConfig(): { url: string; token: string } | null {
 const redisConfig = resolveUpstashRestConfig();
 const redis = redisConfig ? new Redis({ url: redisConfig.url, token: redisConfig.token }) : null;
 
+// Leave room for the Redis command envelope and JSON escaping below Upstash's 10 MiB cap.
+const MAX_CACHE_REQUEST_BYTES = 10 * 1024 * 1024 - 64 * 1024;
+const warnedOversizeKeys = new Set<string>();
 const CACHE_TTL_SECONDS = 60;
 const memoryCache = new Map<string, { expiresAt: number; value: unknown }>();
 const memoryRateLimits = new Map<string, { count: number; expiresAt: number }>();
@@ -53,6 +56,7 @@ function getRedisClient() {
   return redis;
 }
 
+/** Reports whether the durable Redis cache is configured. */
 export function hasRedisCache() {
   return Boolean(getRedisClient());
 }
@@ -176,6 +180,7 @@ return { 1, 0, highest, longest_ttl }`,
   }
 }
 
+/** Reads cached JSON, falling back to process memory when Redis is unavailable. */
 export async function getCachedJson<T>(key: string): Promise<T | null> {
   const client = getRedisClient();
   if (!client) {
@@ -197,6 +202,7 @@ export async function getCachedJson<T>(key: string): Promise<T | null> {
   }
 }
 
+/** Writes best-effort JSON, skipping requests that exceed the safe Redis request budget. */
 export async function setCachedJson<T>(
   key: string,
   value: T,
@@ -212,12 +218,25 @@ export async function setCachedJson<T>(
   }
 
   try {
+    const serialised = JSON.stringify(value);
+    const requestBytes = Buffer.byteLength(
+      JSON.stringify(['set', key, serialised, 'ex', ttlSeconds]),
+      'utf8',
+    );
+    if (requestBytes > MAX_CACHE_REQUEST_BYTES) {
+      if (!warnedOversizeKeys.has(key)) {
+        warnedOversizeKeys.add(key);
+        console.warn('[server-cache] skipped oversized value:', { key, requestBytes });
+      }
+      return;
+    }
     await client.set(key, value, { ex: ttlSeconds });
   } catch (error) {
     console.error('[server-cache] set failed:', error);
   }
 }
 
+/** Invalidates keys in both the process cache and configured Redis cache. */
 export async function deleteCachedKeys(keys: string[]): Promise<void> {
   const client = getRedisClient();
   keys.forEach((key) => memoryCache.delete(key));
