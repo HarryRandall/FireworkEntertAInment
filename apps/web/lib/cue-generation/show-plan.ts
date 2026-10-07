@@ -71,12 +71,22 @@ export type ShowPlan = {
   sections: SectionDirection[];
 };
 
-const MIN_SECTION_SECONDS = 4;
-const SYNTHETIC_SECTION_SECONDS = 20;
+/** A creative role needs several bars to develop, even with fragmented legacy analysis. */
+const MIN_SECTION_SECONDS = 16;
+/** Around fourteen phrases in a six-minute track, without erasing genuine contrasts. */
+const TARGET_SECTION_SECONDS = 28;
+const MAX_PLAN_SECTIONS = 15;
+/** Full-length songs need enough phrases for two or more returns and contrasts. */
+const FULL_TRACK_SECONDS = 180;
+const MIN_FULL_TRACK_SECTIONS = 8;
+/** Energy discontinuities matter more than a weak or repeated analyser label. */
+const BOUNDARY_ENERGY_WEIGHT = 4;
+const BOUNDARY_LABEL_CHANGE_COST = 1;
+const SYNTHETIC_SECTION_SECONDS = TARGET_SECTION_SECONDS;
 
 /**
  * Normalise analysed sections into a contiguous list covering the song.
- * Very short sections merge into their predecessor so the plan never asks
+ * Short or similar neighbours merge so the plan never asks
  * for a role change every couple of beats.
  */
 export function buildPlanSections(
@@ -94,21 +104,53 @@ export function buildPlanSections(
     .filter((section) => section.end > section.start)
     .sort((a, b) => a.start - b.start);
 
-  const merged: Array<{ start: number; end: number; label: string; energy: number }> = [];
-  for (const section of raw.length ? raw : syntheticSections(songDuration)) {
-    const previous = merged.at(-1);
-    if (previous && section.end - section.start < MIN_SECTION_SECONDS) {
-      previous.end = section.end;
-      continue;
-    }
-    if (previous) previous.end = section.start;
-    merged.push({ ...section });
+  const merged = (raw.length ? raw : syntheticSections(songDuration)).map((section) => ({
+    ...section,
+  }));
+  if (!merged.length) return [];
+  merged[0].start = 0;
+  for (let index = 1; index < merged.length; index += 1) {
+    merged[index].start = merged[index - 1].end;
+    merged[index].end = Math.max(merged[index].start, merged[index].end);
   }
-  const first = merged[0];
-  const last = merged.at(-1);
-  if (!first || !last) return [];
-  first.start = 0;
-  last.end = songDuration;
+  merged[merged.length - 1].end = songDuration;
+  const targetCount = Math.min(
+    MAX_PLAN_SECTIONS,
+    Math.max(
+      songDuration >= FULL_TRACK_SECONDS ? MIN_FULL_TRACK_SECTIONS : 1,
+      Math.round(songDuration / TARGET_SECTION_SECONDS),
+    ),
+  );
+  const span = (index: number) => merged[index].end - merged[index].start;
+  const shortEdge = (index: number) =>
+    (index === 0 || index === merged.length - 1) && /intro|outro/i.test(merged[index].label);
+  // Remove the least meaningful boundary first. Energy contrast and label
+  // changes survive preferentially; climax timestamps are never moved.
+  while (merged.length > 1) {
+    const short = merged
+      .map((_, index) => index)
+      .filter((index) => span(index) < MIN_SECTION_SECONDS && !shortEdge(index));
+    if (!short.length && merged.length <= targetCount) break;
+    const candidates = merged.slice(0, -1).map((left, index) => {
+      const right = merged[index + 1];
+      const touchesShort = short.includes(index) || short.includes(index + 1);
+      const cost =
+        Math.abs(left.energy - right.energy) * BOUNDARY_ENERGY_WEIGHT +
+        (left.label === right.label ? 0 : BOUNDARY_LABEL_CHANGE_COST) +
+        (span(index) + span(index + 1)) / songDuration;
+      return { index, cost: short.length && !touchesShort ? Infinity : cost };
+    });
+    const boundary = candidates.sort((a, b) => a.cost - b.cost || a.index - b.index)[0].index;
+    const left = merged[boundary];
+    const right = merged[boundary + 1];
+    const leftSpan = span(boundary);
+    const rightSpan = span(boundary + 1);
+    left.energy =
+      (left.energy * leftSpan + right.energy * rightSpan) / Math.max(0.001, leftSpan + rightSpan);
+    if (rightSpan > leftSpan) left.label = right.label;
+    left.end = right.end;
+    merged.splice(boundary + 1, 1);
+  }
 
   const timeline = analysis?.energy_timeline ?? [];
   const energies = merged.map((section) => {
@@ -161,6 +203,7 @@ export type CataloguePalette = {
   effects: EffectFamily[];
 };
 
+/** Describe the available creative families without assuming a complete catalogue. */
 export function describeCataloguePalette(products: FireworkSpecification[]): CataloguePalette {
   const colourCounts = new Map<ColourFamily, number>();
   const effectCounts = new Map<EffectFamily, number>();
