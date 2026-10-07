@@ -117,7 +117,10 @@ export function fireworkOccupancyDurationSeconds(
   return product.occupancyDurationSeconds ?? product.durationSeconds;
 }
 
+/** One expanded firing, optionally anchored to its parent cake cue. */
 export type ReplayCue = ShowCue & {
+  cakeId?: string;
+  cakeLaunchPositionIndex?: number;
   timeSeconds: number;
   firework: FireworkSpecification;
   shotPanDegrees?: number | null;
@@ -177,13 +180,6 @@ export function formatDurationWords(seconds: number | null | undefined): string 
 
 export function formatBudget(cents: number | null | undefined): string {
   if (cents == null) return '—';
-  return `$${(cents / 100).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
-}
-
-export function formatTotal(cents: number): string {
   return `$${(cents / 100).toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,

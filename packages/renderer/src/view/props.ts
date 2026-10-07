@@ -8,7 +8,8 @@ import { batchProps } from './prop-batch';
 const CAKE_ROWS = 5;
 const CAKE_SPACING_M = 0.4;
 export const CAKE_TOP_M = 1.17;
-const CAKE_WIDTH_M = 2.2;
+/** Cake footprint width in metres, shared by show staging. */
+export const CAKE_WIDTH_M = 2.2;
 const CAKE_HEIGHT_M = 1.1;
 const LID_WIDTH_M = 2.25;
 const LID_DEPTH_M = 0.08;
@@ -44,7 +45,7 @@ export function cakeHole(index: number): readonly [number, number] {
   ];
 }
 
-/** Builds hardware at each unique launch position, or a single cake box at the origin. */
+/** Builds mixed show hardware, retaining the single origin cake for editor previews. */
 export function makeProps(shots: readonly Shot[], kind: 'mortar' | 'cake'): THREE.Group {
   const group = new THREE.Group();
   const dark = new THREE.MeshBasicMaterial({ color: DARK });
@@ -57,7 +58,9 @@ export function makeProps(shots: readonly Shot[], kind: 'mortar' | 'cake'): THRE
   }
 
   const seen = new Set<string>();
-  for (const shot of shots) {
+  addShowCakes(group, shots);
+  const mortarShots = shots.filter((entry) => entry.hardware !== 'cake');
+  for (const shot of mortarShots) {
     const design = resolveDesign(shot.design);
     const [x, z] = shot.position ?? [0, 0];
     if (design.kind === 'fountain' || design.kind === 'spinner') continue;
@@ -71,7 +74,7 @@ export function makeProps(shots: readonly Shot[], kind: 'mortar' | 'cake'): THRE
       group.add(post);
       continue;
     }
-    const key = `${String(Math.round(x))}:${String(Math.round(z))}`;
+    const key = `mortar:${String(x)}:${String(z)}`;
     if (seen.has(key)) continue;
     seen.add(key);
     const tube = makeMortar(dark, rim);
@@ -80,8 +83,23 @@ export function makeProps(shots: readonly Shot[], kind: 'mortar' | 'cake'): THRE
     tube.rotation.z = -((design.launch?.tilt_deg ?? 0) * Math.PI) / HALF_TURN_DEG;
     group.add(tube);
   }
-  disposeUnusedHardwareMaterials(group, shots, dark, rim);
+  disposeUnusedHardwareMaterials(group, mortarShots, dark, rim);
   return batchProps(group);
+}
+
+function addShowCakes(group: THREE.Group, shots: readonly Shot[]): void {
+  const seen = new Set<string>();
+  for (const shot of shots) {
+    if (shot.hardware !== 'cake') continue;
+    const [x, z] = shot.hardwarePosition ?? shot.position ?? [0, 0];
+    const key = `${String(x)}:${String(z)}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const cake = new THREE.Group();
+    fillCake(cake);
+    cake.position.set(x, 0, z);
+    group.add(cake);
+  }
 }
 
 function fillCake(group: THREE.Group): void {
@@ -144,7 +162,10 @@ function disposeUnusedHardwareMaterials(
   rim: THREE.Material,
 ): void {
   // Unused materials have no mesh owner to release them during scene disposal.
-  if (group.children.length === 0) {
+  if (shots.length === 0) {
+    dark.dispose();
+    rim.dispose();
+  } else if (group.children.length === 0) {
     dark.dispose();
     rim.dispose();
   } else if (

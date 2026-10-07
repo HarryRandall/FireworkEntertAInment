@@ -2,10 +2,10 @@
 
 import { z } from 'zod';
 
-export const RefinementIntentSchema = z.enum(['add', 'remove', 'replace', 'move']);
+const RefinementIntentSchema = z.enum(['add', 'remove', 'replace', 'move']);
 export type RefinementIntent = z.infer<typeof RefinementIntentSchema>;
 
-export const RefinementProposalSchema = z.object({
+const RefinementProposalSchema = z.object({
   intent: RefinementIntentSchema,
   productId: z.string().uuid(),
   timeSeconds: z.coerce
