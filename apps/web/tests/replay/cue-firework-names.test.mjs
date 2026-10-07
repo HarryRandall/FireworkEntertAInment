@@ -32,7 +32,8 @@ test('manual and generated cues store catalogue names instead of custom labels',
   const runner = read('lib/cue-generation/runner.server.ts');
 
   assert.match(viewer, /formData\.set\('description', product\.name\);/);
-  assert.match(viewer, /description: bestProduct\.name,/);
+  // AI refinements leave the description unset so the stored label is the catalogue name.
+  assert.doesNotMatch(action, /cueForm\.set\('description'/);
   assert.match(action, /\.from\('catalogue_items'\)\s*\.select\('name'\)/);
   assert.match(action, /const cueDescription = productRow\.name\.trim\(\);/);
   assert.match(action, /description: cueDescription,/);
