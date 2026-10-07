@@ -1,6 +1,7 @@
 'use client';
 
 /** Consumer replay presentation and transport integration. */
+import { declaredShowLengthSeconds } from '@/lib/cue-generation/show-duration';
 import { ShowCueTable } from '@/ui/shows/ShowCueTable';
 import { ShowRefinePanel } from '@/ui/shows/ShowRefinePanel';
 import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
@@ -1052,7 +1053,7 @@ export function FireworkReplayViewer({
           <ShowRefinePanel
             totalCents={totalCents}
             cueCount={builderCues.length}
-            duration={duration}
+            duration={declaredShowLengthSeconds(durationSeconds, duration)}
             prompt={refinePrompt}
             onPromptChange={setRefinePrompt}
             pending={isPending}

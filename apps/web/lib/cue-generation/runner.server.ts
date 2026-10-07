@@ -17,7 +17,10 @@
  */
 import 'server-only';
 
+import { generationDurationSeconds } from './show-duration';
+
 import { revalidatePath } from 'next/cache';
+import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/database.types';
 import {
@@ -391,6 +394,7 @@ export async function generateCuesForShow(params: {
   let assortmentLedger: ProductQuantityLedger | null = null;
   let liveAssortmentItemIds: Set<string> | null = null;
   let slots: CueSlot[];
+  let generationDuration = 0;
   let promptConstraints: PromptConstraints = parsePromptConstraints('');
 
   const loadStart = performance.now();
@@ -484,6 +488,7 @@ export async function generateCuesForShow(params: {
       }
       products = filtered;
     }
+    promptConstraints = parsePromptConstraints(brief.description ?? '', products);
     const promptMatchedProducts = products.filter((product) =>
       productMatchesPromptConstraints(product, promptConstraints),
     );
@@ -535,7 +540,27 @@ export async function generateCuesForShow(params: {
       );
     timings.loadInputsMs = elapsedMs(loadStart);
 
-    const songDuration = analysis?.duration_seconds ?? brief.duration_seconds ?? 0;
+    const { data: reservation, error: reservationError } = await supabase
+      .from('ai_credit_transactions')
+      .select('metadata')
+      .eq('user_id', userId)
+      .eq('idempotency_key', `show-generation:${showId}:reserve`)
+      .eq('transaction_type', 'reserve')
+      .maybeSingle();
+    if (reservationError || !reservation)
+      throw new Error('Could not load the requested generation duration.');
+    const metadata = reservation.metadata;
+    const fixedLength =
+      metadata != null &&
+      typeof metadata === 'object' &&
+      !Array.isArray(metadata) &&
+      metadata.durationMode === 'fixed';
+    generationDuration = generationDurationSeconds(
+      analysis?.duration_seconds,
+      brief.duration_seconds,
+      fixedLength,
+    );
+    const songDuration = generationDuration;
     if (!songDuration || songDuration <= 0) {
       throw new Error("Song duration is unknown, can't time the show.");
     }
@@ -557,7 +582,7 @@ export async function generateCuesForShow(params: {
   let accepted: ReconstructedCue[] = [];
   let plannerUsed: ChoreographyPlanner = generationMode;
   try {
-    const songDuration = analysis?.duration_seconds ?? brief.duration_seconds ?? 0;
+    const songDuration = generationDuration;
     const creativeDirection = parseCreativeDirection(
       [brief.title, brief.description, ...(brief.mood_tags ?? [])].filter(Boolean).join(' '),
       asShowStyleKey(brief.show_style),
@@ -593,11 +618,23 @@ export async function generateCuesForShow(params: {
             !slotIds.has(cue.slotIndex) ||
             !Number.isFinite(cue.timeSeconds) ||
             cue.timeSeconds < 0 ||
+            cue.timeSeconds > songDuration ||
             !Number.isFinite(cue.impactTimeSeconds) ||
-            cue.impactTimeSeconds < 0,
+            cue.impactTimeSeconds < 0 ||
+            cue.impactTimeSeconds > songDuration,
         )
       ) {
         throw new Error('Invalid product, slot or launch time in choreography candidate.');
+      }
+      if (
+        assortmentLedger == null &&
+        brief.budget_cents != null &&
+        candidate.reduce(
+          (sum, cue) => sum + (productById.get(cue.productId)?.minPriceCents ?? 0),
+          0,
+        ) > brief.budget_cents
+      ) {
+        throw new Error('Choreography candidate exceeds the requested budget.');
       }
       const safe = requireExactProductQuantityLedger(
         enforceTimelineTubeSafety(candidate, products, maxTubes),
@@ -712,6 +749,7 @@ export async function generateCuesForShow(params: {
         timingProfiles,
         maxTubes,
         constraints: promptConstraints,
+        budgetCents: brief.budget_cents,
       });
       timings.fastPlanMs = elapsedMs(realiseStart);
       const finaleIndex = plan.sections.findIndex((direction) => direction.role === 'finale');
@@ -752,6 +790,65 @@ export async function generateCuesForShow(params: {
         }
         accepted = rescue.cues;
         plannerUsed = 'beat';
+      }
+      {
+        // Only lifecycle workers can write admin diagnostics. The successful
+        // claim above has already established the show and its owner.
+        const diagnosticClient = createServiceRoleSupabase();
+        if (!diagnosticClient) throw new Error('Generation diagnostics are not configured.');
+        // The credit reservation already has admin-readable JSON metadata.
+        // Preserve its original context and store each attempt separately.
+        const reservationKey = `show-generation:${showId}:reserve`;
+        const { data: reservation, error: reservationError } = await diagnosticClient
+          .from('ai_credit_transactions')
+          .select('id, metadata')
+          .eq('user_id', userId)
+          .eq('idempotency_key', reservationKey)
+          .eq('transaction_type', 'reserve')
+          .maybeSingle();
+        if (reservationError || !reservation)
+          throw new Error('Could not load the generation report record.');
+        const metadata =
+          reservation.metadata != null &&
+          typeof reservation.metadata === 'object' &&
+          !Array.isArray(reservation.metadata)
+            ? reservation.metadata
+            : {};
+        const { data: savedReport, error: saveReportError } = await diagnosticClient
+          .from('ai_credit_transactions')
+          .update({
+            metadata: {
+              ...metadata,
+              [`planAttempt${claim.attempt_count}`]: {
+                ...planReport,
+                showId,
+                model,
+                selectedPlanner: plannerUsed,
+              } as Json,
+            },
+          })
+          .eq('id', reservation.id)
+          .eq('user_id', userId)
+          .eq('metadata', JSON.stringify(reservation.metadata ?? {}))
+          .select('id')
+          .maybeSingle();
+        if (saveReportError || !savedReport)
+          throw new Error('Could not persist the generation plan report.');
+        if (llmFailure || planReport.rejected) {
+          const { error: reportError } = await diagnosticClient.rpc('record_backend_dead_letter', {
+            p_work_type: 'cue_generation',
+            p_work_key: `show-plan:${showId}:${claim.attempt_count}`,
+            p_user_id: userId,
+            p_severity: 'warning',
+            p_reason: llmFailure
+              ? `Model plan fallback: ${llmFailure}`
+              : 'Section plan rejected; beat planner selected.',
+            p_attempt_count: claim.attempt_count,
+            p_metadata: { ...planReport, showId, model, selectedPlanner: plannerUsed } as Json,
+          });
+          if (reportError)
+            throw new Error(`Could not persist generation fallback report: ${reportError.message}`);
+        }
       }
       console.info('[cue-generation] show plan', { ...planReport, selectedPlanner: plannerUsed });
     } else {
@@ -843,6 +940,20 @@ export async function generateCuesForShow(params: {
 
   // === Stage 6: refresh derived fields + mark complete ===================
   try {
+    // Music or an explicit fixed length is authoritative. Fade buffers must not become
+    // the declared length, including when a brief retained a stale estimate.
+    const { data: durationSaved, error: durationError } = await supabase
+      .from('shows')
+      .update({
+        duration_seconds: Math.round(generationDuration),
+      })
+      .eq('id', showId)
+      .eq('user_id', userId)
+      .eq('generation_lease_token', claim.lease_token)
+      .select('id')
+      .maybeSingle();
+    if (durationError || !durationSaved)
+      throw new Error('Could not persist the generated song length.');
     await syncShowDerivedFieldsForUser(
       userId,
       {
