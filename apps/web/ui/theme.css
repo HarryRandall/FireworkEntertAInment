@@ -73,6 +73,7 @@
   /* Canonical Tailwind colours not defined by the shadcn inline block below. */
   --color-background: var(--background);
   --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
   --color-secondary: var(--secondary);
 
   /* Legacy aliases still read by the fingerprinted replay canvas. Remove them
@@ -198,6 +199,7 @@
 }
 :root,
 [data-theme='light'] {
+  --generation-stage-background: linear-gradient(180deg, #f4f8fd 0%, #dde9f8 100%);
   --background: #ffffff;
   --foreground: #24242a;
   --card: #ffffff;
@@ -205,6 +207,7 @@
   --popover: #ffffff;
   --popover-foreground: #24242a;
   --primary: #075f40;
+  --primary-hover: #064e35;
   --primary-foreground: #ffffff;
   --secondary: #f4f4f6;
   --secondary-foreground: #24242a;
@@ -223,6 +226,11 @@
   --hl-ink: #075f40;
   --hl-contrast: #05231a;
   --stage-night: #000000;
+  /* Artwork overlays retain a dark glass surface in either theme. */
+  --stage-glass-foreground: #f5f7fa;
+  --stage-glass-muted: #b8bcc6;
+  --stage-glass-background: rgba(5, 7, 13, 0.7);
+  --stage-glass-shadow: 0 24px 80px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   --show-gold: #efb93f;
   --show-green: #2ec487;
   --show-violet: #8f7be8;
@@ -255,6 +263,7 @@
 
 .dark,
 [data-theme='dark'] {
+  --generation-stage-background: linear-gradient(180deg, #000000 0%, #111111 100%);
   --background: #050507;
   --foreground: oklch(0.985 0 0);
   --card: #09090b;
@@ -262,16 +271,17 @@
   --popover: #09090b;
   --popover-foreground: oklch(0.985 0 0);
   --primary: #1fd093;
+  --primary-hover: #2ee0a3;
   --primary-foreground: #053024;
   --secondary: #171719;
   --secondary-foreground: oklch(0.985 0 0);
   --muted: #171719;
-  --muted-foreground: oklch(0.708 0 0);
+  --muted-foreground: oklch(0.75 0 0);
   --accent: #171719;
   --accent-foreground: oklch(0.985 0 0);
   --destructive: var(--status-danger);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
+  --border: oklch(1 0 0 / 18%);
+  --input: oklch(1 0 0 / 22%);
   --ring: #2ee0a3;
 
   /* Brand highlight (marker green) + per-show palette accents */
@@ -280,6 +290,11 @@
   --hl-ink: #46e7b0;
   --hl-contrast: #05231a;
   --stage-night: #000000;
+  /* Artwork overlays retain a dark glass surface in either theme. */
+  --stage-glass-foreground: #f5f7fa;
+  --stage-glass-muted: #b8bcc6;
+  --stage-glass-background: rgba(5, 7, 13, 0.7);
+  --stage-glass-shadow: 0 24px 80px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   --show-gold: #efb93f;
   --show-green: #2ec487;
   --show-violet: #8f7be8;

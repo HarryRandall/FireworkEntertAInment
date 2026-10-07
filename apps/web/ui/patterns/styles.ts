@@ -1,3 +1,4 @@
+/** Shared compact control, focus and surface styles. */
 import { cn } from '@/lib/utils';
 
 export const uiStyles = {
@@ -9,9 +10,9 @@ export const uiStyles = {
     fieldGroup: 'focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50',
   },
   control: {
-    base: 'h-10 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs transition-[color,box-shadow] placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60',
+    base: 'h-9 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs transition-[color,box-shadow] placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-60',
     select:
-      'h-10 w-full cursor-pointer rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs transition-[color,box-shadow] disabled:cursor-not-allowed disabled:opacity-60',
+      'h-9 w-full cursor-pointer rounded-md border border-input bg-background px-3 text-sm text-foreground shadow-xs transition-[color,box-shadow] disabled:cursor-not-allowed disabled:opacity-60',
     invalid:
       'border-destructive focus-visible:border-destructive focus-visible:ring-destructive/20',
     icon: 'pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground',
@@ -50,6 +51,7 @@ export const uiStyles = {
   },
 } as const;
 
+/** Combine shared field styling with optional invalid and feature styles. */
 export function fieldControlClasses(className?: string, invalid = false) {
   return cn(
     uiStyles.focus.field,

@@ -3,8 +3,8 @@
  *
  * The show's animated cover (CSS engine, or legacy WebGL) fills the stage
  * behind a glassy progress card. The base gradient is deliberately
- * hard-coded (tokens cannot express the backdrop); the card, stage
- * checklist, and bar consume design-system tokens so both themes hold up.
+ * defined with the light/dark theme; the card, stage checklist and bar
+ * consume design-system tokens so both themes hold up.
  */
 
 .stage {
@@ -17,7 +17,7 @@
   /* The splash sits flush under the app's top bar, so only the bottom
      corners follow the content-area rounding. */
   border-radius: 0 0 16px 16px;
-  background: linear-gradient(180deg, #000000 0%, #111111 100%);
+  background: var(--generation-stage-background);
 }
 
 @media (max-width: 1023px) {
@@ -63,18 +63,16 @@
   background: color-mix(in srgb, var(--color-bg-default) 82%, transparent);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--shadow-modal);
   color: var(--color-content-default);
   padding: 1.75rem 1.75rem 1.5rem;
 }
 
 .hasCover .card {
-  border-color: rgba(245, 247, 250, 0.2);
-  background: rgba(5, 7, 13, 0.7);
-  box-shadow:
-    0 24px 80px rgba(0, 0, 0, 0.38),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
-  color: #f5f7fa;
+  border-color: color-mix(in srgb, var(--stage-glass-foreground) 20%, transparent);
+  background: var(--stage-glass-background);
+  box-shadow: var(--stage-glass-shadow);
+  color: var(--stage-glass-foreground);
 }
 
 /* === Header ============================================================= */
@@ -94,7 +92,7 @@
 }
 
 .hasCover .eyebrow {
-  color: rgba(245, 247, 250, 0.6);
+  color: var(--stage-glass-muted);
 }
 
 .title {
@@ -108,7 +106,7 @@
 }
 
 .hasCover .title {
-  color: #f5f7fa;
+  color: var(--stage-glass-foreground);
 }
 
 /* === Stage checklist ==================================================== */
@@ -133,7 +131,7 @@
 }
 
 .hasCover .stageRow {
-  color: rgba(245, 247, 250, 0.42);
+  color: var(--stage-glass-muted);
 }
 
 .stageIcon {
@@ -154,8 +152,8 @@
 }
 
 .hasCover .stageIcon {
-  border-color: rgba(245, 247, 250, 0.16);
-  background: rgba(245, 247, 250, 0.06);
+  border-color: color-mix(in srgb, var(--stage-glass-foreground) 16%, transparent);
+  background: color-mix(in srgb, var(--stage-glass-foreground) 6%, transparent);
 }
 
 .stageText {
@@ -171,7 +169,7 @@
 }
 
 .hasCover .stageActive {
-  color: #f5f7fa;
+  color: var(--stage-glass-foreground);
 }
 
 .stageActive .stageIcon {
@@ -180,8 +178,8 @@
 }
 
 .hasCover .stageActive .stageIcon {
-  color: #f5f7fa;
-  border-color: rgba(245, 247, 250, 0.55);
+  color: var(--stage-glass-foreground);
+  border-color: color-mix(in srgb, var(--stage-glass-foreground) 55%, transparent);
 }
 
 .stageIconPulse {
@@ -240,13 +238,13 @@
 }
 
 .hasCover .stageDone {
-  color: rgba(245, 247, 250, 0.6);
+  color: var(--stage-glass-muted);
 }
 
 .stageDone .stageIcon {
-  color: var(--color-status-success, #22c55e);
-  border-color: color-mix(in srgb, var(--color-status-success, #22c55e) 45%, transparent);
-  background: color-mix(in srgb, var(--color-status-success, #22c55e) 10%, transparent);
+  color: var(--color-status-success);
+  border-color: color-mix(in srgb, var(--color-status-success) 45%, transparent);
+  background: color-mix(in srgb, var(--color-status-success) 10%, transparent);
 }
 
 /* === Progress bar ======================================================= */
@@ -265,7 +263,7 @@
 }
 
 .hasCover .progressTrack {
-  background: rgba(245, 247, 250, 0.14);
+  background: color-mix(in srgb, var(--stage-glass-foreground) 14%, transparent);
 }
 
 .progressFill {
@@ -280,7 +278,7 @@
 }
 
 .hasCover .progressFill {
-  background: #f5f7fa;
+  background: var(--stage-glass-foreground);
 }
 
 .meta {
@@ -300,7 +298,7 @@
 }
 
 .hasCover .percent {
-  color: #f5f7fa;
+  color: var(--stage-glass-foreground);
 }
 
 .eta {
@@ -312,17 +310,17 @@
 }
 
 .hasCover .eta {
-  color: rgba(245, 247, 250, 0.62);
+  color: var(--stage-glass-muted);
 }
 
 /* === Light theme ======================================================== */
 
 :global([data-theme='light']) .stage {
-  background: linear-gradient(180deg, #f4f8fd 0%, #dde9f8 100%);
+  background: var(--generation-stage-background);
 }
 
 :global([data-theme='light']) .card {
-  box-shadow: 0 24px 70px rgba(11, 16, 32, 0.16);
+  box-shadow: var(--shadow-modal);
 }
 
 /* === Reduced motion ===================================================== */

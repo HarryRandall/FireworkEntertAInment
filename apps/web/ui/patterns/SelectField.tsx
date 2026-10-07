@@ -1,5 +1,7 @@
 'use client';
 
+/** Labelled registry select composition for compact forms. */
+
 import { useState, type ReactNode } from 'react';
 import {
   Select,
@@ -31,6 +33,7 @@ type SelectFieldProps = {
   iconLeft?: ReactNode;
 };
 
+/** Render accessible options through the shared registry select. */
 export function SelectField({
   name,
   value,
@@ -63,7 +66,7 @@ export function SelectField({
         <SelectTrigger
           aria-label={ariaLabel}
           className={cn(
-            'border-input bg-background text-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-10 w-full cursor-pointer rounded-md border px-3 text-sm shadow-xs transition-[color,box-shadow] focus:outline-none focus-visible:ring-3',
+            'border-input bg-background text-foreground focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full cursor-pointer rounded-md border px-3 text-sm shadow-xs transition-[color,box-shadow] focus:outline-none focus-visible:ring-3',
             disabled && 'cursor-not-allowed opacity-60',
             className,
           )}

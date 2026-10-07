@@ -34,7 +34,7 @@ test('shared data table uses the reference table chrome', () => {
 
   assert.match(
     source,
-    /border-border bg-background relative overflow-hidden rounded-lg border shadow-xs/,
+    /border-border bg-background relative min-w-0 overflow-hidden rounded-lg border shadow-xs/,
   );
   assert.match(source, /isolate overflow-x-auto overscroll-x-contain/);
   assert.match(source, /StickyTableViewport/);
@@ -51,12 +51,12 @@ test('shared data table uses the reference table chrome', () => {
     source,
     /bg-background \[&_th\]:sticky \[&_th\]:top-0 \[&_th\]:z-20 \[&_th\]:border-b \[&_th\]:border-border\/50 \[&_th\]:bg-background/,
   );
-  assert.match(source, /h-11 px-4 py-3 text-left align-middle text-sm font-medium/);
+  assert.match(source, /h-9 px-3 py-2 text-left align-middle text-sm font-medium/);
   assert.match(
     source,
     /transition-colors last:\[&>\*\]:border-b-0 \[&>\*\]:border-b \[&>\*\]:border-border\/50/,
   );
-  assert.match(source, /px-4 py-3 align-middle text-sm whitespace-nowrap text-foreground/);
+  assert.match(source, /px-3 py-2 align-middle text-sm whitespace-nowrap text-foreground/);
   assert.doesNotMatch(source, /uppercase tracking-wide/);
   assert.doesNotMatch(source, /hover:bg-muted/);
 });

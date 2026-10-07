@@ -1,6 +1,7 @@
 /** Pagination control for DataTable: use on any server-paginated list with `searchParams`. */
 import Link from 'next/link';
 import { ChevronLeft, ChevronRight, MoreHorizontal } from 'lucide-react';
+import { Button } from './Button';
 import { cn } from '@/lib/utils';
 
 export const TABLE_PAGE_SIZE = 25;
@@ -11,6 +12,7 @@ type TablePaginationProps = {
   currentPage: number;
   totalPages: number;
   searchParams: SearchParams;
+  onPageChange?: (page: number) => void;
   pageKey?: string;
   className?: string;
   pageSize?: number;
@@ -87,6 +89,7 @@ function paginationLinkClasses({
   );
 }
 
+/** Render server links or controlled client pagination with the same summary. */
 export function TablePagination({
   currentPage,
   totalPages,
@@ -98,6 +101,7 @@ export function TablePagination({
   totalItems,
   itemLabel,
   itemLabelPlural,
+  onPageChange,
 }: TablePaginationProps) {
   if (totalPages <= 1 && totalItems == null) return null;
 
@@ -123,7 +127,33 @@ export function TablePagination({
     >
       <p className="text-muted-foreground text-sm">{summary}</p>
 
-      {showControls ? (
+      {showControls && onPageChange ? (
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage <= 1}
+            aria-label="Go to previous page"
+          >
+            <ChevronLeft size={16} aria-hidden />
+            Previous
+          </Button>
+          <span className="text-muted-foreground text-xs tabular-nums">
+            {currentPage} / {totalPages}
+          </span>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage >= totalPages}
+            aria-label="Go to next page"
+          >
+            Next
+            <ChevronRight size={16} aria-hidden />
+          </Button>
+        </div>
+      ) : showControls ? (
         <ul className="flex flex-wrap items-center gap-1.5">
           <li>
             {currentPage === 1 ? (
