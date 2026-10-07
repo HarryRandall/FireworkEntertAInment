@@ -1,5 +1,7 @@
 'use client';
 
+/** Consumer replay presentation and transport integration. */
+
 import { viewerReadiness } from '@/ui/renderer/viewer-readiness';
 import { visibleClock } from '@/ui/renderer/visible-clock';
 import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
@@ -10,10 +12,15 @@ import { buildShowRendererShots } from '@/lib/shows/renderer-shots';
 import type { ReplayCue, Show } from '@/lib/show-domain';
 import { ReplayLoadingBar } from './ReplayLoadingBar';
 import { Button } from '@/ui/patterns/Button';
+import { ReplayViewerSettings, ReplayViewerStats } from './ReplayViewerSettings';
+
+// Whole shows need a little additional space around the automatic audience fit.
+const SHOW_FRAMING_DISTANCE_SCALE = 1.1;
 
 /** Playback inputs shared by shows and catalogue previews, independent of the import canvas. */
 type Props = {
   cues: ReplayCue[];
+  showStaging?: boolean;
   elapsed: number;
   playbackRef?: MutableRefObject<number>;
   launchPositions?: Show['launchPositions'];
@@ -61,8 +68,8 @@ export function ShowRendererCanvas(props: Props) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const shots = useMemo(
-    () => buildShowRendererShots(props.cues, props.launchPositions),
-    [props.cues, props.launchPositions],
+    () => buildShowRendererShots(props.cues, props.launchPositions, props.showStaging === true),
+    [props.cues, props.launchPositions, props.showStaging],
   );
 
   const currentShots = useRef(shots);
@@ -97,6 +104,7 @@ export function ShowRendererCanvas(props: Props) {
         loop: false,
         prop: props.prop,
         startDistance: props.startDistance,
+        framingDistanceScale: props.showStaging ? SHOW_FRAMING_DISTANCE_SCALE : 1,
       });
     } catch {
       setError('The firework viewer could not start. Please check WebGL support and reload.');
@@ -135,7 +143,7 @@ export function ShowRendererCanvas(props: Props) {
       instance.dispose();
       viewer.current = null;
     };
-  }, [valid, props.interactive, props.prop, props.startDistance]);
+  }, [valid, props.interactive, props.prop, props.startDistance, props.showStaging]);
 
   useEffect(() => {
     clock.current?.wake();
@@ -153,6 +161,7 @@ export function ShowRendererCanvas(props: Props) {
         ref={container}
         className="absolute inset-0 isolate overflow-hidden rounded-[inherit] bg-black"
       />
+      {props.showStaging ? <ReplayViewerStats viewerRef={viewer} /> : null}
       {!shots.ok || error ? (
         <div
           role="alert"
@@ -171,6 +180,7 @@ export function ShowRendererCanvas(props: Props) {
           <Button size="sm" variant="secondary" onClick={() => viewer.current?.resetCamera()}>
             Reset view
           </Button>
+          {props.showStaging ? <ReplayViewerSettings /> : null}
           {props.cameraMenuActions?.map((action) => (
             <Button
               key={action.id}
@@ -182,7 +192,7 @@ export function ShowRendererCanvas(props: Props) {
               {action.icon}
             </Button>
           ))}
-          {props.allowFullscreen && props.onToggleFullscreen ? (
+          {!props.showStaging && props.allowFullscreen && props.onToggleFullscreen ? (
             <Button size="sm" variant="secondary" onClick={props.onToggleFullscreen}>
               {props.fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
             </Button>

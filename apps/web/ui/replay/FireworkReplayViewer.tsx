@@ -1,4 +1,6 @@
 'use client';
+
+/** Consumer replay presentation and transport integration. */
 import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
 
 /**
@@ -284,6 +286,25 @@ export function FireworkReplayViewer({
     fullscreenContainerRef,
     fullscreenContainerProps,
   } = usePreviewFullscreen({ dialogLabel: `${showName} preview` });
+
+  useEffect(() => {
+    if (!isFullscreen || !window.matchMedia('(pointer: coarse)').matches) return;
+    const orientation = screen.orientation;
+    const lock = (orientation as ScreenOrientation & { lock?: (mode: string) => Promise<void> })
+      ?.lock;
+    if (!lock) return;
+    let active = true;
+    void lock
+      .call(orientation, 'landscape')
+      .then(() => {
+        if (!active) orientation.unlock();
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+      orientation.unlock();
+    };
+  }, [isFullscreen]);
 
   // Starting audible media belongs in the user's event handler so browser
   // activation is preserved. This effect only propagates pause state from
@@ -793,7 +814,7 @@ export function FireworkReplayViewer({
               'group/replay overflow-hidden rounded-[inherit]',
               isFullscreen
                 ? 'border-border/25 fixed inset-[5vmin] z-[100] overflow-hidden rounded-2xl border bg-black shadow-[var(--shadow-modal)]'
-                : 'relative h-[min(72vh,680px)] min-h-[520px]',
+                : 'relative h-[60svh] max-h-[420px] min-h-[260px] sm:h-[min(72vh,680px)] sm:max-h-none sm:min-h-[520px]',
             )}
             onFocusCapture={wakePlaybackControls}
             onPointerDown={wakePlaybackControls}
@@ -808,6 +829,7 @@ export function FireworkReplayViewer({
                 playbackRef={elapsedRef}
                 playing={isPlaying}
                 startDistance="farthest"
+                showStaging
                 scrubbing={isScrubbing}
                 launchPositions={launchPositions}
                 muted={!isPlaying}
