@@ -117,7 +117,10 @@ export function fireworkOccupancyDurationSeconds(
   return product.occupancyDurationSeconds ?? product.durationSeconds;
 }
 
+/** One expanded firing, optionally anchored to its parent cake cue. */
 export type ReplayCue = ShowCue & {
+  cakeId?: string;
+  cakeLaunchPositionIndex?: number;
   timeSeconds: number;
   firework: FireworkSpecification;
   shotPanDegrees?: number | null;

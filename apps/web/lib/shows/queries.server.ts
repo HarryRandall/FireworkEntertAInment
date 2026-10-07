@@ -566,6 +566,8 @@ function expandReplayCues(
         // Stable id: keep the cue id when there's only one shot, otherwise
         // suffix with `-shot-<index>` so the renderer can dedupe correctly.
         id: shots.length === 1 ? baseCue.id : `${baseCue.id}-shot-${i}`,
+        cakeId: shots.length > 1 ? baseCue.id : undefined,
+        cakeLaunchPositionIndex: shots.length > 1 ? baseCue.launchPositionIndex : undefined,
         timeSeconds: showReplayShotTimeSeconds(startSeconds, shots[i].timeOffsetSeconds),
         // Each multishot shot can fire from its own tube; fall back to the
         // parent cue's tube when the shot doesn't override it.

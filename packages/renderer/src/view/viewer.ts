@@ -4,13 +4,14 @@ import { ViewerSound } from './sound/scheduler';
 import { prototypeOr } from '../sim/numeric';
 import * as THREE from 'three';
 import type { Design } from '../schema/index';
-import { shotDuration, framingFor, shakeEvents, type Vec3 } from '../sim/index';
+import { shotDuration, shakeEvents, type Vec3 } from '../sim/index';
 import { ParticleLayers } from './buffers';
 import { GpuSprays } from './gpu-sprays';
 import { FrameProfiler } from './frame-profile';
 import { FrameTimes } from './frame-times';
 import { OutputPass } from './output';
 import { makeProps } from './props';
+import { audienceFraming } from './audience-framing';
 import { disposeTree, makeWorld } from './world';
 import { StageControls } from './stage-controls';
 import { onSettings, onVisualSettings } from './settings';
@@ -287,7 +288,7 @@ export class Viewer {
   resetCamera(snap = false): void {
     if (this.disposed) return;
     this.controls.frame(
-      framingFor(this.shots, false, this.camera.aspect, this.camera.fov),
+      audienceFraming(this),
       snap,
       this.options.startDistance ?? (this.shots.length === 1 ? 'elevated' : 'framed'),
     );
