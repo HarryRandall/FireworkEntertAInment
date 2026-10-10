@@ -122,7 +122,7 @@ test('the public generation splash has a definite viewport height', async () => 
   const actions = await source('kioskShowActions');
   assert.match(actions, /<div className="h-\[calc\(100dvh-4rem\)\]">/);
   assert.match(actions, /<GeneratingShowAnimation[\s\S]*className="h-full"/);
-  assert.doesNotMatch(actions, /className="min-h-\[calc\(100dvh-4rem\)\]"/);
+  assert.match(actions, /pollIntervalMs=\{null\}/);
 });
 
 test('the completed public show uses analysed timing and one soundtrack-synchronised player', async () => {
