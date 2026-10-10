@@ -43,7 +43,8 @@ type GeneratingShowAnimationProps = {
   phase?: GeneratingPhase;
   /** Whether the show has a soundtrack (adds the analysis stage + estimate). */
   hasAudio?: boolean;
-  pollIntervalMs?: number;
+  /** Null lets a caller own status polling and recovery. */
+  pollIntervalMs?: number | null;
   startedAt?: string | null;
   /** When true, the analyser container is warmed up so the run is fast. */
   isWarm?: boolean;
@@ -307,7 +308,7 @@ export function GeneratingShowAnimation({
   }, [hasAudio, isWarm, persistKey, phase, stages, startedAt, status]);
 
   useEffect(() => {
-    if (status !== 'running') return;
+    if (status !== 'running' || pollIntervalMs === null) return;
     const refresh = window.setInterval(() => router.refresh(), pollIntervalMs);
     return () => window.clearInterval(refresh);
   }, [router, status, pollIntervalMs]);
