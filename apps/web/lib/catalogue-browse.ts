@@ -346,3 +346,33 @@ export function catalogueHref(
   const query = params.toString();
   return query ? `/catalogue?${query}` : '/catalogue';
 }
+
+function listWords(words: string[]) {
+  if (words.length <= 1) return words.join('');
+  return `${words.slice(0, -1).join(', ')} and ${words.at(-1)}`;
+}
+
+/**
+ * Plain-English one-liner for a product. Imported descriptions are often raw
+ * supplier codes, so the page leads with this and tucks the original away.
+ */
+export function catalogueProductSummary(
+  product: Pick<CatalogueBrowseProduct, 'shotCount' | 'caliber' | 'baseEffect' | 'variant'>,
+) {
+  const shots = product.shotCount ?? 1;
+  const effect = product.baseEffect?.name.toLowerCase() ?? 'firework';
+  const colours = [...productColourFamilies(product)].map((family) =>
+    family === 'white' ? 'silver' : family,
+  );
+  const shape = shots > 1 ? `${shots}-shot ${effect} cake` : `single ${effect} shell`;
+  const article = /^[aeiou8]/i.test(shape) ? 'An' : 'A';
+  const calibre = product.caliber ? ` in ${product.caliber}` : '';
+  const colourText = colours.length ? `, firing ${listWords(colours)}` : '';
+  return `${article} ${shape}${calibre}${colourText}.`;
+}
+
+/** Supplier text that is short prose rather than a dump of shot codes. */
+export function isReadableDescription(description: string | null | undefined) {
+  if (!description) return false;
+  return description.length <= 180 && !/\(\s*[0-9a-f]{3,}\//i.test(description);
+}

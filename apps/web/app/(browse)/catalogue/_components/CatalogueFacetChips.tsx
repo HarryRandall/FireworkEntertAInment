@@ -1,4 +1,7 @@
-/** Link-based effect and colour pickers; each chip is a shareable catalogue URL. */
+/** Quick effect shortcuts and active-filter chips; each chip is a shareable catalogue URL. */
+
+/** The rest of the effects live in the Filters menu. */
+const QUICK_EFFECT_COUNT = 6;
 
 import Link from 'next/link';
 import { X } from 'lucide-react';
@@ -29,9 +32,12 @@ export function EffectChips({
   selected: string;
   effects: CatalogueFacet[];
 }) {
-  if (effects.length === 0) return null;
+  const quick = effects.slice(0, QUICK_EFFECT_COUNT);
+  const selectedEffect = effects.find((effect) => effect.value === selected);
+  if (selectedEffect && !quick.includes(selectedEffect)) quick.push(selectedEffect);
+  if (quick.length === 0) return null;
   return (
-    <nav aria-label="Effect type" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+    <nav aria-label="Popular effects" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
       <Link
         href={catalogueHref(params, { effect: null })}
         scroll={false}
@@ -40,7 +46,7 @@ export function EffectChips({
       >
         All effects
       </Link>
-      {effects.map((effect) => {
+      {quick.map((effect) => {
         const active = effect.value === selected;
         return (
           <Link
@@ -51,45 +57,6 @@ export function EffectChips({
             className={cn(chipClasses, chipStateClasses(active))}
           >
             {effect.label}
-            <span className={cn('tabular-nums', active ? 'opacity-70' : 'opacity-60')}>
-              {effect.count}
-            </span>
-          </Link>
-        );
-      })}
-    </nav>
-  );
-}
-
-export function ColourChips({
-  params,
-  selected,
-  colours,
-}: {
-  params: CatalogueSearchParams;
-  selected: string;
-  colours: Array<CatalogueFacet & { swatch: string }>;
-}) {
-  if (colours.length === 0) return null;
-  return (
-    <nav aria-label="Colour" className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
-      {colours.map((colour) => {
-        const active = colour.value === selected;
-        return (
-          <Link
-            key={colour.value}
-            href={catalogueHref(params, { colour: active ? null : colour.value })}
-            scroll={false}
-            aria-current={active ? 'true' : undefined}
-            className={cn(chipClasses, chipStateClasses(active))}
-          >
-            <span
-              aria-hidden
-              className="border-border h-3 w-3 rounded-full border"
-              style={{ backgroundColor: colour.swatch }}
-            />
-            {colour.label}
-            <span className="tabular-nums opacity-60">{colour.count}</span>
           </Link>
         );
       })}

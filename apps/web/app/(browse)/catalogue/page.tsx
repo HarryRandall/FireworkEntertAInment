@@ -22,7 +22,6 @@ import { CatalogueToolbar } from '@/app/(browse)/catalogue/_components/Catalogue
 import { CatalogueProductCard } from '@/app/(browse)/catalogue/_components/CatalogueProductCard';
 import {
   ActiveFilterSummary,
-  ColourChips,
   EffectChips,
 } from '@/app/(browse)/catalogue/_components/CatalogueFacetChips';
 
@@ -73,14 +72,11 @@ async function CatalogueBrowser({
   const toolbarValues = {
     q: params.q ?? '',
     kind: params.kind ?? '',
-    manufacturer: params.manufacturer ?? '',
-    duration_min: params.duration_min ?? '',
-    duration_max: params.duration_max ?? '',
+    effect: params.effect ?? '',
+    colour: params.colour ?? '',
     caliber: params.caliber ?? '',
     price_max: params.price_max ?? '',
     sort: filters.sort,
-    effect: params.effect ?? '',
-    colour: params.colour ?? '',
   };
 
   const totalPages = Math.max(1, Math.ceil(products.length / CATALOGUE_PAGE_SIZE));
@@ -92,16 +88,12 @@ async function CatalogueBrowser({
     <div className="flex flex-col gap-5">
       <CatalogueToolbar
         values={toolbarValues}
-        caliberOptions={facets.calibers.map((caliber) => ({
-          value: caliber.value,
-          label: `${caliber.label} (${caliber.count})`,
-        }))}
+        effectOptions={facets.effects}
+        colourOptions={facets.colours}
+        caliberOptions={facets.calibers}
       />
 
-      <div className="flex flex-col gap-3">
-        <EffectChips params={params} selected={filters.effect} effects={facets.effects} />
-        <ColourChips params={params} selected={filters.colour} colours={facets.colours} />
-      </div>
+      <EffectChips params={params} selected={filters.effect} effects={facets.effects} />
 
       <ActiveFilterSummary
         params={params}

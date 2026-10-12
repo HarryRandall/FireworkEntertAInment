@@ -1,26 +1,30 @@
-/** Public product page: large playable preview, specification, colours and shot sequence. */
+/** Public product page: playable preview, a plain summary, key specs and shot sequence. */
 
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Suspense } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import {
   catalogueHref,
+  catalogueProductSummary,
   colourFamilyLabel,
+  isReadableDescription,
   productColourFamilies,
   productColours,
   relatedCatalogueProducts,
 } from '@/lib/catalogue-browse';
-import { getCatalogueProduct, listCatalogueShots } from '@/lib/catalogue-detail.server';
+import {
+  getCatalogueProduct,
+  listCatalogueShots,
+  type CatalogueShot,
+} from '@/lib/catalogue-detail.server';
 import { fireworkPreviewImageUrl } from '@/lib/firework-preview-image';
-import { formatBudget, formatDuration, formatManufacturerLabel } from '@/lib/show-domain';
+import { formatBudget, formatDurationWords, formatManufacturerLabel } from '@/lib/show-domain';
 import { FireworkBrowseCard } from '@/ui/catalogue/FireworkBrowseCard';
 import { FireworkBrowsePreviewProvider } from '@/ui/catalogue/FireworkBrowsePreviewContext';
 import { ColourSwatches } from '@/ui/catalogue/ColourSwatches';
 import { Button } from '@/ui/patterns/Button';
-import { InlineAlert, Skeleton } from '@/ui/patterns/Feedback';
-import { StatTile } from '@/ui/patterns/StatTile';
+import { InlineAlert } from '@/ui/patterns/Feedback';
 import {
   CatalogueProductCard,
   catalogueProductPreviewUrl,
@@ -34,10 +38,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (!result) return { title: 'Firework not found' };
   return {
     title: `${result.product.name} | Firework catalogue`,
-    description:
-      result.product.description ??
-      `${result.product.baseEffect?.name ?? 'Firework'} from the ShowCrafter catalogue.`,
+    description: catalogueProductSummary(result.product),
   };
+}
+
+async function loadShots(productId: string): Promise<CatalogueShot[] | null> {
+  try {
+    return await listCatalogueShots(productId);
+  } catch (error) {
+    console.error(`[catalogue] shot sequence ${productId} failed:`, error);
+    return null;
+  }
 }
 
 export default async function CatalogueProductPage({ params }: PageProps) {
@@ -47,12 +58,32 @@ export default async function CatalogueProductPage({ params }: PageProps) {
   const { product, catalogue } = result;
 
   const shotCount = product.shotCount ?? 1;
-  const colours = productColours(product, 12);
+  const isMultishot = shotCount > 1;
+  const shots = isMultishot ? await loadShots(product.id) : [];
+  const shotHeights = (shots ?? [])
+    .map((shot) => shot.heightMeters)
+    .filter((height): height is number => height != null);
+  const height = shotHeights.length > 0 ? Math.max(...shotHeights) : product.heightMeters;
+  const colours = productColours(product, 8);
   const families = [...productColourFamilies(product)];
   const related = relatedCatalogueProducts(product, catalogue, 4);
 
+  const specs: Array<{ label: string; value: string }> = [
+    { label: 'Shots', value: shotCount.toLocaleString() },
+    {
+      label: isMultishot ? 'Runs for' : 'Burst lasts',
+      value: formatDurationWords(product.durationSeconds),
+    },
+    {
+      label: isMultishot ? 'Peak height' : 'Height',
+      value: height != null ? `${Math.round(height)} m` : 'Unknown',
+    },
+    { label: 'Calibre', value: product.caliber ?? 'Unknown' },
+    { label: 'Made by', value: formatManufacturerLabel(product.manufacturer) },
+  ];
+
   return (
-    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-8">
+    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-10">
       <Link
         href="/catalogue"
         className="text-muted-foreground hover:text-foreground inline-flex w-fit items-center gap-1.5 text-sm"
@@ -62,7 +93,7 @@ export default async function CatalogueProductPage({ params }: PageProps) {
       </Link>
 
       <FireworkBrowsePreviewProvider>
-        <section className="grid gap-8 lg:grid-cols-[minmax(0,3fr)_minmax(320px,2fr)]">
+        <section className="grid gap-8 lg:grid-cols-[minmax(0,1.6fr)_minmax(300px,1fr)] lg:gap-12">
           <FireworkBrowseCard
             previewId={`catalogue-detail-${product.id}`}
             previewUrl={catalogueProductPreviewUrl(product)}
@@ -70,74 +101,63 @@ export default async function CatalogueProductPage({ params }: PageProps) {
             label={product.name}
             className="h-fit"
           >
-            <p className="text-muted-foreground px-4 py-3 text-xs">
-              Click or hover the stage to fire it. Preview is rendered live in your browser.
-            </p>
+            <p className="text-muted-foreground px-4 py-2.5 text-xs">Click the stage to fire it.</p>
           </FireworkBrowseCard>
 
           <div className="flex flex-col gap-6">
-            <header className="space-y-3">
-              <div className="text-muted-foreground flex flex-wrap items-center gap-2 text-xs font-medium tracking-wide uppercase">
-                {product.baseEffect ? (
-                  <Link
-                    href={catalogueHref({}, { effect: product.baseEffect.slug })}
-                    className="hover:text-foreground underline-offset-4 hover:underline"
-                  >
-                    {product.baseEffect.name}
-                  </Link>
-                ) : null}
-                <span>{shotCount > 1 ? 'Multi-shot' : 'Single shot'}</span>
-              </div>
-              <h1 className="text-foreground text-3xl font-bold tracking-tight">{product.name}</h1>
-              <p className="text-muted-foreground font-mono text-xs">
-                {formatManufacturerLabel(product.manufacturer)} · {product.slug}
-              </p>
-              {product.description ? (
-                <p className="text-muted-foreground max-w-prose text-sm leading-relaxed">
-                  {product.description}
-                </p>
+            <header className="space-y-2">
+              {product.baseEffect ? (
+                <Link
+                  href={catalogueHref({}, { effect: product.baseEffect.slug })}
+                  className="text-muted-foreground hover:text-foreground text-xs font-medium tracking-wide uppercase"
+                >
+                  {product.baseEffect.name}
+                </Link>
               ) : null}
+              <h1 className="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">
+                {product.name}
+              </h1>
+              <p className="text-muted-foreground text-sm leading-relaxed">
+                {isReadableDescription(product.description)
+                  ? product.description
+                  : catalogueProductSummary(product)}
+              </p>
             </header>
 
-            <div className="flex items-baseline gap-2">
-              <span className="text-foreground font-mono text-2xl font-semibold tabular-nums">
-                {product.minPriceCents != null
-                  ? formatBudget(product.minPriceCents)
-                  : 'Not stocked'}
-              </span>
+            <div className="flex items-center gap-3">
               {product.minPriceCents != null ? (
-                <span className="text-muted-foreground text-xs">cheapest supplier price</span>
-              ) : null}
+                <>
+                  <span className="text-foreground text-xl font-semibold tabular-nums">
+                    {formatBudget(product.minPriceCents)}
+                  </span>
+                  <span className="text-muted-foreground text-xs">best supplier price</span>
+                </>
+              ) : (
+                <span className="border-border text-muted-foreground rounded-full border px-2.5 py-1 text-xs">
+                  Not currently stocked
+                </span>
+              )}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <StatTile label="Shots" value={shotCount.toLocaleString()} />
-              <StatTile label="Duration" value={formatDuration(product.durationSeconds)} />
-              <StatTile
-                label="Height"
-                value={product.heightMeters != null ? Math.round(product.heightMeters) : '—'}
-                unit={product.heightMeters != null ? 'm' : undefined}
-              />
-              <StatTile label="Calibre" value={product.caliber ?? '—'} />
-            </div>
-
-            {colours.length > 0 ? (
-              <section className="space-y-3">
-                <h2 className="text-foreground text-sm font-medium">Colours</h2>
-                <ColourSwatches colours={colours} size="md" />
-                <div className="flex flex-wrap gap-2">
-                  {families.map((family) => (
-                    <Link
-                      key={family}
-                      href={catalogueHref({}, { colour: family })}
-                      className="border-border text-muted-foreground hover:text-foreground hover:border-border-emphasis rounded-full border px-2.5 py-1 text-xs"
-                    >
-                      More {colourFamilyLabel(family).toLowerCase()}
-                    </Link>
-                  ))}
+            <dl className="border-border divide-border divide-y border-y text-sm">
+              {specs.map((spec) => (
+                <div key={spec.label} className="flex items-center justify-between gap-4 py-2.5">
+                  <dt className="text-muted-foreground">{spec.label}</dt>
+                  <dd className="text-foreground text-right tabular-nums">{spec.value}</dd>
                 </div>
-              </section>
-            ) : null}
+              ))}
+              {colours.length > 0 ? (
+                <div className="flex items-center justify-between gap-4 py-2.5">
+                  <dt className="text-muted-foreground">Colours</dt>
+                  <dd className="flex items-center gap-2">
+                    <span className="text-foreground">
+                      {families.map((family) => colourFamilyLabel(family)).join(', ')}
+                    </span>
+                    <ColourSwatches colours={colours} />
+                  </dd>
+                </div>
+              ) : null}
+            </dl>
 
             <div className="flex flex-wrap gap-2">
               <Button href="/shows/new">Use in a new show</Button>
@@ -146,18 +166,23 @@ export default async function CatalogueProductPage({ params }: PageProps) {
                   href={catalogueHref({}, { effect: product.baseEffect.slug })}
                   variant="secondary"
                 >
-                  All {product.baseEffect.name.toLowerCase()} effects
+                  More {product.baseEffect.name.toLowerCase()}
                 </Button>
               ) : null}
             </div>
+
+            {product.description && !isReadableDescription(product.description) ? (
+              <details className="text-muted-foreground text-xs">
+                <summary className="hover:text-foreground cursor-pointer select-none">
+                  Supplier description
+                </summary>
+                <p className="mt-2 font-mono leading-relaxed break-words">{product.description}</p>
+              </details>
+            ) : null}
           </div>
         </section>
 
-        {shotCount > 1 ? (
-          <Suspense fallback={<Skeleton className="h-48 w-full rounded-xl" />}>
-            <ShotSequence productId={product.id} />
-          </Suspense>
-        ) : null}
+        {isMultishot ? <ShotSequence shots={shots} /> : null}
 
         {related.length > 0 ? (
           <section className="space-y-4">
@@ -174,12 +199,8 @@ export default async function CatalogueProductPage({ params }: PageProps) {
   );
 }
 
-async function ShotSequence({ productId }: { productId: string }) {
-  let shots: Awaited<ReturnType<typeof listCatalogueShots>>;
-  try {
-    shots = await listCatalogueShots(productId);
-  } catch (error) {
-    console.error(`[catalogue] shot sequence ${productId} failed:`, error);
+function ShotSequence({ shots }: { shots: CatalogueShot[] | null }) {
+  if (shots == null) {
     return (
       <InlineAlert tone="warning" title="Shot sequence unavailable">
         The firing order could not be loaded. Refresh to try again.
@@ -191,51 +212,28 @@ async function ShotSequence({ productId }: { productId: string }) {
   return (
     <section className="space-y-4">
       <h2 className="text-foreground text-lg font-semibold">Shot sequence</h2>
-      <div className="border-border overflow-x-auto rounded-xl border">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50 text-muted-foreground text-left text-xs">
-            <tr>
-              <th scope="col" className="px-4 py-2.5 font-medium">
-                #
-              </th>
-              <th scope="col" className="px-4 py-2.5 font-medium">
-                Fires at
-              </th>
-              <th scope="col" className="px-4 py-2.5 font-medium">
-                Effect
-              </th>
-              <th scope="col" className="px-4 py-2.5 font-medium">
-                Calibre
-              </th>
-              <th scope="col" className="px-4 py-2.5 font-medium">
-                Colours
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-border divide-y">
-            {shots.map((shot, index) => (
-              <tr key={`${shot.sequenceIndex}-${index}`}>
-                <td className="text-muted-foreground px-4 py-2.5 font-mono tabular-nums">
-                  {index + 1}
-                </td>
-                <td className="px-4 py-2.5 font-mono tabular-nums">
-                  +{shot.timeOffsetSeconds.toFixed(2)}s
-                </td>
-                <td className="px-4 py-2.5">
-                  <span className="text-foreground">{shot.name}</span>
-                  {shot.effectName ? (
-                    <span className="text-muted-foreground ml-2 text-xs">{shot.effectName}</span>
-                  ) : null}
-                </td>
-                <td className="text-muted-foreground px-4 py-2.5">{shot.caliber ?? '—'}</td>
-                <td className="px-4 py-2.5">
-                  <ColourSwatches colours={shot.colours} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <ol className="border-border divide-border divide-y rounded-xl border">
+        {shots.map((shot, index) => (
+          <li
+            key={`${shot.sequenceIndex}-${index}`}
+            className="grid grid-cols-[2.5rem_4.5rem_minmax(0,1fr)_auto] items-center gap-3 px-4 py-2.5 text-sm"
+          >
+            <span className="text-muted-foreground font-mono text-xs tabular-nums">
+              {index + 1}
+            </span>
+            <span className="text-muted-foreground font-mono text-xs tabular-nums">
+              +{shot.timeOffsetSeconds.toFixed(1)}s
+            </span>
+            <span className="min-w-0">
+              <span className="text-foreground block truncate">{shot.effectName ?? shot.name}</span>
+              <span className="text-muted-foreground block truncate text-xs" title={shot.name}>
+                {shot.name}
+              </span>
+            </span>
+            <ColourSwatches colours={shot.colours} />
+          </li>
+        ))}
+      </ol>
     </section>
   );
 }

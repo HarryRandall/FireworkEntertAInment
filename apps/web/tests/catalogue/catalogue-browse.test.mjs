@@ -6,6 +6,8 @@ import { test } from 'node:test';
 const {
   catalogueFacets,
   catalogueHref,
+  catalogueProductSummary,
+  isReadableDescription,
   colourFamily,
   matchesCatalogueFilters,
   parseCatalogueFilters,
@@ -156,4 +158,23 @@ test('catalogue links reset paging and drop cleared values', () => {
   );
   assert.equal(catalogueHref({}, { effect: 'ring' }), '/catalogue?effect=ring');
   assert.equal(catalogueHref({}, {}), '/catalogue');
+});
+
+test('product summaries read as plain English and raw supplier codes are detected', () => {
+  assert.equal(
+    catalogueProductSummary(blueStrobeCake),
+    'A 25-shot strobe cake in 30mm, firing blue and silver.',
+  );
+  assert.equal(
+    catalogueProductSummary(ring),
+    'A single ring shell in 50mm, firing silver and blue.',
+  );
+  assert.equal(isReadableDescription('Bright gold willow with crackling tips.'), true);
+  assert.equal(
+    isReadableDescription(
+      'Willow w/ Pistil Aerial, 1 Row (0a3667/b/c/a/b/c/a3666/b/c/-1d75/0e74/1f/CAK)',
+    ),
+    false,
+  );
+  assert.equal(isReadableDescription(null), false);
 });

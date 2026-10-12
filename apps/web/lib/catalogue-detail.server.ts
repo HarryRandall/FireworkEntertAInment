@@ -14,6 +14,7 @@ export type CatalogueShot = {
   caliber: string | null;
   name: string;
   effectName: string | null;
+  heightMeters: number | null;
   colours: string[];
 };
 
@@ -30,6 +31,7 @@ export async function getCatalogueProduct(id: string): Promise<{
 
 type ShotFireworkRow = {
   name: string;
+  height_meters: number | null;
   primary_color: string | null;
   secondary_color: string | null;
   color_palette: string[] | null;
@@ -59,7 +61,7 @@ export async function listCatalogueShots(catalogueItemId: string): Promise<Catal
            sequence_index,
            time_offset_seconds,
            caliber,
-           fireworks (name, primary_color, secondary_color, color_palette, firework_effects (name))
+           fireworks (name, height_meters, primary_color, secondary_color, color_palette, firework_effects (name))
          )
        )`,
     )
@@ -101,6 +103,7 @@ export async function listCatalogueShots(catalogueItemId: string): Promise<Catal
         caliber: row.caliber,
         name: firework.name,
         effectName: first(firework.firework_effects)?.name ?? null,
+        heightMeters: firework.height_meters,
         colours,
       },
     ];
