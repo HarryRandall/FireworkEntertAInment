@@ -1,6 +1,14 @@
 'use client';
-import type { Dispatch } from 'react';
-import { Sparkles } from 'lucide-react';
+import type { Dispatch, ReactNode } from 'react';
+import {
+  Film,
+  Gauge,
+  Library,
+  ShieldCheck,
+  Shuffle,
+  Sparkles,
+  type LucideIcon,
+} from 'lucide-react';
 import { effectTemplates, type Design } from '@showcrafter/renderer';
 import type { EditorEdit } from '@/lib/renderer-editor/document';
 import { layerAddress } from '@/lib/renderer-editor/layers';
@@ -17,6 +25,20 @@ import { TimelineInspector } from './timeline-inspector';
 import { SoundInspector } from './sound-inspector';
 import { useInspector } from './use-inspector';
 import { validateEditorDesign } from '@/lib/renderer-editor/validation';
+import type { SavedPart } from '@/lib/renderer-editor/library';
+import { QuickAdjustments } from './quick-adjustments';
+import { VariationsPanel } from './variations-panel';
+import { LibraryPanel } from './library-panel';
+import { ReferencePanel, type useReferenceClip } from './reference-panel';
+import { ChecksPanel } from './checks-panel';
+import type { ParticleCheckResult } from './use-particle-check';
+
+/** Optional editor extras; each tab appears only when its input is supplied. */
+export interface DesignExtras {
+  libraryParts?: readonly SavedPart[];
+  reference?: ReturnType<typeof useReferenceClip>;
+  particleCheck?: ParticleCheckResult | null;
+}
 
 /** Builds renderer controls inside the existing editor's tab and inspector shell. */
 export function useDesignTabs({
@@ -26,6 +48,7 @@ export function useDesignTabs({
   onSelect,
   disabled,
   reset,
+  extras = {},
 }: {
   value: unknown;
   onChange: (document: Design) => void;
@@ -33,6 +56,7 @@ export function useDesignTabs({
   onSelect: (id: string) => void;
   disabled: boolean;
   reset?: () => void;
+  extras?: DesignExtras;
 }): FireworkEditorShellTab[] {
   const parsed = validateEditorDesign(value);
   const document = parsed.ok ? parsed.value : effectTemplates[0].design;
@@ -41,7 +65,11 @@ export function useDesignTabs({
   };
   const inspector = useInspector(document, selected, !disabled && parsed.ok, dispatch);
   return parsed.ok
-    ? buildTabs(document, inspector, onSelect, disabled, reset)
+    ? buildTabs(document, inspector, onSelect, disabled, reset, {
+        ...extras,
+        onChange,
+        selected,
+      })
     : [
         {
           id: 'colour',
@@ -65,9 +93,16 @@ function buildTabs(
   inspector: ReturnType<typeof useInspector>,
   onSelect: (id: string) => void,
   disabled: boolean,
-  reset?: () => void,
+  reset: (() => void) | undefined,
+  extras: DesignExtras & {
+    onChange: (document: Design) => void;
+    selected: string;
+  },
 ): FireworkEditorShellTab[] {
   const { context, layerContext } = inspector;
+  const selectedAddress = inspector.selection
+    ? layerAddress(inspector.selection.breakIndex, inspector.selection.layerId)
+    : extras.selected;
   const choices = document.breaks.flatMap((burst, index) =>
     burst.layers.map((layer) => ({
       value: layerAddress(index, layer.id),
@@ -87,7 +122,27 @@ function buildTabs(
       disabled={disabled}
     />
   );
-  const panels = [
+  const panels: Array<{
+    id: string;
+    label: string;
+    content: ReactNode;
+    icon?: LucideIcon;
+    eyebrow?: string;
+    plain?: boolean;
+  }> = [
+    {
+      id: 'quick',
+      label: 'Quick adjustments',
+      icon: Gauge,
+      eyebrow: 'Quick',
+      content: (
+        <QuickAdjustments
+          context={context}
+          levels={document.adjustments ?? {}}
+          layerId={inspector.selection?.layerId}
+        />
+      ),
+    },
     { id: 'launch-flight', label: 'Launch', content: <LaunchInspector {...context} /> },
     { id: 'geometry', label: 'Burst', content: <BurstInspector {...context} /> },
     {
@@ -104,15 +159,61 @@ function buildTabs(
     { id: 'ground', label: 'Ground', content: document.ground && <GroundInspector {...context} /> },
     { id: 'timeline', label: 'Timeline', content: <TimelineInspector {...context} /> },
     { id: 'sound', label: 'Sound', content: <SoundInspector {...context} /> },
+    {
+      id: 'variations',
+      label: 'Variations',
+      icon: Shuffle,
+      eyebrow: 'Quick',
+      plain: true,
+      content: (
+        <VariationsPanel document={document} disabled={disabled} onChange={extras.onChange} />
+      ),
+    },
+    {
+      id: 'library',
+      label: 'Library',
+      icon: Library,
+      eyebrow: 'Quick',
+      content: extras.libraryParts && (
+        <LibraryPanel
+          document={document}
+          selected={selectedAddress}
+          disabled={disabled}
+          initialParts={extras.libraryParts}
+          onChange={extras.onChange}
+        />
+      ),
+    },
+    {
+      id: 'reference',
+      label: 'Reference video',
+      icon: Film,
+      eyebrow: 'Review',
+      plain: true,
+      content: extras.reference && <ReferencePanel reference={extras.reference} />,
+    },
+    {
+      id: 'checks',
+      label: 'Checks',
+      icon: ShieldCheck,
+      eyebrow: 'Review',
+      plain: true,
+      content: extras.particleCheck !== undefined && (
+        <ChecksPanel document={document} result={extras.particleCheck} />
+      ),
+    },
   ];
   return panels
     .filter((panel) => panel.content && (panel.id !== 'launch-flight' || document.launch))
     .map((panel) => ({
-      ...panel,
+      id: panel.id,
+      label: panel.label,
       title: panel.label,
-      eyebrow: 'Renderer',
-      icon: Sparkles,
-      content: (
+      eyebrow: panel.eyebrow ?? 'Renderer',
+      icon: panel.icon ?? Sparkles,
+      content: panel.plain ? (
+        panel.content
+      ) : (
         <div className="space-y-4">
           {selector}
           {reset && (

@@ -5,6 +5,18 @@ import { EDITOR_PARTS } from '@showcrafter/firework-editor/parts';
 import { AlertTriangle, ChevronRight } from 'lucide-react';
 import type { FireworkEditorShellTab } from './FireworkEditorShell';
 
+const PART_GROUP_ORDER = [
+  'Quick',
+  'Launch',
+  'Burst',
+  'Trails',
+  'Extra effects',
+  'Timing',
+  'Sound',
+  'Review',
+  'Utilities',
+];
+
 type Branch = { label: string; branches: Map<string, Branch>; tabs: FireworkEditorShellTab[] };
 
 export function RendererPartsTree({
@@ -33,27 +45,7 @@ export function RendererPartsTree({
     return (
       <>
         {[...branch.branches.values()]
-          .sort(
-            (a, b) =>
-              [
-                'Launch',
-                'Burst',
-                'Trails',
-                'Extra effects',
-                'Timing',
-                'Sound',
-                'Utilities',
-              ].indexOf(a.label) -
-              [
-                'Launch',
-                'Burst',
-                'Trails',
-                'Extra effects',
-                'Timing',
-                'Sound',
-                'Utilities',
-              ].indexOf(b.label),
-          )
+          .sort((a, b) => PART_GROUP_ORDER.indexOf(a.label) - PART_GROUP_ORDER.indexOf(b.label))
           .map((child) => (
             <details key={child.label} open className="group/part">
               <summary className="text-foreground hover:bg-muted flex cursor-pointer list-none items-center gap-1 rounded-md px-2 py-1.5 text-xs font-semibold">
