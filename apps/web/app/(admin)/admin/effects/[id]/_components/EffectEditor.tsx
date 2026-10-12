@@ -6,6 +6,8 @@ import { validateCatalogueRender } from '@/lib/admin/renderer-validation';
 import { useDesignHistory as useDraftHistory } from '@/ui/firework-editor/renderer-design/use-design-history';
 import { useDesignTabs } from '@/ui/firework-editor/renderer-design/tabs';
 import { DesignPreview } from '@/ui/firework-editor/renderer-design/preview';
+import { useEditorExtras } from '@/ui/firework-editor/use-editor-extras';
+import type { SavedPart } from '@/lib/renderer-editor/library';
 import { validateEditorDesign } from '@/lib/renderer-editor/validation';
 import { restoreEffectEditorVersion, updateEffect } from '@/app/(admin)/admin/effects/actions';
 import type { AdminEditorVersion, AdminEffectDetail } from '@/lib/admin.types';
@@ -181,7 +183,13 @@ function effectSavedSnapshotFromDetail(effect: AdminEffectDetail): EffectEditorS
 }
 
 /** Edits a complete renderer design using the existing record and version save flow. */
-export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
+export function EffectEditor({
+  effect,
+  libraryParts,
+}: {
+  effect: AdminEffectDetail;
+  libraryParts: readonly SavedPart[];
+}) {
   const setAdminBreadcrumb = useAdminBreadcrumbOverride();
   const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
   const [isPending, startTransition] = useTransition();
@@ -544,6 +552,16 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     });
   }
 
+  const extras = useEditorExtras({
+    kind: 'effect',
+    design: designResult.ok ? designResult.value : null,
+    libraryParts,
+    snapshot: currentLocalSnapshot(),
+    dirty: isDirty,
+    baseUpdatedAt: lastSavedUpdatedAt,
+    restore: applySnapshot,
+    onOpenChecks: () => setActiveTab('checks'),
+  });
   const savedDesignResult = useMemo(
     () => validateEditorDesign(savedPreviewSnapshot.design),
     [savedPreviewSnapshot.design],
@@ -553,6 +571,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       <DesignPreview
         fullscreen={isFullscreen}
         onFullscreenToggle={toggleFullscreen}
+        reference={extras.referenceClip}
         document={showSaved && savedDesignResult.ok ? savedDesignResult.value : designResult.value}
       />
     </CanvasSurface>
@@ -604,6 +623,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
     selected: selectedLayer,
     onSelect: setSelectedLayer,
     disabled: isPending,
+    extras: extras.designExtras,
   });
   const tabs: FireworkEditorShellTab[] = [
     {
@@ -657,7 +677,7 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       dirty={isDirty}
       saving={isPending}
       saveLabel="Save"
-      saveDisabled={!designResult.ok || Boolean(renderError) || isPending}
+      saveDisabled={!designResult.ok || Boolean(renderError) || isPending || extras.saveBlocked}
       revertDisabled={!isDirty || isPending}
       onSave={saveEffect}
       onRevert={revertLocalChanges}
@@ -678,6 +698,8 @@ export function EffectEditor({ effect }: { effect: AdminEffectDetail }) {
       }}
       fullscreen={isFullscreen}
       onExitFullscreen={exitFullscreen}
+      notice={extras.notice}
+      status={extras.status}
     />
   );
 }

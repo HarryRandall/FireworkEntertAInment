@@ -123,6 +123,10 @@ type FireworkEditorShellProps = {
   renderDiagnostics?: EditorRenderDiagnostics;
   fullscreen?: boolean;
   onExitFullscreen?: () => void;
+  /** Shown above the inspector, for example an offer to restore an autosaved draft. */
+  notice?: ReactNode;
+  /** Extra footer status beside the save state, for example checks. */
+  status?: ReactNode;
 };
 
 export function FireworkEditorShell({
@@ -145,6 +149,8 @@ export function FireworkEditorShell({
   onExitFullscreen,
   history,
   comparison,
+  notice,
+  status,
 }: FireworkEditorShellProps) {
   const [partsOpen, setPartsOpen] = useState(false);
   const current = tabs.find((tab) => tab.id === activeTab) ?? tabs[0];
@@ -222,6 +228,7 @@ export function FireworkEditorShell({
           }}
         >
           <div className="min-h-0 flex-1 overflow-y-auto p-3">
+            {notice}
             {renderDiagnostics ? (
               <RendererDiagnostics
                 key={renderDiagnostics.recordId}
@@ -250,10 +257,11 @@ export function FireworkEditorShell({
         <Button variant="ghost" size="sm" className="lg:hidden" onClick={() => setPartsOpen(true)}>
           <ListTree size={16} /> Parts
         </Button>
-        <span className="text-muted-foreground mr-auto text-xs" aria-live="polite">
+        <span className="text-muted-foreground text-xs" aria-live="polite">
           {saving ? 'Saving...' : dirty ? 'Unsaved changes' : 'Saved'}
           {comparison?.saved ? ' · Previewing saved' : ''}
         </span>
+        <div className="mr-auto flex items-center gap-1">{status}</div>
         {history ? (
           <>
             <Button

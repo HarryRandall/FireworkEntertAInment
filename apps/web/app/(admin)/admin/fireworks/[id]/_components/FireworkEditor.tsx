@@ -7,6 +7,8 @@ import { fireworkColourMetadata } from '@showcrafter/firework-editor/colour-meta
 import { useDesignHistory as useDraftHistory } from '@/ui/firework-editor/renderer-design/use-design-history';
 import { useDesignTabs } from '@/ui/firework-editor/renderer-design/tabs';
 import { DesignPreview } from '@/ui/firework-editor/renderer-design/preview';
+import { useEditorExtras } from '@/ui/firework-editor/use-editor-extras';
+import type { SavedPart } from '@/lib/renderer-editor/library';
 import { validateEditorDesign } from '@/lib/renderer-editor/validation';
 import {
   restoreFireworkEditorVersion,
@@ -205,7 +207,13 @@ function fireworkSavedSnapshotFromDetail(
 }
 
 /** Edits a complete renderer design using the existing record and version save flow. */
-export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) {
+export function FireworkEditor({
+  firework,
+  libraryParts,
+}: {
+  firework: AdminFireworkDetail;
+  libraryParts: readonly SavedPart[];
+}) {
   const setAdminBreadcrumb = useAdminBreadcrumbOverride();
   const { isFullscreen, toggleFullscreen, exitFullscreen } = usePreviewFullscreen();
   const [isPending, startTransition] = useTransition();
@@ -641,6 +649,16 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
     value: option.id,
     label: option.name,
   }));
+  const extras = useEditorExtras({
+    kind: 'firework',
+    design: designResult.ok ? designResult.value : null,
+    libraryParts,
+    snapshot: currentLocalSnapshot(),
+    dirty: isDirty,
+    baseUpdatedAt: lastSavedUpdatedAt,
+    restore: applySnapshot,
+    onOpenChecks: () => setActiveTab('checks'),
+  });
   const savedDesignResult = useMemo(
     () => validateEditorDesign(savedPreviewSnapshot.design),
     [savedPreviewSnapshot.design],
@@ -650,6 +668,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       <DesignPreview
         fullscreen={isFullscreen}
         onFullscreenToggle={toggleFullscreen}
+        reference={extras.referenceClip}
         document={showSaved && savedDesignResult.ok ? savedDesignResult.value : designResult.value}
       />
     </CanvasSurface>
@@ -727,6 +746,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
         setError(null);
       } else setError(result.error);
     },
+    extras: extras.designExtras,
   });
   const tabs: FireworkEditorShellTab[] = [
     {
@@ -781,7 +801,7 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       dirty={isDirty}
       saving={isPending}
       saveLabel="Save"
-      saveDisabled={!designResult.ok || Boolean(renderError) || isPending}
+      saveDisabled={!designResult.ok || Boolean(renderError) || isPending || extras.saveBlocked}
       revertDisabled={!isDirty || isPending}
       onSave={save}
       onRevert={revertLocalChanges}
@@ -802,6 +822,8 @@ export function FireworkEditor({ firework }: { firework: AdminFireworkDetail }) 
       }}
       fullscreen={isFullscreen}
       onExitFullscreen={exitFullscreen}
+      notice={extras.notice}
+      status={extras.status}
     />
   );
 }

@@ -7,6 +7,8 @@ import type { Design } from '@showcrafter/renderer';
 import { Viewer } from '@showcrafter/renderer/view';
 import { EditorPreviewTransport } from '../FireworkEditorShell';
 import { createPreviewTransport, previewTransportTicks } from './preview-transport';
+import type { ReferenceClip } from '@/lib/renderer-editor/reference';
+import { ReferenceVideo } from './reference-video';
 
 /** Owns one WebGL viewer and the shared editor transport, releasing resources on unmount. */
 export default function PreviewSurface({
@@ -15,8 +17,10 @@ export default function PreviewSurface({
   loop = true,
   fullscreen,
   onFullscreenToggle,
+  reference = null,
 }: {
   document: Design;
+  reference?: ReferenceClip | null;
   player?: boolean;
   loop?: boolean;
   fullscreen?: boolean;
@@ -29,6 +33,7 @@ export default function PreviewSurface({
     null,
   );
   const [failure, setFailure] = useState('');
+  const [liveViewer, setLiveViewer] = useState<Viewer | null>(null);
   const [playback, setPlayback] = useState({
     elapsed: 0,
     duration: 0,
@@ -40,6 +45,7 @@ export default function PreviewSurface({
     try {
       const instance = new Viewer(container.current, { design: initial.current, ui: false, loop });
       viewer.current = instance;
+      setLiveViewer(instance);
       const readout = playbackReadoutGate();
       const unsubscribe = instance.on((state) => {
         if (!readout({ time: state.t, duration: state.duration, playing: state.playing })) return;
@@ -55,6 +61,7 @@ export default function PreviewSurface({
       return () => {
         unsubscribe();
         viewer.current = null;
+        setLiveViewer(null);
         instance.dispose();
       };
     } catch (cause) {
@@ -67,7 +74,10 @@ export default function PreviewSurface({
   }, [document]);
   return (
     <CanvasSurface className="h-full min-h-48 w-full">
-      <CanvasSurface className="absolute inset-0" ref={container} />
+      <div className={reference ? 'absolute inset-0 grid grid-cols-2 gap-px' : 'absolute inset-0'}>
+        <CanvasSurface className="relative h-full min-h-0" ref={container} />
+        {reference && <ReferenceVideo clip={reference} viewer={liveViewer} />}
+      </div>
       {player && transport && !failure && (
         <div className="absolute inset-x-0 bottom-5 z-30">
           <EditorPreviewTransport

@@ -457,6 +457,33 @@ export type Database = {
           },
         ]
       }
+      editor_library_parts: {
+        Row: {
+          category: string
+          created_at: string
+          created_by: string | null
+          design: Json
+          id: string
+          name: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          created_by?: string | null
+          design: Json
+          id?: string
+          name: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          design?: Json
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       firework_editor_versions: {
         Row: {
           action: string

@@ -2,6 +2,7 @@
 
 import { EffectEditor } from '@/app/(admin)/admin/effects/[id]/_components/EffectEditor';
 import { getAdminEffectById } from '@/lib/admin/effects.server';
+import { listEditorLibraryParts } from '@/lib/admin/editor-library.server';
 import { notFound } from 'next/navigation';
 
 // Effect save/restore actions write full model_json payloads through RLS checks, so
@@ -13,12 +14,15 @@ type PageProps = { params: Promise<{ id: string }> };
 
 export default async function AdminEffectDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const effect = await getAdminEffectById(id);
+  const [effect, libraryParts] = await Promise.all([
+    getAdminEffectById(id),
+    listEditorLibraryParts(),
+  ]);
   if (!effect) notFound();
 
   return (
     <div className="-mx-4 -my-6 flex h-[calc(100svh-3.5rem)] min-h-0 flex-1 sm:-mx-8 md:h-[calc(100svh-4.5rem)] lg:-mx-10">
-      <EffectEditor key={effect.id} effect={effect} />
+      <EffectEditor key={effect.id} effect={effect} libraryParts={libraryParts} />
     </div>
   );
 }
