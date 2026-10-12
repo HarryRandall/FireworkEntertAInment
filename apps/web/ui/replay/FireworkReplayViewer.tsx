@@ -137,7 +137,7 @@ function ReplayCanvasPlaceholder() {
   );
 }
 
-const LazyFireworkReplayCanvas = dynamic(
+const LazyShowRendererCanvas = dynamic(
   () => import('@/ui/replay/ShowRendererCanvas').then((mod) => mod.ShowRendererCanvas),
   {
     ssr: false,
@@ -757,7 +757,7 @@ export function FireworkReplayViewer({
             aria-busy={!replayReady}
           >
             <CanvasSurface className="absolute inset-0">
-              <LazyFireworkReplayCanvas
+              <LazyShowRendererCanvas
                 compactPreview
                 cues={sortedCues}
                 elapsed={elapsed}

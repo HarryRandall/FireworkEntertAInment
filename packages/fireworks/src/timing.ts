@@ -1,8 +1,29 @@
 import { isGroundGeometry } from './behaviours.ts';
 import type { FireworkDesign, FireworkStarLayer, StarLayerKey } from './design.ts';
 import { groundEmissionDuration } from './emission.ts';
-import { STAR_DRAG } from './effects/constants.ts';
-import { estimateShellRiseHeight } from './effects/lift.ts';
+
+// Star drag and shell lift physics from the retired particle engine, kept so
+// existing timing and height estimates do not change.
+const STAR_DRAG = 2.15;
+
+function estimateShellRiseHeight(initialVelocityY: number, shellLife: number): number {
+  const dragK = 0.5 * 0.47 * 1.22 * (Math.PI / 10000);
+  const shellMass = 0.5;
+  const step = 1 / 60;
+  let velocityY = initialVelocityY;
+  let height = 0;
+  let elapsed = 0;
+
+  while (velocityY > 0 && elapsed < shellLife) {
+    const dragAccelerationY = (-dragK * velocityY * Math.abs(velocityY)) / shellMass;
+    velocityY = velocityY + dragAccelerationY * step - 9.82 * step;
+    height += Math.max(0, velocityY) * step * 100;
+    elapsed += step;
+  }
+
+  return Math.max(1, height);
+}
+
 export type FireworkDesignTiming = {
   liftTimeSeconds: number;
   effectStartSeconds: number;

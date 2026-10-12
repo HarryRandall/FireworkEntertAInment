@@ -25,7 +25,7 @@ import type { ReplayCue } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';
 import { PREVIEW_TRANSPORT_IDLE_MS } from './multishot-model';
 
-const LazyFireworkReplayCanvas = dynamic(
+const LazyShowRendererCanvas = dynamic(
   () => import('@/ui/replay/ShowRendererCanvas').then((mod) => mod.ShowRendererCanvas),
   { ssr: false, loading: () => <ReplayCanvasSkeleton /> },
 );
@@ -167,7 +167,7 @@ export function PreviewStage({
         >
           <div className="relative h-full w-full">
             <CanvasSurface className="absolute inset-0">
-              <LazyFireworkReplayCanvas
+              <LazyShowRendererCanvas
                 prop="cake"
                 cues={cues}
                 elapsed={elapsed}

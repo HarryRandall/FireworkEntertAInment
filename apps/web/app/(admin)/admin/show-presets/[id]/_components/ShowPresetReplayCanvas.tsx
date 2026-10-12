@@ -4,7 +4,7 @@
 import dynamic from 'next/dynamic';
 import { ReplayCanvasSkeleton } from '@/ui/replay/ReplayCanvasSkeleton';
 
-export const LazyFireworkReplayCanvas = dynamic(
+export const LazyShowRendererCanvas = dynamic(
   () => import('@/ui/replay/ShowRendererCanvas').then((mod) => mod.ShowRendererCanvas),
   { ssr: false, loading: () => <ReplayCanvasSkeleton /> },
 );

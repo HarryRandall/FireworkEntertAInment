@@ -4,9 +4,6 @@ import { X } from 'lucide-react';
 import { useMemo } from 'react';
 import { Button } from '@/ui/patterns/Button';
 
-// The legacy FireworkReplayCanvas keeps its own copy because it is fingerprinted by the import
-// renderer contract; delete that copy along with the legacy canvas.
-
 /** Samples kept in the rolling graph; at a 100 ms cadence this is the last eight seconds. */
 export const FPS_HISTORY_SIZE = 80;
 const FPS_GRAPH_WIDTH = 184;

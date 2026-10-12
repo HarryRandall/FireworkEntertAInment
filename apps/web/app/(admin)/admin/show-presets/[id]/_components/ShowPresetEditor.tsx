@@ -75,7 +75,7 @@ import {
 import { CueTimelineClip } from './ShowPresetCueTimelineClip';
 import { CueInspector } from './ShowPresetCueInspector';
 import { ProductPickerDialog } from './ShowPresetProductPicker';
-import { LazyFireworkReplayCanvas } from './ShowPresetReplayCanvas';
+import { LazyShowRendererCanvas } from './ShowPresetReplayCanvas';
 
 export function ShowPresetEditor({
   preset,
@@ -419,7 +419,7 @@ export function ShowPresetEditor({
           )}
         >
           <CanvasSurface className="absolute inset-0">
-            <LazyFireworkReplayCanvas
+            <LazyShowRendererCanvas
               cues={replayCues}
               elapsed={elapsed}
               playbackRef={playbackRef}

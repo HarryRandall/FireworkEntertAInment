@@ -2,14 +2,9 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { compileFireworkDesign, validateFireworkDesign } from '../src/design.ts';
-import { Scheduler } from '../src/Scheduler.ts';
-import { Effects } from '../src/Effects.ts';
-import { ParticlePool } from '../src/ParticlePool.ts';
-import { createSeededRng } from '../src/random.ts';
-import { RENDERER_BEHAVIOURS } from '../src/behaviours.ts';
-import { FIREWORK_EFFECT_CATALOGUE, catalogueEffectModelJson } from '../src/effect-catalogue.ts';
+import { parseCaliberMm } from '../src/model/scaling.ts';
 
-test('disabled colours survive compilation, simulation and re-enabling without changing authored settings', () => {
+test('disabled colours survive compilation and re-enabling without changing authored settings', () => {
   const settings = JSON.parse(
     readFileSync(new URL('./fixtures/disabled-colours.json', import.meta.url)),
   );
@@ -25,19 +20,6 @@ test('disabled colours survive compilation, simulation and re-enabling without c
       settings.stars[layer].colourPattern.colours,
     );
   }
-  const snapshot = structuredClone(design);
-  const pool = new ParticlePool(100_000);
-  new Effects(pool, {}, { newLight() {}, setHemi() {} }).fire(
-    design,
-    { x: 0, y: 0, z: 0 },
-    { rng: createSeededRng(20260926), audible: false },
-  );
-  for (let frame = 0; frame < 720; frame++) {
-    for (let slot = 0; slot < pool.aliveCount; slot++)
-      pool.particles[pool.aliveIndices[slot]].update(1 / 60, frame / 60);
-    pool.compactAliveMax();
-  }
-  assert.deepEqual(design, snapshot);
   assert.deepEqual(settings, before);
   const reopened = JSON.parse(JSON.stringify(design));
   reopened.colour.enabled = true;
@@ -71,59 +53,10 @@ test('invalid saved values produce field diagnostics, never a default firework',
   assert.deepEqual(result.diagnostics[0].path, ['stars', 'outer', 'head', 'glowStrength']);
 });
 
-test('every catalogue composition uses a registered behaviour and round-trips', () => {
-  for (const effect of FIREWORK_EFFECT_CATALOGUE) {
-    const design = compileFireworkDesign({ baseModel: catalogueEffectModelJson(effect) });
-    assert.ok(RENDERER_BEHAVIOURS[design.geometry], effect.slug);
-    assert.deepEqual(
-      compileFireworkDesign({ variantOverrides: JSON.parse(JSON.stringify(design)) }),
-      design,
-    );
+test('calibres accept millimetres and every common inch notation', () => {
+  assert.equal(parseCaliberMm('30mm'), 30);
+  for (const value of ['3"', '3”', '3″', '3 in', '3 inch']) {
+    assert.ok(Math.abs(parseCaliberMm(value) - 76.2) < 1e-9, value);
   }
-});
-
-test('disabled layers and launch emitters leave no substitute particles', () => {
-  const pool = new ParticlePool(10000);
-  const effects = new Effects(pool, {}, { newLight() {}, setHemi() {} });
-  const design = compileFireworkDesign({
-    variantOverrides: {
-      liftVelocity: 4,
-      launch: {
-        shell: { visible: false },
-        liftParticles: { enabled: false },
-        smoke: { enabled: false },
-      },
-      stars: { outer: { enabled: false }, core: { enabled: false } },
-      crackle: { enabled: false },
-      split: { enabled: false },
-    },
-  });
-  effects.fire(design, { x: 0, y: 0, z: 0 }, { rng: createSeededRng(123), audible: false });
-  for (let frame = 0; frame < 180; frame++) {
-    for (let slot = 0; slot < pool.aliveCount; slot++)
-      pool.particles[pool.aliveIndices[slot]].update(1 / 60, frame / 60);
-    pool.compactAliveMax();
-  }
-  assert.equal(pool.aliveCount, 0);
-});
-
-test('invalid cue skipping preserves subsequent cue times and seek boundaries', () => {
-  const scheduler = new Scheduler();
-  const cue = (id, time, design) => ({
-    id,
-    timeSeconds: time,
-    launchPositionIndex: 0,
-    firework: { id, caliber: null, durationSeconds: 5, renderDesign: design },
-  });
-  scheduler.setCues([cue('bad', 2, null), cue('valid', 7, compileFireworkDesign({}))]);
-  assert.deepEqual(
-    scheduler.pop(0, 3).filter((c) => c.firework.renderDesign),
-    [],
-  );
-  assert.deepEqual(
-    scheduler.pop(3, 7).map((c) => [c.id, c.timeSeconds]),
-    [['valid', 7]],
-  );
-  scheduler.resetAll();
-  assert.equal(scheduler.pop(7, 7)[0].id, 'valid');
+  assert.equal(parseCaliberMm('large'), null);
 });

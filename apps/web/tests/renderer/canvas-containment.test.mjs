@@ -27,18 +27,13 @@ test('every viewer, poster and legacy canvas mount uses the shared clipping surf
         true,
         ts.ScriptKind.TSX,
       );
-      const stages = new Set([
-        'ShowRendererCanvas',
-        'FireworkReplayCanvas',
-        'ImportRenderHarness',
-        'DesignPreview',
-      ]);
+      const stages = new Set(['ShowRendererCanvas', 'DesignPreview']);
       // Follow dynamic and memo aliases, including imports of the shared preset adapter.
       function aliases(node) {
         if (
           ts.isVariableDeclaration(node) &&
           node.initializer &&
-          (/import\(['"]@\/ui\/replay\/(ShowRendererCanvas|FireworkReplayCanvas)['"]\)/.test(
+          (/import\(['"]@\/ui\/replay\/ShowRendererCanvas['"]\)/.test(
             node.initializer.getText(ast),
           ) ||
             [...stages].some((name) => node.initializer.getText(ast) === `memo(${name})`))

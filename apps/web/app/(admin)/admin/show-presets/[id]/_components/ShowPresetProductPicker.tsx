@@ -19,7 +19,7 @@ import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
 import { formatDuration } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';
 import { ProductPickerMode, ProductKindFilter, productKindOf } from './show-preset-model';
-import { LazyFireworkReplayCanvas } from './ShowPresetReplayCanvas';
+import { LazyShowRendererCanvas } from './ShowPresetReplayCanvas';
 
 export function ProductPickerDialog({
   open,
@@ -194,7 +194,7 @@ export function ProductPickerDialog({
           <aside className="bg-stage-night relative min-h-[360px] overflow-hidden">
             {selectedProduct ? (
               <CanvasSurface className="absolute inset-0">
-                <LazyFireworkReplayCanvas
+                <LazyShowRendererCanvas
                   cues={previewCue}
                   elapsed={previewElapsed}
                   playbackRef={previewRef}

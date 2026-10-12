@@ -149,7 +149,7 @@ test('supporting app routes and workspace summary API are shipped', () => {
   assert.doesNotMatch(showReplayCard, /radial-gradient/);
 
   const showReplayProvider = read('app/(app)/shows/_components/ShowReplayPreviewContext.tsx');
-  assert.match(showReplayProvider, /FireworkReplayCanvas/);
+  assert.match(showReplayProvider, /ShowRendererCanvas/);
   assert.match(showReplayProvider, /getShowReplayPreviewCues/);
   assert.match(showReplayProvider, /SHOW_CARD_PREVIEW_WINDOW_SECONDS/);
   assert.match(showReplayProvider, /const previewStart = 0/);

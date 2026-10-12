@@ -8,7 +8,6 @@ import {
   DIRECT_SHOW_REPLAY_SHOT_OFFSET_SECONDS,
   showReplayShotTimeSeconds,
 } from '../../lib/replay-shot-timing.ts';
-import { Scheduler } from '@showcrafter/fireworks/Scheduler';
 
 const root = process.cwd();
 
@@ -189,24 +188,6 @@ test('dice brief wording maps to the promised timing and pacing controls', () =>
   assert.equal(beatSynced.density, 'dense');
   assert.equal(quietMoment.quietMiddle, true);
   assert.equal(exactBeat.precise, true);
-});
-
-test('scheduler includes a launch at the exact start of the timeline', () => {
-  const scheduler = new Scheduler();
-  const cue = { id: 'opening', timeSeconds: 0 };
-  scheduler.setCues([cue]);
-
-  assert.deepEqual(scheduler.pop(0, 0.016), [cue]);
-  assert.deepEqual(scheduler.pop(0.016, 0.032), []);
-});
-
-test('scheduler materialises an unfired cue at any exact replay boundary', () => {
-  const scheduler = new Scheduler();
-  const cue = { id: 'boundary', timeSeconds: 0.25 };
-  scheduler.setCues([cue]);
-
-  assert.deepEqual(scheduler.pop(0.25, 0.25), [cue]);
-  assert.deepEqual(scheduler.pop(0.25, 0.266667), []);
 });
 
 test('soundtrack playback is the replay clock while audio is active', () => {

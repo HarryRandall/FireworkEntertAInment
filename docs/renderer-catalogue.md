@@ -67,15 +67,7 @@ Existing atomic specification reads remain available to admin component editors
 and multishot reconstruction. Public browse cards and generation use catalogue
 products. The raw effect/firework table read policies remain unchanged.
 
-## Comparison and local verification
-
-`/admin/renderer-compare` requires catalogue administration permission in addition
-to the admin layout boundary. It reads current saved designs and overrides for
-the original 90 slugs. Only one comparison pair can be open. Closing or replacing
-it disposes both viewers and explicitly releases their WebGL contexts. The new renderer uses the same shared full-width aspect-video viewer as the
-preview page, including its built-in player and default camera controls. The old
-renderer has independent playback controls. The owner performs the
-browser and visual review.
+## Local verification
 
 The following checks use only the disposable local stack:
 

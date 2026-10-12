@@ -61,15 +61,15 @@ const CARD_PREVIEW_SECONDS = 18;
 // ref and the display state still update at full input rate.
 const SCRUB_COMMIT_INTERVAL_MS = 67;
 
-const LazyFireworkReplayCanvas = dynamic(
+const LazyShowRendererCanvas = dynamic(
   () => import('@/ui/replay/ShowRendererCanvas').then((mod) => mod.ShowRendererCanvas),
   {
     ssr: false,
     loading: () => <ReplayCanvasSkeleton />,
   },
 );
-const MemoizedFireworkReplayCanvas = memo(LazyFireworkReplayCanvas);
-MemoizedFireworkReplayCanvas.displayName = 'MemoizedFireworkReplayCanvas';
+const MemoizedShowRendererCanvas = memo(LazyShowRendererCanvas);
+MemoizedShowRendererCanvas.displayName = 'MemoizedShowRendererCanvas';
 
 function posterTimeFor(slug: string, cues: ShowTemplateCue[]): number {
   if (cues.length === 0) return 0;
@@ -404,7 +404,7 @@ export function TemplateReplayPreview({
       >
         {shouldMountCanvas ? (
           <CanvasSurface className="absolute inset-0">
-            <MemoizedFireworkReplayCanvas
+            <MemoizedShowRendererCanvas
               compactPreview
               cues={cues}
               elapsed={elapsed}

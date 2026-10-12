@@ -61,17 +61,13 @@ test('show cue projection, select and mapper thread emphasis through to replay',
   );
 });
 
-test('renderer scales the design by per-cue emphasis in fireCue', () => {
-  const design = read('../../packages/fireworks/src/model/scaling.ts');
-  const engine = read('../../packages/fireworks/src/FireworksEngine.ts');
+test('show playback adjusts each renderer design by its cue emphasis', () => {
+  const shots = read('lib/shows/renderer-shots.ts');
+  const design = read('lib/shows/renderer-design.ts');
 
-  assert.match(design, /export function scaleDesignForEmphasis\(/);
-  assert.match(design, /const EMPHASIS_SCALE: Record<'normal' \| 'accent' \| 'peak', number> = \{/);
-  assert.match(design, /normal: 1\.0,/);
-  assert.match(design, /accent: 1\.2,/);
-  assert.match(design, /peak: 1\.5,/);
-  assert.match(engine, /scaleDesignForEmphasis,/);
-  assert.match(engine, /const design = scaleDesignForEmphasis\(baseDesign, cue\.emphasis\);/);
+  assert.match(shots, /resolvedShowDesign\(cue\.firework, cue\.emphasis \?\? 'normal'\)/);
+  assert.match(design, /const emphasisLevel = SHOW_DESIGN_ADJUSTMENTS\.emphasis\[emphasis\];/);
+  assert.match(design, /add\('break\.flash', emphasisLevel\);/);
 });
 
 test('manual cue add accepts an optional emphasis, defaulting to normal', () => {

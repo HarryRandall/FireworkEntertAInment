@@ -10,13 +10,10 @@ const read = (path) => readFileSync(join(root, path), 'utf8');
 
 test('the live WebGL replay surface owns the card clipping radius', () => {
   const viewer = read('ui/replay/FireworkReplayViewer.tsx');
-  const canvas = read('ui/replay/FireworkReplayCanvas.tsx');
+  const canvas = read('ui/replay/ShowRendererCanvas.tsx');
 
   assert.match(viewer, /group\/replay overflow-hidden rounded-\[inherit\]/);
-  assert.match(
-    canvas,
-    /absolute top-0 bottom-0 h-full overflow-hidden rounded-\[inherit\] bg-black/,
-  );
+  assert.match(canvas, /absolute inset-0 isolate overflow-hidden rounded-\[inherit\] bg-black/);
 });
 
 test('replay loading layers preserve the same rounded clipping', () => {

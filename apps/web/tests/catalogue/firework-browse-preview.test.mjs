@@ -26,7 +26,7 @@ test('browse previews share one ready-gated and abort-safe canvas', () => {
   assert.match(source, /window\.addEventListener\('wheel'/);
   assert.match(source, /window\.addEventListener\('scroll'/);
   assert.match(source, /window\.addEventListener\('touchmove'/);
-  assert.equal(source.match(/<LazyFireworkReplayCanvas/g)?.length, 1);
+  assert.equal(source.match(/<LazyShowRendererCanvas/g)?.length, 1);
 });
 
 test('browse previews capture representative renderer frames into a bounded Blob URL cache', () => {
@@ -57,7 +57,7 @@ test('browse previews capture representative renderer frames into a bounded Blob
   assert.match(source, /markPreviewReady\(target, serial\)/);
   assert.match(source, /function scheduleMountedCanvasReady|const scheduleMountedCanvasReady/);
   assert.match(source, /SAME_PREVIEW_SEEK_EPSILON_SECONDS/);
-  assert.equal(source.match(/<LazyFireworkReplayCanvas/g)?.length, 1);
+  assert.equal(source.match(/<LazyShowRendererCanvas/g)?.length, 1);
 });
 
 test('missing persisted and session-only posters backfill sequentially through one canvas', () => {
@@ -91,7 +91,7 @@ test('missing persisted and session-only posters backfill sequentially through o
   assert.match(effectsBrowser, /<FireworkBrowsePreviewProvider>/);
   assert.doesNotMatch(effectsBrowser, /posterBackfillTargets/);
   assert.doesNotMatch(effectsBrowser, /style-default/);
-  assert.equal(source.match(/<LazyFireworkReplayCanvas/g)?.length, 1);
+  assert.equal(source.match(/<LazyShowRendererCanvas/g)?.length, 1);
 });
 
 test('renderer captures post exact revision metadata as a WebP', () => {
