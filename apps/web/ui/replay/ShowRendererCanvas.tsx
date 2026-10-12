@@ -7,7 +7,7 @@ import { visibleClock } from '@/ui/renderer/visible-clock';
 import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
 
 import { useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode } from 'react';
-import { Viewer, setSetting } from '@showcrafter/renderer/view';
+import { Viewer, prefersLowPower, setSetting } from '@showcrafter/renderer/view';
 import { buildShowRendererShots } from '@/lib/shows/renderer-shots';
 import type { ReplayCue, Show } from '@/lib/show-domain';
 import { ReplayLoadingBar } from './ReplayLoadingBar';
@@ -54,8 +54,8 @@ type Props = {
   autoFrame?: boolean;
   preserveDrawingBuffer?: boolean;
   showFps?: boolean;
-  /** Fewer pixels, no smoke and a 30 fps cap, for phones and weak devices. */
-  lowPower?: boolean;
+  /** Fewer pixels, no smoke and a 30 fps cap; 'auto' applies it on phones and weak devices. */
+  lowPower?: boolean | 'auto';
 };
 /** Drives stored-design playback from the parent transport clock. */
 export function ShowRendererCanvas(props: Props) {
@@ -107,7 +107,7 @@ export function ShowRendererCanvas(props: Props) {
         prop: props.prop,
         startDistance: props.startDistance,
         framingDistanceScale: props.showStaging ? SHOW_FRAMING_DISTANCE_SCALE : 1,
-        lowPower: props.lowPower,
+        lowPower: props.lowPower === 'auto' ? prefersLowPower() : props.lowPower,
       });
     } catch {
       setError('The firework viewer could not start. Please check WebGL support and reload.');

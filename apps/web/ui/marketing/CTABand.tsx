@@ -1,14 +1,11 @@
 /**
- * CTABand — full-width call-to-action band rendered near the bottom of
- * marketing pages. Light, doodle-framed, with a primary action and an
- * optional secondary link. Shared across the marketing site.
+ * CTABand: the closing call to action on marketing pages, a dark panel with a soft brand
+ * glow, a primary action and an optional secondary link.
  */
 import { ArrowRight } from 'lucide-react';
-import { Button } from '@/ui/patterns/Button';
-import { Container } from '@/ui/patterns/Container';
-import { Reveal } from './Reveal';
-import { Doodle } from './landing/Doodle';
-import { Star4 } from './landing/decor';
+import Link from 'next/link';
+import { ShimmerLink } from '@/ui/kit/motion';
+import { Reveal, Rise } from '@/ui/kit/reveal';
 
 type CTABandProps = {
   title: string;
@@ -28,48 +25,37 @@ export function CTABand({
   secondaryLabel,
 }: CTABandProps) {
   return (
-    <section className="border-border/60 relative overflow-hidden border-t py-24">
-      {/* atmospheric wash mirrors the hero so the page closes as it opened */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="cta-rainbow-wash absolute top-[52%] left-1/2 h-[26rem] w-[min(60rem,105vw)] -translate-x-1/2 -translate-y-1/2" />
-        <div aria-hidden className="noise-overlay" />
-      </div>
-      <Doodle
-        name="fire"
-        width={180}
-        bob
-        className="absolute bottom-[10%] left-[6%] hidden opacity-90 lg:block"
-      />
-      <Doodle
-        name="burst"
-        width={170}
-        bob
-        className="absolute top-[12%] right-[6%] hidden opacity-90 lg:block"
-      />
-      <Container className="relative z-[2] mx-auto max-w-[720px] text-center">
-        <Star4 size={24} className="mx-auto mb-[18px]" />
-        <Reveal>
-          <h2 className="text-foreground m-0 text-[clamp(34px,5.6vw,64px)] leading-none font-extrabold tracking-[-0.035em]">
+    <section className="px-4 py-16 sm:px-10 sm:py-24">
+      <Reveal className="bg-stage-night text-stage-glass-foreground relative isolate mx-auto max-w-6xl overflow-hidden rounded-3xl px-6 py-16 text-center sm:px-12 sm:py-24">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(60%_80%_at_50%_110%,color-mix(in_srgb,var(--hl)_38%,transparent),transparent_70%),radial-gradient(40%_50%_at_15%_0%,color-mix(in_srgb,var(--show-violet)_22%,transparent),transparent_70%),radial-gradient(40%_50%_at_85%_0%,color-mix(in_srgb,var(--show-gold)_18%,transparent),transparent_70%)]"
+        />
+        <Rise>
+          <h2 className="mx-auto max-w-2xl text-[clamp(2rem,5vw,3.5rem)] leading-[1.05] font-semibold tracking-[-0.03em] text-balance">
             {title}
           </h2>
-        </Reveal>
-        <Reveal delay={0.08}>
-          <p className="text-muted-foreground mx-auto mt-5 max-w-[520px] text-lg leading-relaxed">
+        </Rise>
+        <Rise delay={80}>
+          <p className="text-stage-glass-muted mx-auto mt-5 max-w-xl text-base leading-relaxed sm:text-lg">
             {description}
           </p>
-        </Reveal>
-        <Reveal delay={0.16} className="mt-8 flex flex-wrap justify-center gap-3">
-          <Button href={primaryHref} size="lg">
+        </Rise>
+        <Rise delay={160} className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+          <ShimmerLink href={primaryHref}>
             {primaryLabel}
-            <ArrowRight size={16} />
-          </Button>
+            <ArrowRight aria-hidden size={16} />
+          </ShimmerLink>
           {secondaryHref ? (
-            <Button href={secondaryHref} size="lg" variant="secondary">
+            <Link
+              href={secondaryHref}
+              className="text-stage-glass-foreground focus-visible:ring-ring inline-flex h-11 items-center justify-center rounded-full border border-white/20 bg-white/5 px-6 text-sm font-medium transition-colors hover:bg-white/10 focus-visible:ring-2 focus-visible:outline-none"
+            >
               {secondaryLabel}
-            </Button>
+            </Link>
           ) : null}
-        </Reveal>
-      </Container>
+        </Rise>
+      </Reveal>
     </section>
   );
 }

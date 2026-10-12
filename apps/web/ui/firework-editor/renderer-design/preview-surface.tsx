@@ -4,7 +4,7 @@ import { playbackReadoutGate } from '@/ui/renderer/playback-readout';
 import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
 import { useEffect, useRef, useState } from 'react';
 import type { Design } from '@showcrafter/renderer';
-import { Viewer } from '@showcrafter/renderer/view';
+import { Viewer, prefersLowPower } from '@showcrafter/renderer/view';
 import { EditorPreviewTransport } from '../FireworkEditorShell';
 import { createPreviewTransport, previewTransportTicks } from './preview-transport';
 import type { ReferenceClip } from '@/lib/renderer-editor/reference';
@@ -18,6 +18,7 @@ export default function PreviewSurface({
   fullscreen,
   onFullscreenToggle,
   reference = null,
+  lowPower = false,
 }: {
   document: Design;
   reference?: ReferenceClip | null;
@@ -25,6 +26,8 @@ export default function PreviewSurface({
   loop?: boolean;
   fullscreen?: boolean;
   onFullscreenToggle?: () => void;
+  /** Fewer pixels, no smoke and a 30 fps cap; 'auto' applies it on phones and weak devices. */
+  lowPower?: boolean | 'auto';
 }) {
   const container = useRef<HTMLDivElement>(null);
   const viewer = useRef<Viewer | null>(null);
@@ -43,7 +46,12 @@ export default function PreviewSurface({
   useEffect(() => {
     if (!container.current) return;
     try {
-      const instance = new Viewer(container.current, { design: initial.current, ui: false, loop });
+      const instance = new Viewer(container.current, {
+        design: initial.current,
+        ui: false,
+        loop,
+        lowPower: lowPower === 'auto' ? prefersLowPower() : lowPower,
+      });
       viewer.current = instance;
       setLiveViewer(instance);
       const readout = playbackReadoutGate();
@@ -67,7 +75,7 @@ export default function PreviewSurface({
     } catch (cause) {
       setFailure(cause instanceof Error ? cause.message : 'Preview unavailable.');
     }
-  }, [player, loop]);
+  }, [player, loop, lowPower]);
   useEffect(() => {
     const instance = viewer.current;
     if (instance && instance.shots[0]?.design !== document) instance.setDesign(document, true);

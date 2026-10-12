@@ -7,9 +7,10 @@ const COLUMNS: { heading: string; links: { href: string; label: string }[] }[] =
   {
     heading: 'Product',
     links: [
-      { href: '/features', label: 'Features' },
+      { href: '/#effects', label: 'Effects' },
+      { href: '/#multishots', label: 'Multishots' },
+      { href: '/#assortments', label: 'Assortments' },
       { href: '/pricing', label: 'Pricing' },
-      { href: '/how-it-works', label: 'How it works' },
       { href: '/library', label: 'Explore' },
       { href: '/catalogue', label: 'Catalogue' },
     ],

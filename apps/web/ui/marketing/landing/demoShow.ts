@@ -109,3 +109,48 @@ export const DEMO_SHOW_CUES: ReplayCue[] = SEEDS.map(
     firework: specFor(paletteIndex, caliber),
   }),
 );
+
+/** First star colour of a design, used to mark its cue on a timeline. */
+export function designAccent(design: Design | null | undefined): string {
+  const value = design?.breaks[0]?.layers[0]?.colour.stops[0]?.[1];
+  return (Array.isArray(value) ? value[0] : value) ?? '#ffffff';
+}
+
+/** Timeline markers for a list of cues. */
+export function cueMarkers(cues: readonly ReplayCue[]): { time: number; color: string }[] {
+  return cues.map((cue) => ({ time: cue.timeSeconds, color: designAccent(cue.firework.design) }));
+}
+
+const templateSpecCache = new Map<string, FireworkSpecification>();
+/** A renderer template wrapped as a catalogue-style specification. */
+export function templateSpec(
+  key: string,
+  caliber: string,
+  kind: FireworkSpecification['kind'] = 'shell',
+): FireworkSpecification {
+  const cacheKey = `${key}:${caliber}:${kind}`;
+  const cached = templateSpecCache.get(cacheKey);
+  if (cached) return cached;
+  const template = effectTemplates.find((entry) => entry.key === key);
+  if (!template) throw new Error(`The landing page needs the ${key} template.`);
+  const spec: FireworkSpecification = {
+    id: `template-${cacheKey}`,
+    slug: `template-${cacheKey}`,
+    name: template.name,
+    description: null,
+    sortOrder: 0,
+    durationSeconds: 3,
+    heightMeters: 40,
+    caliber,
+    shotCount: 1,
+    spec: DEFAULT_FIREWORK_SPEC,
+    rawSpec: null,
+    renderDesign: null,
+    design: template.design,
+    kind,
+    baseEffect: null,
+    variant: null,
+  };
+  templateSpecCache.set(cacheKey, spec);
+  return spec;
+}

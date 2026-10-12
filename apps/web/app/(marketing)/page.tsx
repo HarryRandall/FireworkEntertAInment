@@ -1,40 +1,31 @@
-/** Marketing homepage. */
+/** Marketing homepage: real product surfaces rather than illustrations, from the live show down. */
 
-import { Hero } from '@/ui/marketing/Hero';
-import { SocialProof } from '@/ui/marketing/SocialProof';
-import { Steps } from '@/ui/marketing/Steps';
-import { Showcase } from '@/ui/marketing/Showcase';
-import { Testimonials } from '@/ui/marketing/Testimonials';
 import { CTABand } from '@/ui/marketing/CTABand';
+import { CuratedEffects } from '@/ui/marketing/landing/CuratedEffects';
+import { LandingAssortments } from '@/ui/marketing/landing/LandingAssortments';
+import { LandingHero } from '@/ui/marketing/landing/LandingHero';
+import { LandingStakeholders } from '@/ui/marketing/landing/LandingStakeholders';
+import { LandingStarts } from '@/ui/marketing/landing/LandingStarts';
+import { MultishotShowcase } from '@/ui/marketing/landing/MultishotShowcase';
+import { SongToShow } from '@/ui/marketing/landing/SongToShow';
 
 export default function MarketingHome() {
   return (
     <>
-      <Hero
-        title="Design your own"
-        highlight="fireworks show."
-        subtitle="Pick a song, set a budget, and build a cue timeline from catalogue products. Preview the result and review the shopping list before finalising your plan."
-        primaryHref="/shows/new"
-        primaryLabel="Create a show"
-        secondaryHref="#how-it-works"
-        secondaryLabel="See how it works"
-      />
-
-      <SocialProof />
-
-      <Steps />
-
-      <Showcase />
-
-      <Testimonials />
-
+      <LandingHero />
+      <LandingStakeholders />
+      <CuratedEffects />
+      <MultishotShowcase />
+      <LandingAssortments />
+      <SongToShow />
+      <LandingStarts />
       <CTABand
         title="Ready to light up the sky?"
-        description="Start on the Free plan, preview the cue sequence and review the products your show needs."
+        description="Start on the Free plan, preview every cue in 3D and review the products your show needs."
         primaryHref="/shows/new"
         primaryLabel="Create a show"
-        secondaryHref="#showcase"
-        secondaryLabel="Watch the renderer demo"
+        secondaryHref="/library"
+        secondaryLabel="Explore templates"
       />
     </>
   );
