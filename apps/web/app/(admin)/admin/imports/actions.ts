@@ -56,7 +56,7 @@ import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
 
 /** Generic import-job form payload (used by both create + update). */
 const ImportJobSchema = z.object({
-  kind: z.enum(['vdl_glossary', 'firework_video', 'supplier_stock']),
+  kind: z.enum(['vdl_glossary', 'firework_video']),
   sourceName: z.string().trim().min(1).max(180),
   sourceUrl: z.string().trim().url().optional().or(z.literal('')),
   status: z.enum(['draft', 'queued', 'processing', 'needs_review', 'complete', 'failed']),

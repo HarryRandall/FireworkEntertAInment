@@ -10,7 +10,7 @@ import type {
 import type { Database, Json } from '@/lib/database.types';
 import { ADMIN_CACHE_TTL_SECONDS, getAdminStyleDefaultsCacheKey } from './cache-keys';
 import { requirePermission } from '@/lib/access/current-profile.server';
-import { describeSupabaseError, isMissingStyleDefaultSchemaError } from './style-default-schema';
+import { describeSupabaseError } from './style-default-schema';
 import { getServerClient } from './supabase';
 import {
   FIREWORK_STYLE_DEFAULT_KINDS,
@@ -92,12 +92,10 @@ async function listAdminStyleDefaults(): Promise<AdminStyleDefaultSummary[]> {
     .order('name', { ascending: true });
 
   if (defaultsResult.error) {
-    if (!isMissingStyleDefaultSchemaError(defaultsResult.error)) {
-      console.error(
-        '[admin.style-defaults] list defaults failed:',
-        describeSupabaseError(defaultsResult.error),
-      );
-    }
+    console.error(
+      '[admin.style-defaults] list defaults failed:',
+      describeSupabaseError(defaultsResult.error),
+    );
     return [];
   }
   const mapped = ((defaultsResult.data ?? []) as StyleDefaultRow[]).map(toSummary);

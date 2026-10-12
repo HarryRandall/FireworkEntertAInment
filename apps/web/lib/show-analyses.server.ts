@@ -28,7 +28,7 @@ type ShowAnalysisRow = Database['public']['Tables']['show_generation_runs']['Row
 const MUSIC_ANALYSIS_SELECT =
   'id, status, schema_version, personality, audio_path, runner_version, runtime_ms, error_message, created_at, completed_at, markdown, analysis_json';
 const LEGACY_SHOW_ANALYSIS_SELECT =
-  'id, show_id, status, schema_version, personality, audio_path, runner_version, runtime_ms, error_message, created_at, completed_at, markdown, analysis_json, cue_generation_status, cue_generation_error, cue_count';
+  'id, show_id, status, schema_version, personality, audio_path, runner_version, runtime_ms, error_message, created_at, completed_at, markdown, analysis_json, cue_generation_status, cue_generation_error';
 
 function failAnalysisRead(operation: string, error: unknown): never {
   console.error(`[show-analyses.server] ${operation} failed:`, error);
@@ -79,7 +79,7 @@ function hydrateLegacyShowAnalysis(row: ShowAnalysisRow): ShowAnalysisSnapshot {
     analysis: row.analysis_json as unknown as AnalyserResult | null,
     cueGenerationStatus: (row.cue_generation_status as CueGenerationStatus) ?? 'pending',
     cueGenerationError: row.cue_generation_error,
-    cueCount: row.cue_count,
+    cueCount: null,
   };
 }
 

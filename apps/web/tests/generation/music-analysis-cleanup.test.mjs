@@ -26,7 +26,6 @@ test('music analysis DELETE is authenticated, ownership-scoped, and idempotent',
 test('the analyser cannot settle or restore a row discarded during an in-flight run', () => {
   const uploadRunner = runner.slice(
     runner.indexOf('export async function runMusicAnalysisForUpload'),
-    runner.indexOf('export async function runShowAnalysisForShow'),
   );
   assert.match(uploadRunner, /claim_song_analysis_attempt/);
   assert.match(uploadRunner, /complete_song_analysis_attempt/);

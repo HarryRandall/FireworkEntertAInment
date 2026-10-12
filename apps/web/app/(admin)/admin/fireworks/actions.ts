@@ -15,7 +15,6 @@ import {
   invalidateAdminStyleDefaultsCache,
 } from '@/lib/admin/cache-keys';
 import { parseFireworkEditorSnapshot } from '@/lib/admin/editor-snapshots';
-import { isMissingEditorVersionSchemaError } from '@/lib/admin/style-default-schema';
 import type { Database, Json } from '@/lib/database.types';
 import { invalidateFireworkCatalogueCaches } from '@/lib/shows/cache-keys';
 import { createClient } from '@/lib/supabase/server';
@@ -223,12 +222,7 @@ export async function restoreFireworkEditorVersion(
     .eq('target_kind', 'firework')
     .eq('firework_id', parsed.data.fireworkId)
     .maybeSingle();
-  if (versionError) {
-    if (isMissingEditorVersionSchemaError(versionError)) {
-      return { ok: false, error: 'Version history is not available yet.' };
-    }
-    return { ok: false, error: versionError.message };
-  }
+  if (versionError) return { ok: false, error: versionError.message };
   if (!version) return { ok: false, error: 'That version could not be found.' };
 
   const snapshot = parseFireworkEditorSnapshot(version.snapshot_json);

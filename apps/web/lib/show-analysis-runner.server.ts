@@ -4,8 +4,8 @@
  * Pipeline:
  *   1. Mint a short-lived Supabase Storage signed URL for the audio.
  *   2. POST that URL + personality to the Modal endpoint with a bearer secret.
- *   3. Parse the analyser JSON, persist a `song_analyses` / `show_generation_runs`
- *      row, and let the caller render markdown.
+ *   3. Parse the analyser JSON, persist a `song_analyses` row, and let the
+ *      caller render markdown.
  *
  * Upload-scoped runs use database leases. Only the worker holding the current
  * lease token can complete, retry, or fail an attempt, so a stale Modal call
@@ -13,16 +13,13 @@
  */
 import 'server-only';
 
-import { randomUUID } from 'crypto';
 import { getTrustedAppOrigin } from '@/lib/app-origin';
-import { revalidatePath } from 'next/cache';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database, Json } from '@/lib/database.types';
 import { isRetryableAnalyserStatus } from '@/lib/analyser-http-status';
 import type { AnalyserBuildup, AnalyserKeyMoment, AnalyserResult } from '@/lib/show-analysis.types';
 import { readResponseTextWithLimit, ResponseBodyTooLargeError } from '@/lib/bounded-response';
 import {
-  ANALYSER_SCHEMA_VERSION,
   AnalyserOutputValidationError,
   parseAnalyserResponse,
   type AnalyserV14Result,
@@ -38,19 +35,6 @@ const ANALYSER_REQUEST_TIMEOUT_MS = 240 * 1000;
 const ANALYSER_DISPATCH_TIMEOUT_MS = 30 * 1000;
 
 type AppSupabaseClient = SupabaseClient<Database>;
-
-type ShowForAnalysis = {
-  id: string;
-  slug: string;
-  title: string;
-  description: string | null;
-  duration_seconds: number | null;
-  budget_cents: number | null;
-  time_of_day: string | null;
-  location: string | null;
-  mood_tags: string[] | null;
-  audio_path: string | null;
-};
 
 type MusicAnalysisRow = {
   analysis_id: string;
@@ -106,19 +90,14 @@ function formatBuildup(buildup: AnalyserBuildup): string {
   return `- ${formatSeconds(buildup.start)}-${formatSeconds(buildup.peak)} (${buildup.duration}s): rise ${buildup.energy_rise}`;
 }
 
-function buildAiContextMarkdown(params: {
-  show?: ShowForAnalysis | null;
-  personality: string;
-  analysis: AnalyserResult;
-}): string {
-  const { show, personality, analysis } = params;
+function buildAiContextMarkdown(params: { personality: string; analysis: AnalyserResult }): string {
+  const { personality, analysis } = params;
   const musicProfile = analysis.music_profile;
   const showPersonality = analysis.show_personality;
   const keySignature = musicProfile?.key_signature;
   const climaxes = analysis.key_moments.filter((moment) => moment.type === 'climax');
   const peaks = analysis.key_moments.filter((moment) => moment.type !== 'climax');
   const traits = musicProfile?.dominant_traits?.join(', ') || 'unknown';
-  const moodTags = show?.mood_tags?.length ? show.mood_tags.join(', ') : 'none';
 
   const lines = [
     '# AI Song Context',
@@ -127,23 +106,7 @@ function buildAiContextMarkdown(params: {
     '',
   ];
 
-  if (show) {
-    lines.push(
-      '## Show Brief',
-      '',
-      `- Title: ${show.title}`,
-      `- Description: ${show.description || 'none'}`,
-      `- Requested duration: ${show.duration_seconds ?? analysis.duration_seconds}s`,
-      `- Budget: ${show.budget_cents != null ? `$${Math.round(show.budget_cents / 100)}` : 'not set'}`,
-      `- Time of day: ${show.time_of_day || 'not set'}`,
-      `- Location: ${show.location || 'not set'}`,
-      `- Mood tags: ${moodTags}`,
-      `- Personality preset: ${personality}`,
-      '',
-    );
-  } else {
-    lines.push('## Upload Context', '', `- Personality preset: ${personality}`, '');
-  }
+  lines.push('## Upload Context', '', `- Personality preset: ${personality}`, '');
 
   lines.push(
     '## Song Summary',
@@ -348,25 +311,6 @@ async function classifyUnclaimedMusicAnalysis(params: {
     pending: true,
     error: params.error,
   };
-}
-
-async function markShowAnalysisFailed(params: {
-  supabase: AppSupabaseClient;
-  analysisId: string;
-  runtimeMs: number;
-  errorMessage: string;
-}) {
-  const { error } = await params.supabase
-    .from('show_generation_runs')
-    .update({
-      status: 'failed',
-      runtime_ms: params.runtimeMs,
-      error_message: truncate(params.errorMessage, 2000),
-    })
-    .eq('id', params.analysisId);
-  if (error) {
-    console.error('[show-analysis-runner] failed to persist show failure state:', error);
-  }
 }
 
 export async function runMusicAnalysisForUpload(params: {
@@ -624,104 +568,4 @@ export async function finishQueuedMusicAnalysis(params: {
         params.runtimeMs,
         isRetryableAnalyserStatus(params.outcome.status),
       );
-}
-
-export async function runShowAnalysisForShow(params: {
-  supabase: AppSupabaseClient;
-  userId: string;
-  showId: string;
-  personality?: 'balanced' | 'bold' | 'cinematic' | 'elegant' | 'intimate' | 'playful';
-}): Promise<RunShowAnalysisResult> {
-  const personality = params.personality ?? 'balanced';
-  const { data: show, error: showError } = await params.supabase
-    .from('shows')
-    .select(
-      'id, slug, title, description, duration_seconds, budget_cents, time_of_day, location, mood_tags, audio_path',
-    )
-    .eq('id', params.showId)
-    .eq('user_id', params.userId)
-    .maybeSingle();
-
-  if (showError) {
-    console.error('[show-analysis-runner] show lookup failed:', showError);
-    return { ok: false, error: 'Could not load show for analysis.' };
-  }
-  if (!show) return { ok: false, error: 'Show not found.' };
-  const typedShow = show as ShowForAnalysis;
-  if (!typedShow.audio_path) {
-    return { ok: false, error: 'This show has no uploaded audio to analyse.' };
-  }
-
-  const analysisId = randomUUID();
-  const startedAt = Date.now();
-  const { error: insertError } = await params.supabase.from('show_generation_runs').insert({
-    id: analysisId,
-    show_id: typedShow.id,
-    user_id: params.userId,
-    audio_path: typedShow.audio_path,
-    personality,
-    runner_version: ANALYSER_RUNNER_VERSION,
-    schema_version: ANALYSER_SCHEMA_VERSION,
-    status: 'running',
-  });
-  if (insertError) {
-    console.error('[show-analysis-runner] analysis row insert failed:', insertError);
-    return { ok: false, error: 'Could not create analysis record.' };
-  }
-
-  try {
-    const analysis = await runHostedAnalyser({
-      supabase: params.supabase,
-      audioPath: typedShow.audio_path,
-      personality,
-      analysisId,
-    });
-    if (!analysis) throw new AnalyseError('Legacy show analysis did not return output.', 502, true);
-    const contextMarkdown = buildAiContextMarkdown({
-      show: typedShow,
-      personality,
-      analysis,
-    });
-    const runtimeMs = Date.now() - startedAt;
-
-    const { data: completed, error: updateError } = await params.supabase
-      .from('show_generation_runs')
-      .update({
-        status: 'completed',
-        schema_version: analysis.schema_version,
-        completed_at: new Date().toISOString(),
-        runtime_ms: runtimeMs,
-        analysis_json: analysis as unknown as Json,
-        llm_payload: null,
-        markdown: contextMarkdown,
-        error_message: null,
-      })
-      .eq('id', analysisId)
-      .eq('user_id', params.userId)
-      .eq('status', 'running')
-      .select('id')
-      .maybeSingle();
-    if (updateError) {
-      throw new AnalyseError(`Could not save analysis output: ${updateError.message}`, 500);
-    }
-    if (!completed) {
-      throw new AnalyseError(
-        'Could not save analysis output: analysis record was not updated.',
-        500,
-      );
-    }
-
-    revalidatePath(`/shows/${typedShow.slug}`);
-    return { ok: true, analysisId, contextMarkdown };
-  } catch (error) {
-    const runtimeMs = Date.now() - startedAt;
-    const message = error instanceof Error ? error.message : String(error);
-    await markShowAnalysisFailed({
-      supabase: params.supabase,
-      analysisId,
-      runtimeMs,
-      errorMessage: message,
-    });
-    return { ok: false, analysisId, error: message };
-  }
 }

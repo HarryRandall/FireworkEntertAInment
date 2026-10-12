@@ -2,11 +2,7 @@ import 'server-only';
 
 import type { AdminEditorVersion } from '@/lib/admin.types';
 import type { Database } from '@/lib/database.types';
-import {
-  describeSupabaseError,
-  isMissingEditorVersionTableError,
-  isMissingStyleDefaultEditorVersionColumnError,
-} from './style-default-schema';
+import { describeSupabaseError } from './style-default-schema';
 import { getServerClient } from './supabase';
 import { isRecord } from '@/lib/utils';
 
@@ -15,8 +11,6 @@ type EditorVersionRow = Database['public']['Tables']['firework_editor_versions']
 
 const EDITOR_VERSION_SELECT =
   'id, target_kind, firework_id, firework_effect_id, firework_style_default_id, action, summary, snapshot_json, previous_snapshot_json, changes_json, created_by, created_by_label, created_at';
-const LEGACY_EDITOR_VERSION_SELECT =
-  'id, target_kind, firework_id, firework_effect_id, action, summary, snapshot_json, previous_snapshot_json, changes_json, created_by, created_by_label, created_at';
 
 function mapEditorVersion(row: EditorVersionRow): AdminEditorVersion {
   return {
@@ -63,25 +57,7 @@ export async function listFireworkEditorVersions(
     .order('created_at', { ascending: false })
     .limit(limit);
 
-  if (error) {
-    if (isMissingStyleDefaultEditorVersionColumnError(error)) {
-      const legacy = await supabase
-        .from('firework_editor_versions')
-        .select(LEGACY_EDITOR_VERSION_SELECT)
-        .eq('firework_id', fireworkId)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-      if (legacy.error) {
-        if (isMissingEditorVersionTableError(legacy.error)) return [];
-        throwHistoryReadError('listFireworkEditorVersionsLegacy', legacy.error);
-      }
-      return ((legacy.data ?? []) as unknown as EditorVersionRow[])
-        .filter((row) => !isSyntheticCurrentVersion(row))
-        .map(mapEditorVersion);
-    }
-    if (isMissingEditorVersionTableError(error)) return [];
-    throwHistoryReadError('listFireworkEditorVersions', error);
-  }
+  if (error) throwHistoryReadError('listFireworkEditorVersions', error);
 
   return ((data ?? []) as EditorVersionRow[])
     .filter((row) => !isSyntheticCurrentVersion(row))
@@ -100,25 +76,7 @@ export async function listEffectEditorVersions(
     .order('created_at', { ascending: false })
     .limit(limit);
 
-  if (error) {
-    if (isMissingStyleDefaultEditorVersionColumnError(error)) {
-      const legacy = await supabase
-        .from('firework_editor_versions')
-        .select(LEGACY_EDITOR_VERSION_SELECT)
-        .eq('firework_effect_id', effectId)
-        .order('created_at', { ascending: false })
-        .limit(limit);
-      if (legacy.error) {
-        if (isMissingEditorVersionTableError(legacy.error)) return [];
-        throwHistoryReadError('listEffectEditorVersionsLegacy', legacy.error);
-      }
-      return ((legacy.data ?? []) as unknown as EditorVersionRow[])
-        .filter((row) => !isSyntheticCurrentVersion(row))
-        .map(mapEditorVersion);
-    }
-    if (isMissingEditorVersionTableError(error)) return [];
-    throwHistoryReadError('listEffectEditorVersions', error);
-  }
+  if (error) throwHistoryReadError('listEffectEditorVersions', error);
 
   return ((data ?? []) as EditorVersionRow[])
     .filter((row) => !isSyntheticCurrentVersion(row))

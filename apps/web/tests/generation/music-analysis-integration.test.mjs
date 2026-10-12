@@ -8,41 +8,23 @@ import { join } from 'node:path';
 const root = process.cwd();
 
 test('audio analysis runner stores rich local song analysis JSON', () => {
-  const route = readFileSync(join(root, 'app/api/analyse/route.ts'), 'utf8');
   const runner = readFileSync(join(root, 'lib/show-analysis-runner.server.ts'), 'utf8');
 
-  assert.match(route, /runShowAnalysisForShow/);
+  assert.equal(existsSync(join(root, 'app/api/analyse/route.ts')), false);
+  assert.doesNotMatch(runner, /runShowAnalysisForShow|show_generation_runs/);
   assert.match(runner, /runMusicAnalysisForUpload/);
-  assert.match(runner, /audio_path: typedShow\.audio_path/);
-  assert.match(runner, /runner_version: ANALYSER_RUNNER_VERSION/);
+  assert.match(runner, /p_runner_version: ANALYSER_RUNNER_VERSION/);
   assert.match(runner, /runHostedAnalyser/);
   assert.match(runner, /ANALYSER_URL/);
   assert.match(runner, /ANALYSER_SHARED_SECRET/);
   assert.match(runner, /buildAiContextMarkdown/);
-  assert.match(runner, /analysis_json: analysis as unknown as Json/);
-  assert.match(runner, /llm_payload: null/);
-  assert.match(runner, /markdown: contextMarkdown/);
   assert.match(runner, /# AI Song Context/);
-  assert.doesNotMatch(route, /compact_payload/);
-  assert.doesNotMatch(route, /analysis_storage_path/);
   assert.doesNotMatch(runner, /['"]--no-json-file['"]/);
   assert.doesNotMatch(runner, /['"]--json['"]/);
   assert.doesNotMatch(runner, /['"]--llm-out['"]/);
   assert.doesNotMatch(runner, /payload_type: ['"]numeric_song_analysis['"]/);
   assert.doesNotMatch(runner, /firework_cue_samples/);
   assert.doesNotMatch(runner, /firework_cue_summary/);
-});
-
-test('show analysis succeeds only after the completed row is confirmed', () => {
-  const runner = readFileSync(join(root, 'lib/show-analysis-runner.server.ts'), 'utf8');
-  const showRunner = runner.slice(runner.indexOf('export async function runShowAnalysisForShow'));
-
-  assert.match(
-    showRunner,
-    /\.eq\('id', analysisId\)\s+\.eq\('user_id', params\.userId\)\s+\.eq\('status', 'running'\)\s+\.select\('id'\)\s+\.maybeSingle\(\)/,
-  );
-  assert.match(showRunner, /if \(!completed\) \{[\s\S]*analysis record was not updated/);
-  assert.ok(showRunner.indexOf('if (!completed)') < showRunner.indexOf('return { ok: true'));
 });
 
 test('analyser warm-up is opt-in from the admin dashboard', () => {

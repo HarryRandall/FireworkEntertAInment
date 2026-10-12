@@ -1725,52 +1725,12 @@ export type Database = {
           },
         ]
       }
-      show_assortment_selections: {
-        Row: {
-          assortment_id: string
-          created_at: string
-          id: string
-          quantity: number
-          show_id: string
-        }
-        Insert: {
-          assortment_id: string
-          created_at?: string
-          id?: string
-          quantity?: number
-          show_id: string
-        }
-        Update: {
-          assortment_id?: string
-          created_at?: string
-          id?: string
-          quantity?: number
-          show_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "show_assortment_selections_assortment_id_fkey"
-            columns: ["assortment_id"]
-            isOneToOne: false
-            referencedRelation: "assortments"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "show_assortment_selections_show_id_fkey"
-            columns: ["show_id"]
-            isOneToOne: false
-            referencedRelation: "shows"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       show_generation_runs: {
         Row: {
           analysis_json: Json | null
           audio_path: string
           completed_at: string | null
           created_at: string
-          cue_count: number | null
           cue_generation_error: string | null
           cue_generation_status: string
           error_message: string | null
@@ -1791,7 +1751,6 @@ export type Database = {
           audio_path?: string
           completed_at?: string | null
           created_at?: string
-          cue_count?: number | null
           cue_generation_error?: string | null
           cue_generation_status?: string
           error_message?: string | null
@@ -1812,7 +1771,6 @@ export type Database = {
           audio_path?: string
           completed_at?: string | null
           created_at?: string
-          cue_count?: number | null
           cue_generation_error?: string | null
           cue_generation_status?: string
           error_message?: string | null
@@ -2058,7 +2016,6 @@ export type Database = {
           generation_attempt_count: number
           generation_completed_at: string | null
           generation_error: string | null
-          generation_last_attempt_at: string | null
           generation_lease_expires_at: string | null
           generation_lease_token: string | null
           generation_next_retry_at: string | null
@@ -2103,7 +2060,6 @@ export type Database = {
           generation_attempt_count?: number
           generation_completed_at?: string | null
           generation_error?: string | null
-          generation_last_attempt_at?: string | null
           generation_lease_expires_at?: string | null
           generation_lease_token?: string | null
           generation_next_retry_at?: string | null
@@ -2148,7 +2104,6 @@ export type Database = {
           generation_attempt_count?: number
           generation_completed_at?: string | null
           generation_error?: string | null
-          generation_last_attempt_at?: string | null
           generation_lease_expires_at?: string | null
           generation_lease_token?: string | null
           generation_next_retry_at?: string | null
@@ -2209,7 +2164,6 @@ export type Database = {
           created_at: string
           error_message: string | null
           id: string
-          last_attempt_at: string | null
           lease_expires_at: string | null
           lease_token: string | null
           markdown: string | null
@@ -2240,7 +2194,6 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
-          last_attempt_at?: string | null
           lease_expires_at?: string | null
           lease_token?: string | null
           markdown?: string | null
@@ -2271,7 +2224,6 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
-          last_attempt_at?: string | null
           lease_expires_at?: string | null
           lease_token?: string | null
           markdown?: string | null
@@ -2303,7 +2255,6 @@ export type Database = {
           currency: string
           id: string
           price_cents: number | null
-          quantity_on_hand: number
           supplier_id: string
           supplier_sku: string | null
           updated_at: string
@@ -2316,7 +2267,6 @@ export type Database = {
           currency?: string
           id?: string
           price_cents?: number | null
-          quantity_on_hand?: number
           supplier_id: string
           supplier_sku?: string | null
           updated_at?: string
@@ -2329,7 +2279,6 @@ export type Database = {
           currency?: string
           id?: string
           price_cents?: number | null
-          quantity_on_hand?: number
           supplier_id?: string
           supplier_sku?: string | null
           updated_at?: string
