@@ -21,7 +21,7 @@ const eslintConfig = [
     rules: { 'architecture/legacy-colours': 'error' },
   },
   {
-    files: ['ui/patterns/**/*.{ts,tsx}', 'ui/shell/**/*.{ts,tsx}'],
+    files: ['ui/patterns/**/*.{ts,tsx}', 'ui/kit/**/*.{ts,tsx}', 'ui/shell/**/*.{ts,tsx}'],
     rules: { 'architecture/semantic-colours': 'error' },
   },
   {
