@@ -58,7 +58,9 @@ test('home discovery does not depend on the user already having a show', () => {
 test('public browse routes retain page-level chrome while their data loads', () => {
   const library = read('app/(browse)/library/page.tsx');
   const libraryLoading = read('app/(browse)/library/loading.tsx');
-  const catalogue = read('app/(browse)/catalogue/page.tsx');
+  const cataloguePage = read('app/(browse)/catalogue/page.tsx');
+  const catalogueCard = read('app/(browse)/catalogue/_components/CatalogueProductCard.tsx');
+  const catalogue = `${cataloguePage}\n${catalogueCard}`;
   const catalogueLoading = read('app/(browse)/catalogue/loading.tsx');
   const catalogueSkeleton = read('app/(browse)/catalogue/_components/CatalogueSkeleton.tsx');
 
@@ -83,15 +85,13 @@ test('public browse routes retain page-level chrome while their data loads', () 
     /persistedPosterUrl=\{fireworkPreviewImageUrl\(product\.previewImagePath\)\}/,
   );
   assert.doesNotMatch(catalogue, /\bpersistPoster\b/);
-  assert.match(catalogue, /\(product\.shotCount \?\? 1\)\.toLocaleString\(\)/);
+  assert.match(catalogue, /shotCount\.toLocaleString\(\)/);
+  assert.match(catalogue, /href=\{`\/catalogue\/\$\{product\.id\}`\}/);
   assert.match(catalogue, /formatDuration\(product\.durationSeconds\)/);
   assert.doesNotMatch(catalogue, /preview=\{/);
   assert.doesNotMatch(catalogue, /AdminEffectPreview/);
   assert.doesNotMatch(catalogue, /CatalogueMeta/);
-  assert.doesNotMatch(catalogue, /aria-label="Colour palette"/);
-  assert.doesNotMatch(catalogue, /product\.variant\?\.colorPalette\.slice/);
   assert.doesNotMatch(catalogue, /\{product\.description\s*\?\?/);
-  assert.doesNotMatch(catalogue, /product\.heightMeters \?/);
 });
 
 test('route error boundaries do not render backend error messages', () => {
@@ -117,7 +117,9 @@ test('route error boundaries do not render backend error messages', () => {
 });
 
 test('catalogue failures reach the shared browse retry boundary', () => {
-  const catalogue = read('app/(browse)/catalogue/page.tsx');
+  const catalogue = `${read('app/(browse)/catalogue/page.tsx')}\n${read(
+    'app/(browse)/catalogue/_components/CatalogueProductCard.tsx',
+  )}`;
 
   assert.doesNotMatch(catalogue, /ShowsNetworkError/);
   assert.doesNotMatch(catalogue, /temporarily unavailable/);

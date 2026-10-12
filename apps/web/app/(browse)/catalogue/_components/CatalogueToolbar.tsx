@@ -1,103 +1,72 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
-import { Check, ChevronDown, ListFilter, Search, X } from 'lucide-react';
+import { ArrowDownUp, Check, ChevronDown, Search, SlidersHorizontal, X } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/ui/patterns/Button';
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-  CommandList,
-} from '@/ui/primitives/command';
+import { Command, CommandGroup, CommandItem, CommandList } from '@/ui/primitives/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/primitives/popover';
-import { MANUFACTURER_FILTER_NONE } from '@/lib/show-domain';
+import { CATALOGUE_SORT_OPTIONS } from '@/lib/catalogue-browse';
 import { cn } from '@/lib/utils';
 
-const KIND_FILTER_OPTIONS = [
-  { label: 'Single shot', value: 'single' },
-  { label: 'Multi-shot', value: 'multishot' },
-];
+export type CatalogueToolbarValues = {
+  q: string;
+  kind: string;
+  effect: string;
+  colour: string;
+  caliber: string;
+  price_max: string;
+  sort: string;
+};
 
-const MANUFACTURER_FILTER_OPTIONS = [
-  { label: 'HA', value: 'HA' },
-  { label: 'Digitally created', value: MANUFACTURER_FILTER_NONE },
-];
+type Option = { value: string; label: string; count?: number };
 
 type CatalogueToolbarProps = {
-  kind: string;
-  manufacturer: string;
-  durationMin: string;
-  durationMax: string;
-  query: string;
+  values: CatalogueToolbarValues;
+  effectOptions: Option[];
+  colourOptions: Array<Option & { swatch: string }>;
+  caliberOptions: Option[];
 };
 
 const SEARCH_DEBOUNCE_MS = 250;
+const FILTER_KEYS = ['kind', 'effect', 'colour', 'caliber', 'price_max'] as const;
+type FilterKey = (typeof FILTER_KEYS)[number];
 
+function sameValues(a: CatalogueToolbarValues, b: CatalogueToolbarValues) {
+  return (Object.keys(a) as (keyof CatalogueToolbarValues)[]).every(
+    (key) => a[key].trim() === b[key].trim(),
+  );
+}
+
+/** Search, one Filters menu and sort. Other URL parameters are dropped on change. */
 export function CatalogueToolbar({
-  kind,
-  manufacturer,
-  durationMin,
-  durationMax,
-  query,
+  values,
+  effectOptions,
+  colourOptions,
+  caliberOptions,
 }: CatalogueToolbarProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [draftQuery, setDraftQuery] = useState(query);
-  const [selectedKind, setSelectedKind] = useState(kind);
-  const [selectedManufacturer, setSelectedManufacturer] = useState(manufacturer);
-  const [selectedDurationMin, setSelectedDurationMin] = useState(durationMin);
-  const [selectedDurationMax, setSelectedDurationMax] = useState(durationMax);
+  const [draft, setDraft] = useState(values);
   const [, startTransition] = useTransition();
-  const hasQuery = draftQuery.trim().length > 0;
 
   useEffect(() => {
-    setDraftQuery(query);
-  }, [query]);
+    setDraft(values);
+  }, [values]);
 
-  useEffect(() => {
-    setSelectedKind(kind);
-  }, [kind]);
-
-  useEffect(() => {
-    setSelectedManufacturer(manufacturer);
-  }, [manufacturer]);
-
-  useEffect(() => {
-    setSelectedDurationMin(durationMin);
-  }, [durationMin]);
-
-  useEffect(() => {
-    setSelectedDurationMax(durationMax);
-  }, [durationMax]);
+  const update = useCallback(
+    (changes: Partial<CatalogueToolbarValues>) =>
+      setDraft((current) => ({ ...current, ...changes })),
+    [],
+  );
 
   const buildHref = useCallback(
-    (
-      nextQuery: string,
-      nextKind: string,
-      nextManufacturer: string,
-      nextDurationMin: string,
-      nextDurationMax: string,
-    ) => {
+    (next: CatalogueToolbarValues) => {
       const params = new URLSearchParams();
-      const normalisedQuery = nextQuery.trim();
-
-      if (normalisedQuery) params.set('q', normalisedQuery);
-      else params.delete('q');
-
-      if (nextKind) params.set('kind', nextKind);
-      else params.delete('kind');
-
-      if (nextManufacturer) params.set('manufacturer', nextManufacturer);
-      else params.delete('manufacturer');
-
-      if (nextDurationMin) params.set('duration_min', nextDurationMin);
-      else params.delete('duration_min');
-
-      if (nextDurationMax) params.set('duration_max', nextDurationMax);
-      else params.delete('duration_max');
-
+      for (const [key, value] of Object.entries(next)) {
+        const normalised = value.trim();
+        if (normalised && !(key === 'sort' && normalised === 'name')) params.set(key, normalised);
+      }
       const queryString = params.toString();
       return queryString ? `${pathname}?${queryString}` : pathname;
     },
@@ -110,66 +79,33 @@ export function CatalogueToolbar({
       skipFirstRender.current = false;
       return;
     }
-    if (
-      draftQuery.trim() === query.trim() &&
-      selectedKind === kind &&
-      selectedManufacturer === manufacturer &&
-      selectedDurationMin === durationMin &&
-      selectedDurationMax === durationMax
-    )
-      return;
+    if (sameValues(draft, values)) return;
     const timer = setTimeout(() => {
       startTransition(() => {
-        router.replace(
-          buildHref(
-            draftQuery,
-            selectedKind,
-            selectedManufacturer,
-            selectedDurationMin,
-            selectedDurationMax,
-          ),
-          { scroll: false },
-        );
+        router.replace(buildHref(draft), { scroll: false });
       });
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [
-    draftQuery,
-    selectedKind,
-    selectedManufacturer,
-    selectedDurationMin,
-    selectedDurationMax,
-    query,
-    kind,
-    manufacturer,
-    durationMin,
-    durationMax,
-    buildHref,
-    router,
-  ]);
-
-  function changeQuery(nextQuery: string) {
-    setDraftQuery(nextQuery);
-  }
+  }, [draft, values, buildHref, router]);
 
   return (
-    <section className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
-      <label className="relative min-w-0">
+    <section className="flex flex-col gap-2 sm:flex-row">
+      <label className="relative min-w-0 flex-1">
         <span className="sr-only">Search catalogue</span>
         <Search
           size={16}
           className="text-muted-foreground pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2"
         />
         <input
-          value={draftQuery}
-          onChange={(event) => changeQuery(event.target.value)}
+          value={draft.q}
+          onChange={(event) => update({ q: event.target.value })}
           placeholder="Search fireworks, effects, codes"
           className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/45 h-10 w-full rounded-md border pr-11 pl-10 text-sm shadow-xs transition-colors focus:outline-none focus-visible:ring-3"
         />
-        {hasQuery ? (
+        {draft.q.trim() ? (
           <button
             type="button"
-            onClick={() => setDraftQuery('')}
+            onClick={() => update({ q: '' })}
             className="text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:ring-border-emphasis absolute top-1/2 right-2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md transition-colors focus:outline-none focus-visible:ring-2"
             aria-label="Clear search"
           >
@@ -178,54 +114,25 @@ export function CatalogueToolbar({
         ) : null}
       </label>
 
-      <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
-        <FilterDropdown
-          ariaLabel="Filter by product type"
-          allLabel="All products"
-          options={KIND_FILTER_OPTIONS}
-          selected={selectedKind}
-          onSelect={setSelectedKind}
+      <div className="flex gap-2">
+        <FiltersMenu
+          values={draft}
+          effectOptions={effectOptions}
+          colourOptions={colourOptions}
+          caliberOptions={caliberOptions}
+          onApply={update}
         />
-        <FilterDropdown
-          ariaLabel="Filter by manufacturer"
-          allLabel="All manufacturers"
-          options={MANUFACTURER_FILTER_OPTIONS}
-          selected={selectedManufacturer}
-          onSelect={setSelectedManufacturer}
-        />
-        <DurationFilterPopover
-          min={selectedDurationMin}
-          max={selectedDurationMax}
-          onApply={(nextMin, nextMax) => {
-            setSelectedDurationMin(nextMin);
-            setSelectedDurationMax(nextMax);
-          }}
-        />
+        <SortMenu selected={draft.sort || 'name'} onSelect={(sort) => update({ sort })} />
       </div>
     </section>
   );
 }
 
-function FilterDropdown({
-  ariaLabel,
-  allLabel,
-  options,
-  selected,
-  onSelect,
-}: {
-  ariaLabel: string;
-  allLabel: string;
-  options: { label: string; value: string }[];
-  selected: string;
-  onSelect: (value: string) => void;
-}) {
+function SortMenu({ selected, onSelect }: { selected: string; onSelect: (sort: string) => void }) {
   const [open, setOpen] = useState(false);
-  const selectedLabel = options.find((option) => option.value === selected)?.label ?? allLabel;
-
-  function select(value: string) {
-    onSelect(value);
-    setOpen(false);
-  }
+  const label =
+    CATALOGUE_SORT_OPTIONS.find((option) => option.value === selected)?.label ??
+    CATALOGUE_SORT_OPTIONS[0].label;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -233,46 +140,34 @@ function FilterDropdown({
         <Button
           type="button"
           variant="secondary"
-          size="md"
-          className="h-10 w-fit max-w-full rounded-md px-3"
-          aria-label={ariaLabel}
+          className="h-10 rounded-md px-3"
+          aria-label={`Sort products: ${label}`}
         >
-          <ListFilter size={15} className="text-muted-foreground shrink-0" />
-          <span className="min-w-0 truncate">{selectedLabel}</span>
-          <ChevronDown size={15} className="text-muted-foreground ml-1 shrink-0" />
+          <ArrowDownUp size={15} className="text-muted-foreground shrink-0" />
+          <span className="hidden truncate md:inline">{label}</span>
+          <ChevronDown size={15} className="text-muted-foreground shrink-0" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-52 p-1">
         <Command>
           <CommandList>
-            <CommandEmpty>No filters.</CommandEmpty>
             <CommandGroup>
-              <CommandItem
-                value={allLabel}
-                onSelect={() => select('')}
-                className={cn('rounded-md', selected === '' && 'text-foreground')}
-              >
-                <span className="flex h-4 w-4 shrink-0 items-center justify-center">
-                  {selected === '' ? <Check size={14} /> : null}
-                </span>
-                {allLabel}
-              </CommandItem>
-              {options.map((option) => {
-                const isSelected = option.value === selected;
-                return (
-                  <CommandItem
-                    key={option.value}
-                    value={option.label}
-                    onSelect={() => select(option.value)}
-                    className={cn('rounded-md', isSelected && 'text-foreground')}
-                  >
-                    <span className="flex h-4 w-4 shrink-0 items-center justify-center">
-                      {isSelected ? <Check size={14} /> : null}
-                    </span>
-                    {option.label}
-                  </CommandItem>
-                );
-              })}
+              {CATALOGUE_SORT_OPTIONS.map((option) => (
+                <CommandItem
+                  key={option.value}
+                  value={option.label}
+                  onSelect={() => {
+                    onSelect(option.value);
+                    setOpen(false);
+                  }}
+                  className="rounded-md"
+                >
+                  <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+                    {option.value === selected ? <Check size={14} /> : null}
+                  </span>
+                  {option.label}
+                </CommandItem>
+              ))}
             </CommandGroup>
           </CommandList>
         </Command>
@@ -281,81 +176,198 @@ function FilterDropdown({
   );
 }
 
-function DurationFilterPopover({
-  min,
-  max,
+const TYPE_OPTIONS: Option[] = [
+  { value: '', label: 'All' },
+  { value: 'single', label: 'Single shot' },
+  { value: 'multishot', label: 'Multi-shot cake' },
+];
+
+function FiltersMenu({
+  values,
+  effectOptions,
+  colourOptions,
+  caliberOptions,
   onApply,
 }: {
-  min: string;
-  max: string;
-  onApply: (min: string, max: string) => void;
+  values: CatalogueToolbarValues;
+  effectOptions: Option[];
+  colourOptions: Array<Option & { swatch: string }>;
+  caliberOptions: Option[];
+  onApply: (changes: Pick<CatalogueToolbarValues, FilterKey>) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const [draftMin, setDraftMin] = useState(min);
-  const [draftMax, setDraftMax] = useState(max);
+  const [draft, setDraft] = useState(() => pickFilters(values));
+  const activeCount = FILTER_KEYS.filter((key) => values[key]).length;
 
   useEffect(() => {
-    if (open) {
-      setDraftMin(min);
-      setDraftMax(max);
-    }
-  }, [open, min, max]);
+    if (open) setDraft(pickFilters(values));
+  }, [open, values]);
 
-  const label = min || max ? `${min || '0'}–${max || '∞'}s` : 'Any duration';
+  const set = (key: FilterKey, value: string) =>
+    setDraft((current) => ({ ...current, [key]: current[key] === value ? '' : value }));
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button
-          type="button"
-          variant="secondary"
-          size="md"
-          className="h-10 w-fit max-w-full rounded-md px-3"
-          aria-label="Filter by duration"
-        >
-          <ListFilter size={15} className="text-muted-foreground shrink-0" />
-          <span className="min-w-0 truncate">{label}</span>
-          <ChevronDown size={15} className="text-muted-foreground ml-1 shrink-0" />
+        <Button type="button" variant="secondary" className="h-10 rounded-md px-3">
+          <SlidersHorizontal size={15} className="text-muted-foreground shrink-0" />
+          Filters
+          {activeCount > 0 ? (
+            <span className="bg-foreground text-background inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs tabular-nums">
+              {activeCount}
+            </span>
+          ) : null}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-64 p-3">
+      <PopoverContent align="end" className="w-[min(22rem,calc(100vw-2rem))] p-0">
         <form
-          className="flex flex-col gap-3"
           onSubmit={(event) => {
             event.preventDefault();
-            onApply(draftMin, draftMax);
+            onApply(draft);
             setOpen(false);
           }}
         >
-          <div className="text-foreground text-sm font-medium">Duration</div>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              inputMode="decimal"
-              min={0}
-              value={draftMin}
-              onChange={(event) => setDraftMin(event.target.value)}
-              placeholder="Min"
-              aria-label="Minimum duration in seconds"
-              className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/45 h-9 w-full rounded-md border px-2.5 text-sm shadow-xs transition-colors focus:outline-none focus-visible:ring-3"
-            />
-            <span className="text-muted-foreground text-xs">to</span>
-            <input
-              type="number"
-              inputMode="decimal"
-              min={0}
-              value={draftMax}
-              onChange={(event) => setDraftMax(event.target.value)}
-              placeholder="Max"
-              aria-label="Maximum duration in seconds"
-              className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/45 h-9 w-full rounded-md border px-2.5 text-sm shadow-xs transition-colors focus:outline-none focus-visible:ring-3"
-            />
+          <div className="flex max-h-[min(32rem,70vh)] flex-col gap-5 overflow-y-auto p-4">
+            <FilterSection title="Type">
+              {TYPE_OPTIONS.map((option) => (
+                <Pill
+                  key={option.value || 'all'}
+                  active={draft.kind === option.value}
+                  onClick={() => setDraft((current) => ({ ...current, kind: option.value }))}
+                >
+                  {option.label}
+                </Pill>
+              ))}
+            </FilterSection>
+
+            {colourOptions.length > 0 ? (
+              <FilterSection title="Colour">
+                {colourOptions.map((option) => (
+                  <Pill
+                    key={option.value}
+                    active={draft.colour === option.value}
+                    onClick={() => set('colour', option.value)}
+                  >
+                    <span
+                      aria-hidden
+                      className="border-border h-3 w-3 rounded-full border"
+                      style={{ backgroundColor: option.swatch }}
+                    />
+                    {option.label}
+                  </Pill>
+                ))}
+              </FilterSection>
+            ) : null}
+
+            {effectOptions.length > 0 ? (
+              <FilterSection title="Effect">
+                {effectOptions.map((option) => (
+                  <Pill
+                    key={option.value}
+                    active={draft.effect === option.value}
+                    onClick={() => set('effect', option.value)}
+                  >
+                    {option.label}
+                  </Pill>
+                ))}
+              </FilterSection>
+            ) : null}
+
+            {caliberOptions.length > 0 ? (
+              <FilterSection title="Calibre">
+                {caliberOptions.map((option) => (
+                  <Pill
+                    key={option.value}
+                    active={draft.caliber === option.value}
+                    onClick={() => set('caliber', option.value)}
+                  >
+                    {option.label}
+                  </Pill>
+                ))}
+              </FilterSection>
+            ) : null}
+
+            <label className="flex flex-col gap-2">
+              <span className="text-foreground text-xs font-medium">Maximum price</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                min={0}
+                step="any"
+                value={draft.price_max}
+                onChange={(event) =>
+                  setDraft((current) => ({ ...current, price_max: event.target.value }))
+                }
+                placeholder="No limit"
+                className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/45 h-9 w-full rounded-md border px-2.5 text-sm shadow-xs transition-colors focus:outline-none focus-visible:ring-3"
+              />
+            </label>
           </div>
-          <Button type="submit" size="sm">
-            Apply
-          </Button>
+
+          <div className="border-border flex gap-2 border-t p-3">
+            <Button
+              type="button"
+              variant="ghost"
+              className="flex-1"
+              onClick={() => setDraft(emptyFilters())}
+            >
+              Clear all
+            </Button>
+            <Button type="submit" className="flex-1">
+              Show results
+            </Button>
+          </div>
         </form>
       </PopoverContent>
     </Popover>
+  );
+}
+
+function pickFilters(values: CatalogueToolbarValues): Pick<CatalogueToolbarValues, FilterKey> {
+  return {
+    kind: values.kind,
+    effect: values.effect,
+    colour: values.colour,
+    caliber: values.caliber,
+    price_max: values.price_max,
+  };
+}
+
+function emptyFilters(): Pick<CatalogueToolbarValues, FilterKey> {
+  return { kind: '', effect: '', colour: '', caliber: '', price_max: '' };
+}
+
+function FilterSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <fieldset className="flex flex-col gap-2">
+      <legend className="text-foreground mb-2 text-xs font-medium">{title}</legend>
+      <div className="flex flex-wrap gap-1.5">{children}</div>
+    </fieldset>
+  );
+}
+
+function Pill({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      onClick={onClick}
+      className={cn(
+        'focus-visible:ring-ring/45 inline-flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-xs transition-colors focus:outline-none focus-visible:ring-2',
+        active
+          ? 'border-foreground bg-foreground text-background'
+          : 'border-border text-muted-foreground hover:text-foreground hover:border-border-emphasis',
+      )}
+    >
+      {children}
+    </button>
   );
 }
