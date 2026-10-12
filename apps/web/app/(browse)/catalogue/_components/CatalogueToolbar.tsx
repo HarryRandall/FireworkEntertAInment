@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
-import { Check, ChevronDown, ListFilter, Search, X } from 'lucide-react';
+import { ArrowDownUp, Check, ChevronDown, ListFilter, Search, X } from 'lucide-react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/ui/patterns/Button';
 import {
@@ -12,6 +12,7 @@ import {
   CommandList,
 } from '@/ui/primitives/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/ui/primitives/popover';
+import { CATALOGUE_SORT_OPTIONS } from '@/lib/catalogue-browse';
 import { MANUFACTURER_FILTER_NONE } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';
 
@@ -20,84 +21,64 @@ const KIND_FILTER_OPTIONS = [
   { label: 'Multi-shot', value: 'multishot' },
 ];
 
+const SORT_FILTER_OPTIONS = CATALOGUE_SORT_OPTIONS;
+
 const MANUFACTURER_FILTER_OPTIONS = [
   { label: 'HA', value: 'HA' },
   { label: 'Digitally created', value: MANUFACTURER_FILTER_NONE },
 ];
 
-type CatalogueToolbarProps = {
+export type CatalogueToolbarValues = {
+  q: string;
   kind: string;
   manufacturer: string;
-  durationMin: string;
-  durationMax: string;
-  query: string;
+  duration_min: string;
+  duration_max: string;
+  caliber: string;
+  price_max: string;
+  sort: string;
+  /** Set by the effect and colour chips; carried through so toolbar edits keep them. */
+  effect: string;
+  colour: string;
+};
+
+type CatalogueToolbarProps = {
+  values: CatalogueToolbarValues;
+  caliberOptions: { label: string; value: string }[];
 };
 
 const SEARCH_DEBOUNCE_MS = 250;
 
-export function CatalogueToolbar({
-  kind,
-  manufacturer,
-  durationMin,
-  durationMax,
-  query,
-}: CatalogueToolbarProps) {
+function sameValues(a: CatalogueToolbarValues, b: CatalogueToolbarValues) {
+  return (Object.keys(a) as (keyof CatalogueToolbarValues)[]).every(
+    (key) => a[key].trim() === b[key].trim(),
+  );
+}
+
+export function CatalogueToolbar({ values, caliberOptions }: CatalogueToolbarProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [draftQuery, setDraftQuery] = useState(query);
-  const [selectedKind, setSelectedKind] = useState(kind);
-  const [selectedManufacturer, setSelectedManufacturer] = useState(manufacturer);
-  const [selectedDurationMin, setSelectedDurationMin] = useState(durationMin);
-  const [selectedDurationMax, setSelectedDurationMax] = useState(durationMax);
+  const [draft, setDraft] = useState(values);
   const [, startTransition] = useTransition();
-  const hasQuery = draftQuery.trim().length > 0;
+  const hasQuery = draft.q.trim().length > 0;
 
   useEffect(() => {
-    setDraftQuery(query);
-  }, [query]);
+    setDraft(values);
+  }, [values]);
 
-  useEffect(() => {
-    setSelectedKind(kind);
-  }, [kind]);
-
-  useEffect(() => {
-    setSelectedManufacturer(manufacturer);
-  }, [manufacturer]);
-
-  useEffect(() => {
-    setSelectedDurationMin(durationMin);
-  }, [durationMin]);
-
-  useEffect(() => {
-    setSelectedDurationMax(durationMax);
-  }, [durationMax]);
+  const update = useCallback(
+    (changes: Partial<CatalogueToolbarValues>) =>
+      setDraft((current) => ({ ...current, ...changes })),
+    [],
+  );
 
   const buildHref = useCallback(
-    (
-      nextQuery: string,
-      nextKind: string,
-      nextManufacturer: string,
-      nextDurationMin: string,
-      nextDurationMax: string,
-    ) => {
+    (next: CatalogueToolbarValues) => {
       const params = new URLSearchParams();
-      const normalisedQuery = nextQuery.trim();
-
-      if (normalisedQuery) params.set('q', normalisedQuery);
-      else params.delete('q');
-
-      if (nextKind) params.set('kind', nextKind);
-      else params.delete('kind');
-
-      if (nextManufacturer) params.set('manufacturer', nextManufacturer);
-      else params.delete('manufacturer');
-
-      if (nextDurationMin) params.set('duration_min', nextDurationMin);
-      else params.delete('duration_min');
-
-      if (nextDurationMax) params.set('duration_max', nextDurationMax);
-      else params.delete('duration_max');
-
+      for (const [key, value] of Object.entries(next)) {
+        const normalised = value.trim();
+        if (normalised && !(key === 'sort' && normalised === 'name')) params.set(key, normalised);
+      }
       const queryString = params.toString();
       return queryString ? `${pathname}?${queryString}` : pathname;
     },
@@ -110,50 +91,17 @@ export function CatalogueToolbar({
       skipFirstRender.current = false;
       return;
     }
-    if (
-      draftQuery.trim() === query.trim() &&
-      selectedKind === kind &&
-      selectedManufacturer === manufacturer &&
-      selectedDurationMin === durationMin &&
-      selectedDurationMax === durationMax
-    )
-      return;
+    if (sameValues(draft, values)) return;
     const timer = setTimeout(() => {
       startTransition(() => {
-        router.replace(
-          buildHref(
-            draftQuery,
-            selectedKind,
-            selectedManufacturer,
-            selectedDurationMin,
-            selectedDurationMax,
-          ),
-          { scroll: false },
-        );
+        router.replace(buildHref(draft), { scroll: false });
       });
     }, SEARCH_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [
-    draftQuery,
-    selectedKind,
-    selectedManufacturer,
-    selectedDurationMin,
-    selectedDurationMax,
-    query,
-    kind,
-    manufacturer,
-    durationMin,
-    durationMax,
-    buildHref,
-    router,
-  ]);
-
-  function changeQuery(nextQuery: string) {
-    setDraftQuery(nextQuery);
-  }
+  }, [draft, values, buildHref, router]);
 
   return (
-    <section className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+    <section className="grid gap-2 lg:grid-cols-[minmax(0,1fr)_auto]">
       <label className="relative min-w-0">
         <span className="sr-only">Search catalogue</span>
         <Search
@@ -161,15 +109,15 @@ export function CatalogueToolbar({
           className="text-muted-foreground pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2"
         />
         <input
-          value={draftQuery}
-          onChange={(event) => changeQuery(event.target.value)}
+          value={draft.q}
+          onChange={(event) => update({ q: event.target.value })}
           placeholder="Search fireworks, effects, codes"
           className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/45 h-10 w-full rounded-md border pr-11 pl-10 text-sm shadow-xs transition-colors focus:outline-none focus-visible:ring-3"
         />
         {hasQuery ? (
           <button
             type="button"
-            onClick={() => setDraftQuery('')}
+            onClick={() => update({ q: '' })}
             className="text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:ring-border-emphasis absolute top-1/2 right-2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md transition-colors focus:outline-none focus-visible:ring-2"
             aria-label="Clear search"
           >
@@ -178,28 +126,44 @@ export function CatalogueToolbar({
         ) : null}
       </label>
 
-      <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
+      <div className="flex flex-wrap items-center justify-center gap-2 lg:justify-end">
         <FilterDropdown
           ariaLabel="Filter by product type"
           allLabel="All products"
           options={KIND_FILTER_OPTIONS}
-          selected={selectedKind}
-          onSelect={setSelectedKind}
+          selected={draft.kind}
+          onSelect={(kind) => update({ kind })}
         />
         <FilterDropdown
           ariaLabel="Filter by manufacturer"
           allLabel="All manufacturers"
           options={MANUFACTURER_FILTER_OPTIONS}
-          selected={selectedManufacturer}
-          onSelect={setSelectedManufacturer}
+          selected={draft.manufacturer}
+          onSelect={(manufacturer) => update({ manufacturer })}
         />
+        {caliberOptions.length > 0 ? (
+          <FilterDropdown
+            ariaLabel="Filter by calibre"
+            allLabel="Any calibre"
+            options={caliberOptions}
+            selected={draft.caliber}
+            onSelect={(caliber) => update({ caliber })}
+          />
+        ) : null}
         <DurationFilterPopover
-          min={selectedDurationMin}
-          max={selectedDurationMax}
-          onApply={(nextMin, nextMax) => {
-            setSelectedDurationMin(nextMin);
-            setSelectedDurationMax(nextMax);
-          }}
+          min={draft.duration_min}
+          max={draft.duration_max}
+          onApply={(nextMin, nextMax) => update({ duration_min: nextMin, duration_max: nextMax })}
+        />
+        <PriceFilterPopover max={draft.price_max} onApply={(price_max) => update({ price_max })} />
+        <FilterDropdown
+          ariaLabel="Sort products"
+          allLabel={SORT_FILTER_OPTIONS[0].label}
+          allValue="name"
+          icon="sort"
+          options={SORT_FILTER_OPTIONS.slice(1)}
+          selected={draft.sort || 'name'}
+          onSelect={(sort) => update({ sort })}
         />
       </div>
     </section>
@@ -209,13 +173,17 @@ export function CatalogueToolbar({
 function FilterDropdown({
   ariaLabel,
   allLabel,
+  allValue = '',
+  icon = 'filter',
   options,
   selected,
   onSelect,
 }: {
   ariaLabel: string;
   allLabel: string;
-  options: { label: string; value: string }[];
+  allValue?: string;
+  icon?: 'filter' | 'sort';
+  options: ReadonlyArray<{ label: string; value: string }>;
   selected: string;
   onSelect: (value: string) => void;
 }) {
@@ -237,7 +205,11 @@ function FilterDropdown({
           className="h-10 w-fit max-w-full rounded-md px-3"
           aria-label={ariaLabel}
         >
-          <ListFilter size={15} className="text-muted-foreground shrink-0" />
+          {icon === 'sort' ? (
+            <ArrowDownUp size={15} className="text-muted-foreground shrink-0" />
+          ) : (
+            <ListFilter size={15} className="text-muted-foreground shrink-0" />
+          )}
           <span className="min-w-0 truncate">{selectedLabel}</span>
           <ChevronDown size={15} className="text-muted-foreground ml-1 shrink-0" />
         </Button>
@@ -249,11 +221,11 @@ function FilterDropdown({
             <CommandGroup>
               <CommandItem
                 value={allLabel}
-                onSelect={() => select('')}
-                className={cn('rounded-md', selected === '' && 'text-foreground')}
+                onSelect={() => select(allValue)}
+                className={cn('rounded-md', selected === allValue && 'text-foreground')}
               >
                 <span className="flex h-4 w-4 shrink-0 items-center justify-center">
-                  {selected === '' ? <Check size={14} /> : null}
+                  {selected === allValue ? <Check size={14} /> : null}
                 </span>
                 {allLabel}
               </CommandItem>
@@ -354,6 +326,76 @@ function DurationFilterPopover({
           <Button type="submit" size="sm">
             Apply
           </Button>
+        </form>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function PriceFilterPopover({ max, onApply }: { max: string; onApply: (max: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [draftMax, setDraftMax] = useState(max);
+
+  useEffect(() => {
+    if (open) setDraftMax(max);
+  }, [open, max]);
+
+  const label = max ? `Up to $${max}` : 'Any price';
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="secondary"
+          size="md"
+          className="h-10 w-fit max-w-full rounded-md px-3"
+          aria-label="Filter by price"
+        >
+          <ListFilter size={15} className="text-muted-foreground shrink-0" />
+          <span className="min-w-0 truncate">{label}</span>
+          <ChevronDown size={15} className="text-muted-foreground ml-1 shrink-0" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-56 p-3">
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            onApply(draftMax);
+            setOpen(false);
+          }}
+        >
+          <label className="flex flex-col gap-2">
+            <span className="text-foreground text-sm font-medium">Maximum price</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              min={0}
+              step="any"
+              value={draftMax}
+              onChange={(event) => setDraftMax(event.target.value)}
+              placeholder="No limit"
+              className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/45 h-9 w-full rounded-md border px-2.5 text-sm shadow-xs transition-colors focus:outline-none focus-visible:ring-3"
+            />
+          </label>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="flex-1"
+              onClick={() => {
+                onApply('');
+                setOpen(false);
+              }}
+            >
+              Clear
+            </Button>
+            <Button type="submit" size="sm" className="flex-1">
+              Apply
+            </Button>
+          </div>
         </form>
       </PopoverContent>
     </Popover>

@@ -22,3 +22,18 @@ export function CatalogueToolbarSkeleton() {
     </div>
   );
 }
+
+/** Toolbar, facet chips and grid together, for the page-level Suspense fallback. */
+export function CatalogueBrowserSkeleton() {
+  return (
+    <div className="flex flex-col gap-5">
+      <CatalogueToolbarSkeleton />
+      <div className="flex flex-wrap gap-2">
+        {Array.from({ length: 8 }).map((_, index) => (
+          <Skeleton key={index} className="h-8 w-24 rounded-full" />
+        ))}
+      </div>
+      <CatalogueSkeleton />
+    </div>
+  );
+}
