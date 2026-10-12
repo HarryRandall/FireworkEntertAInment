@@ -2434,6 +2434,36 @@ export type Database = {
         }
         Relationships: []
       }
+      vdl_glossary_terms: {
+        Row: {
+          created_at: string
+          definition: Json
+          id: string
+          notes: string | null
+          phrase: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          definition: Json
+          id?: string
+          notes?: string | null
+          phrase: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          definition?: Json
+          id?: string
+          notes?: string | null
+          phrase?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -2606,6 +2636,15 @@ export type Database = {
           p_template_key: string
         }
         Returns: string
+      }
+      create_vdl_multishot: {
+        Args: {
+          p_description: string
+          p_fireworks: Json
+          p_name: string
+          p_shots: Json
+        }
+        Returns: Json
       }
       current_firework_import_render_validator_version: {
         Args: never
