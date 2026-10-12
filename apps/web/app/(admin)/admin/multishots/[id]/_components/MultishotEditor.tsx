@@ -238,7 +238,6 @@ export function MultishotEditor({
               timeOffsetSeconds: Number(shot.timeOffsetSeconds.toFixed(3)),
               panDegrees: Math.round(clampMultishotPanDegrees(shot.panDegrees)),
               tiltDegrees: Math.round(clampMultishotTiltDegrees(shot.tiltDegrees)),
-              launchPositionIndex: 0,
               caliber: shot.caliber,
               notes: shot.notes,
             });

@@ -89,7 +89,6 @@ const ShotSchema = z.object({
     .int()
     .min(-MULTISHOT_TILT_LIMIT_DEGREES)
     .max(MULTISHOT_TILT_LIMIT_DEGREES),
-  launchPositionIndex: z.coerce.number().int().min(0).max(2),
   caliber: z.string().trim().max(MULTISHOT_CALIBER_MAX_LENGTH).optional().nullable(),
   notes: z.string().trim().max(MULTISHOT_NOTES_MAX_LENGTH).optional().nullable(),
 });
@@ -318,8 +317,8 @@ export async function upsertMultishotShot(
     time_offset_seconds: parsed.data.timeOffsetSeconds,
     pan_degrees: parsed.data.panDegrees,
     tilt_degrees: parsed.data.tiltDegrees,
-    // A multishot fires from a single mortar; per-shot aim is pan/tilt only.
-    position_override_json: { launchPositionIndex: parsed.data.launchPositionIndex },
+    // A multishot is one cake at its cue's position; per-shot aim is pan/tilt only.
+    // position_override_json is left untouched so imported tube offsets and seeds survive edits.
     caliber: nextCaliber,
     notes: parsed.data.notes || null,
   };

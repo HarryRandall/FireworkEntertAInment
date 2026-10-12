@@ -144,7 +144,10 @@ test('preview loaders compile real designs and bound normalised sequence payload
 
   assert.match(preview, /getMultishotById/);
   assert.match(preview, /listFireworkSpecifications/);
-  assert.match(preview, /launchPositionIndex: shot\.launchPositionIndex/);
+  assert.doesNotMatch(
+    preview,
+    /launchPositionIndex: (shot|reconstructionShot\?)\.launchPositionIndex/,
+  );
   assert.match(preview, /shotPanDegrees: shot\.panDegrees/);
   assert.match(preview, /shotTiltDegrees: shot\.tiltDegrees/);
   assert.match(preview, /parseReconstructionShotVariant\(data\.variant_json\)/);

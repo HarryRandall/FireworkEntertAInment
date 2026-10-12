@@ -289,7 +289,6 @@ export type AdminMultishotShot = {
   timeOffsetSeconds: number;
   panDegrees: number;
   tiltDegrees: number;
-  launchPositionIndex: number;
   caliber: string | null;
   notes: string | null;
   fireworkId: string | null;

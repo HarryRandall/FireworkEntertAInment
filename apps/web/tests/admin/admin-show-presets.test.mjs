@@ -71,9 +71,9 @@ test('public reads only use published presets while admin helpers include drafts
   );
   assert.match(timing, /const endSeconds = cue\.timeSeconds \+ durationSeconds/);
   assert.match(timing, /ends at.*show duration/);
-  assert.match(timing, /occupiedLaunchPositions/);
-  assert.match(timing, /const candidateWindows/);
-  assert.match(timing, /accepted\.push\(\.\.\.candidateWindows\)/);
+  assert.doesNotMatch(timing, /occupiedLaunchPositions/);
+  assert.match(timing, /launchPositionIndex: cue\.launchPositionIndex,/);
+  assert.match(timing, /accepted\.push\(candidate\)/);
   assert.match(timing, /Position \$\{candidate\.launchPositionIndex \+ 1\} is still busy with/);
 
   for (const action of [

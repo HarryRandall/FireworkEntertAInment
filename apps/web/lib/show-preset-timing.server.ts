@@ -5,7 +5,6 @@ import {
   MIN_PRODUCT_DURATION_SECONDS,
   type CueWindow,
 } from '@/lib/cue-overlap.server';
-import { occupiedLaunchPositions } from '@/lib/cue-generation/show-options';
 
 export type PresetTimelineCue = {
   catalogueItemId: string;
@@ -17,7 +16,6 @@ export type PresetTimelineCue = {
 export type PresetTimelineProduct = {
   durationSeconds: number | null;
   occupancyDurationSeconds?: number | null;
-  launchPositionOverrideIndices?: number[];
 };
 
 type AcceptedCueWindow = CueWindow & {
@@ -74,30 +72,21 @@ export function validatePresetTimeline(
       };
     }
 
-    const occupiedPositions = occupiedLaunchPositions(
-      product,
-      cue.launchPositionIndex as 0 | 1 | 2,
-      3,
-    );
-    if (!occupiedPositions) {
-      return { ok: false, error: `${cue.description} uses an unsupported launch position.` };
-    }
-    const candidateWindows: AcceptedCueWindow[] = occupiedPositions.map((launchPositionIndex) => ({
+    // A multishot is one cake, so it only occupies its own launch position.
+    const candidate: AcceptedCueWindow = {
       timeSeconds: cue.timeSeconds,
       durationSeconds,
-      launchPositionIndex,
+      launchPositionIndex: cue.launchPositionIndex,
       description: cue.description,
-    }));
-    for (const candidate of candidateWindows) {
-      const conflict = findTubeOverlap(candidate, accepted);
-      if (conflict) {
-        return {
-          ok: false,
-          error: `Position ${candidate.launchPositionIndex + 1} is still busy with ${conflict.description} when ${cue.description} starts at ${formatSeconds(cue.timeSeconds)}.`,
-        };
-      }
+    };
+    const conflict = findTubeOverlap(candidate, accepted);
+    if (conflict) {
+      return {
+        ok: false,
+        error: `Position ${candidate.launchPositionIndex + 1} is still busy with ${conflict.description} when ${cue.description} starts at ${formatSeconds(cue.timeSeconds)}.`,
+      };
     }
-    accepted.push(...candidateWindows);
+    accepted.push(candidate);
   }
 
   return { ok: true };

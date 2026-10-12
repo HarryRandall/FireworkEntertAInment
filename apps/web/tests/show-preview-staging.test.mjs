@@ -2,7 +2,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 await import('../../../scripts/renderer/register-typescript.mjs');
-const { buildShowRendererShots, SHOW_OUTER_LEAN_DEGREES } =
+const { buildShowRendererShots, MIN_LAUNCH_POSITION_GAP_M, SHOW_OUTER_LEAN_DEGREES } =
   await import('../lib/shows/renderer-shots.ts');
 const { effectTemplates } = await import('@showcrafter/renderer');
 
@@ -19,8 +19,8 @@ const cue = (id, overrides = {}) => ({
   firework: { name: 'Test shell', design },
   ...overrides,
 });
-function shots(cues, staging = true) {
-  const result = buildShowRendererShots(cues, positions, staging);
+function shots(cues, staging = true, layout = positions) {
+  const result = buildShowRendererShots(cues, layout, staging);
   assert.equal(result.ok, true);
   return result.shots;
 }
@@ -37,13 +37,14 @@ test('cakes persist at distinct slots near their assigned rack, with local tube 
   assert.equal(result[0].hardware, 'cake');
   assert.deepEqual(result[0].hardwarePosition, result[1].hardwarePosition);
   assert.notDeepEqual(result[0].hardwarePosition, result[2].hardwarePosition);
-  assert.equal(result[0].hardwarePosition[0], -12.192);
+  // An 80 ft site is narrower than the minimum drawn gap, so its racks spread to it.
+  assert.equal(result[0].hardwarePosition[0], -MIN_LAUNCH_POSITION_GAP_M);
   assert.equal(result[0].position[0], result[0].hardwarePosition[0] + 0.2);
   assert.equal(result[0].position[1], result[0].hardwarePosition[1] - 0.3);
   assert.equal(result[0].muzzle_m, 1.17);
   // The second cake sits beside the first in the same row rather than further forward.
   assert.equal(result[2].hardwarePosition[1], result[0].hardwarePosition[1]);
-  assert.ok(Math.abs(result[2].hardwarePosition[0] - result[0].hardwarePosition[0]) >= 2.8);
+  assert.ok(Math.abs(result[2].hardwarePosition[0] - result[0].hardwarePosition[0]) >= 4);
 });
 test('default aerial lean follows outer racks, preserving explicit zero and authored design angles', () => {
   const result = shots([
@@ -66,7 +67,7 @@ test('default aerial lean follows outer racks, preserving explicit zero and auth
 test('old cached cues do not infer cakes from ids and still convert centimetres once', () => {
   const [shot] = shots([cue('old-shot-0', { launchPositionIndex: 2 })]);
   assert.equal(shot.hardware, 'mortar');
-  assert.deepEqual(shot.position, [12.192, 0]);
+  assert.deepEqual(shot.position, [MIN_LAUNCH_POSITION_GAP_M, 0]);
 });
 
 test('stored design angles and explicit forward lean suppress default rack fanning', () => {
@@ -88,4 +89,90 @@ test('stored design angles and explicit forward lean suppress default rack fanni
     [5, 0, SHOW_OUTER_LEAN_DEGREES],
   );
   assert.equal(authored.launch.tilt_deg, 5);
+});
+
+test('close launch positions spread to the minimum gap around their centre, wide layouts stay measured', () => {
+  const xs = (layout) =>
+    shots(
+      layout.map((_, index) =>
+        cue(`p${index}`, { launchPositionIndex: index, shotTiltDegrees: 0 }),
+      ),
+      true,
+      layout,
+    ).map((shot) => shot.position[0]);
+  const gap = MIN_LAUNCH_POSITION_GAP_M;
+  // The old ±2 m default and an off-centre pair both spread evenly, keeping their centre.
+  assert.deepEqual(
+    xs([
+      { x: -200, y: 0, z: 0 },
+      { x: 0, y: 0, z: 0 },
+      { x: 200, y: 0, z: 0 },
+    ]),
+    [-gap, 0, gap],
+  );
+  assert.deepEqual(
+    xs([
+      { x: 1000, y: 0, z: 0 },
+      { x: 1200, y: 0, z: 0 },
+    ]),
+    [11 - gap / 2, 11 + gap / 2],
+  );
+  // Index order is kept even when saved positions are not sorted by x.
+  assert.deepEqual(
+    xs([
+      { x: 200, y: 0, z: 0 },
+      { x: -200, y: 0, z: 0 },
+    ]),
+    [gap / 2, -gap / 2],
+  );
+  assert.deepEqual(
+    xs([
+      { x: -3000, y: 0, z: 0 },
+      { x: 3000, y: 0, z: 0 },
+    ]),
+    [-30, 30],
+  );
+});
+
+test('each rack keeps its cakes in its own lane instead of sharing one row', () => {
+  const tight = [
+    { x: -200, y: 0, z: 0 },
+    { x: 0, y: 0, z: 0 },
+    { x: 200, y: 0, z: 0 },
+  ];
+  const cakes = [0, 1, 2].flatMap((rack) =>
+    Array.from({ length: 4 }, (_, i) =>
+      cue(`r${rack}-c${i}`, { cakeId: `r${rack}-c${i}`, cakeLaunchPositionIndex: rack }),
+    ),
+  );
+  const result = shots(cakes, true, tight);
+  const halfLane = MIN_LAUNCH_POSITION_GAP_M / 2;
+  for (const [index, shot] of result.entries()) {
+    const rackX = (Math.floor(index / 4) - 1) * MIN_LAUNCH_POSITION_GAP_M;
+    assert.ok(
+      Math.abs(shot.hardwarePosition[0] - rackX) + 1.1 <= halfLane,
+      `cake ${index} stays inside its rack's lane`,
+    );
+    assert.ok(shot.hardwarePosition[1] >= 4, 'cakes sit in front of their rack');
+  }
+  // Three cakes fit across a lane, so the fourth steps forward a row.
+  assert.ok(result[3].hardwarePosition[1] > result[0].hardwarePosition[1]);
+});
+
+test('authored shot offsets stay close to their own position', () => {
+  const [mortar, far] = shots([
+    cue('offset', { launchPositionIndex: 2, shotPositionOverride: { x: 50, y: 0, z: -40 } }),
+    cue('far', { launchPositionIndex: 2, shotPositionOverride: { x: 5000, y: 0, z: 0 } }),
+  ]);
+  // Offsets are relative to the launch position rather than the scene origin.
+  assert.deepEqual(mortar.position, [MIN_LAUNCH_POSITION_GAP_M + 0.5, -0.4]);
+  assert.deepEqual(far.position, [MIN_LAUNCH_POSITION_GAP_M + 1.1, 0]);
+  const [cakeShot] = shots([
+    cue('cake-far', {
+      cakeId: 'cake',
+      cakeLaunchPositionIndex: 0,
+      shotPositionOverride: { x: -5000, y: 0, z: 0 },
+    }),
+  ]);
+  assert.equal(cakeShot.position[0], cakeShot.hardwarePosition[0] - 1.1);
 });

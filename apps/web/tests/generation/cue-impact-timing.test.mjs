@@ -8,10 +8,6 @@ import {
   DIRECT_SHOW_REPLAY_SHOT_OFFSET_SECONDS,
   showReplayShotTimeSeconds,
 } from '../../lib/replay-shot-timing.ts';
-import {
-  occupiedLaunchPositions,
-  productFitsLaunchPositions,
-} from '../../lib/cue-generation/show-options.ts';
 import { Scheduler } from '@showcrafter/fireworks/Scheduler';
 
 const root = process.cwd();
@@ -96,39 +92,23 @@ test('multishot child positions participate in site and overlap safety', () => {
   const spacing = read('lib/cue-generation/launch-spacing.ts');
   const showTypes = read('lib/shows/types.ts');
 
-  assert.match(domain, /launchPositionOverrideIndices\?: number\[\];/);
+  assert.doesNotMatch(domain, /launchPositionOverrideIndices|hasLaunchPositionOverrides/);
   assert.match(domain, /occupancyDurationSeconds\?: number \| null;/);
   assert.match(domain, /export function fireworkOccupancyDurationSeconds/);
-  assert.match(queries, /position_override_json,/);
-  assert.match(queries, /launchPositionOverrideIndices/);
-  assert.match(options, /export function occupiedLaunchPositions/);
-  assert.match(fast, /occupiedLaunchPositions\(product\.product, tube, maxTubes\)/);
-  assert.match(runner, /occupiedLaunchPositions\(product, cue\.tube, maxTubes\)/);
-  assert.match(runner, /acceptedWindows\.push\(\.\.\.windows\)/);
-  assert.match(showTypes, /CACHE_PREFIX = 'shows:v15'/);
+  // A multishot is one cake at its cue's position, so a cue only reserves its own tube.
+  assert.match(queries, /launchPositionIndex: baseCue\.launchPositionIndex,/);
+  assert.doesNotMatch(queries, /parseShotLaunchPositionIndex/);
+  assert.doesNotMatch(options, /occupiedLaunchPositions|productFitsLaunchPositions/);
+  assert.match(fast, /if \(tube >= maxTubes\) continue;/);
+  assert.match(runner, /launchPositionIndex: cue\.tube,/);
+  assert.match(runner, /acceptedWindows\.push\(window\)/);
+  assert.match(showTypes, /CACHE_PREFIX = 'shows:v16'/);
   assert.match(queries, /occupancyDurationSeconds: occupancy/);
   assert.match(fast, /fireworkOccupancyDurationSeconds\(product\)/);
   assert.match(spacing, /GENERATED_LAUNCH_INTERVAL_SECONDS = 0\.5/);
   assert.match(fast, /timing\.launchTimeSeconds \+ GENERATED_LAUNCH_INTERVAL_SECONDS/);
   assert.match(beat, /timing\.launchTimeSeconds \+ GENERATED_LAUNCH_INTERVAL_SECONDS/);
   assert.match(runner, /durationSeconds: GENERATED_LAUNCH_INTERVAL_SECONDS/);
-});
-
-test('multishot position reservation includes parent and child tubes', () => {
-  const product = { launchPositionOverrideIndices: [0, 2] };
-
-  assert.deepEqual(occupiedLaunchPositions(product, 1, 3), [0, 1, 2]);
-  assert.equal(productFitsLaunchPositions(product, 2), false);
-  assert.equal(occupiedLaunchPositions(product, 1, 2), null);
-  assert.deepEqual(occupiedLaunchPositions({}, 1, 2), [1]);
-});
-
-test('preset-style scheduling sees an absolute multishot child-position conflict', () => {
-  const occupied = occupiedLaunchPositions({ launchPositionOverrideIndices: [2] }, 0, 3);
-
-  assert.deepEqual(occupied, [0, 2]);
-  assert.equal(occupied?.includes(2), true, 'a direct cue on position 3 conflicts');
-  assert.equal(occupied?.includes(1), false, 'a direct cue on position 2 remains independent');
 });
 
 test('fast planner raises safe density and honours style, surprise and recent-use variety', () => {

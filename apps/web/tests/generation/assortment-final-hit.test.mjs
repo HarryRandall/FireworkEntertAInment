@@ -93,8 +93,6 @@ function product(id, { shotCount = 1, durationSeconds = 1.6 } = {}) {
     manufacturer: 'Test',
     previewImagePath: null,
     previewImageRevision: null,
-    hasLaunchPositionOverrides: false,
-    launchPositionOverrideIndices: [],
     spec: { ...DEFAULT_FIREWORK_SPEC, color: '#ffd166' },
     rawSpec: null,
     renderDesign: null,

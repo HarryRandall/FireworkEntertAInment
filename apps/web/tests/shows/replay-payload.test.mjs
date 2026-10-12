@@ -30,8 +30,6 @@ const fireworks = Array.from({ length: 5 }, (_, i) => ({
   previewImageRevision: 2,
   kind: 'shell',
   designError: null,
-  hasLaunchPositionOverrides: true,
-  launchPositionOverrideIndices: [1, 2],
   design: { kind: 'shell', fixture: 'd'.repeat(12000) },
   spec: { fixture: 's'.repeat(12000) },
   rawSpec: { fixture: 'r'.repeat(12000) },
