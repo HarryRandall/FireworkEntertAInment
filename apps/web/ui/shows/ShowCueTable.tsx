@@ -37,6 +37,7 @@ type Props = {
   canEditFireworks: boolean;
   hasFireworkSpecifications: boolean;
   isPending: boolean;
+  isLoading: boolean;
   deletingCueId: string | null;
   playFrom: (time: number) => void;
   seekTo: (time: number, resume: boolean) => void;
@@ -54,6 +55,7 @@ export function ShowCueTable({
   canEditFireworks,
   hasFireworkSpecifications,
   isPending,
+  isLoading,
   deletingCueId,
   playFrom,
   seekTo,
@@ -205,34 +207,38 @@ export function ShowCueTable({
           </div>
         ) : (
           <DataTableShell className="[&>div>div]:max-h-(--cue-table-height) [&>div>div]:overflow-y-auto">
-            <div className="text-muted-foreground px-4 py-8 text-center text-sm">
-              No cues yet. Add your first firework above to make the preview playable.
+            <div role="status" className="text-muted-foreground px-4 py-8 text-center text-sm">
+              {isLoading
+                ? 'Loading show cues...'
+                : 'No cues yet. Add your first firework above to make the preview playable.'}
             </div>
           </DataTableShell>
         )}
       </div>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <SelectField
-          ariaLabel="Cues per page"
-          value={String(pageSize)}
-          options={CUE_PAGE_OPTIONS}
-          onChange={(value) => {
-            setPageSize(Number(value));
-            setPage(1);
-          }}
-          className="h-9 w-36"
-        />
-        <TablePagination
-          currentPage={safePage}
-          totalPages={totalPages}
-          searchParams={{}}
-          onPageChange={setPage}
-          pageSize={pageSize}
-          totalItems={builderCues.length}
-          visibleItems={visibleRows.length}
-          itemLabel="cue"
-        />
-      </div>
+      {!isLoading ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <SelectField
+            ariaLabel="Cues per page"
+            value={String(pageSize)}
+            options={CUE_PAGE_OPTIONS}
+            onChange={(value) => {
+              setPageSize(Number(value));
+              setPage(1);
+            }}
+            className="h-9 w-36"
+          />
+          <TablePagination
+            currentPage={safePage}
+            totalPages={totalPages}
+            searchParams={{}}
+            onPageChange={setPage}
+            pageSize={pageSize}
+            totalItems={builderCues.length}
+            visibleItems={visibleRows.length}
+            itemLabel="cue"
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -10,7 +10,7 @@ import { formatCueTime, formatShowCurrency } from './show-display';
 
 type Props = {
   totalCents?: number | null;
-  cueCount: number;
+  cueCount: number | null;
   duration: number;
   prompt: string;
   onPromptChange: (prompt: string) => void;
@@ -35,7 +35,7 @@ export function ShowRefinePanel({
       <dl className="border-border bg-card divide-border divide-y rounded-lg border px-4">
         {[
           ['Total cost', formatShowCurrency(totalCents)],
-          ['Fireworks', cueCount.toLocaleString('en-AU')],
+          ['Fireworks', cueCount === null ? 'Loading...' : cueCount.toLocaleString('en-AU')],
           ['Length', formatCueTime(duration)],
         ].map(([label, value]) => (
           <div key={label} className="flex items-center justify-between gap-3 py-2.5">

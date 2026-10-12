@@ -1035,6 +1035,7 @@ export function FireworkReplayViewer({
             ) : null}
 
             <ShowCueTable
+              isLoading={!replayDataReady}
               builderCues={builderCues}
               productNameById={productNameById}
               activeBaseCueIds={activeBaseCueIds}
@@ -1053,7 +1054,7 @@ export function FireworkReplayViewer({
 
           <ShowRefinePanel
             totalCents={totalCents}
-            cueCount={builderCues.length}
+            cueCount={replayDataReady ? builderCues.length : null}
             duration={declaredShowLengthSeconds(durationSeconds, duration)}
             prompt={refinePrompt}
             onPromptChange={setRefinePrompt}

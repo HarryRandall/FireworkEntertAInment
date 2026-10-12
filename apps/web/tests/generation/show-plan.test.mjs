@@ -686,3 +686,18 @@ test('a named inclusion keeps other products available and large prompts retain 
   assert.equal(aliases.shown.length, 120);
   assert.ok(aliases.shown.some((item) => item.id === cake.id));
 });
+
+test('fresh-install prompt guidance uses section planning without legacy fallback', () => {
+  const configs = JSON.parse(
+    readFileSync(join(root, '../../supabase/bootstrap/prompt_configs.json'), 'utf8'),
+  );
+  const config = configs.find((entry) => entry.key === 'show_cue_generation');
+  const result = buildSystemPrompt({
+    systemPromptText: config.system_prompt_text,
+    productContextText: config.product_context_text,
+  });
+  assert.equal(result.ignoredLegacyPrompt, false);
+  assert.doesNotMatch(result.prompt, /slotIndex|slot vibe|catalogue ids exactly/i);
+  assert.match(result.prompt, /one entry per section/);
+  assert.match(result.prompt, /catalogue aliases/);
+});
