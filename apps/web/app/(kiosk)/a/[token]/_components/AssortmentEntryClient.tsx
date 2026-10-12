@@ -245,7 +245,7 @@ export function AssortmentEntryClient({ token, assortment }: AssortmentEntryClie
           </div>
           <label
             htmlFor="assortment-song"
-            className="border-border bg-card hover:bg-muted flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition-colors"
+            className="border-border bg-card has-[input:focus-visible]:border-ring has-[input:focus-visible]:ring-ring/50 has-[input:focus-visible]:ring-offset-background has-[input:enabled]:hover:bg-muted flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3 transition-colors has-[input:disabled]:cursor-not-allowed has-[input:disabled]:opacity-50 has-[input:focus-visible]:ring-3 has-[input:focus-visible]:ring-offset-2"
           >
             <Music2 size={19} aria-hidden="true" />
             <span className="min-w-0 flex-1">
@@ -255,20 +255,20 @@ export function AssortmentEntryClient({ token, assortment }: AssortmentEntryClie
               <span className="text-muted-foreground block text-xs">MP3 / WAV / AAC / M4A</span>
             </span>
             <span className="text-muted-foreground text-xs">Up to 50 MB</span>
+            <input
+              ref={fileInputRef}
+              id="assortment-song"
+              type="file"
+              accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/aac,audio/mp4,audio/x-m4a,.mp3,.wav,.aac,.m4a"
+              className="sr-only"
+              disabled={pending}
+              onChange={(event) => {
+                setSong(event.target.files?.[0] ?? null);
+                setJamendoTrack(null);
+                setError(null);
+              }}
+            />
           </label>
-          <input
-            ref={fileInputRef}
-            id="assortment-song"
-            type="file"
-            accept="audio/mpeg,audio/mp3,audio/wav,audio/x-wav,audio/aac,audio/mp4,audio/x-m4a,.mp3,.wav,.aac,.m4a"
-            className="sr-only"
-            disabled={pending}
-            onChange={(event) => {
-              setSong(event.target.files?.[0] ?? null);
-              setJamendoTrack(null);
-              setError(null);
-            }}
-          />
           {error ? (
             <p role="alert" className="text-destructive mt-3 text-sm">
               {error}
