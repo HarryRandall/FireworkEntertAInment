@@ -124,9 +124,8 @@ test('archived import records remain reviewable without mutation controls', () =
   assert.match(detailPage, /\{!archived \? \([\s\S]*<ImportRunControls[\s\S]*<ImportPublishPanel/);
   assert.match(detailPage, /selectionLocked: activeRunInProgress \|\| archived/);
   assert.match(detailPage, /\{!archived \? \(\s*<ImportProgressWatcher/);
-  assert.match(detailPage, /retainedEvidenceUrl=\{review\.selectedAttempt\?\.renderedVideoUrl/);
   assert.ok(
-    detailPage.indexOf('retainedEvidenceUrl=') < detailPage.indexOf('<ImportRunControls'),
-    'archived detail keeps retained evidence outside mutation-only controls',
+    detailPage.indexOf('<FireworkImportPreview') < detailPage.indexOf('<ImportRunControls'),
+    'archived detail keeps the source and reconstruction preview outside mutation-only controls',
   );
 });
