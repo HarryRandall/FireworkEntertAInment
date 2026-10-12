@@ -5,12 +5,12 @@ import { Skeleton } from '@/ui/patterns/Feedback';
 
 export const CATALOGUE_PAGE_SIZE = 15;
 
-export function CatalogueSkeleton() {
+function CatalogueSkeleton() {
   return <FireworkBrowseGridSkeleton count={CATALOGUE_PAGE_SIZE} />;
 }
 
 /** Toolbar-shaped placeholder; search text and filter state are data-driven while loading. */
-export function CatalogueToolbarSkeleton() {
+function CatalogueToolbarSkeleton() {
   return (
     <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
       <Skeleton className="h-10 w-full rounded-md" />

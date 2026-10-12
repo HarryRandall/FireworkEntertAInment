@@ -34,7 +34,7 @@ export const CATALOGUE_SORT_OPTIONS = [
 
 export type CatalogueSort = (typeof CATALOGUE_SORT_OPTIONS)[number]['value'];
 
-export const COLOUR_FAMILIES = [
+const COLOUR_FAMILIES = [
   { value: 'red', label: 'Red', swatch: '#e5383b' },
   { value: 'orange', label: 'Orange', swatch: '#f77f00' },
   { value: 'gold', label: 'Gold', swatch: '#f4c430' },
