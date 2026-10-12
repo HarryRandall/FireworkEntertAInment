@@ -54,6 +54,8 @@ type Props = {
   autoFrame?: boolean;
   preserveDrawingBuffer?: boolean;
   showFps?: boolean;
+  /** Fewer pixels, no smoke and a 30 fps cap, for phones and weak devices. */
+  lowPower?: boolean;
 };
 /** Drives stored-design playback from the parent transport clock. */
 export function ShowRendererCanvas(props: Props) {
@@ -105,6 +107,7 @@ export function ShowRendererCanvas(props: Props) {
         prop: props.prop,
         startDistance: props.startDistance,
         framingDistanceScale: props.showStaging ? SHOW_FRAMING_DISTANCE_SCALE : 1,
+        lowPower: props.lowPower,
       });
     } catch {
       setError('The firework viewer could not start. Please check WebGL support and reload.');
@@ -143,7 +146,14 @@ export function ShowRendererCanvas(props: Props) {
       instance.dispose();
       viewer.current = null;
     };
-  }, [valid, props.interactive, props.prop, props.startDistance, props.showStaging]);
+  }, [
+    valid,
+    props.interactive,
+    props.prop,
+    props.startDistance,
+    props.showStaging,
+    props.lowPower,
+  ]);
 
   useEffect(() => {
     clock.current?.wake();
