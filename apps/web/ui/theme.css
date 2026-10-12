@@ -157,6 +157,8 @@
   --color-hl-ink: var(--hl-ink);
   --color-hl-contrast: var(--hl-contrast);
   --color-stage-night: var(--stage-night);
+  --color-stage-glass-foreground: var(--stage-glass-foreground);
+  --color-stage-glass-muted: var(--stage-glass-muted);
   --color-show-gold: var(--show-gold);
   --color-show-green: var(--show-green);
   --color-show-violet: var(--show-violet);

@@ -13,6 +13,7 @@ test('shared UI cannot reach up into features or route implementations', () => {
   for (const [importer, target] of [
     ['ui/primitives/button.tsx', '@/ui/patterns/Button'],
     ['ui/patterns/Input.tsx', '../music/JamendoSongSearch'],
+    ['ui/kit/motion.tsx', '@/ui/replay/ShowRendererCanvas'],
     ['ui/music/Picker.tsx', '@/app/(app)/shows/new/_components/MusicStep'],
     ['app/(my-store)/my-store/page.tsx', '@/app/(admin)/admin/_components/Overview'],
     ['app/(app)/home/page.tsx', '../shows/_components/ShowsToolbar'],
@@ -23,6 +24,8 @@ test('shared UI cannot reach up into features or route implementations', () => {
 test('composition, route descendants and shared domain actions remain valid', () => {
   for (const [importer, target] of [
     ['ui/patterns/Button.tsx', '@/ui/primitives/button'],
+    ['ui/kit/chat.tsx', '@/ui/primitives/button'],
+    ['ui/marketing/Hero.tsx', '@/ui/kit/motion'],
     ['ui/primitives/button.tsx', '@/lib/utils'],
     ['ui/assortments/Editor.tsx', '@/lib/assortments/actions.server'],
     ['app/(admin)/admin/assortments/[id]/page.tsx', '@/ui/assortments/AssortmentEditor'],
