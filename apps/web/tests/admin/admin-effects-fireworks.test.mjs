@@ -156,77 +156,18 @@ test('effect and product editors compose the shared parts tree and draft tools',
   assert.match(shell, /history\.redo/);
 });
 
-test('admin replay previews opt into FPS diagnostics', () => {
-  const canvas = read('ui/replay/FireworkReplayCanvas.tsx');
+test('admin editors preview through the stored-design renderer', () => {
   const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
   const appReplayViewer = read('ui/replay/FireworkReplayViewer.tsx');
   const templatePreview = read('ui/replay/TemplateReplayPreview.tsx');
 
-  assert.match(canvas, /showFps\?: boolean/);
-  assert.match(canvas, /FPS_SAMPLE_WINDOW_MS = 100/);
-  assert.match(canvas, /FPS_HISTORY_SIZE = 80/);
-  assert.match(canvas, /FPS_GRAPH_WIDTH = 184/);
-  assert.match(canvas, /FPS_GRAPH_HEIGHT = 40/);
-  assert.match(canvas, /FPS_GRAPH_MAX = 120/);
-  assert.match(canvas, /FPS_CURVE_TENSION = 0\.22/);
-  assert.match(canvas, /FPS_SMOOTHING_FACTOR = 0\.16/);
-  assert.match(canvas, /Activity/);
-  assert.match(canvas, /X/);
-  assert.match(canvas, /import \{ Button \} from '@\/ui\/patterns\/Button'/);
-  assert.match(canvas, /showFpsRef/);
-  assert.match(canvas, /showFpsOverlay/);
-  assert.match(
-    canvas,
-    /const targetElapsed = playbackRef \? playbackRef\.current : internalElapsedRef\.current/,
-  );
-  assert.match(
-    canvas,
-    /engine\.clear\(\)[\s\S]*engine\.setCues\(cues,[\s\S]*engine\.setElapsed\(0\)/,
-  );
-  assert.match(canvas, /setShowFpsOverlay\(showFps\)/);
-  assert.match(canvas, /setShowFpsOverlay\(\(visible\) => !visible\)/);
-  assert.match(canvas, /setShowFpsOverlay\(false\)/);
-  assert.match(canvas, /Hide FPS graph/);
-  assert.match(canvas, /Show FPS graph/);
-  assert.match(canvas, /Close FPS graph/);
-  assert.match(canvas, /fpsSmoothedRef/);
-  assert.match(canvas, /previousSmoothedFps \+ \(measuredFps - previousSmoothedFps\)/);
-  assert.match(canvas, /setFpsSamples/);
-  assert.match(canvas, /buildFpsGraphPoints/);
-  assert.match(canvas, /buildFpsGraphPath/);
-  assert.match(canvas, /FPS_GRAPH_WIDTH - \(values\.length - 1 - index\) \* step/);
-  assert.match(canvas, / C \$\{cp1x\.toFixed\(2\)\}/);
-  assert.match(
-    canvas,
-    /showFpsOverlay \? \([\s\S]*<FpsGraph[\s\S]*fps=\{fps\}[\s\S]*samples=\{fpsSamples\}[\s\S]*onClose=\{\(\) => setShowFpsOverlay\(false\)\}/,
-  );
-  assert.match(canvas, /data-testid="firework-fps-meter"/);
-  assert.match(canvas, /data-testid="firework-fps-close"/);
-  assert.match(canvas, /variant="ghost"/);
-  assert.match(canvas, /size="icon"/);
-  assert.match(canvas, /absolute top-\[2px\] right-\[2px\] size-4/);
-  assert.match(canvas, /bg-white\/10/);
-  assert.match(canvas, /text-white\/85/);
-  assert.match(canvas, /hover:text-destructive/);
-  assert.match(canvas, /flex h-10 items-end justify-end/);
-  assert.match(canvas, /w-\[10\.667rem\]/);
-  assert.match(canvas, /aria-label="FPS history graph"/);
-  assert.doesNotMatch(canvas, /Client FPS/);
-  assert.match(canvas, /grid-cols-\[1\.35rem_1fr_1\.5rem\]/);
-  assert.match(canvas, /text-\[9px\]/);
-  assert.match(canvas, /Math\.max\(\.\.\.values\)/);
-  assert.match(canvas, /Math\.min\(\.\.\.values\)/);
-  assert.match(canvas, /stroke-white/);
-  assert.match(canvas, /drop-shadow-\[0_0_5px_rgba\(255,255,255,0\.65\)\]/);
   assert.match(effectEditor, /<DesignPreview/);
   assert.match(fireworkEditor, /<DesignPreview/);
   const rendererPreview = read('ui/firework-editor/renderer-design/preview-surface.tsx');
   assert.match(rendererPreview, /new Viewer/);
   assert.match(rendererPreview, /ui: false/);
   assert.match(rendererPreview, /instance.dispose\(\)/);
-  assert.match(canvas, /resumeAudio/);
-  assert.match(canvas, /document\.addEventListener\('pointerdown', unlockAudio/);
   // The trail width-guide overlay was removed with the Motion settings sheet,
   // so the editors no longer wire it up.
   assert.doesNotMatch(effectEditor, /showTrailWidthGuide/);

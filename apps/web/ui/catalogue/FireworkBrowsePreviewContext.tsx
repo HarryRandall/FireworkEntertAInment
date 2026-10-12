@@ -47,7 +47,7 @@ const MAX_BACKGROUND_CAPTURE_ATTEMPTS = 2;
 const BACKGROUND_CAPTURE_DELAY_MS = 350;
 const SAME_PREVIEW_SEEK_EPSILON_SECONDS = 0.001;
 
-const LazyFireworkReplayCanvas = dynamic(
+const LazyShowRendererCanvas = dynamic(
   () => import('@/ui/replay/ShowRendererCanvas').then((mod) => mod.ShowRendererCanvas),
   { ssr: false, loading: () => null },
 );
@@ -967,7 +967,7 @@ export function FireworkBrowsePreviewProvider({
       >
         {mountedPreview ? (
           <CanvasSurface className="absolute inset-0">
-            <LazyFireworkReplayCanvas
+            <LazyShowRendererCanvas
               cues={mountedPreview.cues}
               prop={
                 mountedPreview.cues.length > 1 &&

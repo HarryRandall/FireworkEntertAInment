@@ -183,7 +183,7 @@ test('admin show preset editor exposes replay, timeline, catalogue picker and pu
   assert.match(createActions, /importGeneratedShowAsPreset/);
   assert.match(createActions, /Import show/);
 
-  assert.match(editor, /LazyFireworkReplayCanvas/);
+  assert.match(editor, /LazyShowRendererCanvas/);
   assert.match(editor, /EditorPreviewTransport/);
   assert.match(editor, /PreviewFullscreenBackdrop/);
   assert.match(editor, /usePreviewFullscreen/);

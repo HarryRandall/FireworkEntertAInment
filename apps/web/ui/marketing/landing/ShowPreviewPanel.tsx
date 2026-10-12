@@ -17,7 +17,7 @@ import { EnergyWaveform, PaletteDots } from './decor';
 import { DEMO_SHOW_CUES, DEMO_SHOW_DURATION_SECONDS } from './demoShow';
 import styles from './landing.module.css';
 
-const FireworkReplayCanvas = dynamic(
+const ShowRendererCanvas = dynamic(
   () => import('@/ui/replay/ShowRendererCanvas').then((m) => m.ShowRendererCanvas),
   { ssr: false, loading: () => null },
 );
@@ -194,7 +194,7 @@ export function ShowPreviewPanel({
           ].join(' ')}
         >
           <CanvasSurface className="absolute inset-0">
-            <FireworkReplayCanvas
+            <ShowRendererCanvas
               compactPreview
               cues={DEMO_SHOW_CUES}
               elapsed={elapsed}

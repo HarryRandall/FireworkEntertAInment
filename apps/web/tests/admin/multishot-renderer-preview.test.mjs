@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { test } from 'node:test';
 await import('../../../../scripts/renderer/register-typescript.mjs');
 const { effectTemplates, shotDuration } = await import('@showcrafter/renderer');
@@ -112,7 +112,6 @@ test('active preview surfaces all load the stored-design adapter', () => {
     const source = readFileSync(path, 'utf8');
     assert.match(source, /import\('@\/ui\/replay\/ShowRendererCanvas'\)/, path);
     assert.match(source, /\.ShowRendererCanvas/, path);
-    assert.doesNotMatch(source, /import\('@\/ui\/replay\/FireworkReplayCanvas'\)/, path);
   }
 });
 
@@ -145,20 +144,13 @@ test('whole-show playback starts at the normal zoom-out cap while product previe
   );
 });
 
-test('the legacy canvas is restricted to the comparison harness', () => {
-  const allowed = new Set(['app/(admin)/admin/renderer-compare/_components/ComparisonPair.tsx']);
+test('no surface imports the retired legacy canvas', () => {
+  assert.equal(existsSync('ui/replay/FireworkReplayCanvas.tsx'), false);
   for (const directory of ['app', 'ui']) {
     for (const relative of readdirSync(directory, { recursive: true })) {
       if (!/\.tsx?$/.test(relative)) continue;
       const path = `${directory}/${relative}`;
-      const source = readFileSync(path, 'utf8');
-      if (
-        /from ['"]@\/ui\/replay\/FireworkReplayCanvas['"]|import\(['"]@\/ui\/replay\/FireworkReplayCanvas['"]\)/.test(
-          source,
-        )
-      ) {
-        assert.ok(allowed.has(path), `${path} must use the stored-design renderer`);
-      }
+      assert.doesNotMatch(readFileSync(path, 'utf8'), /@\/ui\/replay\/FireworkReplayCanvas/, path);
     }
   }
 });

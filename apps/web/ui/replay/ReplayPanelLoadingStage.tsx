@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { ReplayLoadingBar } from './ReplayLoadingBar';
 import { ReplayStageBackdrop } from './ReplayStageBackdrop';
 
-const LazyFireworkReplayCanvas = dynamic(
+const LazyShowRendererCanvas = dynamic(
   () => import('@/ui/replay/ShowRendererCanvas').then((mod) => mod.ShowRendererCanvas),
   {
     ssr: false,
@@ -31,7 +31,7 @@ export function ReplayPanelLoadingStage({ className }: { className?: string }) {
         className={cn('transition-opacity duration-500', sceneReady && 'opacity-0')}
       />
       <CanvasSurface className="absolute inset-0">
-        <LazyFireworkReplayCanvas
+        <LazyShowRendererCanvas
           cues={[]}
           elapsed={0}
           startDistance="farthest"

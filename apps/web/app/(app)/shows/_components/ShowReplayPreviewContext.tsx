@@ -36,7 +36,7 @@ async function getShowReplayPreviewCues(showId: string): Promise<ReplayCue[]> {
   return payload.cues ?? [];
 }
 
-const LazyFireworkReplayCanvas = dynamic(
+const LazyShowRendererCanvas = dynamic(
   () => import('@/ui/replay/ShowRendererCanvas').then((mod) => mod.ShowRendererCanvas),
   { ssr: false, loading: () => null },
 );
@@ -122,7 +122,7 @@ function ShowReplayPreviewSurface({
 
   return (
     <CanvasSurface className="absolute inset-0">
-      <LazyFireworkReplayCanvas
+      <LazyShowRendererCanvas
         cues={preview.cues}
         elapsed={elapsed}
         playbackRef={elapsedRef}
