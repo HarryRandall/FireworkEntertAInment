@@ -28,35 +28,27 @@ test('admin imports expose upload, candidate review, refinement, and guarded app
   assert.doesNotMatch(detailPage, /job\.status !== 'needs_review'/);
 });
 
-test('container worker performs deterministic media analysis and multi-pass model reconstruction', () => {
+test('container worker measures the video and fits renderer designs without a browser', () => {
   const workerDir = join(repoRoot, '../../services/firework-import-worker');
-  assert.equal(existsSync(join(workerDir, 'Dockerfile')), true);
   assert.equal(existsSync(join(workerDir, 'requirements.txt')), true);
   const worker = readFileSync(join(workerDir, 'worker.py'), 'utf8');
-  const reconstruction = readFileSync(join(workerDir, 'reconstruction.py'), 'utf8');
-  const mediaAnalysis = readFileSync(join(workerDir, 'media_analysis.py'), 'utf8');
   const modalApp = readFileSync(join(workerDir, 'modal_app.py'), 'utf8');
+  const requirements = readFileSync(join(workerDir, 'requirements.txt'), 'utf8');
   assert.match(worker, /OPENROUTER_API_KEY/);
-  assert.match(worker, /json_schema/);
-  assert.match(worker, /STRICT_IMPORT_SPEC_SCHEMA/);
-  assert.match(reconstruction, /jsonschema/);
-  assert.match(worker, /MAX_DURATION_SECONDS = 60/);
-  assert.match(worker, /FireworkEffectSpecV3/);
-  assert.match(worker, /observations/);
-  assert.match(worker, /effectSpec\.shots/);
+  assert.match(worker, /MAX_DURATION_SECONDS = 60\.0/);
+  assert.match(worker, /from measure import EXTRACTOR, measure/);
+  assert.match(worker, /fit_proposal/);
+  assert.match(worker, /showcrafter\.firework-reconstruction\.v2/);
   assert.match(worker, /libx264/);
   assert.match(worker, /p_normalized_preview/);
-  assert.match(worker, /run_reconstruction_passes/);
-  assert.match(worker, /build_renderer_reconstruction/);
-  assert.match(worker, /build_reconstruction_validation/);
-  assert.match(reconstruction, /candidate_count/);
-  assert.match(reconstruction, /pass_count/);
-  assert.match(reconstruction, /STRICT_IMPORT_SPEC_SCHEMA/);
-  assert.match(mediaAnalysis, /analyse_firework_video/);
-  assert.match(mediaAnalysis, /normalisedGravity/);
+  assert.doesNotMatch(requirements, /playwright/i);
+  assert.match(requirements, /^cma==/m);
+  assert.match(modalApp, /packages\/video-fit/);
   assert.match(modalApp, /memory=4_096/);
   assert.doesNotMatch(modalApp, /ephemeral_disk/);
-  assert.doesNotMatch(worker, /gemini/i);
+  for (const retired of ['engine_validation.py', 'reconstruction.py', 'media_analysis.py']) {
+    assert.equal(existsSync(join(workerDir, retired)), false, retired);
+  }
 });
 
 test('worker CI installs FFmpeg before running media tests', () => {
@@ -74,37 +66,6 @@ test('Modal firework reconstruction starts on demand without scheduled polling',
   assert.match(modalApp, /reconstruct_run\.spawn\.aio/);
   assert.match(modalApp, /def sweep_queued_runs/);
   assert.doesNotMatch(modalApp, /schedule\s*=\s*modal\./);
-});
-
-test('generated import specs preserve native renderer designs and shot observations', () => {
-  const imports = readFileSync(join(root, 'lib/firework-import/jobs.ts'), 'utf8');
-  const nativeContract = readFileSync(join(root, 'lib/firework-import/reconstruction.ts'), 'utf8');
-  const reconstruction = readFileSync(
-    join(repoRoot, '../../services/firework-import-worker/reconstruction.py'),
-    'utf8',
-  );
-
-  assert.match(imports, /normalizeImportedFireworkSpecInput/);
-  assert.match(imports, /effectSpec/);
-  assert.match(imports, /fireworkSpecFromEffectSpec/);
-  assert.match(imports, /colorPalette/);
-  assert.match(imports, /shotsFromEffectSpec/);
-  assert.match(imports, /liftTimeSeconds/);
-  assert.match(imports, /normalizeImportedFireworkLaunchInput/);
-  assert.match(
-    imports,
-    /sparkSpeed:\s*sparkSpeed == null \? value\.sparkSpeed : clamp\(sparkSpeed, 0, 5\)/,
-  );
-  assert.match(imports, /reconstructionToReplayCues/);
-  assert.match(imports, /reconstructionToReplayCues/);
-  assert.match(nativeContract, /ReconstructionDesignInputSchema/);
-  assert.match(nativeContract, /effectSlug/);
-  assert.match(nativeContract, /observedBurstTimeSeconds/);
-  assert.match(nativeContract, /observedFadeEndSeconds/);
-  assert.match(nativeContract, /sourceTimeOffsetSeconds/);
-  assert.match(nativeContract, /parseStrictFireworkDesign/);
-  assert.match(reconstruction, /build_renderer_reconstruction/);
-  assert.match(reconstruction, /normalisedGravity/);
 });
 
 test('upload form bypasses Vercel Server Action body cap with direct-to-storage upload', () => {
@@ -240,35 +201,18 @@ test('import preview prefers a normalized browser-safe asset when present', () =
   });
 });
 
-test('selected retained engine evidence uses a bounded private URL and accurate UI labels', () => {
-  const historyServer = readFileSync(join(root, 'lib/firework-import/review.server.ts'), 'utf8');
+test('import review compares the source with a live show-renderer reconstruction', () => {
   const detailPage = readFileSync(join(root, 'app/(admin)/admin/imports/[id]/page.tsx'), 'utf8');
   const preview = readFileSync(
     join(root, 'app/(admin)/admin/imports/[id]/_components/FireworkImportPreview.tsx'),
     'utf8',
   );
-  const validationPanel = readFileSync(
-    join(root, 'app/(admin)/admin/imports/[id]/_components/ImportEngineValidationPanel.tsx'),
-    'utf8',
-  );
-
-  assert.match(historyServer, /RETAINED_EVIDENCE_URL_TTL_SECONDS = 15 \* 60/);
-  assert.match(historyServer, /isRunOwnedImportEngineReviewVideoPath/);
-  assert.match(historyServer, /\.eq\('import_run_id', selectedCandidate\.import_run_id\)/);
-  assert.match(historyServer, /\.eq\('output_type', 'render_metrics'\)/);
-  assert.match(historyServer, /\.eq\('storage_path', selectedCandidate\.rendered_video_path\)/);
-  assert.match(historyServer, /createSignedRetainedEvidenceUrl/);
-  assert.match(historyServer, /renderedVideoUrl:/);
-  assert.match(
-    detailPage,
-    /retainedEvidenceUrl=\{review\.selectedAttempt\?\.renderedVideoUrl \?\? null\}/,
-  );
-  assert.match(preview, /Retained sampled engine evidence/);
-  assert.match(preview, /Live current-engine reconstruction/);
-  assert.match(preview, /showFps=\{false\}/);
-  assert.match(preview, /not continuous footage or a claim of exact physical recovery/);
-  assert.match(validationPanel, /do not claim continuous or\s+exact physical recovery/);
-  assert.match(validationPanel, /SHA-256/);
-  assert.match(validationPanel, /Storage ETag/);
-  assert.match(detailPage, /artifact=\{review\.engineArtifact\}/);
+  const actions = readFileSync(join(root, 'app/(admin)/admin/imports/actions.ts'), 'utf8');
+  assert.match(preview, /ShowRendererCanvas/);
+  assert.doesNotMatch(preview, /FireworkReplayCanvas/);
+  assert.match(preview, /firstShotSeconds/);
+  assert.match(detailPage, /fit=\{review\.fit\}/);
+  assert.doesNotMatch(actions, /seal_firework_import_render_validation/);
+  assert.match(actions, /seal_firework_import_candidate/);
+  assert.equal(existsSync(join(root, 'app/internal/import-render')), false);
 });

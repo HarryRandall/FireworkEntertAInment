@@ -1,17 +1,27 @@
 # Firework import worker
 
-Python service for reconstructing catalogue fireworks from uploaded videos. It
-performs bounded media analysis, requests structured candidates from OpenRouter,
-and validates them against ShowCrafter's real renderer before publication.
+Python service for reconstructing catalogue fireworks from uploaded videos. For
+each run it:
 
-The service can run as an authenticated Modal endpoint or as a local polling
-worker. Database leases ensure that only one executor can complete a run.
+1. measures the video on a fixed 256x192, 20 Hz clock: firing times from launch
+   light and audio, then per-shot apex, radius, life, trail, strobe and colour
+   (`decode.py`, `onsets.py`, `features.py`, `measure.py`);
+2. asks an OpenRouter model to choose a renderer template, with optional
+   overrides, for every measured shot (`interpret.py`);
+3. fits launch height, launch time, radius, drag, star life and trail length with
+   seeded CMA-ES, scoring each candidate headlessly against the measurements with
+   `@showcrafter/renderer`'s CPU simulation (`fit.py`, `packages/video-fit`);
+4. stores the fitted and unfitted candidates as renderer v1 designs for review.
+
+No browser is involved. The service can run as an authenticated Modal endpoint or
+as a local polling worker. Database leases ensure that only one executor can
+complete a run.
 
 ## Requirements
 
 - Python 3.11
+- Node 24 and the repository's pnpm dependencies (for the renderer scorer)
 - FFmpeg and ffprobe
-- Playwright Chromium
 - Supabase and OpenRouter credentials
 
 Copy the relevant values from the root `.env.example`. The required service
@@ -21,12 +31,16 @@ credentials are:
 SUPABASE_URL
 SUPABASE_SERVICE_ROLE_KEY
 OPENROUTER_API_KEY
-FIREWORK_IMPORT_RENDER_URL
 FIREWORK_IMPORT_SHARED_SECRET
 ```
 
-Never expose the service-role or OpenRouter credentials through the Modal
-dispatch endpoint. The dispatch secret and worker secret remain separate.
+`FIREWORK_IMPORT_SHARED_SECRET` authenticates dispatch requests to the Modal
+endpoint. Never expose the service-role or OpenRouter credentials through it.
+
+Optional tuning: `IMPORT_FIT_SECONDS` (fitting wall clock, default 300),
+`IMPORT_FIT_ITERATIONS` (CMA-ES generations per effect, default 30),
+`IMPORT_MAX_MODEL_IMAGES` (keyframe crops sent to the model, default 24) and
+`IMPORT_MODEL_MAX_CALLS` (model attempts per run, default 2).
 
 ## Local worker
 
@@ -37,18 +51,8 @@ pnpm worker:firework-import
 ```
 
 The helper creates `services/firework-import-worker/.venv`, installs the Python
-dependencies and matching Chromium revision, runs a browser smoke test, and
-starts the polling worker.
-
-To run it manually:
-
-```bash
-cd services/firework-import-worker
-python3.11 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.txt
-python worker.py
-```
+dependencies and starts the polling worker. Run `pnpm install` first so the
+renderer scorer can start.
 
 ## Modal
 
@@ -61,11 +65,16 @@ modal serve services/firework-import-worker/modal_app.py
 modal deploy services/firework-import-worker/modal_app.py
 ```
 
-Set `FIREWORK_IMPORT_URL` in the web deployment to the displayed API URL with
-`/runs` appended.
+The image copies `packages/renderer`, `packages/video-fit` and the workspace
+manifests, and installs them with pnpm. Set `FIREWORK_IMPORT_URL` in the web
+deployment to the displayed API URL with `/runs` appended.
 
 ## Tests
 
 ```bash
+pnpm install
 python -m unittest discover -s services/firework-import-worker/tests -p '*test*.py'
 ```
+
+`tests/fixtures` holds three synthetic clips rendered from the renderer's CPU
+simulation; see its README.

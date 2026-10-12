@@ -71,15 +71,6 @@ test('every viewer, poster and legacy canvas mount uses the shared clipping surf
           const tag = node.tagName.getText(ast);
           if (stages.has(tag) || (tag === 'canvas' && /\bposter\(/.test(source))) {
             mounts++;
-            // Sealed harness bytes retain their fixed-step evidence identity. Its route owns clipping.
-            if (path === 'app/internal/import-render/ImportRenderHarness.tsx') {
-              const route = readFileSync('app/internal/import-render/page.tsx', 'utf8');
-              assert.match(
-                route,
-                /<CanvasSurface[^>]*>[\s\S]*<ImportRenderHarness \/>[\s\S]*<\/CanvasSurface>/,
-              );
-              return;
-            }
             assert.ok(insideSurface(node), `${path}: ${tag} escapes CanvasSurface`);
           }
           for (const attribute of node.attributes.properties) {

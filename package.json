@@ -39,7 +39,7 @@
     "db:setup": "pnpm db:start && pnpm db:bootstrap --local && pnpm db:fixtures",
     "db:export": "node scripts/database/export.mjs",
     "db:fixtures:check": "node scripts/database/fixtures-check.mjs",
-    "test:packages": "node --import ./scripts/renderer/register-typescript.mjs --test packages/fireworks/tests/*.test.mjs packages/firework-editor/tests/*.test.mjs && pnpm --filter @showcrafter/renderer check",
+    "test:packages": "node --import ./scripts/renderer/register-typescript.mjs --test packages/fireworks/tests/*.test.mjs packages/firework-editor/tests/*.test.mjs && pnpm --filter @showcrafter/renderer check && pnpm --filter @showcrafter/video-fit check",
     "knip": "knip",
     "db:design-schema": "node scripts/database/design-schema.mjs",
     "catalogue:designs": "node --import ./scripts/renderer/register-typescript.mjs scripts/catalogue/generate.mjs",

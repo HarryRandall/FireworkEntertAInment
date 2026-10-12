@@ -8,7 +8,6 @@ import {
 } from '@showcrafter/firework-editor/diagnostics';
 import { EDITOR_PARTS } from '@showcrafter/firework-editor/parts';
 import { sectionForField } from '@showcrafter/firework-editor/sections';
-import { FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION } from '@/lib/firework-import/renderer-contract';
 import { InlineAlert } from '@/ui/patterns/Feedback';
 import { toast } from '@/ui/patterns/toast';
 
@@ -87,8 +86,6 @@ export function RendererDiagnostics({
         <dl className="mt-2 space-y-1 break-all">
           <dt>Record</dt>
           <dd>{recordId}</dd>
-          <dt>Renderer fingerprint</dt>
-          <dd>{FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION}</dd>
         </dl>
       </details>
     </InlineAlert>

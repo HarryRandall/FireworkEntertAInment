@@ -17,10 +17,14 @@ APP_NAME = "showcrafter-firework-import"
 WORKER_SECRET_NAME = "showcrafter-firework-import-worker"
 DISPATCH_SECRET_NAME = "showcrafter-firework-import-dispatch"
 WORKER_DIRECTORY = Path(__file__).resolve().parent
-REMOTE_WORKER_DIRECTORY = "/root/firework-import-worker"
+REPOSITORY = WORKER_DIRECTORY.parents[1]
+CONTAINER_ROOT = "/opt/showcrafter"
+REMOTE_WORKER_DIRECTORY = f"{CONTAINER_ROOT}/services/firework-import-worker"
 
+# The renderer scorer runs in Node next to the Python worker, so the image starts
+# from the repository's Node major and adds Python.
 image = (
-    modal.Image.debian_slim(python_version="3.11")
+    modal.Image.from_registry("node:24-bookworm-slim", add_python="3.11")
     .apt_install("ffmpeg", "libgomp1")
     .pip_install_from_requirements(str(WORKER_DIRECTORY / "requirements.txt"))
     .add_local_dir(
@@ -29,12 +33,24 @@ image = (
         copy=True,
         ignore=[".venv/**", "**/__pycache__/**", "tests/**"],
     )
-    .run_commands(
-        "playwright install --with-deps chromium",
-        f"python {REMOTE_WORKER_DIRECTORY}/smoke_playwright.py",
-    )
-    .pip_install("fastapi[standard]")
 )
+for package in ("renderer", "video-fit"):
+    image = image.add_local_dir(
+        str(REPOSITORY / "packages" / package),
+        f"{CONTAINER_ROOT}/packages/{package}",
+        copy=True,
+        ignore=["node_modules/**", "tests/**"],
+    )
+for filename in ("package.json", "pnpm-workspace.yaml", "pnpm-lock.yaml"):
+    image = image.add_local_file(
+        str(REPOSITORY / filename), f"{CONTAINER_ROOT}/{filename}", copy=True
+    )
+image = image.run_commands(
+    f"cd {CONTAINER_ROOT} && corepack enable && "
+    "pnpm install --frozen-lockfile --filter @showcrafter/video-fit...",
+    f'cd {CONTAINER_ROOT} && echo \'{{"catalogue":true}}\' | node --import '
+    "./packages/video-fit/scripts/register.mjs packages/video-fit/src/bridge.ts > /dev/null",
+).pip_install("fastapi[standard]")
 web_image = modal.Image.debian_slim(python_version="3.11").pip_install(
     "fastapi[standard]"
 )

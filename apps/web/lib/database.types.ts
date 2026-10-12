@@ -2607,14 +2607,6 @@ export type Database = {
         }
         Returns: string
       }
-      current_firework_import_render_validator_version: {
-        Args: never
-        Returns: string
-      }
-      current_firework_import_renderer_contract_version: {
-        Args: never
-        Returns: string
-      }
       current_firework_import_validator_version: {
         Args: never
         Returns: string
@@ -2902,15 +2894,6 @@ export type Database = {
           p_candidate_id: string
           p_canonical_reconstruction: Json
           p_content_hash: string
-          p_validator_version: string
-        }
-        Returns: string
-      }
-      seal_firework_import_render_validation: {
-        Args: {
-          p_artifact_storage_path: string
-          p_candidate_id: string
-          p_canonical_evidence: Json
           p_validator_version: string
         }
         Returns: string

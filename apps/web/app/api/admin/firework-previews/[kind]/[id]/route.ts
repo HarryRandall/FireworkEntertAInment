@@ -1,5 +1,4 @@
 import { RendererValidationError } from '@showcrafter/fireworks/design';
-import { FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION } from '@/lib/firework-import/renderer-contract';
 import { NextResponse } from 'next/server';
 import sharp from 'sharp';
 import { requirePermission } from '@/lib/access/current-profile.server';
@@ -190,7 +189,6 @@ export async function GET(_request: Request, context: RouteContext) {
           error: 'invalid_render_settings',
           diagnostics: error.diagnostics,
           recordId: id,
-          rendererFingerprint: FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION,
         },
         422,
       );
@@ -244,7 +242,6 @@ export async function POST(request: Request, context: RouteContext) {
           error: 'invalid_render_settings',
           diagnostics: error.diagnostics,
           recordId: id,
-          rendererFingerprint: FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION,
         },
         422,
       );

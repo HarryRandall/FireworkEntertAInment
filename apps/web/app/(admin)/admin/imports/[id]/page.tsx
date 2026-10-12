@@ -8,22 +8,18 @@ import { InlineAlert } from '@/ui/patterns/Feedback';
 import { getImportJobDetail } from '@/lib/admin/imports.server';
 import { requirePermission } from '@/lib/access/current-profile.server';
 import { DEFAULT_OPENROUTER_MODEL } from '@/lib/firework-import/jobs';
-import {
-  buildImportReview,
-  isRunOwnedImportEngineReviewVideoPath,
-  parseImportEngineMetricSummary,
-  parseImportEnginePublicationEvidence,
-  type ImportCandidate,
-} from '@/lib/firework-import/review';
+import { buildImportReview, type ImportCandidate } from '@/lib/firework-import/review';
 import { getImportRunHistory } from '@/lib/firework-import/review.server';
-import { parseImportReconstruction } from '@/lib/firework-import/reconstruction';
+import {
+  parseImportCandidateMetrics,
+  parseImportReconstruction,
+} from '@/lib/firework-import/reconstruction';
 import { FireworkImportPreview } from '@/app/(admin)/admin/imports/[id]/_components/FireworkImportPreview';
 import { ImportAdvancedData } from '@/app/(admin)/admin/imports/[id]/_components/ImportAdvancedData';
 import {
   ImportCandidatePicker,
   type CandidatePickerOption,
 } from '@/app/(admin)/admin/imports/[id]/_components/ImportCandidatePicker';
-import { ImportEngineValidationPanel } from '@/app/(admin)/admin/imports/[id]/_components/ImportEngineValidationPanel';
 import { ImportProgressWatcher } from '@/app/(admin)/admin/imports/[id]/_components/ImportProgressWatcher';
 import { ImportPublishPanel } from '@/app/(admin)/admin/imports/[id]/_components/ImportPublishPanel';
 import { ImportReconstructionSummary } from '@/app/(admin)/admin/imports/[id]/_components/ImportReconstructionSummary';
@@ -45,17 +41,13 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
   const archived = Boolean(job.archivedAt);
 
   const review = buildImportReview({
-    outputs: job.outputs,
     history,
     sourceDurationSeconds: job.mediaAsset?.durationSeconds ?? null,
   });
   const currentRun = history.runs.find((run) => run.id === history.activeRunId) ?? history.runs[0];
   const selectedModel = currentRun?.selectedModel ?? job.selectedModel ?? DEFAULT_OPENROUTER_MODEL;
   const fallbackDuration =
-    review.reconstruction?.durationSeconds ??
-    review.latestSpec?.durationSeconds ??
-    job.mediaAsset?.durationSeconds ??
-    10;
+    review.reconstruction?.durationSeconds ?? job.mediaAsset?.durationSeconds ?? 10;
   const activeRunInProgress = currentRun
     ? currentRun.status === 'queued' || currentRun.status === 'processing'
     : job.status === 'queued' || job.status === 'processing';
@@ -87,10 +79,7 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
   const publishBlockers = uniqueStrings([
     ...review.blockers.map((check) => check.detail),
     ...(activeRunInProgress ? ['Wait for the active reconstruction run before publishing.'] : []),
-    ...(!history.selectedCandidateId ? ['Select a renderer-native candidate.'] : []),
-    ...(review.selectedAttempt?.source !== 'candidate'
-      ? ['Legacy draft adapters cannot be published through the strict candidate gate.']
-      : []),
+    ...(!history.selectedCandidateId ? ['Select a renderer-fitted candidate.'] : []),
     ...(!canManageCatalogue
       ? ['Catalogue management permission is required to publish this reconstruction.']
       : []),
@@ -111,7 +100,7 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
         sourceName={job.sourceName}
         status={job.status}
         stage={currentRun?.stage ?? null}
-        modelConfidence={review.modelConfidence}
+        fitScore={review.fit?.overall ?? null}
       />
 
       {!archived ? (
@@ -142,17 +131,15 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
 
       <Card className="space-y-5 p-5 sm:p-6" shadow>
         <div>
-          <h2 className="text-foreground text-xl font-semibold">Source and engine evidence</h2>
+          <h2 className="text-foreground text-xl font-semibold">Source and reconstruction</h2>
           <p className="text-muted-foreground mt-1 text-sm">
-            Compare the upload, the sampled engine frames retained with the selected candidate, and
-            a live reconstruction from the current renderer on one inspection timeline.
+            Play the upload beside the selected reconstruction, rendered live by the show renderer,
+            on one timeline aligned to the first shot.
           </p>
         </div>
         <FireworkImportPreview
           videoUrl={job.videoUrl}
           videoMimeType={job.videoMimeType}
-          retainedEvidenceUrl={review.selectedAttempt?.renderedVideoUrl ?? null}
-          spec={review.latestSpec}
           reconstruction={review.reconstruction}
           fallbackDuration={fallbackDuration}
         />
@@ -160,14 +147,9 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
 
       <ImportCandidatePicker jobId={job.id} options={candidateOptions} />
 
-      <ImportEngineValidationPanel
-        metrics={review.engineMetrics}
-        artifact={review.engineArtifact}
-      />
-
       <div className="grid gap-6 xl:grid-cols-[minmax(340px,0.8fr)_minmax(0,1.2fr)]">
         <ImportValidationPanel checks={review.checks} />
-        <ImportReconstructionSummary reconstruction={review.reconstruction} />
+        <ImportReconstructionSummary reconstruction={review.reconstruction} fit={review.fit} />
       </div>
 
       {!archived ? (
@@ -182,7 +164,7 @@ export default async function AdminImportDetailPage({ params }: PageProps) {
           <ImportPublishPanel
             jobId={job.id}
             defaultPartNumber={`VID-${job.id.slice(0, 8).toUpperCase()}`}
-            defaultName={review.reconstruction?.name ?? review.latestSpec?.name ?? job.sourceName}
+            defaultName={review.reconstruction?.name ?? job.sourceName}
             blockers={publishBlockers}
             complete={complete}
           />
@@ -206,22 +188,8 @@ function buildCandidateOptions(
   return candidates.map(({ candidate, runNumber, runStatus }) => {
     const parsed = parseImportReconstruction(candidate.reconstruction);
     const reconstruction = parsed.success ? parsed.data : null;
+    const metrics = parseImportCandidateMetrics(candidate.metrics);
     const validation = record(candidate.validation);
-    const engineMetrics = parseImportEngineMetricSummary(candidate.metrics);
-    const publicationEvidence = reconstruction
-      ? parseImportEnginePublicationEvidence(
-          candidate.metrics,
-          isRunOwnedImportEngineReviewVideoPath(candidate.renderedVideoPath, candidate.runId)
-            ? candidate.renderedVideoPath
-            : null,
-          reconstruction,
-        )
-      : null;
-    const weakestEngineComponent = engineMetrics
-      ? Object.entries(engineMetrics.components).sort(
-          (left, right) => left[1].score - right[1].score,
-        )[0]
-      : null;
     const palette = reconstruction
       ? Array.from(new Set(reconstruction.designs.flatMap((design) => design.colorPalette)))
       : [];
@@ -231,19 +199,13 @@ function buildCandidateOptions(
       ordinal: candidate.ordinal,
       selected: candidate.id === state.selectedCandidateId,
       selectable: !state.complete && !state.selectionLocked && runStatus === 'succeeded',
-      workerValid: Boolean(reconstruction) && validation?.valid === true,
-      enginePublishable: publicationEvidence?.success === true,
-      engineScore: engineMetrics?.overallScore ?? null,
-      weakestEngineComponent: weakestEngineComponent
-        ? {
-            label: weakestEngineComponent[0],
-            score: weakestEngineComponent[1].score,
-          }
-        : null,
-      engineDetail:
-        publicationEvidence && !publicationEvidence.success ? publicationEvidence.error : null,
-      score: candidate.score,
-      confidence: reconstruction?.confidence ?? null,
+      publishable:
+        Boolean(reconstruction) &&
+        validation?.valid === true &&
+        metrics?.fit.shots.length === reconstruction?.shots.length,
+      source: metrics?.source ?? null,
+      fitScore: metrics?.fit.overall ?? null,
+      initialFitScore: metrics?.fit.initialOverall ?? null,
       effectCount: reconstruction?.designs.length ?? null,
       shotCount: reconstruction?.shots.length ?? null,
       palette,

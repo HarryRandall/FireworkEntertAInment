@@ -39,9 +39,9 @@ import {
 } from '@/lib/firework-import/jobs';
 import {
   IMPORT_RECONSTRUCTION_VALIDATOR_VERSION,
+  parseImportCandidateMetrics,
   parseImportReconstruction,
 } from '@/lib/firework-import/reconstruction';
-import { parseImportEnginePublicationEvidence } from '@/lib/firework-import/review';
 import {
   dispatchFireworkImportRun,
   getFireworkImportDispatchConfiguration,
@@ -550,7 +550,7 @@ export async function approveImportJobAction(
 
   const { data: candidate, error: candidateError } = await supabase
     .from('import_candidates')
-    .select('reconstruction, validation, metrics, rendered_video_path, content_hash')
+    .select('reconstruction, validation, metrics, content_hash')
     .eq('id', job.selected_candidate_id)
     .maybeSingle();
   if (candidateError || !candidate) {
@@ -579,16 +579,16 @@ export async function approveImportJobAction(
     };
   }
 
-  const engineEvidence = parseImportEnginePublicationEvidence(
-    candidate.metrics,
-    candidate.rendered_video_path,
-    strictCandidate.data,
-  );
-  if (!engineEvidence.success) {
-    return { ok: false, error: engineEvidence.error };
+  const metrics = parseImportCandidateMetrics(candidate.metrics);
+  if (!metrics || metrics.fit.shots.length !== strictCandidate.data.shots.length) {
+    return {
+      ok: false,
+      error: 'The selected reconstruction has no fit evidence. Run reconstruction again.',
+    };
   }
 
-  const canonicalReconstruction = strictCandidate.data as unknown as Json;
+  // The seal binds the stored row byte for byte, so pass it unchanged rather than the parse.
+  const canonicalReconstruction = candidate.reconstruction as Json;
   const trustedValidator = createServiceRoleSupabase();
   if (!trustedValidator) {
     return {
@@ -611,24 +611,6 @@ export async function approveImportJobAction(
     return {
       ok: false,
       error: sealError?.message ?? 'Could not seal the renderer-safe reconstruction.',
-    };
-  }
-
-  const { data: sealedRenderCandidateId, error: renderSealError } = await callUntypedRpc<string>(
-    trustedValidator,
-    'seal_firework_import_render_validation',
-    {
-      p_candidate_id: job.selected_candidate_id,
-      p_validator_version: engineEvidence.data.validatorVersion,
-      p_canonical_evidence: engineEvidence.data.canonicalEvidence as unknown as Json,
-      p_artifact_storage_path: engineEvidence.data.renderedVideoPath,
-    },
-  );
-  if (renderSealError || sealedRenderCandidateId !== job.selected_candidate_id) {
-    console.error('[approveImportJobAction] engine validation seal failed:', renderSealError);
-    return {
-      ok: false,
-      error: renderSealError?.message ?? 'Could not seal the sampled engine evidence.',
     };
   }
 

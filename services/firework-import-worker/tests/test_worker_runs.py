@@ -1,53 +1,43 @@
 from __future__ import annotations
 
-import sys
-import hashlib
 import json
 import subprocess
+import sys
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 
-WORKER_DIR = Path(__file__).resolve().parents[1]
-TEST_DIR = Path(__file__).resolve().parent
-for path in (WORKER_DIR, TEST_DIR):
-    if str(path) not in sys.path:
-        sys.path.insert(0, str(path))
+WORKER_DIR = Path(__file__).resolve().parent.parent
+if str(WORKER_DIR) not in sys.path:
+    sys.path.insert(0, str(WORKER_DIR))
 
-from test_reconstruction import (  # noqa: E402
-    make_spec,
-    video_observations,
+from interpret import (  # noqa: E402
+    keyframe_images,
+    proposal_from_response,
+    response_schema,
+    system_prompt,
 )
-from reconstruction import build_renderer_reconstruction  # noqa: E402
 from worker import (  # noqa: E402
-    CRITIC_SCHEMA,
-    ENGINE_SCHEMA_VERSION,
-    METRICS_SCHEMA_VERSION,
-    PIPELINE_VERSION,
-    RENDERER_VERSION,
-    STRICT_IMPORT_SPEC_SCHEMA,
+    admin_guidance,
     append_reconstruction_output,
-    call_openrouter_candidate,
-    call_openrouter_critic,
-    canonical_json_hash,
-    candidate_rows_for_completion,
-    compatible_checkpoint_run_ids,
+    build_reconstruction,
     complete_reconstruction_run,
     create_browser_normalized_video,
     create_required_browser_normalized_video,
-    effective_reconstruction_system_prompt,
     fail_reconstruction_run,
     fetch_prompt_config,
     ffprobe_media,
+    fit_evidence,
     heartbeat_reconstruction_run,
-    load_reconstruction_checkpoints,
-    model_video_context,
+    load_proposal_checkpoint,
     needs_browser_normalization,
     normalized_preview_storage_path,
+    pan_degrees,
+    parent_proposal,
     parse_frame_rate,
-    persist_reconstruction_snapshot,
+    persist_run_context,
     process_reconstruction_run_by_id,
     record_reconstruction_media_probe,
     validate_source_video,
@@ -104,6 +94,54 @@ class FakeOpenRouterClient:
         self.schema_name = schema_name
         self.temperature = temperature
         return SimpleNamespace(value=self.value, raw={"id": "response"}, attempts=1)
+
+
+MEASUREMENT = {
+    "duration_ms": 10000,
+    "extractor": "video-measure-1.0.0",
+    "shots": [
+        {"t_ms": 500, "x": 0.3, "angle_deg": -4.4, "confidence": 0.9, "evidence": "audio_visual"},
+        {"t_ms": 5500, "x": 0.7, "angle_deg": 47.0, "confidence": 0.8, "evidence": "visual"},
+    ],
+    "features": [
+        {
+            "shot_index": index,
+            "apex_ratio": 0.8,
+            "radius_ratio": 0.2,
+            "life_ms": 3000,
+            "truncated": False,
+            "trail_present": False,
+            "strobe": False,
+            "crackle": None,
+            "colours": [],
+        }
+        for index in range(2)
+    ],
+}
+SUMMARY = {
+    "a": {
+        "template": "peony",
+        "name": "Peony",
+        "design": {"kind": "shell"},
+        "durationSeconds": 6.25,
+        "palette": ["#ff3048"],
+    },
+    "b": {
+        "template": "fountain",
+        "name": "Fountain",
+        "design": {"kind": "fountain"},
+        "durationSeconds": 4.0,
+        "palette": [],
+    },
+}
+
+
+def query_returning(rows):
+    query = MagicMock()
+    for method in ("select", "eq", "order", "limit"):
+        getattr(query, method).return_value = query
+    query.execute.return_value = SimpleNamespace(data=rows)
+    return query
 
 
 class WorkerRunTests(unittest.TestCase):
@@ -163,16 +201,6 @@ class WorkerRunTests(unittest.TestCase):
         self.assertNotEqual(first_path, second_path)
         self.assertTrue(first_path.endswith("run-1-source-hash.mp4"))
 
-    def test_engine_environment_is_validated_before_claiming_a_run(self):
-        supabase = MagicMock()
-        with patch.dict("os.environ", {}, clear=True):
-            with self.assertRaisesRegex(RuntimeError, "FIREWORK_IMPORT_RENDER_URL"):
-                process_reconstruction_run_by_id(
-                    supabase,
-                    "00000000-0000-0000-0000-000000000001",
-                )
-        supabase.rpc.assert_not_called()
-
     def test_required_browser_normalisation_failure_is_not_hidden(self):
         with patch(
             "worker.create_browser_normalized_video",
@@ -191,262 +219,149 @@ class WorkerRunTests(unittest.TestCase):
                     artefact_key="run-1-source-hash",
                 )
 
-    def test_model_video_context_is_deterministically_bounded(self):
-        point = {"timeSeconds": 0.0, "x": 0.5, "y": 0.5}
-        context = model_video_context(
-            {
-                "frames": [{"timeSeconds": index / 20} for index in range(500)],
-                "timeline": [{"timeSeconds": index / 20} for index in range(500)],
-                "tracks": [
-                    {
-                        "id": f"track-{index:03d}",
-                        "startSeconds": index / 20,
-                        "points": [
-                            {**point, "timeSeconds": offset / 20}
-                            for offset in range(60)
-                        ],
-                    }
-                    for index in range(110)
-                ],
-                "bursts": [
-                    {
-                        "id": f"burst-{index:03d}",
-                        "trajectory": {"points": [point] * 60},
-                        "launchTrajectory": {"points": [point] * 60},
-                    }
-                    for index in range(170)
-                ],
-            }
-        )
 
-        self.assertEqual(len(context["frames"]), 400)
-        self.assertEqual(len(context["timeline"]), 400)
-        self.assertEqual(len(context["tracks"]), 96)
-        self.assertTrue(all(len(track["points"]) <= 48 for track in context["tracks"]))
-        self.assertEqual(len(context["bursts"]), 160)
-        self.assertTrue(
-            all(len(burst["trajectory"]["points"]) <= 48 for burst in context["bursts"])
-        )
-
-    def test_reproducibility_context_uses_the_lease_guarded_rpc(self):
-        supabase = FakeSupabase()
-        run = {
-            "run_id": "00000000-0000-0000-0000-000000000001",
-            "lease_token": "lease-token",
-            "modal_call_id": "modal-input-123",
-        }
+    def test_worker_environment_is_validated_before_claiming_a_run(self):
+        supabase = MagicMock()
+        with patch.dict("os.environ", {}, clear=True):
+            with self.assertRaisesRegex(RuntimeError, "OPENROUTER_API_KEY"):
+                process_reconstruction_run_by_id(
+                    supabase,
+                    "00000000-0000-0000-0000-000000000001",
+                )
         with patch.dict(
             "os.environ",
-            {
-                "IMPORT_VIDEO_SAMPLE_FPS": "24",
-                "IMPORT_MAX_SAMPLED_FRAMES": "1440",
-                "IMPORT_MAX_MODEL_IMAGES": "20",
-                "IMPORT_ENGINE_SCORE_FRAMES": "72",
-                "IMPORT_ENGINE_REVIEW_FRAMES": "32",
-            },
+            {"OPENROUTER_API_KEY": "key", "IMPORT_FIT_ITERATIONS": "2.5"},
+            clear=True,
         ):
-            persist_reconstruction_snapshot(
-                supabase,
-                run,
-                source_sha256="a" * 64,
-                model="openai/gpt-5.4",
-                reconstruction_prompt="Keep the observed timing exact.",
-                candidate_count=3,
-                pass_count=2,
-            )
+            with self.assertRaisesRegex(RuntimeError, "IMPORT_FIT_ITERATIONS"):
+                process_reconstruction_run_by_id(
+                    supabase,
+                    "00000000-0000-0000-0000-000000000001",
+                )
+        supabase.rpc.assert_not_called()
 
-        rpc_name, payload = supabase.calls[-1]
-        self.assertEqual(rpc_name, "record_firework_import_run_context")
-        self.assertEqual(payload["p_pipeline_version"], PIPELINE_VERSION)
-        self.assertEqual(payload["p_engine_schema_version"], ENGINE_SCHEMA_VERSION)
-        self.assertEqual(payload["p_source_sha256"], "a" * 64)
-        self.assertEqual(payload["p_video_model"], "openai/gpt-5.4")
-        self.assertEqual(payload["p_modal_call_id"], "modal-input-123")
-        self.assertEqual(payload["p_model_snapshot"]["modalInputId"], "modal-input-123")
-        self.assertEqual(
-            payload["p_model_snapshot"]["sampling"]["videoFramesPerSecond"], 24.0
+    def test_retired_spec_prompt_is_not_used_as_guidance(self):
+        supabase = MagicMock()
+        supabase.table.return_value = query_returning(
+            [{"system_prompt_text": "Fill in a structured FireworkEffectSpecV3."}]
         )
-        self.assertEqual(
-            payload["p_model_snapshot"]["sampling"]["engineScoreFrames"], 72
+        self.assertIsNone(admin_guidance(supabase))
+        supabase.table.return_value = query_returning(
+            [{"system_prompt_text": "Prefer warm golds for brocade."}]
         )
-        self.assertEqual(
-            payload["p_model_snapshot"]["sampling"]["engineReviewFrames"], 32
-        )
-        self.assertEqual(
-            payload["p_model_snapshot"]["engineValidation"],
-            {
-                "rendererVersion": RENDERER_VERSION,
-                "metricsSchemaVersion": METRICS_SCHEMA_VERSION,
-            },
-        )
-        self.assertEqual(len(payload["p_prompt_snapshot"]["sha256"]), 64)
-        self.assertIn(
-            "Keep the observed timing exact.",
-            payload["p_prompt_snapshot"]["effectiveGuidance"],
-        )
+        self.assertEqual(admin_guidance(supabase), "Prefer warm golds for brocade.")
+        self.assertIn("<ADMIN_GUIDANCE>\nPrefer warm golds", system_prompt("Prefer warm golds"))
+        self.assertNotIn("ADMIN_GUIDANCE", system_prompt(None))
 
-        persist_reconstruction_snapshot(
-            supabase,
-            {"run_id": run["run_id"], "lease_token": run["lease_token"]},
-            source_sha256="b" * 64,
-            model="openai/gpt-5.4",
-            reconstruction_prompt=None,
-            candidate_count=3,
-            pass_count=2,
-        )
-        self.assertIsNone(supabase.calls[-1][1]["p_modal_call_id"])
-        self.assertNotIn("modalInputId", supabase.calls[-1][1]["p_model_snapshot"])
-
-    def test_live_prompt_guidance_cannot_replace_contract_prompt(self):
-        client = FakeOpenRouterClient(make_spec())
-        spec, _raw = call_openrouter_candidate(
-            client,
-            "source.mp4",
-            3.0,
-            video_observations(),
-            [],
-            {"hasAudio": False},
-            None,
-            "STALE ADMIN PROMPT: emit an incompatible object",
-            "Produce an independent candidate",
-        )
-
-        system = client.messages[0]["content"]
-        self.assertIn("strict schema requested by the API", system)
-        self.assertIn("<ADMIN_GUIDANCE>", system)
-        self.assertIn("subordinate", system)
-        for calibrated_prior in (
-            "rendererTuning.starCount 100",
-            "headSize 360",
-            "burstSpeedMin 2",
-            "burstSpeedMax 4",
-            "gravityMin -0.24",
-            "gravityMax -0.02",
-            "airResistancePercent 100",
-            "trailParticlesPerStar 24",
-        ):
-            self.assertIn(calibrated_prior, system)
-        self.assertIn("rendered minus source", system)
-        self.assertIn("timeOffsetSeconds is the sole hidden pre-roll control", system)
-        self.assertIn(
-            "canonical lift time from observed burst onset minus that quantised cue time",
-            system,
-        )
-        self.assertIn("Never turn a visual peak delta into lift timing", system)
-        self.assertIs(client.schema, STRICT_IMPORT_SPEC_SCHEMA)
-        self.assertEqual(client.schema_name, "firework_video_reconstruction_v10")
-        self.assertEqual(
-            spec["effectSpec"]["metadata"]["normalizedAs"], "FireworkEffectSpecV3"
-        )
-
-    def test_critic_passes_signed_engine_corrections_into_the_refinement_prompt(self):
-        critic_value = {
-            "candidateScores": [
+    def test_model_response_keeps_measured_times_and_angles(self):
+        response = {
+            "effects": [
+                {"letter": "a", "template": "peony", "overrides_json": "{}", "reason": ""},
                 {
-                    "candidateIndex": 0,
-                    "timing": 0.4,
-                    "colour": 0.8,
-                    "geometry": 0.8,
-                    "physics": 0.7,
-                    "fade": 0.5,
-                    "issues": ["Rendered timing is offset"],
-                    "improvementInstruction": "Align the trusted engine render.",
-                }
-            ],
-            "selectedCandidateIndex": 0,
-            "rationale": "Only candidate",
-        }
-        client = FakeOpenRouterClient(critic_value)
-        evaluation = {
-            "componentScores": {
-                "timing": 0.4,
-                "trajectory": 0.8,
-                "palette": 0.8,
-                "fade": 0.5,
-                "perceptual": 0.6,
-            },
-            "priorityIssues": [{"field": "timing", "score": 0.4}],
-            "metrics": {
-                "schemaVersion": METRICS_SCHEMA_VERSION,
-                "overallScore": 0.6,
-                "timing": {
-                    "sourceOnsetSeconds": 0.25,
-                    "renderedOnsetSeconds": 0.75,
-                    "sourcePeakSeconds": 1.2,
-                    "renderedPeakSeconds": 1.5,
-                    "sourceFadeEndSeconds": 2.2,
-                    "renderedFadeEndSeconds": 1.9,
-                    "score": 0.4,
+                    "letter": "b",
+                    "template": "fountain",
+                    "overrides_json": '{"seed": 4}',
+                    "reason": "",
                 },
-                "trajectory": {"score": 0.8},
-                "palette": {"score": 0.8},
-                "fade": {"score": 0.5},
-                "perceptual": {"score": 0.6},
-            },
-            "reconstruction": build_renderer_reconstruction(
-                make_spec(),
-                video_observations(),
-                {"hasAudio": False},
-                {"scores": []},
-            ),
-        }
-
-        critic, _raw = call_openrouter_critic(
-            client,
-            [make_spec()],
-            video_observations(),
-            {0: evaluation},
-        )
-
-        system = client.messages[0]["content"]
-        user = client.messages[1]["content"]
-        instruction = critic["candidateScores"][0]["improvementInstruction"]
-        self.assertIn("positive is late and negative is early", system)
-        self.assertIn(
-            "global visual peak is post-burst activity, never carrier apex", system
-        )
-        self.assertIn(
-            "Never spread one global peak correction across multiple shots", system
-        )
-        self.assertIn('"onsetSignedDeltaSeconds":0.5', user)
-        self.assertIn('"peakRelativeToOnsetSignedDeltaSeconds":-0.2', user)
-        self.assertIn('"fadeRelativeToPeakSignedDeltaSeconds":-0.6', user)
-        self.assertIn('"scope":"single aerial shot"', user)
-        self.assertIn('"correctedTimeOffsetSeconds":0.0', user)
-        self.assertIn('"requiredCanonicalLiftSeconds":1.2', user)
-        self.assertIn('"postBurstPeakDevelopmentSignedDeltaSeconds":0.3', user)
-        self.assertIn("onset +0.500s", instruction)
-        self.assertIn("Set timeOffsetSeconds to 0.000s", instruction)
-        self.assertIn("observed burst onset is 1.200s", instruction)
-        self.assertIn("canonical lift must be 1.200s", instruction)
-        self.assertIn("Do not derive lift from the global visual peak", instruction)
-        self.assertIn("post-burst visual peak develops 0.300s late", instruction)
-        self.assertIn("never carrier lift", instruction)
-        self.assertNotIn("peak relative to onset", instruction)
-        self.assertNotIn("visual peak delta as lift", instruction)
-        self.assertIs(client.schema, CRITIC_SCHEMA)
-
-    def test_identical_candidates_are_deduplicated_before_atomic_completion(self):
-        spec = make_spec()
-        diagnostics = {
-            "pipelineVersion": PIPELINE_VERSION,
-            "selectedCandidateIndex": 1,
-            "scores": [
-                {"candidateIndex": 0, "combinedScore": 0.8, "evidence": {}},
-                {"candidateIndex": 1, "combinedScore": 0.9, "evidence": {}},
             ],
+            "tubes": [{"i": 1, "letter": "b"}, {"i": 0, "letter": "a"}],
+            "notes": "",
         }
-        rows, selected_ordinal = candidate_rows_for_completion(
-            [spec, spec],
-            diagnostics,
-            video_observations(),
-            {"hasAudio": False},
+        proposal = proposal_from_response(response, MEASUREMENT)
+        self.assertEqual(proposal["effects"]["b"]["overrides"], {"seed": 4})
+        self.assertEqual(
+            proposal["composition"]["tubes"],
+            [
+                {"i": 0, "letter": "a", "t_ms": 500, "angle_deg": -4.4},
+                {"i": 1, "letter": "b", "t_ms": 5500, "angle_deg": 47.0},
+            ],
+        )
+        for mutation in (
+            lambda value: value["tubes"].pop(),
+            lambda value: value["effects"].append(dict(value["effects"][0])),
+            lambda value: value["effects"][0].update(overrides_json="[1]"),
+            lambda value: value["effects"][0].update(overrides_json='{"x": NaN}'),
+        ):
+            value = json.loads(json.dumps(response))
+            mutation(value)
+            with self.assertRaises(ValueError):
+                proposal_from_response(value, MEASUREMENT)
+        schema = response_schema(["peony", "fountain"])
+        self.assertEqual(
+            schema["properties"]["effects"]["items"]["properties"]["template"]["enum"],
+            ["fountain", "peony"],
         )
 
-        self.assertEqual(len(rows), 1)
-        self.assertEqual(selected_ordinal, 0)
-        self.assertEqual(rows[0]["score"], 0.9)
-        self.assertEqual(len(rows[0]["contentHash"]), 64)
+    def test_keyframes_prefer_every_peak_within_the_image_budget(self):
+        keyframes = [
+            {
+                "shot_index": index,
+                **{
+                    label: {"t_ms": index * 1000, "jpegBase64": f"{label}{index}"}
+                    for label in ("launch", "peak", "fade")
+                },
+            }
+            for index in range(3)
+        ]
+        chosen = keyframe_images(keyframes, limit=4)
+        self.assertEqual(
+            [image["jpegBase64"] for image in chosen], ["peak0", "launch0", "peak1", "peak2"]
+        )
+
+    def test_reconstruction_starts_at_the_first_firing_and_bounds_pan(self):
+        proposal = {
+            "effects": {"a": {"template": "peony", "overrides": {}}, "b": {"template": "fountain", "overrides": {}}},
+            "composition": {
+                "tubes": [
+                    {"i": 0, "letter": "a", "t_ms": 500, "angle_deg": -4.4},
+                    {"i": 1, "letter": "b", "t_ms": 5500, "angle_deg": 47.0},
+                ]
+            },
+        }
+        reconstruction = build_reconstruction("Two tubes", MEASUREMENT, proposal, SUMMARY)
+        self.assertEqual(reconstruction["version"], 2)
+        self.assertEqual([shot["timeOffsetSeconds"] for shot in reconstruction["shots"]], [0, 5])
+        self.assertEqual([shot["panDegrees"] for shot in reconstruction["shots"]], [-4, 0])
+        self.assertEqual(reconstruction["durationSeconds"], 9)
+        self.assertEqual(reconstruction["source"]["firstShotSeconds"], 0.5)
+        self.assertEqual(reconstruction["proposal"], proposal)
+        self.assertEqual([design["key"] for design in reconstruction["designs"]], ["a", "b"])
+        self.assertEqual(pan_degrees(47.0), 30)
+        self.assertEqual(pan_degrees(None), 0)
+        self.assertEqual(parent_proposal({"parent_candidate": reconstruction}), proposal)
+        self.assertIsNone(parent_proposal({"parent_candidate": {"version": 1}}))
+
+    def test_fit_evidence_is_rounded_and_keeps_unscored_features(self):
+        evidence = fit_evidence(
+            {
+                "overall": 0.812345,
+                "scores": {
+                    "shots": [
+                        {"overall": 0.812345, "distances": {"apex": 0.1, "crackle": None}}
+                    ]
+                },
+            },
+            "0.9.1",
+            iterations={"a": 3},
+            initial=0.5,
+        )
+        self.assertEqual(evidence["overall"], 0.8123)
+        self.assertEqual(evidence["shots"][0]["distances"], {"apex": 0.1, "crackle": None})
+        self.assertEqual(evidence["rendererVersion"], "0.9.1")
+        self.assertEqual(evidence["initialOverall"], 0.5)
+
+    def test_paid_interpretation_is_reused_only_for_the_same_measurement(self):
+        supabase = MagicMock()
+        proposal = {"effects": {}, "composition": {"tubes": []}}
+        supabase.table.return_value = query_returning(
+            [
+                {"payload": {"kind": "proposal", "measurementHash": "old", "proposal": {}}},
+                {"payload": {"kind": "proposal", "measurementHash": "same", "proposal": proposal}},
+            ]
+        )
+        run = {"run_id": "run"}
+        self.assertEqual(load_proposal_checkpoint(supabase, run, "same"), proposal)
+        self.assertIsNone(load_proposal_checkpoint(supabase, run, "other"))
 
     def test_lease_heartbeat_and_completion_use_guarded_rpcs(self):
         supabase = FakeSupabase()
@@ -457,8 +372,8 @@ class WorkerRunTests(unittest.TestCase):
         candidates = [
             {
                 "ordinal": 0,
-                "schemaVersion": "showcrafter.firework-reconstruction.v1",
-                "reconstruction": {"version": 1},
+                "schemaVersion": "showcrafter.firework-reconstruction.v2",
+                "reconstruction": {"version": 2},
                 "score": 0.9,
                 "metrics": {},
                 "validation": {"valid": True},
@@ -484,8 +399,8 @@ class WorkerRunTests(unittest.TestCase):
         candidates = [
             {
                 "ordinal": 0,
-                "schemaVersion": "showcrafter.firework-reconstruction.v1",
-                "reconstruction": {"version": 1},
+                "schemaVersion": "showcrafter.firework-reconstruction.v2",
+                "reconstruction": {"version": 2},
                 "score": 0.9,
                 "metrics": {},
                 "validation": {"valid": True},
@@ -531,14 +446,13 @@ class WorkerRunTests(unittest.TestCase):
         }
 
         with patch("worker.time.sleep") as sleep:
-            persist_reconstruction_snapshot(
+            persist_run_context(
                 supabase,
                 run,
                 source_sha256="a" * 64,
                 model="openai/gpt-5.4",
-                reconstruction_prompt=None,
-                candidate_count=2,
-                pass_count=1,
+                guidance=None,
+                catalogue={"templates": [{"key": "peony"}], "renderer": "0.9.1"},
             )
             heartbeat_reconstruction_run(supabase, run, "video_analysis", 30)
             fail_reconstruction_run(supabase, run, RuntimeError("bounded failure"))
@@ -581,215 +495,6 @@ class WorkerRunTests(unittest.TestCase):
         self.assertEqual(arguments["p_duration_seconds"], 3.2)
         self.assertEqual(arguments["p_source_probe"], source_probe)
         self.assertEqual(arguments["p_normalized_preview"], preview)
-
-    def test_compatible_recovery_loads_exact_parent_and_current_checkpoints(self):
-        prompt = "Keep the observed timing exact."
-        prompt_hash = hashlib.sha256(
-            effective_reconstruction_system_prompt(prompt).encode("utf-8")
-        ).hexdigest()
-        run_query = MagicMock()
-        parent_context_query = MagicMock()
-        parent_outputs_query = MagicMock()
-        current_outputs_query = MagicMock()
-        for query in (
-            run_query,
-            parent_context_query,
-            parent_outputs_query,
-            current_outputs_query,
-        ):
-            query.select.return_value = query
-            query.eq.return_value = query
-            query.order.return_value = query
-            query.single.return_value = query
-        run_query.execute.return_value = SimpleNamespace(
-            data={
-                "parent_run_id": "00000000-0000-0000-0000-000000000000",
-                "idempotency_key": (
-                    "lease-recovery:00000000-0000-0000-0000-000000000000"
-                ),
-                "lease_recovery_count": 1,
-            }
-        )
-        parent_context_query.execute.return_value = SimpleNamespace(
-            data={
-                "source_sha256": "a" * 64,
-                "pipeline_version": PIPELINE_VERSION,
-                "video_model": "openai/gpt-5.4",
-                "prompt_snapshot": {"sha256": prompt_hash},
-                "model_snapshot": {
-                    "synthesisModel": "openai/gpt-5.4",
-                    "criticModel": "openai/gpt-5.4",
-                    "candidateCount": 2,
-                    "passCount": 1,
-                    "structuredOutput": {
-                        "candidateSchemaSha256": canonical_json_hash(
-                            STRICT_IMPORT_SPEC_SCHEMA
-                        ),
-                        "criticSchemaSha256": canonical_json_hash(CRITIC_SCHEMA),
-                    },
-                    "sampling": {
-                        "videoFramesPerSecond": 20.0,
-                        "maxSampledFrames": 1800,
-                        "maxModelImages": 24,
-                        "engineScoreFrames": 36,
-                        "engineReviewFrames": 40,
-                    },
-                    "engineValidation": {
-                        "rendererVersion": RENDERER_VERSION,
-                        "metricsSchemaVersion": METRICS_SCHEMA_VERSION,
-                    },
-                },
-            }
-        )
-        parent_payload = {
-            "kind": "candidate",
-            "pass": 1,
-            "candidateIndex": 0,
-            "candidate": make_spec(),
-            "response": {"id": "parent"},
-        }
-        current_payload = {
-            "kind": "critic",
-            "pass": 1,
-            "critic": {"candidateScores": []},
-            "response": {"id": "current"},
-        }
-        parent_outputs_query.execute.return_value = SimpleNamespace(
-            data=[{"sequence": 0, "payload": parent_payload}]
-        )
-        current_outputs_query.execute.return_value = SimpleNamespace(
-            data=[{"sequence": 1, "payload": current_payload}]
-        )
-        supabase = MagicMock()
-        supabase.table.side_effect = [
-            run_query,
-            parent_context_query,
-            parent_outputs_query,
-            current_outputs_query,
-        ]
-
-        outputs = load_reconstruction_checkpoints(
-            supabase,
-            {
-                "run_id": "00000000-0000-0000-0000-000000000001",
-                "lease_token": "lease-token",
-            },
-            source_sha256="a" * 64,
-            model="openai/gpt-5.4",
-            reconstruction_prompt=prompt,
-            candidate_count=2,
-            pass_count=1,
-        )
-
-        self.assertEqual(outputs, [parent_payload, current_payload])
-
-    def test_manual_retry_never_inherits_parent_checkpoints(self):
-        run_query = MagicMock()
-        current_outputs_query = MagicMock()
-        for query in (run_query, current_outputs_query):
-            query.select.return_value = query
-            query.eq.return_value = query
-            query.order.return_value = query
-            query.single.return_value = query
-        run_query.execute.return_value = SimpleNamespace(
-            data={
-                "parent_run_id": "00000000-0000-0000-0000-000000000000",
-                "idempotency_key": "manual-retry-idempotency-key",
-                "lease_recovery_count": 0,
-            }
-        )
-        current_payload = {
-            "kind": "candidate",
-            "pass": 1,
-            "candidateIndex": 0,
-            "candidate": make_spec(),
-            "response": {"id": "current"},
-        }
-        current_outputs_query.execute.return_value = SimpleNamespace(
-            data=[{"sequence": 0, "payload": current_payload}]
-        )
-        supabase = MagicMock()
-        supabase.table.side_effect = [run_query, current_outputs_query]
-
-        outputs = load_reconstruction_checkpoints(
-            supabase,
-            {
-                "run_id": "00000000-0000-0000-0000-000000000001",
-                "lease_token": "lease-token",
-            },
-            source_sha256="a" * 64,
-            model="openai/gpt-5.4",
-            reconstruction_prompt=None,
-            candidate_count=2,
-            pass_count=1,
-        )
-
-        self.assertEqual(outputs, [current_payload])
-
-    def test_automatic_recovery_rejects_stale_renderer_evidence(self):
-        current_query = MagicMock()
-        parent_query = MagicMock()
-        for query in (current_query, parent_query):
-            query.select.return_value = query
-            query.eq.return_value = query
-            query.single.return_value = query
-        parent_run_id = "00000000-0000-0000-0000-000000000000"
-        current_run_id = "00000000-0000-0000-0000-000000000001"
-        current_query.execute.return_value = SimpleNamespace(
-            data={
-                "parent_run_id": parent_run_id,
-                "idempotency_key": f"lease-recovery:{parent_run_id}",
-                "lease_recovery_count": 1,
-            }
-        )
-        prompt_hash = hashlib.sha256(
-            effective_reconstruction_system_prompt(None).encode("utf-8")
-        ).hexdigest()
-        parent_query.execute.return_value = SimpleNamespace(
-            data={
-                "source_sha256": "a" * 64,
-                "pipeline_version": PIPELINE_VERSION,
-                "video_model": "openai/gpt-5.4",
-                "prompt_snapshot": {"sha256": prompt_hash},
-                "model_snapshot": {
-                    "synthesisModel": "openai/gpt-5.4",
-                    "criticModel": "openai/gpt-5.4",
-                    "candidateCount": 2,
-                    "passCount": 1,
-                    "structuredOutput": {
-                        "candidateSchemaSha256": canonical_json_hash(
-                            STRICT_IMPORT_SPEC_SCHEMA
-                        ),
-                        "criticSchemaSha256": canonical_json_hash(CRITIC_SCHEMA),
-                    },
-                    "sampling": {
-                        "videoFramesPerSecond": 20.0,
-                        "maxSampledFrames": 1800,
-                        "maxModelImages": 24,
-                        "engineScoreFrames": 36,
-                        "engineReviewFrames": 40,
-                    },
-                    "engineValidation": {
-                        "rendererVersion": "stale-renderer-version",
-                        "metricsSchemaVersion": METRICS_SCHEMA_VERSION,
-                    },
-                },
-            }
-        )
-        supabase = MagicMock()
-        supabase.table.side_effect = [current_query, parent_query]
-
-        run_ids = compatible_checkpoint_run_ids(
-            supabase,
-            {"run_id": current_run_id, "lease_token": "lease-token"},
-            source_sha256="a" * 64,
-            model="openai/gpt-5.4",
-            reconstruction_prompt=None,
-            candidate_count=2,
-            pass_count=1,
-        )
-
-        self.assertEqual(run_ids, [current_run_id])
 
     def test_ffmpeg_tools_fail_cleanly_when_their_deadline_expires(self):
         with patch(

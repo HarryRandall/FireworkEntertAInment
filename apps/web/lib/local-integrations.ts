@@ -46,7 +46,7 @@ export function getLocalIntegrationNotices(environment: Environment): LocalInteg
     notices.push({
       feature: 'Video imports',
       message:
-        'Hosted dispatch is disabled. To use local imports, configure the worker credentials and FIREWORK_IMPORT_RENDER_URL, then run pnpm worker:firework-import. The worker must be running to process uploads.',
+        'Hosted dispatch is disabled. To use local imports, configure the worker credentials, then run pnpm worker:firework-import. The worker must be running to process uploads.',
     });
   } else {
     const keys = missing(['FIREWORK_IMPORT_SHARED_SECRET']);

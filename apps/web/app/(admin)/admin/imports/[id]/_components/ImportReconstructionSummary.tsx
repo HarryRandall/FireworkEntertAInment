@@ -1,29 +1,37 @@
 import { Card } from '@/ui/patterns/Card';
-import type { ImportReconstructionPlan } from '@/lib/firework-import/reconstruction';
+import type {
+  ImportFitEvidence,
+  ImportReconstructionPlan,
+} from '@/lib/firework-import/reconstruction';
 
 export function ImportReconstructionSummary({
   reconstruction,
+  fit,
 }: {
   reconstruction: ImportReconstructionPlan | null;
+  fit: ImportFitEvidence | null;
 }) {
   if (!reconstruction) {
     return (
       <Card className="p-5">
         <h2 className="text-foreground text-lg font-semibold">Effect and shot summary</h2>
         <p className="text-muted-foreground mt-2 text-sm">
-          A renderer-native reconstruction has not been selected yet.
+          A renderer-fitted reconstruction has not been selected yet.
         </p>
       </Card>
     );
   }
 
   const designs = new Map(reconstruction.designs.map((design) => [design.key, design]));
+  const fitByShot = new Map(fit?.shots.map((shot) => [shot.index, shot.overall]) ?? []);
+  const sourceSeconds = reconstruction.source?.firstShotSeconds ?? null;
   return (
     <Card className="p-5">
       <div>
         <h2 className="text-foreground text-lg font-semibold">Effect and shot summary</h2>
         <p className="text-muted-foreground mt-1 text-sm">
-          Canonical renderer designs and the observed launch sequence for the selected candidate.
+          Renderer designs fitted to the source video, and the launch sequence for the selected
+          candidate.
         </p>
       </div>
 
@@ -31,10 +39,7 @@ export function ImportReconstructionSummary({
         <Metric label="Duration" value={`${reconstruction.durationSeconds.toFixed(2)}s`} />
         <Metric label="Shots" value={String(reconstruction.shots.length)} />
         <Metric label="Effects" value={String(reconstruction.designs.length)} />
-        <Metric
-          label="Model confidence"
-          value={`${Math.round(reconstruction.confidence * 100)}%`}
-        />
+        <Metric label="Fit" value={fit ? percent(fit.overall) : 'Not available'} />
       </dl>
 
       <div className="mt-5 space-y-3">
@@ -45,22 +50,15 @@ export function ImportReconstructionSummary({
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-foreground truncate text-sm font-medium">
-                    {design.label ?? design.effectSlug}
+                    {design.label ?? design.template}
                   </p>
                   <p className="text-muted-foreground mt-0.5 font-mono text-xs">
-                    {design.effectSlug} · {design.design.geometry}
+                    {design.key.toUpperCase()} · {design.template} · {design.design.kind}
                   </p>
                 </div>
                 <span className="text-muted-foreground font-mono text-xs tabular-nums">
-                  {Math.round(design.confidence * 100)}%
+                  {design.durationSeconds.toFixed(2)}s
                 </span>
-              </div>
-              <div className="text-muted-foreground mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                <span className="font-mono tabular-nums">{design.durationSeconds.toFixed(2)}s</span>
-                <span className="font-mono tabular-nums">
-                  {design.heightMeters == null ? 'Height unknown' : `${design.heightMeters}m`}
-                </span>
-                <span className="font-mono">{design.caliber ?? 'Calibre unknown'}</span>
               </div>
               {design.colorPalette.length > 0 ? (
                 <div
@@ -84,18 +82,18 @@ export function ImportReconstructionSummary({
 
       <details className="border-border mt-5 rounded-lg border">
         <summary className="text-foreground focus-visible:ring-ring cursor-pointer rounded-lg px-4 py-3 text-sm font-medium focus:outline-none focus-visible:ring-2">
-          Shot timing and launch positions ({reconstruction.shots.length})
+          Shot timing and fit ({reconstruction.shots.length})
         </summary>
         <div className="border-border overflow-x-auto border-t">
-          <table className="w-full min-w-[760px] text-left text-xs">
+          <table className="w-full min-w-[560px] text-left text-xs">
             <thead className="bg-muted/50 text-muted-foreground">
               <tr>
                 <th className="px-3 py-2 font-medium">Shot</th>
                 <th className="px-3 py-2 font-medium">Effect</th>
                 <th className="px-3 py-2 font-medium">Launch</th>
-                <th className="px-3 py-2 font-medium">Observed burst</th>
-                <th className="px-3 py-2 font-medium">Observed fade</th>
-                <th className="px-3 py-2 font-medium">Aim</th>
+                <th className="px-3 py-2 font-medium">Source time</th>
+                <th className="px-3 py-2 font-medium">Pan</th>
+                <th className="px-3 py-2 font-medium">Fit</th>
               </tr>
             </thead>
             <tbody className="divide-border divide-y">
@@ -109,17 +107,15 @@ export function ImportReconstructionSummary({
                     {shot.timeOffsetSeconds.toFixed(2)}s
                   </td>
                   <td className="text-muted-foreground px-3 py-2 font-mono tabular-nums">
-                    {shot.observedBurstTimeSeconds == null
-                      ? 'Not observed'
-                      : `${shot.observedBurstTimeSeconds.toFixed(2)}s`}
+                    {sourceSeconds == null
+                      ? 'Not recorded'
+                      : `${(sourceSeconds + shot.timeOffsetSeconds).toFixed(2)}s`}
                   </td>
                   <td className="text-muted-foreground px-3 py-2 font-mono tabular-nums">
-                    {shot.observedFadeEndSeconds == null
-                      ? 'Not observed'
-                      : `${shot.observedFadeEndSeconds.toFixed(2)}s`}
+                    {shot.panDegrees}°
                   </td>
                   <td className="text-muted-foreground px-3 py-2 font-mono tabular-nums">
-                    Pan {shot.panDegrees}°, tilt {shot.tiltDegrees}°
+                    {fitByShot.get(index) == null ? 'Not scored' : percent(fitByShot.get(index)!)}
                   </td>
                 </tr>
               ))}
@@ -138,4 +134,8 @@ function Metric({ label, value }: { label: string; value: string }) {
       <dd className="text-foreground mt-1 font-mono text-sm font-medium tabular-nums">{value}</dd>
     </div>
   );
+}
+
+function percent(value: number): string {
+  return `${Math.round(value * 100)}%`;
 }

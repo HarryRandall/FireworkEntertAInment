@@ -140,13 +140,13 @@ Local catalogue browsing, editing, presets and fast show generation need no
 external provider. Fixtures select `fast` generation locally; the handover seed
 preserves production's `llm` setting. Use the configuration checklist below to enable optional services locally.
 
-| Capability                    | Configuration                                                                                                                        |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| AI show generation/refinement | `OPENROUTER_API_KEY`; choose a supported model and enable LLM mode in admin settings                                                 |
-| Music analysis                | `ANALYSER_URL`, `ANALYSER_SHARED_SECRET`; deploy the analyser separately                                                             |
-| Jamendo search/import         | `JAMENDO_CLIENT_ID`; analysis is also needed for imported music                                                                      |
-| Firework video import         | `FIREWORK_IMPORT_URL`, `FIREWORK_IMPORT_SHARED_SECRET`, `FIREWORK_IMPORT_RENDER_URL`; deploy the worker and reachable render harness |
-| Durable public QR rate limits | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` for production                                                                  |
+| Capability                    | Configuration                                                                        |
+| ----------------------------- | ------------------------------------------------------------------------------------ |
+| AI show generation/refinement | `OPENROUTER_API_KEY`; choose a supported model and enable LLM mode in admin settings |
+| Music analysis                | `ANALYSER_URL`, `ANALYSER_SHARED_SECRET`; deploy the analyser separately             |
+| Jamendo search/import         | `JAMENDO_CLIENT_ID`; analysis is also needed for imported music                      |
+| Firework video import         | `FIREWORK_IMPORT_URL`, `FIREWORK_IMPORT_SHARED_SECRET`; deploy the worker            |
+| Durable public QR rate limits | `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` for production                  |
 
 Hosted services cannot fetch a laptop's `localhost` Storage URL. For full external
 integration testing, use an isolated hosted development project, or a deliberately
