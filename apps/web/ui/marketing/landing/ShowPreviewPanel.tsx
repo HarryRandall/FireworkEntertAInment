@@ -11,10 +11,11 @@ import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
  * context warm, so deferred loading does not shift the surrounding page.
  */
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState } from 'react';
-import { Loader2, Pause, Play } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from 'react';
+import { Loader2, MousePointerClick, Pause, Play, Rocket } from 'lucide-react';
+import type { ReplayCue } from '@/lib/show-domain';
 import { EnergyWaveform, PaletteDots } from './decor';
-import { DEMO_SHOW_CUES, DEMO_SHOW_DURATION_SECONDS } from './demoShow';
+import { DEMO_SHOW_CUES, DEMO_SHOW_DURATION_SECONDS, launchCue } from './demoShow';
 import styles from './landing.module.css';
 
 const FireworkReplayCanvas = dynamic(
@@ -23,7 +24,9 @@ const FireworkReplayCanvas = dynamic(
 );
 
 type ShowPreviewPanelProps = {
-  height?: number;
+  height?: number | string;
+  /** Lets visitors click or tap the sky, or use the launch button, to fire a shell. */
+  launchable?: boolean;
   title?: string;
   theme?: string;
   palette?: string[];
@@ -33,6 +36,10 @@ const DURATION = DEMO_SHOW_DURATION_SECONDS;
 const POSTER_TIME_SECONDS = 4;
 const DISPLAY_UPDATE_INTERVAL_MS = 180;
 const PREVIEW_RENDER_ROOT_MARGIN = '480px 0px';
+/** Launched shells kept at once; older ones are dropped so the scene stays light. */
+const MAX_LAUNCHED = 12;
+/** Seconds between a click and the shell leaving its mortar. */
+const LAUNCH_DELAY_SECONDS = 0.05;
 
 function formatClock(seconds: number): string {
   const total = Math.max(0, Math.floor(seconds));
@@ -43,6 +50,7 @@ function formatClock(seconds: number): string {
 
 export function ShowPreviewPanel({
   height = 460,
+  launchable = false,
   title = 'Bohemian Rhapsody: Gold Finale',
   theme = `${DEMO_SHOW_CUES.length} cues · 6 drops · large yard`,
   palette = ['var(--show-gold)', 'var(--show-green)', 'var(--show-violet)'],
@@ -59,6 +67,9 @@ export function ShowPreviewPanel({
   const [isInView, setIsInView] = useState(false);
   const [isUserPaused, setIsUserPaused] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [launched, setLaunched] = useState<ReplayCue[]>([]);
+  const launchCountRef = useRef(0);
+  const cues = useMemo(() => [...DEMO_SHOW_CUES, ...launched], [launched]);
 
   useEffect(() => {
     elapsedRef.current = elapsed;
@@ -161,6 +172,7 @@ export function ShowPreviewPanel({
       if (startedAtRef.current == null) return;
       const next = playheadStartRef.current + (now - startedAtRef.current) / 1000;
       if (next >= DURATION) {
+        setLaunched([]);
         startedAtRef.current = now;
         playheadStartRef.current = 0;
         elapsedRef.current = 0;
@@ -182,8 +194,30 @@ export function ShowPreviewPanel({
   }, [active]);
 
   const showCanvas = shouldMountCanvas && !reducedMotion;
+  const canLaunch = launchable && active;
+
+  function launch(x: number, y: number) {
+    if (!canLaunch) return;
+    const cue = launchCue(launchCountRef.current, elapsedRef.current + LAUNCH_DELAY_SECONDS, x, y);
+    launchCountRef.current += 1;
+    setLaunched((current) => [...current, cue].slice(-MAX_LAUNCHED));
+  }
+
+  function launchAtPointer(event: PointerEvent<HTMLDivElement>) {
+    // Controls and overlays handle their own clicks.
+    if (event.button !== 0) return;
+    if (event.target instanceof Element && event.target.closest('[data-sky-overlay]')) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    launch((event.clientX - rect.left) / rect.width, (event.clientY - rect.top) / rect.height);
+  }
+
   return (
-    <div ref={containerRef} className={styles.skyPanel} style={{ height }}>
+    <div
+      ref={containerRef}
+      className={`${styles.skyPanel} ${canLaunch ? 'cursor-crosshair' : ''}`}
+      style={{ height }}
+      onPointerDown={launchable ? launchAtPointer : undefined}
+    >
       <div className={styles.starfield} />
 
       {showCanvas ? (
@@ -196,7 +230,8 @@ export function ShowPreviewPanel({
           <CanvasSurface className="absolute inset-0">
             <FireworkReplayCanvas
               compactPreview
-              cues={DEMO_SHOW_CUES}
+              cues={cues}
+              lowPower="auto"
               elapsed={elapsed}
               playbackRef={playbackRef}
               playing={active}
@@ -211,7 +246,10 @@ export function ShowPreviewPanel({
         </div>
       ) : null}
 
-      <div className={`${styles.glassTile} absolute top-4 left-4 z-10 max-w-[62%] px-3.5 py-2.5`}>
+      <div
+        data-sky-overlay
+        className={`${styles.glassTile} absolute top-4 left-4 z-10 max-w-[62%] px-3.5 py-2.5`}
+      >
         <div className="flex items-center gap-2 text-[11px] font-bold tracking-[0.04em] text-[var(--hl)]">
           <span
             aria-hidden="true"
@@ -231,15 +269,25 @@ export function ShowPreviewPanel({
         </div>
       </div>
 
-      <div
-        className={`${styles.glassTile} absolute top-4 right-4 z-10 px-3 py-2.5 text-[11px] leading-relaxed text-white/80 tabular-nums`}
-      >
-        BPM 128
-        <br />
-        KEY F&#9839;m
-      </div>
+      {launchable ? (
+        <div
+          className={`${styles.glassTile} pointer-events-none absolute top-4 right-4 z-10 hidden items-center gap-2 px-3 py-2.5 text-[11px] text-white/80 sm:flex`}
+        >
+          <MousePointerClick aria-hidden="true" size={14} />
+          Click the sky to launch a shell
+        </div>
+      ) : (
+        <div
+          className={`${styles.glassTile} absolute top-4 right-4 z-10 px-3 py-2.5 text-[11px] leading-relaxed text-white/80 tabular-nums`}
+        >
+          BPM 128
+          <br />
+          KEY F&#9839;m
+        </div>
+      )}
 
       <div
+        data-sky-overlay
         className={`${styles.glassTile} absolute right-4 bottom-4 left-4 z-10 flex items-center gap-3.5 px-3.5 py-3`}
       >
         <button
@@ -275,10 +323,21 @@ export function ShowPreviewPanel({
         <div className="min-w-0 flex-1 opacity-85">
           <EnergyWaveform height={26} palette={palette} />
         </div>
+        {launchable ? (
+          <button
+            type="button"
+            onClick={() => launch(0.3 + Math.random() * 0.4, 0.2 + Math.random() * 0.3)}
+            disabled={!canLaunch}
+            className="text-stage-night inline-flex h-9 flex-shrink-0 items-center gap-1.5 rounded-full bg-white px-3 text-xs font-semibold transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <Rocket aria-hidden="true" size={14} />
+            Launch
+          </button>
+        ) : null}
         <div className="flex flex-col items-end gap-1">
           <PaletteDots palette={palette} />
           <span className="text-[11px] text-white/70 tabular-nums">
-            {formatClock(elapsed)} · {DEMO_SHOW_CUES.length} cues
+            {formatClock(elapsed)} · {cues.length} cues
           </span>
         </div>
       </div>

@@ -53,56 +53,46 @@ test('public pricing reflects the runtime starter grant and marks future plans a
   );
 });
 
-test('homepage proof uses capabilities and documented stakeholders', () => {
+test('homepage proof uses real product surfaces and documented stakeholders', () => {
   const home = read('app/(marketing)/page.tsx');
-  const hero = read('ui/marketing/Hero.tsx');
-  const socialProof = read('ui/marketing/SocialProof.tsx');
-  const showcase = read('ui/marketing/Showcase.tsx');
-  const steps = read('ui/marketing/Steps.tsx');
-  const testimonials = read('ui/marketing/Testimonials.tsx');
+  const hero = read('ui/marketing/landing/LandingHero.tsx');
+  const stakeholders = read('ui/marketing/landing/LandingStakeholders.tsx');
+  const starts = read('ui/marketing/landing/LandingStarts.tsx');
+  const story = read('ui/marketing/landing/SongToShow.tsx');
+  const sections = [
+    hero,
+    stakeholders,
+    starts,
+    story,
+    read('ui/marketing/landing/CuratedEffects.tsx'),
+    read('ui/marketing/landing/EditorDemo.tsx'),
+  ].join('\n');
 
-  assert.match(hero, /Music-aware cue planning/);
-  assert.match(hero, /Catalogue-backed products/);
-  assert.match(hero, /Interactive 3D previews/);
-  assert.doesNotMatch(hero, /PROOF_AVATARS|12,400\+|shows choreographed/);
+  assert.match(hero, /<ShowPreviewPanel launchable/);
+  assert.match(hero, /same 3D renderer/);
 
-  assert.match(socialProof, /ICON Pyrotechnics International Co Ltd/);
-  assert.match(socialProof, /International Fireworks Pty Ltd/);
-  assert.doesNotMatch(socialProof, /Stocked at retailers nationwide|SkyMart|BIG BANG SUPPLY/);
-  assert.doesNotMatch(socialProof, /text-muted-foreground\/80/);
+  assert.match(stakeholders, /ICON Pyrotechnics International Co Ltd/);
+  assert.match(stakeholders, /International Fireworks Pty Ltd/);
 
-  assert.match(showcase, /same Three\.js firework renderer/);
-  assert.match(showcase, /Catalogue products/);
-  assert.match(showcase, /Curated templates/);
-  assert.doesNotMatch(showcase, /likes:|budget:|community show|Clone & customise/);
+  // Counts come from the renderer library itself rather than invented usage figures.
+  assert.match(starts, /const EFFECT_COUNT = effectTemplates\.length/);
+  assert.match(story, /review every cue before anything is bought/);
 
-  assert.match(steps, /explicit action that creates the show and starts cue planning/);
-  assert.match(steps, /fast deterministic planner is the default mode/);
-  assert.match(steps, /planning tool, not a substitute for local rules/);
   assert.doesNotMatch(
-    steps,
-    /streaming link|never overshooting|Let AI choreograph|in stock|click-track|safe-distance rules/i,
+    sections,
+    /PROOF_AVATARS|12,400\+|shows choreographed|QUOTES|4\.9|\breviews\b|Mia Reyes|Stocked at retailers nationwide|in stock|let AI choreograph/i,
   );
   assert.equal(existsSync(join(root, 'ui/marketing/VendorBand.tsx')), false);
   assert.equal(existsSync(join(root, 'ui/marketing/landing/Mockups.tsx')), false);
-
-  assert.match(testimonials, /Generate only when you are ready/);
-  assert.match(testimonials, /Preview the cue timeline/);
-  assert.doesNotMatch(testimonials, /QUOTES|4\.9|2,100 reviews|Mia Reyes|Tom Klein|Ada Patel/);
-
-  assert.match(home, /build a cue timeline from catalogue products/);
-  assert.match(home, /Watch the renderer demo/);
-  assert.doesNotMatch(
-    home,
-    /VendorBand|products from your local store|let AI choreograph the rest/,
-  );
+  assert.match(home, /<CTABand/);
+  assert.doesNotMatch(home, /VendorBand|products from your local store/);
 });
 
-test('ambient marketing illustrations stay out of the accessibility tree', () => {
-  const doodle = read('ui/marketing/landing/Doodle.tsx');
-
-  assert.match(doodle, /<span[\s\S]*?aria-hidden="true"/);
-  assert.doesNotMatch(doodle, /role="img"|aria-label=\{meta\.alt\}|DOODLE_META/);
+test('the homepage uses product components instead of stock illustrations', () => {
+  assert.equal(existsSync(join(root, 'ui/marketing/landing/Doodle.tsx')), false);
+  assert.equal(existsSync(join(root, 'public/images/landing')), false);
+  for (const path of ['app/(marketing)/page.tsx', 'ui/marketing/CTABand.tsx'])
+    assert.doesNotMatch(read(path), /Doodle|rainbow-wash|noise-overlay/, path);
 });
 
 test('homepage renderer waits for viewport proximity and canvas readiness', () => {
@@ -124,23 +114,11 @@ test('homepage renderer waits for viewport proximity and canvas readiness', () =
 });
 
 test('homepage headline wraps without a global overflow mask', () => {
-  const hero = read('ui/marketing/Hero.tsx');
-  const landingStyles = read('ui/marketing/landing/landing.module.css');
+  const hero = read('ui/marketing/landing/LandingHero.tsx');
   const rootLayout = read('app/layout.tsx');
 
-  assert.match(hero, /<section className="relative isolate/);
-  assert.match(hero, /absolute inset-0 -z-10 overflow-hidden/);
-  assert.match(hero, /absolute inset-0 z-\[1\] overflow-hidden/);
-  assert.match(hero, /text-\[clamp\(2\.25rem,12vw,5\.625rem\)\]/);
-  assert.match(hero, /sm:text-\[clamp\(46px,7vw,90px\)\]/);
-  assert.match(hero, /right-\[14%\] hidden sm:block/);
-
-  assert.match(landingStyles, /-webkit-box-decoration-break: clone/);
-  assert.match(landingStyles, /box-decoration-break: clone/);
-  assert.match(
-    landingStyles,
-    /@media \(min-width: 40rem\) \{[\s\S]*?\.mark \{[\s\S]*?white-space: nowrap/,
-  );
+  assert.match(hero, /text-\[clamp\(2\.4rem,9vw,4\.5rem\)\]/);
+  assert.match(hero, /text-balance/);
   assert.doesNotMatch(rootLayout, /overflow-x-hidden/);
 });
 

@@ -109,3 +109,69 @@ export const DEMO_SHOW_CUES: ReplayCue[] = SEEDS.map(
     firework: specFor(paletteIndex, caliber),
   }),
 );
+
+/** Shells a visitor can launch by clicking the landing sky, in the order they cycle. */
+const LAUNCH_TEMPLATE_KEYS = [
+  'peony',
+  'chrysanthemum',
+  'willow',
+  'crossette',
+  'dahlia',
+  'palm',
+  'brocadeCrown',
+  'strobe',
+] as const;
+/** Calibres from low to high; a higher click launches a larger, higher shell. */
+const LAUNCH_CALIBRES = ['75mm', '100mm', '125mm'] as const;
+/** Lean at the panel's edges, in degrees either side of vertical. */
+const LAUNCH_MAX_LEAN_DEGREES = 28;
+
+const launchSpecCache = new Map<string, FireworkSpecification>();
+function launchSpec(key: string, caliber: string): FireworkSpecification {
+  const cacheKey = `${key}:${caliber}`;
+  const cached = launchSpecCache.get(cacheKey);
+  if (cached) return cached;
+  const template = effectTemplates.find((entry) => entry.key === key);
+  if (!template) throw new Error(`The landing sky needs the ${key} template.`);
+  const spec: FireworkSpecification = {
+    id: `launch-${cacheKey}`,
+    slug: `launch-${cacheKey}`,
+    name: template.name,
+    description: null,
+    sortOrder: 0,
+    durationSeconds: 3,
+    heightMeters: 60,
+    caliber,
+    shotCount: 1,
+    spec: DEFAULT_FIREWORK_SPEC,
+    rawSpec: null,
+    renderDesign: null,
+    design: template.design,
+    kind: 'shell',
+    baseEffect: null,
+    variant: null,
+  };
+  launchSpecCache.set(cacheKey, spec);
+  return spec;
+}
+
+/**
+ * A cue fired from a click on the sky. `x` and `y` are shares of the panel from its
+ * top-left corner; the shell leans towards the click and higher clicks use larger calibres.
+ */
+export function launchCue(count: number, timeSeconds: number, x: number, y: number): ReplayCue {
+  const key = LAUNCH_TEMPLATE_KEYS[count % LAUNCH_TEMPLATE_KEYS.length];
+  const height = Math.max(0, Math.min(0.999, 1 - y));
+  const caliber = LAUNCH_CALIBRES[Math.floor(height * LAUNCH_CALIBRES.length)];
+  const lean = (Math.max(0, Math.min(1, x)) - 0.5) * 2 * LAUNCH_MAX_LEAN_DEGREES;
+  return {
+    id: `launch-cue-${count}`,
+    position: DEMO_SHOW_CUES.length + count + 1,
+    timeSeconds,
+    description: 'Launched from the landing sky',
+    productId: `launch-${key}:${caliber}`,
+    launchPositionIndex: 1,
+    shotPanDegrees: lean,
+    firework: launchSpec(key, caliber),
+  };
+}

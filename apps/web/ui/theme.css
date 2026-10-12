@@ -47,19 +47,6 @@
   --color-accent-emphasis: var(--accent-foreground);
   --color-on-accent: var(--accent-foreground);
 
-  /* Sparse Dub-style rainbow wash for marketing backdrops. */
-  --rainbow-hero-wash: conic-gradient(
-    from -81deg,
-    #3a8bfd -72deg,
-    #855afc 33deg,
-    #f00 70deg,
-    #eab308 136deg,
-    #5cff80 214deg,
-    #00fff9 259deg,
-    #3a8bfd 288deg,
-    #855afc 393deg
-  );
-
   /* Semantic status */
   --color-status-success: var(--status-success);
   --color-status-success-subtle: var(--status-success-subtle);
