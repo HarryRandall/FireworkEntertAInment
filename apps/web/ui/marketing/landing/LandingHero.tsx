@@ -1,10 +1,31 @@
-/** Landing hero: the headline over the ruled grid, then a live show with its song timeline. */
+/** Landing hero: the headline over the ruled grid, then a published show you can look around. */
 import { ArrowRight } from 'lucide-react';
 import { Button } from '@/ui/patterns/Button';
 import { GridBackground } from '@/ui/kit/grid-background';
 import { AnimatedGradientText, BorderBeam, ShimmerLink } from '@/ui/kit/motion';
 import { Reveal, Rise } from '@/ui/kit/reveal';
+import { Suspense } from 'react';
+import { loadHeroShow } from './heroShow.server';
 import { ShowPreviewPanel } from './ShowPreviewPanel';
+import styles from './landing.module.css';
+
+const HERO_SKY_HEIGHT = 'clamp(340px, 56vw, 540px)';
+
+/** A published Explore show on the live renderer, or the built-in demo if none loads. */
+async function HeroStage() {
+  const show = await loadHeroShow();
+  if (!show) return <ShowPreviewPanel height={HERO_SKY_HEIGHT} />;
+  return (
+    <ShowPreviewPanel
+      height={HERO_SKY_HEIGHT}
+      cues={show.cues}
+      duration={show.duration}
+      title={show.title}
+      subtitle={show.subtitle}
+      track="Show timeline"
+    />
+  );
+}
 
 export function LandingHero() {
   return (
@@ -48,7 +69,15 @@ export function LandingHero() {
 
         <Rise delay={380}>
           <BorderBeam className="rounded-[21px] p-px" surface="var(--stage-night)">
-            <ShowPreviewPanel height="clamp(360px, 62vw, 560px)" />
+            <Suspense
+              fallback={
+                <div className={styles.skyPanel} style={{ height: HERO_SKY_HEIGHT }}>
+                  <div className={styles.starfield} />
+                </div>
+              }
+            >
+              <HeroStage />
+            </Suspense>
           </BorderBeam>
         </Rise>
       </Reveal>

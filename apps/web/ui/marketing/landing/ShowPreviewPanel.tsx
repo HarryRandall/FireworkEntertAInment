@@ -10,8 +10,16 @@ import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
  * shift the page. Playback loops while the panel is on screen.
  */
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Music4 } from 'lucide-react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from 'react';
+import { Move3d, Music4 } from 'lucide-react';
 import type { ReplayCue } from '@/lib/show-domain';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 import { AudioTimeline } from './AudioTimeline';
@@ -38,9 +46,27 @@ type ShowPreviewPanelProps = {
   unit?: string;
   /** Extra overlay in the top-right corner. */
   badge?: ReactNode;
+  /** Lets visitors drag to orbit the camera; defaults to true. */
+  interactive?: boolean;
 };
 
 const POSTER_TIME_SECONDS = 4;
+const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
+
+function subscribeFinePointer(onChange: () => void): () => void {
+  const query = window.matchMedia(FINE_POINTER_QUERY);
+  query.addEventListener('change', onChange);
+  return () => query.removeEventListener('change', onChange);
+}
+
+/** Orbiting is offered to mouse and trackpad users; touch keeps the page scrolling. */
+function useFinePointer(): boolean {
+  return useSyncExternalStore(
+    subscribeFinePointer,
+    () => window.matchMedia(FINE_POINTER_QUERY).matches,
+    () => false,
+  );
+}
 const DISPLAY_UPDATE_INTERVAL_MS = 120;
 const PREVIEW_RENDER_ROOT_MARGIN = '480px 0px';
 
@@ -54,7 +80,11 @@ export function ShowPreviewPanel({
   palette = ['var(--show-gold)', 'var(--show-green)', 'var(--show-violet)'],
   unit = 'cues',
   badge,
+  interactive: allowOrbit = true,
 }: ShowPreviewPanelProps) {
+  const finePointer = useFinePointer();
+  const interactive = allowOrbit && finePointer;
+  const skyRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const start = Math.min(POSTER_TIME_SECONDS, duration / 2);
   const elapsedRef = useRef(start);
@@ -172,71 +202,89 @@ export function ShowPreviewPanel({
 
   const showCanvas = shouldMountCanvas && !reducedMotion;
 
+  // The viewer zooms on the wheel; on a landing page the wheel must keep scrolling the page.
+  useEffect(() => {
+    const sky = skyRef.current;
+    if (!sky) return;
+    const keepScrolling = (event: WheelEvent) => event.stopPropagation();
+    sky.addEventListener('wheel', keepScrolling, { capture: true });
+    return () => sky.removeEventListener('wheel', keepScrolling, { capture: true });
+  }, []);
+
   return (
-    <div
-      ref={containerRef}
-      className={styles.skyPanel}
-      style={{ height }}
-      aria-busy={previewIsLoading || undefined}
-    >
-      <div className={styles.starfield} />
+    <div ref={containerRef} className={styles.skyPanel} aria-busy={previewIsLoading || undefined}>
+      <div ref={skyRef} className="relative" style={{ height }}>
+        <div className={styles.starfield} />
 
-      {showCanvas ? (
-        <div
-          className={[
-            styles.skyCanvas,
-            isCanvasReady ? styles.skyCanvasReady : styles.skyCanvasLoading,
-          ].join(' ')}
-        >
-          <CanvasSurface className="absolute inset-0">
-            <FireworkReplayCanvas
-              compactPreview
-              cues={cues}
-              lowPower="auto"
-              elapsed={elapsed}
-              playbackRef={playbackRef}
-              playing={active}
-              startDistance="farthest"
-              interactive={false}
-              allowWheelZoom={false}
-              controlsVisible={false}
-              muted
-              onReady={() => setIsCanvasReady(true)}
-            />
-          </CanvasSurface>
-        </div>
-      ) : null}
+        {showCanvas ? (
+          <div
+            className={[
+              styles.skyCanvas,
+              interactive ? styles.skyCanvasInteractive : '',
+              isCanvasReady ? styles.skyCanvasReady : styles.skyCanvasLoading,
+            ].join(' ')}
+          >
+            <CanvasSurface className="absolute inset-0">
+              <FireworkReplayCanvas
+                compactPreview
+                cues={cues}
+                lowPower="auto"
+                elapsed={elapsed}
+                playbackRef={playbackRef}
+                playing={active}
+                startDistance="farthest"
+                interactive={interactive}
+                allowWheelZoom={false}
+                controlsVisible={false}
+                muted
+                onReady={() => setIsCanvasReady(true)}
+              />
+            </CanvasSurface>
+          </div>
+        ) : null}
 
-      <div className={`${styles.glassTile} absolute top-4 left-4 z-10 max-w-[62%] px-3.5 py-2.5`}>
-        <div className="flex items-center gap-2 text-[11px] font-bold tracking-[0.04em] text-[var(--hl)]">
-          <span
-            aria-hidden="true"
-            className={active ? styles.liveDot : 'h-[7px] w-[7px] rounded-full bg-white/35'}
-          />{' '}
-          3D PREVIEW
-        </div>
-        <div className="mt-1 text-[15px] font-semibold tracking-[-0.01em] text-white">{title}</div>
-        <div className="text-xs text-white/60">{subtitle}</div>
         <div
-          className="mt-1 text-[11px] text-white/40"
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
+          className={`${styles.glassTile} pointer-events-none absolute top-4 left-4 z-10 max-w-[62%] px-3.5 py-2.5`}
         >
-          {previewStatus}
+          <div className="flex items-center gap-2 text-[11px] font-bold tracking-[0.04em] text-[var(--hl)]">
+            <span
+              aria-hidden="true"
+              className={active ? styles.liveDot : 'h-[7px] w-[7px] rounded-full bg-white/35'}
+            />{' '}
+            3D PREVIEW
+          </div>
+          <div className="mt-1 text-[15px] font-semibold tracking-[-0.01em] text-white">
+            {title}
+          </div>
+          <div className="text-xs text-white/60">{subtitle}</div>
+          <div
+            className="mt-1 text-[11px] text-white/40"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {previewStatus}
+          </div>
         </div>
+
+        {badge ? <div className="absolute top-4 right-4 z-10">{badge}</div> : null}
+
+        {interactive && active ? (
+          <div
+            className={`${styles.glassTile} pointer-events-none absolute right-4 bottom-4 z-10 hidden items-center gap-2 px-3 py-2 text-[11px] text-white/75 sm:flex`}
+          >
+            <Move3d aria-hidden="true" size={14} />
+            Drag to look around
+          </div>
+        ) : null}
       </div>
 
-      {badge ? <div className="absolute top-4 right-4 z-10">{badge}</div> : null}
-
-      <div
-        className={`${styles.glassTile} absolute right-3 bottom-3 left-3 z-10 flex items-center gap-4 px-3.5 py-2.5 sm:right-4 sm:bottom-4 sm:left-4`}
-      >
+      <div className="relative z-10 flex items-center gap-4 border-t border-white/10 px-4 py-3">
         <div className="hidden min-w-0 items-center gap-2.5 sm:flex">
           <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-white/10">
             <Music4 aria-hidden="true" size={14} className="text-[var(--hl)]" />
           </span>
-          <span className="max-w-36 truncate text-xs text-white/80">{track}</span>
+          <span className="max-w-40 truncate text-xs text-white/80">{track}</span>
         </div>
         <AudioTimeline
           peaks={peaks}

@@ -20,6 +20,15 @@
   transition: opacity 0.22s ease;
 }
 
+.skyCanvasInteractive {
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.skyCanvasInteractive:active {
+  cursor: grabbing;
+}
+
 .skyCanvasLoading {
   opacity: 0;
 }

@@ -70,6 +70,12 @@ test('homepage proof uses real product surfaces and documented stakeholders', ()
   ].join('\n');
 
   assert.match(hero, /<ShowPreviewPanel height=/);
+  // The hero plays a published Explore show built from catalogue products.
+  assert.match(hero, /await loadHeroShow\(\)/);
+  assert.match(
+    read('ui/marketing/landing/heroShow.server.ts'),
+    /buildTemplateReplayCues\(template\.previewCues, specifications\)/,
+  );
   assert.match(hero, /same 3D renderer/);
 
   assert.match(stakeholders, /ICON Pyrotechnics International Co Ltd/);
