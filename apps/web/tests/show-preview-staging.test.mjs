@@ -65,9 +65,10 @@ test('default aerial lean follows outer racks, preserving explicit zero and auth
   assert.equal(design.launch.tilt_deg, 0);
 });
 test('old cached cues do not infer cakes from ids and still convert centimetres once', () => {
+  // A single firing position is drawn where it was saved, so previews stay centred.
   const [shot] = shots([cue('old-shot-0', { launchPositionIndex: 2 })]);
   assert.equal(shot.hardware, 'mortar');
-  assert.deepEqual(shot.position, [MIN_LAUNCH_POSITION_GAP_M, 0]);
+  assert.deepEqual(shot.position, [12.192, 0]);
 });
 
 test('stored design angles and explicit forward lean suppress default rack fanning', () => {
@@ -140,30 +141,32 @@ test('each rack keeps its cakes in its own lane instead of sharing one row', () 
     { x: 0, y: 0, z: 0 },
     { x: 200, y: 0, z: 0 },
   ];
-  const cakes = [0, 1, 2].flatMap((rack) =>
-    Array.from({ length: 6 }, (_, i) =>
+  // Cakes alternate between racks, so every rack stays equally full and keeps its own cakes.
+  const cakes = Array.from({ length: 6 }, (_, i) =>
+    [0, 1, 2].map((rack) =>
       cue(`r${rack}-c${i}`, { cakeId: `r${rack}-c${i}`, cakeLaunchPositionIndex: rack }),
     ),
-  );
+  ).flat();
   const result = shots(cakes, true, tight);
   const halfLane = MIN_LAUNCH_POSITION_GAP_M / 2;
   for (const [index, shot] of result.entries()) {
-    const rackX = (Math.floor(index / 6) - 1) * MIN_LAUNCH_POSITION_GAP_M;
+    const rackX = ((index % 3) - 1) * MIN_LAUNCH_POSITION_GAP_M;
     assert.ok(
       Math.abs(shot.hardwarePosition[0] - rackX) + 1.1 <= halfLane,
       `cake ${index} stays inside its rack's lane`,
     );
     assert.ok(shot.hardwarePosition[1] >= 6, 'cakes sit in front of their rack');
   }
-  // Five cakes fit across a lane, so the sixth steps forward a row.
-  assert.equal(result[4].hardwarePosition[1], result[0].hardwarePosition[1]);
-  assert.ok(result[5].hardwarePosition[1] > result[0].hardwarePosition[1]);
+  // Five cakes fit across a lane, so each rack's sixth steps forward a row.
+  assert.equal(result[12].hardwarePosition[1], result[0].hardwarePosition[1]);
+  assert.ok(result[15].hardwarePosition[1] > result[0].hardwarePosition[1]);
 });
 
 test('authored shot offsets stay close to their own position', () => {
   const [mortar, far] = shots([
     cue('offset', { launchPositionIndex: 2, shotPositionOverride: { x: 50, y: 0, z: -40 } }),
     cue('far', { launchPositionIndex: 2, shotPositionOverride: { x: 5000, y: 0, z: 0 } }),
+    cue('anchor', { launchPositionIndex: 0 }),
   ]);
   // Offsets are relative to the launch position rather than the scene origin.
   assert.deepEqual(mortar.position, [MIN_LAUNCH_POSITION_GAP_M + 0.5, -0.4]);
@@ -176,4 +179,18 @@ test('authored shot offsets stay close to their own position', () => {
     }),
   ]);
   assert.equal(cakeShot.position[0], cakeShot.hardwarePosition[0] - 1.1);
+});
+
+test('cakes cued on one position spill into neighbouring lanes instead of bunching', () => {
+  const cakes = Array.from({ length: 4 }, (_, i) =>
+    cue(`c${i}`, { cakeId: `c${i}`, cakeLaunchPositionIndex: 1 }),
+  );
+  const result = shots(cakes);
+  const lanes = result.map((shot) =>
+    Math.round(shot.hardwarePosition[0] / MIN_LAUNCH_POSITION_GAP_M),
+  );
+  assert.deepEqual(lanes, [0, -1, 1, 0]);
+  // A lone cake preview is not spread or moved.
+  const [single] = shots([cue('only', { cakeId: 'only', cakeLaunchPositionIndex: 1 })]);
+  assert.equal(single.hardwarePosition[0], 0);
 });

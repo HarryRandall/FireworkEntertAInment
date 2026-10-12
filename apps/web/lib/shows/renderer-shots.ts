@@ -39,9 +39,20 @@ export function buildShowRendererShots(
   showStaging = true,
 ): RendererShotsResult {
   const shots: Shot[] = [];
-  const staged = stagedLaunchPositions(positions);
+  const racks = showStaging ? cakeRacks(cues, positions.length) : new Map<string, number>();
+  // Only spread layouts that fire from more than one position, so a single
+  // firework or cake preview stays where the camera and poster expect it.
+  const used = new Set(
+    cues.map(
+      (cue) =>
+        (cue.cakeId ? racks.get(cue.cakeId) : undefined) ??
+        cue.cakeLaunchPositionIndex ??
+        cue.launchPositionIndex,
+    ),
+  );
+  const staged = stagedLaunchPositions(positions, used.size > 1);
   const slots = showStaging
-    ? cakeSlots(cues, staged)
+    ? cakeSlots(cues, staged, racks)
     : new Map<string, readonly [number, number]>();
   const childIndices = new Map<string, number>();
   const xs = staged.map((position) => position.x);
@@ -106,13 +117,16 @@ function shotOffset(override: LaunchPosition): readonly [number, number] {
  * Converts saved legacy positions to metres and pushes neighbours at least
  * MIN_LAUNCH_POSITION_GAP_M apart along x, keeping the layout's centre and order.
  */
-function stagedLaunchPositions(positions: readonly LaunchPosition[]): StagedPosition[] {
+function stagedLaunchPositions(
+  positions: readonly LaunchPosition[],
+  spreadPositions: boolean,
+): StagedPosition[] {
   const metres = positions.map((position) => ({
     x: position.x * LEGACY_LAUNCH_UNIT_METRES,
     y: position.y * LEGACY_LAUNCH_UNIT_METRES,
     z: position.z * LEGACY_LAUNCH_UNIT_METRES,
   }));
-  if (metres.length < 2) return metres;
+  if (!spreadPositions || metres.length < 2) return metres;
   const order = metres.map((_, index) => index).sort((a, b) => metres[a].x - metres[b].x);
   const spread = [...metres.map((position) => position.x)];
   for (let i = 1; i < order.length; i++) {
@@ -136,12 +150,41 @@ function cakesPerRow(rack: StagedPosition, positions: readonly StagedPosition[])
   return Math.max(1, Math.min(MAX_CAKES_PER_ROW, 2 * sideSlots + 1));
 }
 
-/** Allocates stable, non-overlapping cake footprints in rows just in front of their parent racks. */
-function cakeSlots(cues: readonly ReplayCue[], positions: readonly StagedPosition[]) {
+/**
+ * Chooses which rack lane draws each cake. A cake stays on its own position
+ * unless a neighbouring position holds fewer cakes, so shows that cue every
+ * cake on one position still spread across the site instead of bunching.
+ */
+function cakeRacks(cues: readonly ReplayCue[], rackCount: number): Map<string, number> {
+  const racks = new Map<string, number>();
+  const counts = Array.from({ length: rackCount }, () => 0);
+  for (const cue of cues) {
+    if (!cue.cakeId || racks.has(cue.cakeId)) continue;
+    const own = cue.cakeLaunchPositionIndex ?? cue.launchPositionIndex;
+    const candidates = [own, own - 1, own + 1].filter((rack) => rack >= 0 && rack < rackCount);
+    if (candidates.length === 0) {
+      racks.set(cue.cakeId, own);
+      continue;
+    }
+    const rack = candidates.reduce((best, next) => (counts[next] < counts[best] ? next : best));
+    counts[rack]++;
+    racks.set(cue.cakeId, rack);
+  }
+  return racks;
+}
+
+/** Allocates stable, non-overlapping cake footprints in rows just in front of their racks. */
+function cakeSlots(
+  cues: readonly ReplayCue[],
+  positions: readonly StagedPosition[],
+  racks: ReadonlyMap<string, number>,
+) {
   const slots = new Map<string, readonly [number, number]>();
   for (const cue of cues) {
     if (!cue.cakeId || slots.has(cue.cakeId)) continue;
-    const rack = positions[cue.cakeLaunchPositionIndex ?? cue.launchPositionIndex] ?? {
+    const rack = positions[
+      racks.get(cue.cakeId) ?? cue.cakeLaunchPositionIndex ?? cue.launchPositionIndex
+    ] ?? {
       x: 0,
       y: 0,
       z: 0,

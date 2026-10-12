@@ -60,6 +60,7 @@ import { loadProductTimingProfiles } from './product-timing.server';
 import type { ProductTimingProfiles } from './music-product-matching';
 import { GENERATED_LAUNCH_INTERVAL_SECONDS } from './launch-spacing';
 import { evaluateFinalChoreography } from './quality';
+import { spreadMultishotPositions } from './multishot-spread';
 import { evaluateMusicSync } from './music-sync-quality';
 import { selectChoreographyCandidate, type ChoreographyPlanner } from './choreography-repair';
 import { launchPositionsForWidth, parseFireworkTypes, productMatchesTypes } from './show-options';
@@ -177,7 +178,9 @@ function enforceTimelineTubeSafety(
   maxTubes: 1 | 2 | 3,
 ): ReconstructedCue[] {
   const productById = new Map(products.map((product) => [product.id, product]));
-  const ordered = [...cues].sort(compareCuePlanningPriority);
+  const ordered = spreadMultishotPositions(cues, productById, maxTubes).sort(
+    compareCuePlanningPriority,
+  );
   const kept: ReconstructedCue[] = [];
   const acceptedWindows: CueWindow[] = [];
   for (const cue of ordered) {

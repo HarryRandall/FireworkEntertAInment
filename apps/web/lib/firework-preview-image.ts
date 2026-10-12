@@ -9,7 +9,7 @@ import { RENDERER_VERSION } from '@showcrafter/renderer';
 
 // Both the capture dimensions and renderer bytes determine whether a poster
 // can be reused. Source edits are tracked separately by the manifest revision.
-export const FIREWORK_PREVIEW_RENDERER_VERSION = `1600x1000-design-v1-${RENDERER_VERSION}`;
+export const FIREWORK_PREVIEW_RENDERER_VERSION = `1600x1000-design-v2-${RENDERER_VERSION}`;
 export const FIREWORK_PREVIEW_BUCKET = 'firework-previews';
 
 export type FireworkPreviewImageManifest = {
