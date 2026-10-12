@@ -28,7 +28,7 @@ import {
 } from './prompt-constraints';
 import type { CueEmphasis } from './schemas';
 import type { DensityLevel, Motif, PlanSection, SectionDirection, ShowPlan } from './show-plan';
-import { isGroundEffect, occupiedLaunchPositions } from './show-options';
+import { isGroundEffect } from './show-options';
 
 type Tube = 0 | 1 | 2;
 
@@ -232,8 +232,9 @@ export function realiseShowPlan(params: {
           continue;
         const price = info.product.minPriceCents ?? 0;
         if (params.budgetCents != null && spentCents + price > params.budgetCents) continue;
-        const occupied = occupiedLaunchPositions(info.product, slot.tube, maxTubes);
-        if (!occupied) continue;
+        if (slot.tube >= maxTubes) continue;
+        // A multishot is one cake, so every product occupies only its own position.
+        const occupied = [slot.tube];
         const windows = occupied.map((tube) => ({
           start: timing.launchTimeSeconds,
           end: timing.launchTimeSeconds + GENERATED_LAUNCH_INTERVAL_SECONDS,
@@ -720,7 +721,7 @@ function ensurePromptRequirements(params: {
                 (byId.get(cue.productId)?.product.minPriceCents ?? 0) +
                 (info.product.minPriceCents ?? 0) <=
                 params.budgetCents) &&
-            occupiedLaunchPositions(info.product, cue.tube, params.maxTubes)?.length === 1 &&
+            cue.tube < params.maxTubes &&
             !cues.some(
               (other) =>
                 other !== cue &&

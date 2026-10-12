@@ -25,6 +25,7 @@
     }
   },
   "ignoreIssues": {
+    "apps/web/lib/firework-import/reconstruction-shot.ts": ["exports"],
     "apps/web/lib/admin/editor-snapshots.ts": ["exports"],
     "apps/web/lib/admin/prompts.server.ts": ["exports"],
     "apps/web/lib/admin/roles.server.ts": ["exports"],

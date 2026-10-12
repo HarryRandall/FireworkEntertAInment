@@ -18,7 +18,6 @@ import type { LaunchPosition } from '@showcrafter/fireworks/design';
 import { resolveFireworkPreviewImage } from '@/lib/firework-preview-image';
 import {
   parseReconstructionShotVariant,
-  parseShotLaunchPositionIndex,
   parseShotPositionOverride,
   parseShotSeedOverride,
   type ReconstructionShotMetadata,
@@ -260,7 +259,6 @@ export const listFireworkProducts = cache(
            sequence_index,
            time_offset_seconds,
            caliber,
-           position_override_json,
            fireworks (${fireworkSelect})
          )
        )`,
@@ -302,7 +300,6 @@ export const listFireworkProducts = cache(
             sequence_index: number;
             time_offset_seconds: number;
             caliber: string | null;
-            position_override_json: unknown;
             fireworks:
               | FireworkVariantProjection
               | FireworkVariantProjection[]
@@ -320,13 +317,6 @@ export const listFireworkProducts = cache(
           (a, b) => a.sequence_index - b.sequence_index,
         );
         const firstMultishotFirework = multishotRows.find((shot) => shot.fireworks != null);
-        const launchPositionOverrideIndices = Array.from(
-          new Set(
-            multishotRows
-              .map((shot) => parseShotLaunchPositionIndex(shot.position_override_json))
-              .filter((index): index is number => index != null),
-          ),
-        ).sort((a, b) => a - b);
         const primary = directFirework ?? firstVariant(firstMultishotFirework?.fireworks);
         if (!primary) continue;
 
@@ -403,9 +393,6 @@ export const listFireworkProducts = cache(
             row.catalogue_item_kind === 'multishot'
               ? (row.multishots?.shot_count ?? multishotRows.length)
               : 1,
-          hasLaunchPositionOverrides:
-            row.catalogue_item_kind === 'multishot' && launchPositionOverrideIndices.length > 0,
-          launchPositionOverrideIndices,
         });
       }
 
@@ -442,7 +429,6 @@ export type CatalogueItemShotSpec = {
   panDegrees: number | null;
   tiltDegrees: number | null;
   positionOverride: LaunchPosition | null;
-  launchPositionIndex: number | null;
   seedOverride: number | null;
   firework: FireworkSpecification;
 };
@@ -509,7 +495,6 @@ export async function fetchShotsByCatalogueItem(
           panDegrees: reconstructionShot?.panDegrees ?? null,
           tiltDegrees: reconstructionShot?.tiltDegrees ?? null,
           positionOverride: reconstructionShot?.positionOverride ?? null,
-          launchPositionIndex: reconstructionShot?.launchPositionIndex ?? null,
           seedOverride: reconstructionShot?.seedOverride ?? null,
           firework: mapFireworkVariantSpecification(directFirework, 0),
         },
@@ -535,7 +520,6 @@ export async function fetchShotsByCatalogueItem(
         panDegrees: shot.pan_degrees == null ? null : Number(shot.pan_degrees),
         tiltDegrees: shot.tilt_degrees == null ? null : Number(shot.tilt_degrees),
         positionOverride: parseShotPositionOverride(shot.position_override_json),
-        launchPositionIndex: parseShotLaunchPositionIndex(shot.position_override_json),
         seedOverride: parseShotSeedOverride(shot.position_override_json),
         firework: mapFireworkVariantSpecification(firework, shots.length, shot.caliber),
       });
@@ -571,9 +555,8 @@ function expandReplayCues(
         cakeId: shots.length > 1 ? baseCue.id : undefined,
         cakeLaunchPositionIndex: shots.length > 1 ? baseCue.launchPositionIndex : undefined,
         timeSeconds: showReplayShotTimeSeconds(startSeconds, shots[i].timeOffsetSeconds),
-        // Each multishot shot can fire from its own tube; fall back to the
-        // parent cue's tube when the shot doesn't override it.
-        launchPositionIndex: shots[i].launchPositionIndex ?? baseCue.launchPositionIndex,
+        // A multishot is one cake at its cue's position; shots only vary within the cake.
+        launchPositionIndex: baseCue.launchPositionIndex,
         seedOverride: shots[i].seedOverride ?? baseCue.seedOverride,
         firework: shots[i].firework,
         shotPanDegrees: shots[i].panDegrees,

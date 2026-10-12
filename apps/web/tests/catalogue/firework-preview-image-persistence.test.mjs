@@ -81,7 +81,7 @@ test('preview URL helpers expose only the current renderer version', () => {
     const currentPath = `${FIREWORK_PREVIEW_RENDERER_VERSION}/firework/item/poster.webp`;
     assert.equal(
       FIREWORK_PREVIEW_RENDERER_VERSION,
-      `1600x1000-design-v1-${loadPreviewImageModule('../../packages/renderer/src/version.ts').RENDERER_VERSION}`,
+      `1600x1000-design-v2-${loadPreviewImageModule('../../packages/renderer/src/version.ts').RENDERER_VERSION}`,
     );
     assert.equal(isCurrentFireworkPreviewImagePath('v2/firework/item/poster.webp'), false);
     assert.equal(isCurrentFireworkPreviewImagePath(currentPath), true);

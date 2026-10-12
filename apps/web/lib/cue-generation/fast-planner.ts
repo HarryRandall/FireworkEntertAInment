@@ -24,7 +24,6 @@ import {
 } from './music-product-matching';
 import { GENERATED_LAUNCH_INTERVAL_SECONDS } from './launch-spacing';
 import type { CueEmphasis, ShowBriefRow } from './schemas';
-import { occupiedLaunchPositions } from './show-options';
 import { asShowStyleKey, type ShowStyleKey } from './show-styles';
 
 export type PlannedCue = {
@@ -91,15 +90,7 @@ export function planCuesFast(params: {
   const singles = productInfos.filter((p) => !p.isMultiShot);
   const multis = productInfos.filter((p) => p.isMultiShot);
   const singlePool = singles.length ? singles : productInfos;
-  const laneLocalMultis = multis.filter(
-    ({ product }) =>
-      !product.hasLaunchPositionOverrides && !(product.launchPositionOverrideIndices?.length ?? 0),
-  );
-  const multiPool = laneLocalMultis.length
-    ? laneLocalMultis
-    : multis.length
-      ? multis
-      : productInfos.filter((p) => p.durationSeconds > 4);
+  const multiPool = multis.length ? multis : productInfos.filter((p) => p.durationSeconds > 4);
 
   const userText = [brief.title, brief.description, ...(brief.mood_tags ?? [])]
     .filter(Boolean)
@@ -355,13 +346,14 @@ function acceptFirstPlacement(
       ),
     ];
     for (const tube of tubeOrder) {
-      const occupiedTubes = occupiedLaunchPositions(product.product, tube, maxTubes);
-      if (!occupiedTubes) continue;
-      const windows = occupiedTubes.map((occupiedTube) => ({
-        start: timing.launchTimeSeconds,
-        end: timing.launchTimeSeconds + GENERATED_LAUNCH_INTERVAL_SECONDS,
-        tube: occupiedTube,
-      }));
+      if (tube >= maxTubes) continue;
+      const windows = [
+        {
+          start: timing.launchTimeSeconds,
+          end: timing.launchTimeSeconds + GENERATED_LAUNCH_INTERVAL_SECONDS,
+          tube,
+        },
+      ];
       if (windows.some((window) => overlapsOccupiedWindow(window, occupied))) continue;
       occupied.push(...windows);
       if (product.isMultiShot) multiImpacts.add(timing.impactTimeSeconds);

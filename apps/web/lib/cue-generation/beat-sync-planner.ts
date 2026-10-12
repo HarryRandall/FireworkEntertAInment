@@ -33,7 +33,7 @@ import { GENERATED_LAUNCH_INTERVAL_SECONDS } from './launch-spacing';
 import { shouldKeepPlannedMoment } from './moment-groups';
 import { recurringMotifIds } from './motifs';
 import type { CueEmphasis, ShowBriefRow } from './schemas';
-import { isGroundEffect, occupiedLaunchPositions } from './show-options';
+import { isGroundEffect } from './show-options';
 import { asShowStyleKey } from './show-styles';
 
 export type BeatSyncPlanResult = {
@@ -237,15 +237,16 @@ export function planCuesOnBeats(params: {
           timingProfile: params.timingProfiles?.get(product.id)?.[emphasis],
         });
         if (!timing) continue;
-        const occupiedTubes = occupiedLaunchPositions(product, tube, maxTubes);
-        if (!occupiedTubes) continue;
-        const windows = occupiedTubes.map((occupiedTube) => ({
-          start: timing.launchTimeSeconds,
-          // Independent products can be fired while an earlier effect remains
-          // visible. Reserve the ignition interval, not the visual tail.
-          end: timing.launchTimeSeconds + GENERATED_LAUNCH_INTERVAL_SECONDS,
-          tube: occupiedTube,
-        }));
+        if (tube >= maxTubes) continue;
+        const windows = [
+          {
+            start: timing.launchTimeSeconds,
+            // Independent products can be fired while an earlier effect remains
+            // visible. Reserve the ignition interval, not the visual tail.
+            end: timing.launchTimeSeconds + GENERATED_LAUNCH_INTERVAL_SECONDS,
+            tube,
+          },
+        ];
         if (windows.some((window) => overlaps(window, occupied))) continue;
         accepted = { product, timing, windows };
         const cadenceIndex = productPools.cadence.indexOf(product);
@@ -407,15 +408,8 @@ function pickProductPools(
     brief?.mood_tags?.join(' ') ?? ''
   }`.toLowerCase();
   const words = briefText.split(/[^a-z]+/).filter((word) => word.length >= 4);
-  const singleShots = products.filter(
-    (product) => (product.shotCount ?? 1) <= 1 && !product.hasLaunchPositionOverrides,
-  );
-  const sustainedShots = products.filter(
-    (product) =>
-      (product.shotCount ?? 1) > 1 &&
-      !product.hasLaunchPositionOverrides &&
-      !(product.launchPositionOverrideIndices?.length ?? 0),
-  );
+  const singleShots = products.filter((product) => (product.shotCount ?? 1) <= 1);
+  const sustainedShots = products.filter((product) => (product.shotCount ?? 1) > 1);
   const aerialShots = singleShots.filter((product) => !isGroundEffect(product));
   const candidates = aerialShots.length
     ? aerialShots

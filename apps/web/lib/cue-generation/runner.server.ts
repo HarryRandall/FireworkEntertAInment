@@ -60,15 +60,10 @@ import { loadProductTimingProfiles } from './product-timing.server';
 import type { ProductTimingProfiles } from './music-product-matching';
 import { GENERATED_LAUNCH_INTERVAL_SECONDS } from './launch-spacing';
 import { evaluateFinalChoreography } from './quality';
+import { spreadMultishotPositions } from './multishot-spread';
 import { evaluateMusicSync } from './music-sync-quality';
 import { selectChoreographyCandidate, type ChoreographyPlanner } from './choreography-repair';
-import {
-  launchPositionsForWidth,
-  occupiedLaunchPositions,
-  parseFireworkTypes,
-  productFitsLaunchPositions,
-  productMatchesTypes,
-} from './show-options';
+import { launchPositionsForWidth, parseFireworkTypes, productMatchesTypes } from './show-options';
 import { SHOW_STYLES, asShowStyleKey, isShowStyleKey, type ShowStyleKey } from './show-styles';
 import type { CueEmphasis, GenerateCuesResult, ShowBriefRow } from './schemas';
 
@@ -183,25 +178,27 @@ function enforceTimelineTubeSafety(
   maxTubes: 1 | 2 | 3,
 ): ReconstructedCue[] {
   const productById = new Map(products.map((product) => [product.id, product]));
-  const ordered = [...cues].sort(compareCuePlanningPriority);
+  const ordered = spreadMultishotPositions(cues, productById, maxTubes).sort(
+    compareCuePlanningPriority,
+  );
   const kept: ReconstructedCue[] = [];
   const acceptedWindows: CueWindow[] = [];
   for (const cue of ordered) {
     const product = productById.get(cue.productId);
     if (!product) continue;
-    const occupiedTubes = occupiedLaunchPositions(product, cue.tube, maxTubes);
-    if (!occupiedTubes) continue;
+    if (cue.tube >= maxTubes) continue;
     // Compare on the rounded value the trigger will actually see and reserve
-    // the shared ignition interval.
+    // the shared ignition interval. A multishot is one cake, so it only
+    // occupies its own launch position.
     const storedTime = toStoredTimeSeconds(cue.timeSeconds);
-    const windows: CueWindow[] = occupiedTubes.map((launchPositionIndex) => ({
+    const window: CueWindow = {
       timeSeconds: storedTime,
       durationSeconds: GENERATED_LAUNCH_INTERVAL_SECONDS,
-      launchPositionIndex,
-    }));
-    if (windows.some((window) => findTubeOverlap(window, acceptedWindows))) continue;
+      launchPositionIndex: cue.tube,
+    };
+    if (findTubeOverlap(window, acceptedWindows)) continue;
     kept.push({ ...cue, timeSeconds: storedTime });
-    acceptedWindows.push(...windows);
+    acceptedWindows.push(window);
   }
   return kept.sort((a, b) => a.timeSeconds - b.timeSeconds || a.tube - b.tube);
 }
@@ -465,12 +462,6 @@ export async function generateCuesForShow(params: {
       if (products.length === 0) {
         throw new Error('No purchasable fireworks are available from supplier inventory.');
       }
-    }
-    // Multishot child positions are absolute. Products that address a launch
-    // position outside this site's width cannot be scheduled safely.
-    products = products.filter((product) => productFitsLaunchPositions(product, maxTubes));
-    if (products.length === 0) {
-      throw new Error('No catalogue products fit the launch positions available at this site.');
     }
     if (assortmentLedger && products.length !== assortmentLedger.size) {
       throw new Error(

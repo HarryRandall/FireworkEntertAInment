@@ -97,8 +97,6 @@ function product(id, { colour, calibre, effect = null, shotCount = 1 }) {
     manufacturer: 'Test',
     previewImagePath: null,
     previewImageRevision: null,
-    hasLaunchPositionOverrides: false,
-    launchPositionOverrideIndices: [],
     spec,
     rawSpec: null,
     renderDesign: null,
