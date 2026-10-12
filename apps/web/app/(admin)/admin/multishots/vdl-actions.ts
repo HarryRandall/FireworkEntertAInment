@@ -99,6 +99,7 @@ export async function createVdlMultishot(
       sequence_index: shot.sequence,
       time_offset_seconds: shot.timeMs / MILLISECONDS_PER_SECOND,
       pan_degrees: shot.angleDeg,
+      timeline_track_index: shot.track,
       ...(firework.match ? { firework_id: firework.match.id } : { firework_key: firework.key }),
     };
   });

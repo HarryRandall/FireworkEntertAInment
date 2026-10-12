@@ -1,4 +1,5 @@
 /** Combines a parsed VDL line with existing fireworks into a create-multishot preview. */
+import { shotDuration } from '@showcrafter/renderer';
 import { MULTISHOT_PAN_LIMIT_DEGREES } from '../../admin/multishot-constraints.ts';
 import { buildVdlFireworks, type VdlFireworkPlan } from './design.ts';
 import { decodeEncodedEffect, isEncodedEffect } from './encoded.ts';
@@ -35,6 +36,7 @@ interface VdlPreviewShot {
   timeMs: number;
   angleDeg: number;
   firework: string;
+  track: number;
 }
 
 export interface VdlPreview {
@@ -60,6 +62,23 @@ function titleCase(text: string): string {
 
 function fireworkKey(name: string): string {
   return name.toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+/** Puts each shot on the first timeline track that is free when it fires, so tracks stay few. */
+function packTracks(shots: VdlPreviewShot[], fireworks: Record<string, VdlPreviewFirework>) {
+  const durationMs = new Map<string, number>();
+  const trackEndsMs: number[] = [];
+  for (const shot of shots) {
+    let duration = durationMs.get(shot.firework);
+    if (duration === undefined) {
+      duration = shotDuration(fireworks[shot.firework].design) * MILLISECONDS_PER_SECOND;
+      durationMs.set(shot.firework, duration);
+    }
+    let track = trackEndsMs.findIndex((endMs) => endMs <= shot.timeMs);
+    if (track === -1) track = trackEndsMs.length;
+    trackEndsMs[track] = shot.timeMs + duration;
+    shot.track = track;
+  }
 }
 
 /** Parses the line, builds a design per part and binds each to an existing firework of the same name. */
@@ -136,6 +155,7 @@ export function previewVdlCake(
         timeMs: tube.timeMs - startMs,
         angleDeg: angle,
         firework,
+        track: 0,
       });
   }
   if (clamped)
@@ -147,6 +167,7 @@ export function previewVdlCake(
       kind: 'error',
       message: `This cake needs ${shots.length} shots; multishots hold up to ${MAX_SHOTS}.`,
     };
+  packTracks(shots, fireworks);
   const lastShotS = (shots.at(-1)?.timeMs ?? 0) / MILLISECONDS_PER_SECOND;
   return {
     kind: 'preview',

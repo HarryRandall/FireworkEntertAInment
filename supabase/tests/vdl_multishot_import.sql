@@ -27,8 +27,8 @@ create function pg_temp.new_fireworks() returns jsonb language sql as $$
 $$;
 create function pg_temp.shots(p_pan integer default 10) returns jsonb language sql as $$
  select jsonb_build_array(
-  jsonb_build_object('sequence_index',1,'firework_key','30mm blue peony','time_offset_seconds',0,'pan_degrees',-10),
-  jsonb_build_object('sequence_index',2,'firework_id','95000000-0000-4000-8000-000000000012','time_offset_seconds',0.25,'pan_degrees',p_pan));
+  jsonb_build_object('sequence_index',1,'firework_key','30mm blue peony','time_offset_seconds',0,'pan_degrees',-10,'timeline_track_index',0),
+  jsonb_build_object('sequence_index',2,'firework_id','95000000-0000-4000-8000-000000000012','time_offset_seconds',0.25,'pan_degrees',p_pan,'timeline_track_index',1));
 $$;
 -- Materialise fixtures before SET ROLE; postgres-owned pg_temp helpers cannot run as authenticated.
 select pg_temp.new_fireworks() as new_fireworks, pg_temp.shots() as valid_shots, pg_temp.shots(45) as wide_shots \gset
@@ -51,6 +51,7 @@ select is((select count(*)::integer from public.multishots where name='Wide cake
 select is(public.create_vdl_multishot('30mm 2 Shot Cake','(a) Blue Peony',:'new_fireworks'::jsonb,:'valid_shots'::jsonb)->>'ok','true','admin creates a multishot');
 select is((select count(*)::integer from public.multishot_fireworks s join public.multishots m on m.id=s.multishot_id where m.name='30mm 2 Shot Cake'),2,'every shot saved');
 select is((select time_offset_seconds from public.multishot_fireworks s join public.multishots m on m.id=s.multishot_id where m.name='30mm 2 Shot Cake' and s.sequence_index=2),0.25::numeric,'milliseconds retained');
+select is((select timeline_track_index from public.multishot_fireworks s join public.multishots m on m.id=s.multishot_id where m.name='30mm 2 Shot Cake' and s.sequence_index=2),1,'packed track kept');
 select is((select shot_count from public.multishots where name='30mm 2 Shot Cake'),2,'derived state synchronised');
 select is((select is_listed from public.catalogue_items c join public.fireworks f on f.id=c.firework_id where f.name='30mm Blue Peony'),false,'imported parts are not listed products');
 select is((select caliber from public.fireworks where name='30mm Blue Peony'),'30mm','caliber stored');

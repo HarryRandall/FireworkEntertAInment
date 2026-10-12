@@ -109,6 +109,8 @@ begin
       or (shot->>'sequence_index')::numeric <> shot_index
       or (shot->>'pan_degrees')::numeric <> trunc((shot->>'pan_degrees')::numeric)
       or abs((shot->>'pan_degrees')::numeric) > max_pan_degrees
+      or (shot->>'timeline_track_index')::numeric <> trunc((shot->>'timeline_track_index')::numeric)
+      or (shot->>'timeline_track_index')::numeric not between 0 and max_shot_count - 1
       or (shot->>'time_offset_seconds')::numeric not between 0 and max_duration_seconds
       or (shot->>'time_offset_seconds')::numeric < previous_time_seconds
       or (shot->>'time_offset_seconds')::numeric * milliseconds_per_second
@@ -119,7 +121,7 @@ begin
     previous_time_seconds := (shot->>'time_offset_seconds')::numeric;
     insert into public.multishot_fireworks (multishot_id, firework_id, sequence_index, timeline_track_index,
       time_offset_seconds, pan_degrees, tilt_degrees, caliber)
-      select v_multishot_id, f.id, shot_index, shot_index - 1,
+      select v_multishot_id, f.id, shot_index, (shot->>'timeline_track_index')::integer,
         (shot->>'time_offset_seconds')::numeric, (shot->>'pan_degrees')::integer, 0, f.caliber
       from public.fireworks f where f.id = v_firework_id;
   end loop;

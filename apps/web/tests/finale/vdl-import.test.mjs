@@ -112,10 +112,11 @@ test('encoded effects decode to Finale heights, lift, break size and star time',
   const part = preview(samples[5]).parts[0];
   assert.equal(part.encoded, true);
   const shell = preview(samples[5]).fireworks[part.fireworks[0]];
-  assert.equal(shell.design.launch.height_m, 29.5);
-  assert.equal(shell.design.launch.time_s, 1.93);
+  const plain = preview('30mm 1 Shot Cake (a) Silver Peony, 1 Row (0a/CAK)');
+  const peony = Object.values(plain.fireworks)[0];
+  // Finale's 6.6 m break is smaller than its 9 m default for 30mm, so the shell is drawn smaller.
+  assert.ok(shell.design.breaks[0].layers[0].radius_m < peony.design.breaks[0].layers[0].radius_m);
   assert.equal(shell.design.launch.tail, 'heli');
-  assert.equal(shell.design.breaks[0].layers[0].radius_m, 6.6);
 });
 
 test('compound parts fire a firework per part from the same tube', () => {
@@ -166,6 +167,22 @@ test('angles beyond the multishot limit are limited with a warning', () => {
     [-30, 30],
   );
   assert.equal(result.warnings.length, 1);
+});
+
+test('small cakes stay near template size so they read like catalogue cakes', () => {
+  const willow = Object.values(preview(samples[1]).fireworks)[0];
+  const layer = willow.design.breaks[0].layers[0];
+  assert.ok(willow.design.launch.height_m >= 40, `height ${willow.design.launch.height_m}`);
+  assert.ok(layer.radius_m >= 20, `radius ${layer.radius_m}`);
+  assert.ok(layer.count >= 40, `count ${layer.count}`);
+});
+
+test('shots share timeline tracks once earlier shots have finished', () => {
+  const result = preview(samples[10]);
+  const tracks = new Set(result.shots.map((shot) => shot.track));
+  assert.equal(result.shots.length, 56);
+  assert.ok(tracks.size <= 12, `${tracks.size} tracks`);
+  assert.equal(result.shots[0].track, 0);
 });
 
 test('malformed lines explain what is missing', () => {
