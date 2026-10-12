@@ -145,12 +145,8 @@ test('whole-show playback starts at the normal zoom-out cap while product previe
   );
 });
 
-test('the legacy canvas is restricted to video imports and the comparison harness', () => {
-  const allowed = new Set([
-    'app/internal/import-render/ImportRenderHarness.tsx',
-    'app/(admin)/admin/imports/[id]/_components/FireworkImportPreview.tsx',
-    'app/(admin)/admin/renderer-compare/_components/ComparisonPair.tsx',
-  ]);
+test('the legacy canvas is restricted to the comparison harness', () => {
+  const allowed = new Set(['app/(admin)/admin/renderer-compare/_components/ComparisonPair.tsx']);
   for (const directory of ['app', 'ui']) {
     for (const relative of readdirSync(directory, { recursive: true })) {
       if (!/\.tsx?$/.test(relative)) continue;

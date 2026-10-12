@@ -1,0 +1,61 @@
+{
+  "renderer": "CPU simulate",
+  "projection": {
+    "width": 256,
+    "height": 192,
+    "world_width_m": 100,
+    "world_height_m": 75,
+    "fps": 20
+  },
+  "clips": [
+    {
+      "name": "shell-cake",
+      "duration_s": 10,
+      "audio": true,
+      "kind": "peony",
+      "shots": [
+        {
+          "t_ms": 500,
+          "x": 0.3,
+          "colour": "#ff3048",
+          "angle_deg": 0
+        },
+        {
+          "t_ms": 5500,
+          "x": 0.7,
+          "colour": "#2fe06a",
+          "angle_deg": 12
+        }
+      ]
+    },
+    {
+      "name": "silent-comet",
+      "duration_s": 4,
+      "audio": false,
+      "kind": "comet",
+      "shots": [
+        {
+          "t_ms": 500,
+          "x": 0.5,
+          "colour": "#3050ff",
+          "angle_deg": 0
+        }
+      ]
+    },
+    {
+      "name": "delayed-audio",
+      "duration_s": 5,
+      "audio": true,
+      "audio_delay_s": 0.15,
+      "kind": "peony",
+      "shots": [
+        {
+          "t_ms": 500,
+          "x": 0.5,
+          "colour": "#ff3048",
+          "angle_deg": -12
+        }
+      ]
+    }
+  ]
+}

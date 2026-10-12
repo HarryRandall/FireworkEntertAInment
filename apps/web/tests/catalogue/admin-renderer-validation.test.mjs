@@ -182,9 +182,6 @@ test('admin preview API returns a non-retryable 422 with record and renderer dia
     'next/server': { NextResponse: { json: (body, options) => ({ body, ...options }) } },
     sharp: {},
     '@showcrafter/fireworks/design': renderer,
-    '@/lib/firework-import/renderer-contract': {
-      FIREWORKS_ENGINE_IMPORT_RENDERER_VERSION: 'fixture-renderer',
-    },
     '@/lib/access/current-profile.server': { requirePermission: async () => true },
     '@/lib/firework-card-preview.server': {
       loadAdminFireworkCardPreviewForPersistence: async () => {
@@ -199,7 +196,6 @@ test('admin preview API returns a non-retryable 422 with record and renderer dia
   assert.equal(response.status, 422);
   assert.equal(response.body.error, 'invalid_render_settings');
   assert.equal(response.body.recordId, id);
-  assert.equal(response.body.rendererFingerprint, 'fixture-renderer');
   assert.deepEqual(response.body.diagnostics, [issue]);
 });
 

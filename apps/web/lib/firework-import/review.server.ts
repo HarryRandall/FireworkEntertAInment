@@ -2,17 +2,12 @@ import 'server-only';
 
 import { requirePermission } from '@/lib/access/current-profile.server';
 import { getServerClient } from '@/lib/admin/supabase';
-import { IMPORT_VIDEO_BUCKET } from '@/lib/firework-import/jobs';
 import type {
   ImportCandidate,
   ImportRun,
   ImportRunHistory,
   ImportRunOutput,
 } from '@/lib/firework-import/review';
-import { isRunOwnedImportEngineReviewVideoPath } from '@/lib/firework-import/review';
-import { createServiceRoleSupabase } from '@/lib/supabase/service-role';
-
-const RETAINED_EVIDENCE_URL_TTL_SECONDS = 15 * 60;
 
 type QueryError = { message?: string } | null;
 type QueryResult<T> = { data: T[] | null; error: QueryError };
@@ -76,8 +71,6 @@ type RunOutputPayloadRow = {
   payload: unknown;
 };
 
-type RetainedEvidenceOutputRow = { id: string };
-
 type CandidateRow = {
   id: string;
   import_run_id: string;
@@ -87,7 +80,6 @@ type CandidateRow = {
   score: number | string;
   metrics: unknown;
   validation: unknown;
-  rendered_video_path: string | null;
   selected_at: string | null;
   approved_at: string | null;
   created_at: string;
@@ -96,32 +88,6 @@ type CandidateRow = {
 function failRead(operation: string, error: QueryError): never {
   console.error(`[import-review] ${operation} failed:`, error);
   throw new Error('Reconstruction history could not be loaded.', { cause: error });
-}
-
-async function createSignedRetainedEvidenceUrl(
-  storagePath: string,
-  sessionSupabase: Awaited<ReturnType<typeof getServerClient>>,
-): Promise<string> {
-  const service = createServiceRoleSupabase();
-  let lastError: QueryError = { message: 'Supabase Storage did not return a signed URL.' };
-
-  if (service) {
-    const serviceResult = await service.storage
-      .from(IMPORT_VIDEO_BUCKET)
-      .createSignedUrl(storagePath, RETAINED_EVIDENCE_URL_TTL_SECONDS);
-    if (!serviceResult.error && serviceResult.data?.signedUrl) {
-      return serviceResult.data.signedUrl;
-    }
-    lastError = serviceResult.error ?? lastError;
-  }
-
-  const sessionResult = await sessionSupabase.storage
-    .from(IMPORT_VIDEO_BUCKET)
-    .createSignedUrl(storagePath, RETAINED_EVIDENCE_URL_TTL_SECONDS);
-  if (!sessionResult.error && sessionResult.data?.signedUrl) {
-    return sessionResult.data.signedUrl;
-  }
-  failRead('selected retained engine evidence URL', sessionResult.error ?? lastError);
 }
 
 export async function getImportRunHistory(jobId: string): Promise<ImportRunHistory> {
@@ -134,8 +100,7 @@ export async function getImportRunHistory(jobId: string): Promise<ImportRunHisto
   };
   if (!(await requirePermission('admin.manage_imports'))) return empty;
 
-  const sessionSupabase = await getServerClient();
-  const client = sessionSupabase as unknown as UntypedSupabase;
+  const client = (await getServerClient()) as unknown as UntypedSupabase;
   const pointerResult = await client
     .from<JobPointersRow>('import_jobs')
     .select('active_run_id, selected_candidate_id, approved_run_id, approved_candidate_id')
@@ -215,7 +180,7 @@ export async function getImportRunHistory(jobId: string): Promise<ImportRunHisto
     client
       .from<CandidateRow>('import_candidates')
       .select(
-        'id, import_run_id, ordinal, schema_version, reconstruction, score, metrics, validation, rendered_video_path, selected_at, approved_at, created_at',
+        'id, import_run_id, ordinal, schema_version, reconstruction, score, metrics, validation, selected_at, approved_at, created_at',
       )
       .in('import_run_id', runIds)
       .order('ordinal', { ascending: true })
@@ -226,35 +191,6 @@ export async function getImportRunHistory(jobId: string): Promise<ImportRunHisto
   if (candidateResult.error) failRead('candidates', candidateResult.error);
   if (evidencePayloadResult.error) {
     failRead('active run observation payloads', evidencePayloadResult.error);
-  }
-
-  const selectedCandidate = (candidateResult.data ?? []).find(
-    (candidate) => candidate.id === pointers?.selected_candidate_id,
-  );
-  let selectedRenderedVideoUrl: string | null = null;
-  if (
-    selectedCandidate?.rendered_video_path &&
-    isRunOwnedImportEngineReviewVideoPath(
-      selectedCandidate.rendered_video_path,
-      selectedCandidate.import_run_id,
-    )
-  ) {
-    const retainedOutputResult = await client
-      .from<RetainedEvidenceOutputRow>('import_run_outputs')
-      .select('id')
-      .eq('import_run_id', selectedCandidate.import_run_id)
-      .eq('output_type', 'render_metrics')
-      .eq('storage_path', selectedCandidate.rendered_video_path)
-      .limit(1);
-    if (retainedOutputResult.error) {
-      failRead('selected retained engine evidence output', retainedOutputResult.error);
-    }
-    if (retainedOutputResult.data?.length) {
-      selectedRenderedVideoUrl = await createSignedRetainedEvidenceUrl(
-        selectedCandidate.rendered_video_path,
-        sessionSupabase,
-      );
-    }
   }
 
   const evidencePayloads = new Map(
@@ -290,9 +226,6 @@ export async function getImportRunHistory(jobId: string): Promise<ImportRunHisto
       score: Number(candidate.score),
       metrics: candidate.metrics,
       validation: candidate.validation,
-      renderedVideoPath: candidate.rendered_video_path,
-      renderedVideoUrl:
-        candidate.id === pointers?.selected_candidate_id ? selectedRenderedVideoUrl : null,
       selectedAt: candidate.selected_at,
       approvedAt: candidate.approved_at,
       createdAt: candidate.created_at,

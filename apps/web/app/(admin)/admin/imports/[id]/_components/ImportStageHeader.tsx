@@ -11,12 +11,12 @@ export function ImportStageHeader({
   sourceName,
   status,
   stage,
-  modelConfidence,
+  fitScore,
 }: {
   sourceName: string;
   status: string;
   stage: string | null;
-  modelConfidence: number | null;
+  fitScore: number | null;
 }) {
   const activeIndex = importStageIndex(status, stage);
 
@@ -29,16 +29,16 @@ export function ImportStageHeader({
           </p>
           <h1 className="text-foreground mt-1 text-2xl font-bold tracking-tight">{sourceName}</h1>
           <p className="text-muted-foreground mt-2 text-sm">
-            Compare source evidence, renderer output and deterministic validation before publish.
+            Compare the source video with the fitted renderer reconstruction before publishing.
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
           <Badge solid tone={importStatusTone(status)}>
             {importStageLabel(status, stage)}
           </Badge>
-          {modelConfidence != null ? (
+          {fitScore != null ? (
             <Badge tone="neutral" className="font-mono tabular-nums">
-              Model confidence {Math.round(modelConfidence * 100)}%
+              Fit {Math.round(fitScore * 100)}%
             </Badge>
           ) : null}
         </div>

@@ -1,0 +1,25 @@
+{
+  "name": "@showcrafter/video-fit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --max-warnings 0",
+    "test": "node --import ../../scripts/renderer/register-typescript.mjs --test tests/*.test.mjs",
+    "check": "pnpm lint && pnpm typecheck && pnpm test"
+  },
+  "dependencies": {
+    "@showcrafter/renderer": "workspace:*",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "eslint": "9.39.4",
+    "eslint-config-prettier": "10.1.8",
+    "typescript": "5.9.3"
+  }
+}

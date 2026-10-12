@@ -44,10 +44,6 @@ import {
   type FireworkRenderTuning,
 } from '@showcrafter/fireworks/render-tuning';
 import { replaySimulationCacheKey } from '@showcrafter/fireworks/replay-cache-key';
-import {
-  FIREWORKS_ENGINE_FIXED_STEP_SECONDS,
-  quantiseFireworksEngineTimeSeconds,
-} from '@/lib/firework-import/renderer-contract';
 import { Button } from '@/ui/patterns/Button';
 import { ReplayLoadingBar } from '@/ui/replay/ReplayLoadingBar';
 import { cn } from '@/lib/utils';
@@ -68,6 +64,15 @@ const REPAIR_BUDGET_MS = 12;
 // particle buffers for every half-second of a show, which can run to tens of MB.
 const MAX_CACHED_SHOWS = 1;
 const CAMERA_MENU_ANIMATION_MS = 180;
+// The engine advances in fixed 60 Hz steps; seeks land on whole steps.
+const FIREWORKS_ENGINE_FIXED_STEP_SECONDS = 1 / 60;
+
+function quantiseFireworksEngineTimeSeconds(timeSeconds: number): number {
+  return (
+    Math.round(Math.max(0, timeSeconds) / FIREWORKS_ENGINE_FIXED_STEP_SECONDS) *
+    FIREWORKS_ENGINE_FIXED_STEP_SECONDS
+  );
+}
 const snapshotCacheByKey = new Map<string, SnapshotCacheData>();
 
 function rememberSnapshotCache(key: string, cache: SnapshotCacheData): void {

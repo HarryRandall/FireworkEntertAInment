@@ -1,6 +1,5 @@
-import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { databaseTarget, executeSql, query, repositoryRoot } from './runtime.mjs';
+import { databaseTarget, executeSql, repositoryRoot } from './runtime.mjs';
 import { readSnapshot } from './bootstrap-content.mjs';
 import { snapshotTables } from './snapshot.mjs';
 
@@ -38,21 +37,8 @@ try {
     'commit;',
   );
   executeSql(target, sql.join('\n'));
-  const contract = query(
-    target,
-    'select public.current_firework_import_renderer_contract_version() as version;',
-  )[0]?.version;
-  const source = readFileSync(
-    join(repositoryRoot, 'apps/web/lib/firework-import/renderer-contract.ts'),
-    'utf8',
-  );
-  const version = source.match(
-    /showcrafter\.fireworks-engine\.import-renderer\.v1\+sha256\.[a-f0-9]{64}/,
-  )?.[0];
-  if (!version || version !== contract)
-    throw new Error('The installed renderer contract differs from the application.');
   console.log(
-    `Verified all ${snapshotTables.length} reusable tables against the snapshot, installation receipt and renderer contract.`,
+    `Verified all ${snapshotTables.length} reusable tables against the snapshot and installation receipt.`,
   );
 } catch (error) {
   console.error(error.message);

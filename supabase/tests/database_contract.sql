@@ -65,8 +65,7 @@ begin
     end if;
   end loop;
   foreach name in array array[
-    'seal_firework_import_candidate', 'seal_firework_import_render_validation',
-    'complete_firework_import_run', 'list_orphan_audio_objects',
+    'seal_firework_import_candidate', 'complete_firework_import_run', 'list_orphan_audio_objects',
     'expire_exhausted_song_analyses', 'expire_exhausted_cue_generations',
     'resolve_reconciled_show_generation_credit'
   ] loop
@@ -89,6 +88,15 @@ select pg_temp.assert_true(not exists (
   select 1 from information_schema.tables where table_schema = 'public'
     and table_name in ('products', 'product_shots', 'firework_variants', 'effect_specs', 'show_templates', 'organisations', 'carts', 'orders')
 ), 'Retired schema must not return');
+select pg_temp.assert_true(not exists (
+  select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+  where n.nspname = 'public'
+    and p.proname in (
+      'seal_firework_import_render_validation',
+      'current_firework_import_render_validator_version',
+      'current_firework_import_renderer_contract_version'
+    )
+), 'The retired browser render seal must not return');
 select pg_temp.assert_true(not exists (
   select 1 from information_schema.columns where table_schema = 'public'
     and ((table_name = 'firework_effects' and column_name = 'type')

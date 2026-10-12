@@ -71,11 +71,10 @@ their route modules supply the destination while server layouts enforce access.
 
 Route groups organise layouts without changing URLs. Use `_components` for
 route-local React components; keep `page`, `layout`, `loading`, `error` and route
-handlers at their Next.js locations. The import-render harness remains a route
-while its reconstruction, review, authentication, metrics and renderer contract
-live in `lib/firework-import`. Fingerprinted source paths are part of sealed
-renderer evidence and must change only through a coordinated app, worker and
-database contract update. Shared features should take explicit inputs, such as
+handlers at their Next.js locations. Video import reconstruction and review
+live in `lib/firework-import`; the version 2 reconstruction contract is shared
+with the import worker and `private.firework_import_reconstruction_v2_issue`, so
+change all three together. Shared features should take explicit inputs, such as
 an assortment destination, instead of inferring an admin persona.
 
 ## Reuse and presentation

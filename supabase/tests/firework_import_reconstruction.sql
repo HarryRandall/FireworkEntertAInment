@@ -4,99 +4,35 @@ begin;
 create temporary table original_fireworks as select id from public.fireworks;
 create temporary table original_catalogue_items as select id from public.catalogue_items;
 
+-- The renderer's peony template, stored as a version 1 design.
 create function pg_temp.canonical_firework_design()
 returns jsonb
 language sql
 immutable
 as $$
-  select jsonb_build_object(
-    'size', 72,
-    'colour', jsonb_build_object('enabled', true),
-    'color', 'random',
-    'liftVelocity', 28,
-    'shellLife', 8,
-    'pattern', 'fibonacci',
-    'geometry', 'sphere',
-    'trailProfile', 'spark',
-    'burst', '{}'::jsonb,
-    'burstTrail', '{}'::jsonb,
-    'stars', jsonb_build_object(
-      'outer', jsonb_build_object(
-        'enabled', true,
-        'count', 72,
-        'color', 'random',
-        'burst', '{}'::jsonb,
-        'burstTrail', '{}'::jsonb
-      ),
-      'core', jsonb_build_object(
-        'enabled', false,
-        'count', 24,
-        'color', 'random',
-        'burst', '{}'::jsonb,
-        'burstTrail', '{}'::jsonb
-      )
-    ),
-    'launch', '{}'::jsonb
-  );
+  select '{"kind":"shell","launch":{"height_m":60,"time_s":1.8,"tilt_deg":0,"tail":"gold","sparks":180,"spread":1.4,"smoke":1},"breaks":[{"at_s":0,"core":{"enabled":true,"colour":"#ff3b2f","count":110,"radius":0.5,"flash":1,"flash_on":true,"ring":false},"fade":{"white_hot":0.03,"ember_at":0.8,"fade_at":0.72,"prime_s":0.25},"layers":[{"id":"l1","name":"Red and green petals","pattern":"sphere","count":90,"radius_m":26,"tilt":0.4,"speed_var":0.22,"drag_per_s":2.6,"gravity_m_s2":9,"life_s":2.2,"life_var":0.2,"delay_s":0,"offset_m":[0,0,0],"flash":true,"hidden":false,"colour":{"mode":"alternate","stops":[[0,["#ff3048","#2fe06a"]],[1,["#ff3048","#2fe06a"]]]},"brightness":[[0,1.5],[1,1.5]],"head":{"size":1.1,"visible":true},"trail":{"sparks":10,"length_s":0.25,"spread_m_s":0.4,"gravity_m_s2":3,"drag_per_s":2.6,"size":1,"flicker":0.3,"colour":"star","glitter":0,"glitter_delay_s":0.35,"fork":0},"modifiers":[]}]}],"ground":null,"sound":{"lift":0.7,"break":0.85,"crackle":0.6,"whistle":0},"seed":11}'::jsonb;
 $$;
 
-create function pg_temp.engine_evidence(
-  p_reconstruction jsonb,
-  p_required_duration numeric,
-  p_artifact_path text,
-  p_artifact_sha256 text,
-  p_artifact_byte_size bigint,
-  p_artifact_storage_etag text
-)
+-- Worker fit evidence with one scored entry per reconstructed shot.
+create function pg_temp.fit_metrics(p_reconstruction jsonb)
 returns jsonb
 language sql
 immutable
 as $$
   select jsonb_build_object(
-    'schemaVersion', 'showcrafter.import-render-result.v1',
-    'harnessVersion', 'showcrafter.import-render-harness.v1',
-    'rendererVersion', public.current_firework_import_renderer_contract_version(),
-    'source', jsonb_build_object('durationSeconds', p_required_duration, 'width', 960, 'height', 540),
-    'rendererDurations', (
-      select jsonb_agg(
-        jsonb_build_object(
-          'designKey', design ->> 'key',
-          'durationSeconds', (design ->> 'durationSeconds')::numeric
+    'source', 'fitted',
+    'fit', jsonb_build_object(
+      'schemaVersion', 'showcrafter.import-fit-evidence.v1',
+      'rendererVersion', '0.9.1',
+      'overall', 0.82,
+      'timedOut', false,
+      'shots', (
+        select jsonb_agg(
+          jsonb_build_object('index', ordinality - 1, 'overall', 0.82, 'distances', '{}'::jsonb)
+          order by ordinality
         )
-        order by design ->> 'key'
+        from jsonb_array_elements(p_reconstruction -> 'shots') with ordinality
       )
-      from jsonb_array_elements(p_reconstruction -> 'designs') design
-    ),
-    'requiredProductDurationSeconds', p_required_duration,
-    'reviewArtifact', jsonb_build_object(
-      'storagePath', p_artifact_path,
-      'sha256', p_artifact_sha256,
-      'byteSize', p_artifact_byte_size,
-      'storageETag', p_artifact_storage_etag
-    ),
-    'metrics', jsonb_build_object(
-      'schemaVersion', 'showcrafter.engine-render-metrics.v2',
-      'engine', jsonb_build_object(
-        'renderer', 'FireworksEngine',
-        'rendererVersion', public.current_firework_import_renderer_contract_version(),
-        'camera', 'FireworkReplayCanvas.default',
-        'frameCount', 32,
-        'frameWidth', 960,
-        'frameHeight', 540,
-        'fixedStepSeconds', 1.0 / 60.0
-      ),
-      'timing', jsonb_build_object('score', 0.95),
-      'trajectory', jsonb_build_object('score', 0.94, 'comparedFrameCount', 32),
-      'palette', jsonb_build_object('score', 0.93),
-      'fade', jsonb_build_object('score', 0.92, 'comparedFrameCount', 32),
-      'perceptual', jsonb_build_object(
-        'score', 0.91,
-        'comparedFrameCount', 32,
-        'activeFrameCount', 18,
-        'foregroundWeightTotal', 2.4
-      ),
-      'overallScore', 0.93,
-      'priorityIssues', '[]'::jsonb
     )
   );
 $$;
@@ -105,42 +41,37 @@ create function pg_temp.single_reconstruction(
   p_name text,
   p_description text,
   p_design_key text,
-  p_seed integer
+  p_pan integer
 )
 returns jsonb
 language sql
 immutable
 as $$
   select jsonb_build_object(
-    'version', 1,
+    'version', 2,
     'name', p_name,
     'description', p_description,
     'durationSeconds', 4,
-    'confidence', 0.9,
     'designs', jsonb_build_array(
       jsonb_build_object(
         'key', p_design_key,
-        'effectSlug', 'peony',
+        'template', 'peony',
+        'label', 'Peony',
         'design', pg_temp.canonical_firework_design(),
         'colorPalette', jsonb_build_array('#ff0000'),
-        'durationSeconds', 4,
-        'heightMeters', 35,
-        'caliber', '30mm',
-        'confidence', 0.9
+        'durationSeconds', 4
       )
     ),
     'shots', jsonb_build_array(
       jsonb_build_object(
-        'id', 'shot-1',
+        'id', '0',
         'designKey', p_design_key,
         'timeOffsetSeconds', 0,
-        'panDegrees', 0,
-        'tiltDegrees', 0,
-        'position', jsonb_build_object('x', 0, 'y', 0, 'z', 0),
-        'seed', p_seed,
-        'scale', 1
+        'panDegrees', p_pan,
+        'x', 0.5
       )
-    )
+    ),
+    'source', jsonb_build_object('durationSeconds', 5, 'firstShotSeconds', 0.5, 'extractor', 'test')
   );
 $$;
 
@@ -232,6 +163,12 @@ values
   ('peony', 'Peony', 'sphere', '{}'::jsonb, 'reference'),
   ('ring', 'Ring', 'ring', '{}'::jsonb, 'reference')
 on conflict (slug) do nothing;
+
+-- Approval resolves each design's catalogue effect from its renderer template.
+update public.firework_effects
+set template_key = 'peony'
+where slug = 'peony'
+  and not exists (select 1 from public.firework_effects where template_key = 'peony');
 
 insert into storage.objects (bucket_id, name, owner, owner_id, metadata)
 values (
@@ -392,7 +329,7 @@ select public.record_firework_import_run_context(
   (select lease_token from first_claim),
   repeat('1', 64),
   'firework-reconstruction-test',
-  'showcrafter.firework-design.v1',
+  'showcrafter.renderer-design.v1',
   'openai/gpt-5.4',
   '{}'::jsonb,
   '{}'::jsonb,
@@ -436,96 +373,16 @@ create temporary table first_completion_payload as
 select jsonb_build_array(
     jsonb_build_object(
       'ordinal', 0,
-      'schemaVersion', 'showcrafter.firework-reconstruction.v1',
-      'reconstruction', jsonb_build_object(
-        'version', 1,
-        'name', 'Single reconstruction',
-        'description', 'One red peony.',
-        'durationSeconds', 4,
-        'confidence', 0.9,
-        'designs', jsonb_build_array(
-          jsonb_build_object(
-            'key', 'red-peony',
-            'effectSlug', 'peony',
-            'design', pg_temp.canonical_firework_design(),
-            'colorPalette', jsonb_build_array('#ff0000'),
-            'durationSeconds', 4,
-            'heightMeters', 35,
-            'caliber', '30mm',
-            'confidence', 0.9
-          )
-        ),
-        'shots', jsonb_build_array(
-          jsonb_build_object(
-            'id', 'shot-1',
-            'designKey', 'red-peony',
-            'timeOffsetSeconds', 0,
-            'panDegrees', 0,
-            'tiltDegrees', 0,
-            'position', jsonb_build_object('x', 0, 'y', 0, 'z', 0),
-            'seed', 101,
-            'scale', 1
-          )
-        )
+      'schemaVersion', 'showcrafter.firework-reconstruction.v2',
+      'reconstruction', pg_temp.single_reconstruction('Single reconstruction', 'One red peony.', 'a', 12),
+      'score', 0.82,
+      'metrics', pg_temp.fit_metrics(
+        pg_temp.single_reconstruction('Single reconstruction', 'One red peony.', 'a', 12)
       ),
-      'score', 0.9,
-      'metrics', jsonb_build_object('timing', 0.95),
-      'validation', jsonb_build_object('valid', true, 'blockers', jsonb_build_array()),
+      'validation', jsonb_build_object('valid', true, 'issues', jsonb_build_array()),
       'contentHash', repeat('b', 64)
     )
   ) as candidates;
-
-update first_completion_payload
-set candidates = jsonb_set(
-  jsonb_set(
-    candidates,
-    '{0,metrics}',
-    jsonb_build_object(
-      'engineRender',
-      pg_temp.engine_evidence(
-        candidates -> 0 -> 'reconstruction',
-        4,
-        '10000000-0000-0000-0000-000000000001/engine-review-'
-          || (select run_id from first_import)::text
-          || '-1111111111111111.mp4',
-        repeat('a', 64),
-        4096,
-        repeat('1', 32)
-      )
-    )
-  ),
-  '{0,renderedVideoPath}',
-  to_jsonb(
-    '10000000-0000-0000-0000-000000000001/engine-review-'
-      || (select run_id from first_import)::text
-      || '-1111111111111111.mp4'
-  )
-);
-
-insert into storage.objects (bucket_id, name, owner, owner_id, metadata)
-select
-  'import-videos',
-  candidates -> 0 ->> 'renderedVideoPath',
-  '10000000-0000-0000-0000-000000000001',
-  '10000000-0000-0000-0000-000000000001',
-  jsonb_build_object(
-    'mimetype', 'video/mp4',
-    'size', '4096',
-    'eTag', repeat('1', 32)
-  )
-from first_completion_payload;
-
-select public.append_firework_import_run_output(
-  (select run_id from first_claim),
-  (select lease_token from first_claim),
-  'engine_validation',
-  1,
-  'render_metrics',
-  'showcrafter.import-render-result.v1',
-  (select candidates -> 0 -> 'metrics' -> 'engineRender' from first_completion_payload),
-  repeat('f', 64),
-  (select candidates -> 0 ->> 'renderedVideoPath' from first_completion_payload)
-);
 
 create temporary table first_candidate as
 select public.complete_firework_import_run(
@@ -611,18 +468,12 @@ begin
   begin
     perform public.seal_firework_import_candidate(
       (select candidate_id from first_candidate),
-      'showcrafter.firework-design.v1',
+      'showcrafter.firework-reconstruction.v2',
       (
-        jsonb_set(
-          (
-            select reconstruction
-            from public.import_candidates
-            where id = (select candidate_id from first_candidate)
-          ),
-          '{designs,0,design}',
-          pg_temp.canonical_firework_design()
-        ) - 'version'
-      ),
+        select reconstruction
+        from public.import_candidates
+        where id = (select candidate_id from first_candidate)
+      ) - 'version',
       (
         select content_hash
         from public.import_candidates
@@ -632,6 +483,54 @@ begin
     raise exception 'Canonical reconstruction without a schema version unexpectedly sealed.';
   exception
     when sqlstate '22023' then null;
+  end;
+
+  begin
+    perform public.seal_firework_import_candidate(
+      (select candidate_id from first_candidate),
+      'showcrafter.firework-reconstruction.v2',
+      jsonb_set(
+        (
+          select reconstruction
+          from public.import_candidates
+          where id = (select candidate_id from first_candidate)
+        ),
+        '{designs,0,design,kind}',
+        '"teapot"'
+      ),
+      (
+        select content_hash
+        from public.import_candidates
+        where id = (select candidate_id from first_candidate)
+      )
+    );
+    raise exception 'A design outside the renderer schema unexpectedly sealed.';
+  exception
+    when sqlstate '22023' then null;
+  end;
+
+  begin
+    perform public.seal_firework_import_candidate(
+      (select candidate_id from first_candidate),
+      'showcrafter.firework-reconstruction.v2',
+      jsonb_set(
+        (
+          select reconstruction
+          from public.import_candidates
+          where id = (select candidate_id from first_candidate)
+        ),
+        '{shots,0,panDegrees}',
+        '-11'
+      ),
+      (
+        select content_hash
+        from public.import_candidates
+        where id = (select candidate_id from first_candidate)
+      )
+    );
+    raise exception 'A reconstruction differing from the stored candidate unexpectedly sealed.';
+  exception
+    when sqlstate '55000' then null;
   end;
 
   if exists (
@@ -646,69 +545,10 @@ $$;
 
 select public.seal_firework_import_candidate(
   (select candidate_id from first_candidate),
-  'showcrafter.firework-design.v1',
-  jsonb_set(
-    (select reconstruction from public.import_candidates where id = (select candidate_id from first_candidate)),
-    '{designs,0,design}',
-    pg_temp.canonical_firework_design()
-  ),
+  'showcrafter.firework-reconstruction.v2',
+  (select reconstruction from public.import_candidates where id = (select candidate_id from first_candidate)),
   (select content_hash from public.import_candidates where id = (select candidate_id from first_candidate))
 );
-
-select public.seal_firework_import_render_validation(
-  (select candidate_id from first_candidate),
-  'showcrafter.engine-render-publication.v1',
-  (select candidates -> 0 -> 'metrics' -> 'engineRender' from first_completion_payload),
-  (select candidates -> 0 ->> 'renderedVideoPath' from first_completion_payload)
-);
-
-select public.seal_firework_import_render_validation(
-  (select candidate_id from first_candidate),
-  'showcrafter.engine-render-publication.v1',
-  (select candidates -> 0 -> 'metrics' -> 'engineRender' from first_completion_payload),
-  (select candidates -> 0 ->> 'renderedVideoPath' from first_completion_payload)
-);
-
-do $$
-begin
-  if (select count(*) from public.import_candidate_render_validations
-      where candidate_id = (select candidate_id from first_candidate)) <> 1
-    or (select artifact_sha256 from public.import_candidate_render_validations
-        where candidate_id = (select candidate_id from first_candidate)) <> repeat('a', 64)
-    or (select artifact_byte_size from public.import_candidate_render_validations
-        where candidate_id = (select candidate_id from first_candidate)) <> 4096
-    or (select artifact_storage_etag from public.import_candidate_render_validations
-        where candidate_id = (select candidate_id from first_candidate)) <> repeat('1', 32) then
-    raise exception 'Exact engine artefact replay changed or lost its immutable seal.';
-  end if;
-end;
-$$;
-
-update storage.objects
-set metadata = jsonb_set(metadata, '{eTag}', to_jsonb(repeat('9', 32)))
-where bucket_id = 'import-videos'
-  and name = (select candidates -> 0 ->> 'renderedVideoPath' from first_completion_payload);
-
-do $$
-begin
-  begin
-    perform public.seal_firework_import_render_validation(
-      (select candidate_id from first_candidate),
-      'showcrafter.engine-render-publication.v1',
-      (select candidates -> 0 -> 'metrics' -> 'engineRender' from first_completion_payload),
-      (select candidates -> 0 ->> 'renderedVideoPath' from first_completion_payload)
-    );
-    raise exception 'An overwritten engine review artefact unexpectedly replayed its seal.';
-  exception
-    when sqlstate '55000' then null;
-  end;
-end;
-$$;
-
-update storage.objects
-set metadata = jsonb_set(metadata, '{eTag}', to_jsonb(repeat('1', 32)))
-where bucket_id = 'import-videos'
-  and name = (select candidates -> 0 ->> 'renderedVideoPath' from first_completion_payload);
 
 set local request.jwt.claim.role = 'authenticated';
 
@@ -727,38 +567,6 @@ begin
 end;
 $$;
 
-update storage.objects
-set metadata = jsonb_set(metadata, '{size}', to_jsonb('4097'::text))
-where bucket_id = 'import-videos'
-  and name = (select candidates -> 0 ->> 'renderedVideoPath' from first_completion_payload);
-
-do $$
-begin
-  begin
-    perform public.approve_firework_import_candidate(
-      (select job_id from first_import),
-      (select candidate_id from first_candidate),
-      'IMPORT-SINGLE-1',
-      'Single reconstruction',
-      'ShowCrafter test',
-      'Aerial',
-      'Single shot'
-    );
-    raise exception 'Approval unexpectedly accepted an overwritten retained artefact.';
-  exception
-    when sqlstate '55000' then null;
-  end;
-  if exists (select 1 from public.fireworks where id not in (select id from original_fireworks)) then
-    raise exception 'Rejected artefact mismatch left partial catalogue data.';
-  end if;
-end;
-$$;
-
-update storage.objects
-set metadata = jsonb_set(metadata, '{size}', to_jsonb('4096'::text))
-where bucket_id = 'import-videos'
-  and name = (select candidates -> 0 ->> 'renderedVideoPath' from first_completion_payload);
-
 create temporary table first_approval as
 select *
 from public.approve_firework_import_candidate(
@@ -776,32 +584,13 @@ declare
   repeated_catalogue_id uuid;
   expected_approval_hash text;
   expected_approved_at timestamptz;
-  expected_evidence_hash text;
-  expected_artifact_output_id uuid;
-  expected_artifact_sha256 text;
-  expected_artifact_byte_size bigint;
-  expected_artifact_storage_etag text;
   expected_ledger_rows bigint;
+  imported public.fireworks;
 begin
   select job.approval_request_hash, job.approved_at
   into expected_approval_hash, expected_approved_at
   from public.import_jobs job
   where job.id = (select job_id from first_import);
-
-  select
-    validation.evidence_hash,
-    validation.artifact_output_id,
-    validation.artifact_sha256,
-    validation.artifact_byte_size,
-    validation.artifact_storage_etag
-  into
-    expected_evidence_hash,
-    expected_artifact_output_id,
-    expected_artifact_sha256,
-    expected_artifact_byte_size,
-    expected_artifact_storage_etag
-  from public.import_candidate_render_validations validation
-  where validation.candidate_id = (select candidate_id from first_candidate);
 
   select count(*) into expected_ledger_rows
   from public.ai_credit_transactions
@@ -818,69 +607,28 @@ begin
     'Aerial',
     'Single shot'
   );
+  select * into imported from public.fireworks where id not in (select id from original_fireworks);
   if repeated_catalogue_id <> (select catalogue_item_id from first_approval)
     or (select count(*) from public.fireworks where id not in (select id from original_fireworks)) <> 1
     or (select count(*) from public.catalogue_items where id not in (select id from original_catalogue_items)) <> 1
     or (select duration_seconds from public.catalogue_items where id = repeated_catalogue_id) <> 4
-    or (select caliber from public.fireworks where id not in (select id from original_fireworks) limit 1) <> '30mm'
-    or (select variant_json -> 'reconstructionShot' ->> 'seedOverride' from public.fireworks where id not in (select id from original_fireworks) limit 1) <> '101'
+    or imported.design_schema <> 1
+    or imported.design is distinct from pg_temp.canonical_firework_design()
+    or imported.firework_effect_id is distinct from (
+      select id from public.firework_effects where template_key = 'peony'
+    )
+    or imported.variant_json -> 'reconstructionShot' ->> 'panDegrees' <> '12'
     or (select approval_request_hash from public.import_jobs
         where id = (select job_id from first_import)) is distinct from expected_approval_hash
     or (select approved_at from public.import_jobs
         where id = (select job_id from first_import)) is distinct from expected_approved_at
-    or (select evidence_hash from public.import_candidate_render_validations
-        where candidate_id = (select candidate_id from first_candidate))
-      is distinct from expected_evidence_hash
-    or (select artifact_output_id from public.import_candidate_render_validations
-        where candidate_id = (select candidate_id from first_candidate))
-      is distinct from expected_artifact_output_id
-    or (select artifact_sha256 from public.import_candidate_render_validations
-        where candidate_id = (select candidate_id from first_candidate))
-      is distinct from expected_artifact_sha256
-    or (select artifact_byte_size from public.import_candidate_render_validations
-        where candidate_id = (select candidate_id from first_candidate))
-      is distinct from expected_artifact_byte_size
-    or (select artifact_storage_etag from public.import_candidate_render_validations
-        where candidate_id = (select candidate_id from first_candidate))
-      is distinct from expected_artifact_storage_etag
-    or (select count(*) from public.import_candidate_render_validations
-        where candidate_id = (select candidate_id from first_candidate)) <> 1
     or (select count(*) from public.ai_credit_transactions
         where reference_type = 'import_run'
           and reference_id = (select run_id from first_import)) <> expected_ledger_rows then
-    raise exception 'Single-shot approval changed catalogue, engine evidence or credits on replay.';
+    raise exception 'Single-shot approval stored the wrong design or changed on replay.';
   end if;
 end;
 $$;
-
-update storage.objects
-set metadata = jsonb_set(metadata, '{eTag}', to_jsonb(repeat('7', 32)))
-where bucket_id = 'import-videos'
-  and name = (select candidates -> 0 ->> 'renderedVideoPath' from first_completion_payload);
-
-do $$
-begin
-  begin
-    perform public.approve_firework_import_candidate(
-      (select job_id from first_import),
-      (select candidate_id from first_candidate),
-      'IMPORT-SINGLE-1',
-      'Single reconstruction',
-      'ShowCrafter test',
-      'Aerial',
-      'Single shot'
-    );
-    raise exception 'Approved replay unexpectedly accepted a later artefact overwrite.';
-  exception
-    when sqlstate '55000' then null;
-  end;
-end;
-$$;
-
-update storage.objects
-set metadata = jsonb_set(metadata, '{eTag}', to_jsonb(repeat('1', 32)))
-where bucket_id = 'import-videos'
-  and name = (select candidates -> 0 ->> 'renderedVideoPath' from first_completion_payload);
 
 do $$
 declare
@@ -1070,193 +818,52 @@ with reconstructions as (
     pg_temp.single_reconstruction(
       'Cross-admin valid reconstruction',
       'A valid retry reconstructed by another administrator.',
-      'cross-valid',
-      301
+      'cv',
+      -4
     ) as valid,
     pg_temp.single_reconstruction(
-      'Cross-admin stale renderer',
-      'A candidate captured with a stale renderer contract.',
-      'cross-stale',
-      302
-    ) as stale,
+      'Cross-admin unfitted reconstruction',
+      'A candidate stored without renderer fit evidence.',
+      'cu',
+      0
+    ) as unfitted,
     pg_temp.single_reconstruction(
-      'Cross-admin weak fade',
-      'A candidate whose fade component misses the publication gate.',
-      'cross-weak',
-      303
-    ) as weak,
-    pg_temp.single_reconstruction(
-      'Cross-admin missing renderer contract',
-      'A candidate whose evidence omits the renderer contract.',
-      'cross-missing-contract',
-      304
-    ) as missing_contract,
-    pg_temp.single_reconstruction(
-      'Cross-admin missing renderer durations',
-      'A candidate whose evidence omits renderer duration provenance.',
-      'cross-missing-durations',
-      305
-    ) as missing_durations
-), evidence as (
-  select
-    valid,
-    stale,
-    weak,
-    missing_contract,
-    missing_durations,
-    pg_temp.engine_evidence(
-      valid,
-      4,
-      '10000000-0000-0000-0000-000000000001/engine-review-'
-        || (select id from cross_retry)::text
-        || '-3333333333333333.mp4',
-      repeat('d', 64),
-      4096,
-      repeat('3', 32)
-    ) as valid_evidence,
-    jsonb_set(
-      pg_temp.engine_evidence(
-        stale,
-        4,
-        '10000000-0000-0000-0000-000000000001/engine-review-'
-          || (select id from cross_retry)::text
-          || '-4444444444444444.mp4',
-        repeat('e', 64),
-        4096,
-        repeat('4', 32)
-      ),
-      '{rendererVersion}',
-      to_jsonb('showcrafter.fireworks-engine.import-renderer.v0'::text)
-    ) as stale_evidence,
-    jsonb_set(
-      pg_temp.engine_evidence(
-        weak,
-        4,
-        '10000000-0000-0000-0000-000000000001/engine-review-'
-          || (select id from cross_retry)::text
-          || '-5555555555555555.mp4',
-        repeat('f', 64),
-        4096,
-        repeat('5', 32)
-      ),
-      '{metrics,fade,score}',
-      to_jsonb(0.77::numeric)
-    ) as weak_evidence,
-    pg_temp.engine_evidence(
-      missing_contract,
-      4,
-      '10000000-0000-0000-0000-000000000001/engine-review-'
-        || (select id from cross_retry)::text
-        || '-6666666666666666.mp4',
-      repeat('6', 64),
-      4096,
-      repeat('6', 32)
-    ) - 'rendererVersion' as missing_contract_evidence,
-    pg_temp.engine_evidence(
-      missing_durations,
-      4,
-      '10000000-0000-0000-0000-000000000001/engine-review-'
-        || (select id from cross_retry)::text
-        || '-7777777777777777.mp4',
-      repeat('7', 64),
-      4096,
-      repeat('7', 32)
-    ) - 'rendererDurations' as missing_durations_evidence
-  from reconstructions
+      'Cross-admin partial fit',
+      'A candidate whose fit evidence misses a shot.',
+      'cp',
+      0
+    ) as partial
 )
 select jsonb_build_array(
   jsonb_build_object(
     'ordinal', 0,
-    'schemaVersion', 'showcrafter.firework-reconstruction.v1',
+    'schemaVersion', 'showcrafter.firework-reconstruction.v2',
     'reconstruction', valid,
-    'score', 0.93,
-    'metrics', jsonb_build_object('engineRender', valid_evidence),
-    'validation', jsonb_build_object('valid', true, 'blockers', jsonb_build_array()),
-    'contentHash', repeat('d', 64),
-    'renderedVideoPath',
-      '10000000-0000-0000-0000-000000000001/engine-review-'
-        || (select id from cross_retry)::text
-        || '-3333333333333333.mp4'
+    'score', 0.82,
+    'metrics', pg_temp.fit_metrics(valid),
+    'validation', jsonb_build_object('valid', true, 'issues', jsonb_build_array()),
+    'contentHash', repeat('d', 64)
   ),
   jsonb_build_object(
     'ordinal', 1,
-    'schemaVersion', 'showcrafter.firework-reconstruction.v1',
-    'reconstruction', stale,
-    'score', 0.92,
-    'metrics', jsonb_build_object('engineRender', stale_evidence),
-    'validation', jsonb_build_object('valid', true, 'blockers', jsonb_build_array()),
-    'contentHash', repeat('e', 64),
-    'renderedVideoPath',
-      '10000000-0000-0000-0000-000000000001/engine-review-'
-        || (select id from cross_retry)::text
-        || '-4444444444444444.mp4'
+    'schemaVersion', 'showcrafter.firework-reconstruction.v2',
+    'reconstruction', unfitted,
+    'score', 0.5,
+    'metrics', jsonb_build_object('source', 'model'),
+    'validation', jsonb_build_object('valid', true, 'issues', jsonb_build_array()),
+    'contentHash', repeat('e', 64)
   ),
   jsonb_build_object(
     'ordinal', 2,
-    'schemaVersion', 'showcrafter.firework-reconstruction.v1',
-    'reconstruction', weak,
-    'score', 0.91,
-    'metrics', jsonb_build_object('engineRender', weak_evidence),
-    'validation', jsonb_build_object('valid', true, 'blockers', jsonb_build_array()),
-    'contentHash', repeat('f', 64),
-    'renderedVideoPath',
-      '10000000-0000-0000-0000-000000000001/engine-review-'
-        || (select id from cross_retry)::text
-        || '-5555555555555555.mp4'
-  ),
-  jsonb_build_object(
-    'ordinal', 3,
-    'schemaVersion', 'showcrafter.firework-reconstruction.v1',
-    'reconstruction', missing_contract,
-    'score', 0.9,
-    'metrics', jsonb_build_object('engineRender', missing_contract_evidence),
-    'validation', jsonb_build_object('valid', true, 'blockers', jsonb_build_array()),
-    'contentHash', repeat('6', 64),
-    'renderedVideoPath',
-      '10000000-0000-0000-0000-000000000001/engine-review-'
-        || (select id from cross_retry)::text
-        || '-6666666666666666.mp4'
-  ),
-  jsonb_build_object(
-    'ordinal', 4,
-    'schemaVersion', 'showcrafter.firework-reconstruction.v1',
-    'reconstruction', missing_durations,
-    'score', 0.89,
-    'metrics', jsonb_build_object('engineRender', missing_durations_evidence),
-    'validation', jsonb_build_object('valid', true, 'blockers', jsonb_build_array()),
-    'contentHash', repeat('7', 64),
-    'renderedVideoPath',
-      '10000000-0000-0000-0000-000000000001/engine-review-'
-        || (select id from cross_retry)::text
-        || '-7777777777777777.mp4'
+    'schemaVersion', 'showcrafter.firework-reconstruction.v2',
+    'reconstruction', partial,
+    'score', 0.5,
+    'metrics', jsonb_set(pg_temp.fit_metrics(partial), '{fit,shots}', '[]'::jsonb),
+    'validation', jsonb_build_object('valid', true, 'issues', jsonb_build_array()),
+    'contentHash', repeat('f', 64)
   )
 ) as candidates
-from evidence;
-
-insert into storage.objects (bucket_id, name, owner, owner_id, metadata)
-select
-  'import-videos',
-  candidates -> 0 ->> 'renderedVideoPath',
-  '10000000-0000-0000-0000-000000000001',
-  '10000000-0000-0000-0000-000000000001',
-  jsonb_build_object(
-    'mimetype', 'video/mp4',
-    'size', '4096',
-    'eTag', repeat('3', 32)
-  )
-from cross_completion_payload;
-
-select public.append_firework_import_run_output(
-  (select run_id from cross_retry_claim),
-  (select lease_token from cross_retry_claim),
-  'engine_validation',
-  0,
-  'render_metrics',
-  'showcrafter.import-render-result.v1',
-  (select candidates -> 0 -> 'metrics' -> 'engineRender' from cross_completion_payload),
-  repeat('2', 64),
-  (select candidates -> 0 ->> 'renderedVideoPath' from cross_completion_payload)
-);
+from reconstructions;
 
 create temporary table cross_selected_candidate as
 select public.complete_firework_import_run(
@@ -1268,7 +875,7 @@ select public.complete_firework_import_run(
 
 select public.seal_firework_import_candidate(
   candidate.id,
-  'showcrafter.firework-design.v1',
+  'showcrafter.firework-reconstruction.v2',
   candidate.reconstruction,
   candidate.content_hash
 )
@@ -1277,169 +884,14 @@ where candidate.import_run_id = (select id from cross_retry)
 order by candidate.ordinal;
 
 do $$
-begin
-  begin
-    perform public.seal_firework_import_render_validation(
-      (
-        select candidate.id
-        from public.import_candidates candidate
-        where candidate.import_run_id = (select id from cross_retry)
-          and candidate.ordinal = 1
-      ),
-      'showcrafter.engine-render-publication.v1',
-      (
-        select candidate.metrics -> 'engineRender'
-        from public.import_candidates candidate
-        where candidate.import_run_id = (select id from cross_retry)
-          and candidate.ordinal = 1
-      ),
-      (
-        select candidate.rendered_video_path
-        from public.import_candidates candidate
-        where candidate.import_run_id = (select id from cross_retry)
-          and candidate.ordinal = 1
-      )
-    );
-    raise exception 'Stale renderer contract unexpectedly passed publication sealing.';
-  exception
-    when sqlstate '22023' then null;
-  end;
-
-  begin
-    perform public.seal_firework_import_render_validation(
-      (
-        select candidate.id
-        from public.import_candidates candidate
-        where candidate.import_run_id = (select id from cross_retry)
-          and candidate.ordinal = 2
-      ),
-      'showcrafter.engine-render-publication.v1',
-      (
-        select candidate.metrics -> 'engineRender'
-        from public.import_candidates candidate
-        where candidate.import_run_id = (select id from cross_retry)
-          and candidate.ordinal = 2
-      ),
-      (
-        select candidate.rendered_video_path
-        from public.import_candidates candidate
-        where candidate.import_run_id = (select id from cross_retry)
-          and candidate.ordinal = 2
-      )
-    );
-    raise exception 'Weak fade score unexpectedly passed publication sealing.';
-  exception
-    when sqlstate '22023' then null;
-  end;
-
-  begin
-    perform public.seal_firework_import_render_validation(
-      (
-        select candidate.id
-        from public.import_candidates candidate
-        where candidate.import_run_id = (select id from cross_retry)
-          and candidate.ordinal = 3
-      ),
-      'showcrafter.engine-render-publication.v1',
-      (
-        select candidate.metrics -> 'engineRender'
-        from public.import_candidates candidate
-        where candidate.import_run_id = (select id from cross_retry)
-          and candidate.ordinal = 3
-      ),
-      (
-        select candidate.rendered_video_path
-        from public.import_candidates candidate
-        where candidate.import_run_id = (select id from cross_retry)
-          and candidate.ordinal = 3
-      )
-    );
-    raise exception 'Missing renderer contract unexpectedly passed publication sealing.';
-  exception
-    when sqlstate '22023' then null;
-  end;
-
-  begin
-    perform public.seal_firework_import_render_validation(
-      (
-        select candidate.id
-        from public.import_candidates candidate
-        where candidate.import_run_id = (select id from cross_retry)
-          and candidate.ordinal = 4
-      ),
-      'showcrafter.engine-render-publication.v1',
-      (
-        select candidate.metrics -> 'engineRender'
-        from public.import_candidates candidate
-        where candidate.import_run_id = (select id from cross_retry)
-          and candidate.ordinal = 4
-      ),
-      (
-        select candidate.rendered_video_path
-        from public.import_candidates candidate
-        where candidate.import_run_id = (select id from cross_retry)
-          and candidate.ordinal = 4
-      )
-    );
-    raise exception 'Missing renderer duration provenance unexpectedly passed publication sealing.';
-  exception
-    when sqlstate '22023' then null;
-  end;
-
-  if exists (
-    select 1
-    from public.import_candidate_render_validations validation
-    join public.import_candidates candidate on candidate.id = validation.candidate_id
-    where candidate.import_run_id = (select id from cross_retry)
-      and candidate.ordinal in (1, 2, 3, 4)
-  ) then
-    raise exception 'Rejected engine evidence left a publication seal.';
-  end if;
-end;
-$$;
-
-select public.seal_firework_import_render_validation(
-  (select candidate_id from cross_selected_candidate),
-  'showcrafter.engine-render-publication.v1',
-  (
-    select candidate.metrics -> 'engineRender'
-    from public.import_candidates candidate
-    where candidate.id = (select candidate_id from cross_selected_candidate)
-  ),
-  (
-    select candidate.rendered_video_path
-    from public.import_candidates candidate
-    where candidate.id = (select candidate_id from cross_selected_candidate)
-  )
-);
-
-do $$
 declare
   cross_retry_id uuid := (select id from cross_retry);
-  source_path text := (
-    select asset.storage_path
-    from public.import_runs run
-    join public.import_jobs job on job.id = run.import_job_id
-    join public.media_assets asset on asset.id = job.media_asset_id
-    where run.id = (select id from cross_retry)
-  );
-  artifact_path text := (
-    select validation.artifact_storage_path
-    from public.import_candidate_render_validations validation
-    where validation.candidate_id = (select candidate_id from cross_selected_candidate)
-  );
 begin
   if (select created_by from public.import_runs where id = cross_retry_id)
       <> '10000000-0000-0000-0000-000000000002'::uuid
-    or split_part(source_path, '/', 1)
-      <> '10000000-0000-0000-0000-000000000001'
-    or split_part(artifact_path, '/', 1) <> split_part(source_path, '/', 1)
-    or split_part(artifact_path, '/', 1)
-      = (select created_by::text from public.import_runs where id = cross_retry_id)
-    or (select renderer_contract_version
-        from public.import_candidate_render_validations
-        where candidate_id = (select candidate_id from cross_selected_candidate))
-      <> public.current_firework_import_renderer_contract_version()
+    or (select count(*) from public.import_candidate_validations validation
+        join public.import_candidates candidate on candidate.id = validation.candidate_id
+        where candidate.import_run_id = cross_retry_id) <> 3
     or (select balance from public.ai_credit_accounts
         where user_id = '10000000-0000-0000-0000-000000000002') <> 145
     or (select reserved from public.ai_credit_accounts
@@ -1450,13 +902,54 @@ begin
           and reference_id = cross_retry_id
           and transaction_type = 'debit'
           and status = 'applied') <> 1 then
-    raise exception 'Cross-admin retry did not retain source-owned artefacts or settle credits once.';
+    raise exception 'Cross-admin retry did not seal its candidates or settle credits once.';
   end if;
 end;
 $$;
 
 set local request.jwt.claim.sub = '10000000-0000-0000-0000-000000000001';
 set local request.jwt.claim.role = 'authenticated';
+
+do $$
+declare
+  rejected_ordinal integer;
+begin
+  foreach rejected_ordinal in array array[1, 2] loop
+    perform public.select_firework_import_candidate(
+      (select job_id from cross_initial_import),
+      (
+        select candidate.id
+        from public.import_candidates candidate
+        where candidate.import_run_id = (select id from cross_retry)
+          and candidate.ordinal = rejected_ordinal
+      )
+    );
+    begin
+      perform public.approve_firework_import_candidate(
+        (select job_id from cross_initial_import),
+        (
+          select candidate.id
+          from public.import_candidates candidate
+          where candidate.import_run_id = (select id from cross_retry)
+            and candidate.ordinal = rejected_ordinal
+        ),
+        'CROSS-NO-FIT-' || rejected_ordinal,
+        'Unfitted reconstruction'
+      );
+      raise exception 'A candidate without complete fit evidence was approved.';
+    exception
+      when sqlstate '55000' then null;
+    end;
+  end loop;
+  if exists (
+    select 1 from public.fireworks
+    where id not in (select id from original_fireworks)
+      and variant_json ->> 'importJobId' = (select job_id from cross_initial_import)::text
+  ) then
+    raise exception 'Rejected fit evidence left partial catalogue data.';
+  end if;
+end;
+$$;
 
 insert into storage.objects (bucket_id, name, owner, owner_id, metadata)
 values (
@@ -1487,120 +980,54 @@ from public.claim_firework_import_run(
   900
 );
 
+create function pg_temp.two_shot_reconstruction()
+returns jsonb
+language sql
+immutable
+as $$
+  select jsonb_build_object(
+    'version', 2,
+    'name', 'Two shot reconstruction',
+    'description', 'Red peony then a green peony.',
+    'durationSeconds', 6,
+    'designs', jsonb_build_array(
+      jsonb_build_object(
+        'key', 'a',
+        'template', 'peony',
+        'label', 'Red peony',
+        'design', pg_temp.canonical_firework_design(),
+        'colorPalette', jsonb_build_array('#ff0000'),
+        'durationSeconds', 4
+      ),
+      jsonb_build_object(
+        'key', 'b',
+        'template', 'peony',
+        'label', 'Green peony',
+        'design', pg_temp.canonical_firework_design(),
+        'colorPalette', jsonb_build_array('#00ff00'),
+        'durationSeconds', 4
+      )
+    ),
+    'shots', jsonb_build_array(
+      jsonb_build_object('id', '0', 'designKey', 'a', 'timeOffsetSeconds', 0, 'panDegrees', -6, 'x', 0.4),
+      jsonb_build_object('id', '1', 'designKey', 'b', 'timeOffsetSeconds', 2, 'panDegrees', 9, 'x', 0.6)
+    ),
+    'source', jsonb_build_object('durationSeconds', 7, 'firstShotSeconds', 1, 'extractor', 'test')
+  );
+$$;
+
 create temporary table second_completion_payload as
 select jsonb_build_array(
-    jsonb_build_object(
-      'ordinal', 0,
-      'schemaVersion', 'showcrafter.firework-reconstruction.v1',
-      'reconstruction', jsonb_build_object(
-        'version', 1,
-        'name', 'Two shot reconstruction',
-        'description', 'Red peony then green ring.',
-        'durationSeconds', 6,
-        'confidence', 0.88,
-        'designs', jsonb_build_array(
-          jsonb_build_object(
-            'key', 'red-peony',
-            'effectSlug', 'peony',
-            'design', pg_temp.canonical_firework_design(),
-            'colorPalette', jsonb_build_array('#ff0000'),
-            'durationSeconds', 4,
-            'heightMeters', 35,
-            'caliber', '30mm',
-            'confidence', 0.9
-          ),
-          jsonb_build_object(
-            'key', 'green-ring',
-            'effectSlug', 'ring',
-            'design', pg_temp.canonical_firework_design(),
-            'colorPalette', jsonb_build_array('#00ff00'),
-            'durationSeconds', 4,
-            'heightMeters', 40,
-            'caliber', '35mm',
-            'confidence', 0.86
-          )
-        ),
-        'shots', jsonb_build_array(
-          jsonb_build_object(
-            'id', 'shot-1',
-            'designKey', 'red-peony',
-            'timeOffsetSeconds', 0,
-            'panDegrees', -12,
-            'tiltDegrees', 8,
-            'position', jsonb_build_object('x', -5, 'y', 0, 'z', 0),
-            'seed', 201,
-            'scale', 1
-          ),
-          jsonb_build_object(
-            'id', 'shot-2',
-            'designKey', 'green-ring',
-            'timeOffsetSeconds', 1.25,
-            'panDegrees', 12,
-            'tiltDegrees', 8,
-            'position', jsonb_build_object('x', 5, 'y', 0, 'z', 0),
-            'seed', 202,
-            'scale', 1.1
-          )
-        )
-      ),
-      'score', 0.88,
-      'metrics', jsonb_build_object('timing', 0.92),
-      'validation', jsonb_build_object('valid', true, 'blockers', jsonb_build_array()),
-      'contentHash', repeat('c', 64)
-    )
-  ) as candidates;
-
-update second_completion_payload
-set candidates = jsonb_set(
-  jsonb_set(
-    candidates,
-    '{0,metrics}',
-    jsonb_build_object(
-      'engineRender',
-      pg_temp.engine_evidence(
-        candidates -> 0 -> 'reconstruction',
-        6,
-        '10000000-0000-0000-0000-000000000001/engine-review-'
-          || (select run_id from second_import)::text
-          || '-2222222222222222.mp4',
-        repeat('c', 64),
-        4096,
-        repeat('2', 32)
-      )
-    )
-  ),
-  '{0,renderedVideoPath}',
-  to_jsonb(
-    '10000000-0000-0000-0000-000000000001/engine-review-'
-      || (select run_id from second_import)::text
-      || '-2222222222222222.mp4'
-  )
-);
-
-insert into storage.objects (bucket_id, name, owner, owner_id, metadata)
-select
-  'import-videos',
-  candidates -> 0 ->> 'renderedVideoPath',
-  '10000000-0000-0000-0000-000000000001',
-  '10000000-0000-0000-0000-000000000001',
   jsonb_build_object(
-    'mimetype', 'video/mp4',
-    'size', '4096',
-    'eTag', repeat('2', 32)
+    'ordinal', 0,
+    'schemaVersion', 'showcrafter.firework-reconstruction.v2',
+    'reconstruction', pg_temp.two_shot_reconstruction(),
+    'score', 0.78,
+    'metrics', pg_temp.fit_metrics(pg_temp.two_shot_reconstruction()),
+    'validation', jsonb_build_object('valid', true, 'issues', jsonb_build_array()),
+    'contentHash', repeat('c', 64)
   )
-from second_completion_payload;
-
-select public.append_firework_import_run_output(
-  (select run_id from second_claim),
-  (select lease_token from second_claim),
-  'engine_validation',
-  1,
-  'render_metrics',
-  'showcrafter.import-render-result.v1',
-  (select candidates -> 0 -> 'metrics' -> 'engineRender' from second_completion_payload),
-  repeat('1', 64),
-  (select candidates -> 0 ->> 'renderedVideoPath' from second_completion_payload)
-);
+) as candidates;
 
 create temporary table second_candidate as
 select public.complete_firework_import_run(
@@ -1612,24 +1039,9 @@ select public.complete_firework_import_run(
 
 select public.seal_firework_import_candidate(
   (select candidate_id from second_candidate),
-  'showcrafter.firework-design.v1',
-  jsonb_set(
-    jsonb_set(
-      (select reconstruction from public.import_candidates where id = (select candidate_id from second_candidate)),
-      '{designs,0,design}',
-      pg_temp.canonical_firework_design()
-    ),
-    '{designs,1,design}',
-    pg_temp.canonical_firework_design()
-  ),
+  'showcrafter.firework-reconstruction.v2',
+  (select reconstruction from public.import_candidates where id = (select candidate_id from second_candidate)),
   (select content_hash from public.import_candidates where id = (select candidate_id from second_candidate))
-);
-
-select public.seal_firework_import_render_validation(
-  (select candidate_id from second_candidate),
-  'showcrafter.engine-render-publication.v1',
-  (select candidates -> 0 -> 'metrics' -> 'engineRender' from second_completion_payload),
-  (select candidates -> 0 ->> 'renderedVideoPath' from second_completion_payload)
 );
 
 set local request.jwt.claim.role = 'authenticated';
@@ -1662,22 +1074,20 @@ begin
       where shot.multishot_id = approved_multishot_id
         and item.is_listed
     )
-    or (select position_override_json ->> 'seedOverride'
+    or exists (
+      select 1
+      from public.multishot_fireworks shot
+      join public.fireworks firework on firework.id = shot.firework_id
+      where shot.multishot_id = approved_multishot_id
+        and (firework.design_schema <> 1 or firework.design is null)
+    )
+    or (select array_agg(time_offset_seconds::numeric order by sequence_index)
         from public.multishot_fireworks
-        where multishot_id = approved_multishot_id
-        order by sequence_index
-        limit 1) <> '201'
-    or (select position_override_json ->> 'launchPositionIndex'
+        where multishot_id = approved_multishot_id) <> array[0, 2]::numeric[]
+    or (select array_agg(pan_degrees order by sequence_index)
         from public.multishot_fireworks
-        where multishot_id = approved_multishot_id
-        order by sequence_index
-        limit 1) <> '0'
-    or (select caliber
-        from public.multishot_fireworks
-        where multishot_id = approved_multishot_id
-        order by sequence_index desc
-        limit 1) <> '38.5mm' then
-    raise exception 'Multishot approval did not preserve its canonical shot sequence.';
+        where multishot_id = approved_multishot_id) <> array[-6, 9] then
+    raise exception 'Multishot approval did not preserve its fitted shot sequence.';
   end if;
 end;
 $$;
@@ -1743,7 +1153,7 @@ select public.record_firework_import_run_context(
   (select lease_token from recovered_claim),
   repeat('a', 64),
   'firework-reconstruction-test',
-  'showcrafter.firework-design.v1',
+  'showcrafter.renderer-design.v1',
   'openai/gpt-5.4',
   '{}'::jsonb,
   '{}'::jsonb
@@ -1766,7 +1176,7 @@ select public.record_firework_import_run_context(
   (select lease_token from second_recovered_claim),
   repeat('b', 64),
   'firework-reconstruction-test',
-  'showcrafter.firework-design.v1',
+  'showcrafter.renderer-design.v1',
   'openai/gpt-5.4',
   '{}'::jsonb,
   '{}'::jsonb

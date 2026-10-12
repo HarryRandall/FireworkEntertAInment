@@ -160,9 +160,6 @@ test('admin replay previews opt into FPS diagnostics', () => {
   const canvas = read('ui/replay/FireworkReplayCanvas.tsx');
   const effectEditor = read('app/(admin)/admin/effects/[id]/_components/EffectEditor.tsx');
   const fireworkEditor = read('app/(admin)/admin/fireworks/[id]/_components/FireworkEditor.tsx');
-  const importPreview = read(
-    'app/(admin)/admin/imports/[id]/_components/FireworkImportPreview.tsx',
-  );
   const appReplayViewer = read('ui/replay/FireworkReplayViewer.tsx');
   const templatePreview = read('ui/replay/TemplateReplayPreview.tsx');
 
@@ -224,7 +221,6 @@ test('admin replay previews opt into FPS diagnostics', () => {
   assert.match(canvas, /drop-shadow-\[0_0_5px_rgba\(255,255,255,0\.65\)\]/);
   assert.match(effectEditor, /<DesignPreview/);
   assert.match(fireworkEditor, /<DesignPreview/);
-  assert.match(importPreview, /<LazyFireworkReplayCanvas[\s\S]*showFps/);
   const rendererPreview = read('ui/firework-editor/renderer-design/preview-surface.tsx');
   assert.match(rendererPreview, /new Viewer/);
   assert.match(rendererPreview, /ui: false/);

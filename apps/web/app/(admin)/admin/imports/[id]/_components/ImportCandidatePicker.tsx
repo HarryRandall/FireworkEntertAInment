@@ -15,13 +15,10 @@ export type CandidatePickerOption = {
   ordinal: number;
   selected: boolean;
   selectable: boolean;
-  workerValid: boolean;
-  enginePublishable: boolean;
-  engineScore: number | null;
-  weakestEngineComponent: { label: string; score: number } | null;
-  engineDetail: string | null;
-  score: number;
-  confidence: number | null;
+  publishable: boolean;
+  source: 'fitted' | 'model' | null;
+  fitScore: number | null;
+  initialFitScore: number | null;
   effectCount: number | null;
   shotCount: number | null;
   palette: string[];
@@ -68,8 +65,8 @@ export function ImportCandidatePicker({
       <div>
         <h2 className="text-foreground text-lg font-semibold">Candidate alternatives</h2>
         <p className="text-muted-foreground mt-1 text-sm">
-          The best publication-ready result is selected initially. Other candidates remain available
-          as evidence-backed starting points for refinement.
+          The fitted result is selected initially. The model's unfitted proposal stays available for
+          comparison and as a starting point for refinement.
         </p>
       </div>
       <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3" aria-busy={isPending}>
@@ -86,8 +83,11 @@ export function ImportCandidatePicker({
                   Run {option.runNumber} · candidate {option.ordinal + 1}
                 </p>
                 <p className="text-muted-foreground mt-1 text-xs">
-                  AI ranking signal{' '}
-                  <span className="font-mono tabular-nums">{Math.round(option.score * 100)}%</span>
+                  {option.source === 'fitted'
+                    ? 'Fitted to the source video'
+                    : option.source === 'model'
+                      ? 'Model proposal before fitting'
+                      : 'Earlier import format'}
                 </p>
               </div>
               <div className="flex flex-wrap justify-end gap-1.5">
@@ -96,16 +96,12 @@ export function ImportCandidatePicker({
                     Selected
                   </Badge>
                 ) : null}
-                <Badge solid tone={option.enginePublishable ? 'success' : 'warning'}>
-                  {option.enginePublishable
-                    ? 'Publication ready'
-                    : option.workerValid
-                      ? 'Refinement only'
-                      : 'Needs work'}
+                <Badge solid tone={option.publishable ? 'success' : 'warning'}>
+                  {option.publishable ? 'Publication ready' : 'Run again'}
                 </Badge>
               </div>
             </div>
-            <dl className="text-muted-foreground mt-4 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
+            <dl className="text-muted-foreground mt-4 grid grid-cols-3 gap-2 text-xs">
               <div>
                 <dt>Effects</dt>
                 <dd className="text-foreground mt-0.5 font-mono tabular-nums">
@@ -119,33 +115,17 @@ export function ImportCandidatePicker({
                 </dd>
               </div>
               <div>
-                <dt>Confidence</dt>
+                <dt>Fit</dt>
                 <dd className="text-foreground mt-0.5 font-mono tabular-nums">
-                  {option.confidence == null
-                    ? 'Not available'
-                    : `${Math.round(option.confidence * 100)}%`}
-                </dd>
-              </div>
-              <div>
-                <dt>Engine</dt>
-                <dd className="text-foreground mt-0.5 font-mono tabular-nums">
-                  {option.engineScore == null
-                    ? 'Not available'
-                    : `${Math.round(option.engineScore * 100)}%`}
+                  {option.fitScore == null ? 'Not available' : percent(option.fitScore)}
                 </dd>
               </div>
             </dl>
-            {option.weakestEngineComponent ? (
+            {option.initialFitScore != null && option.fitScore != null ? (
               <p className="text-muted-foreground mt-3 text-xs">
-                Weakest match: {option.weakestEngineComponent.label}{' '}
-                <span className="font-mono tabular-nums">
-                  {Math.round(option.weakestEngineComponent.score * 100)}%
-                </span>
-              </p>
-            ) : null}
-            {!option.enginePublishable && option.engineDetail ? (
-              <p className="text-muted-foreground mt-2 text-xs leading-relaxed">
-                {option.engineDetail}
+                Fitting moved the match from{' '}
+                <span className="font-mono tabular-nums">{percent(option.initialFitScore)}</span> to{' '}
+                <span className="font-mono tabular-nums">{percent(option.fitScore)}</span>.
               </p>
             ) : null}
             {option.palette.length > 0 ? (
@@ -182,4 +162,8 @@ export function ImportCandidatePicker({
       </div>
     </Card>
   );
+}
+
+function percent(value: number): string {
+  return `${Math.round(value * 100)}%`;
 }

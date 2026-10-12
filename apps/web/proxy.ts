@@ -13,7 +13,6 @@ import {
 } from '@/lib/auth/proxy-cookies';
 import { isStaleSupabaseAuthError } from '@/lib/auth/proxy-errors';
 import { AUTH_ONLY_PATHS, matchesPathPrefix, PROTECTED_PREFIXES } from '@/lib/auth/proxy-routes';
-import { importRenderContentSecurityPolicy } from '@/lib/security/import-render-csp';
 import { getSupabaseServerEnv } from '@/lib/supabase/env';
 import { supabaseFetch } from '@/lib/supabase/fetch';
 
@@ -27,17 +26,6 @@ export async function proxy(request: NextRequest) {
     });
 
   const { pathname } = request.nextUrl;
-  if (pathname === '/internal/import-render') {
-    const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
-    const contentSecurityPolicy = importRenderContentSecurityPolicy(nonce);
-    requestHeaders.set('x-nonce', nonce);
-    requestHeaders.set('Content-Security-Policy', contentSecurityPolicy);
-    const response = createSupabaseResponse();
-    response.headers.set('Content-Security-Policy', contentSecurityPolicy);
-    response.headers.set('X-Frame-Options', 'DENY');
-    return response;
-  }
-
   let supabaseResponse = createSupabaseResponse();
 
   const isProtected = PROTECTED_PREFIXES.some((prefix) => matchesPathPrefix(pathname, prefix));

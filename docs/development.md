@@ -44,8 +44,9 @@ services/music-analyser/download_model.py`. Torch inference uses two CPU threads
 ## Verification
 
 Run focused checks during development and `pnpm check` before delivery. The web
-suite runs from `apps/web`, so runtime source paths and renderer fingerprints
-stay relative to the app. Cross-service tests use explicit repository paths.
+suite runs from `apps/web`, so runtime source paths stay relative to the app.
+Cross-service tests use explicit repository paths. `pnpm test:import-contract`
+runs the import worker on a fixture clip and parses its candidates in the app.
 
 ```bash
 pnpm --filter @showcrafter/web exec node --experimental-strip-types --test tests/auth/auth-flow-correctness.test.mjs
@@ -55,9 +56,9 @@ pnpm test:import-contract
 SHOWCRAFTER_RUN_CROSS_LANGUAGE_CONTRACT=1 services/music-analyser/.venv/bin/python services/music-analyser/tests/test_schema_validation.py
 ```
 
-`pnpm knip` reports unused files, exports and dependencies (CI runs it). Renderer
-fingerprinted sources and generated files are excluded in `knip.json`; exports
-kept only for tests are listed under `ignoreIssues`.
+`pnpm knip` reports unused files, exports and dependencies (CI runs it). Generated
+files are excluded in `knip.json`; exports kept only for tests are listed under
+`ignoreIssues`.
 
 Use `pnpm audit:ui` when adding or moving pages/components. Candidates need review
 before deletion. Check rendered light/dark, mobile and interaction states when
