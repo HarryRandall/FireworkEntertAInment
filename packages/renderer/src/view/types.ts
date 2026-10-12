@@ -31,4 +31,6 @@ export interface ViewerOptions {
   startDistance?: 'framed' | 'farthest' | 'elevated';
   /** Forces the portable 8-bit output target, useful for fallback verification. */
   forceLdr?: boolean;
+  /** Renders at one device pixel per CSS pixel, without smoke, at up to 30 frames per second. */
+  lowPower?: boolean;
 }

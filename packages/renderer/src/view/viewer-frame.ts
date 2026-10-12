@@ -9,6 +9,7 @@ import type { Viewer } from './viewer';
 import { disposeTree } from './world';
 import type { SoundShot } from '../sim/events';
 import type { GpuSprays } from './gpu-sprays';
+import { frameDue } from './low-power';
 // Prototype smoothing weight for displayed milliseconds, dimensionless.
 const TIMING_OLD_WEIGHT = 0.9;
 // Prototype exponential smoothing weight for displayed frame rate, dimensionless.
@@ -17,7 +18,10 @@ const FPS_OLD_WEIGHT = 0.92;
 const DRAWN_TIME_DECIMALS = 6;
 // Milliseconds per second, SI time conversion.
 const MS_PER_SECOND = 1000;
-/** Samples a viewer's current sequence seconds, packs attributes and submits unchanged GPU passes. */
+/**
+ * Samples a viewer's current sequence seconds, packs attributes and submits unchanged GPU passes.
+ * Returns false when a low-power viewer skips this refresh, leaving the frame pending.
+ */
 export function drawViewerFrame(
   viewer: Pick<
     Viewer,
@@ -37,7 +41,8 @@ export function drawViewerFrame(
     | 'frameMs'
   >,
   sprays: GpuSprays,
-): void {
+): boolean {
+  if (!frameDue(viewer, viewer.options.lowPower === true)) return false;
   const profiling = viewer.profiler.requested;
   if (profiling) viewer.profiler.begin(viewer.t);
   const start = performance.now();
@@ -51,7 +56,7 @@ export function drawViewerFrame(
       simulate(shot.design, time, {
         ...shot,
         ...placement,
-        smoke: SETTINGS.smoke,
+        smoke: SETTINGS.smoke && viewer.options.lowPower !== true,
         sprayPhase: profiling ? viewer.profiler.sprayPhase : undefined,
         spraySource: viewer.sprayMode === 'gpu' ? sprays.sources.receive : undefined,
       }),
@@ -74,6 +79,7 @@ export function drawViewerFrame(
     profiling ? viewer.profiler : undefined,
   );
   recordFrameDiagnostics(viewer, performance.now() - start);
+  return true;
 }
 
 /** Applies non-accumulating rotational radians after controls restore the absolute camera pose. */
