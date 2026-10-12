@@ -13,7 +13,6 @@ import {
   invalidateAdminStyleDefaultsCache,
 } from '@/lib/admin/cache-keys';
 import { parseEffectEditorSnapshot } from '@/lib/admin/editor-snapshots';
-import { isMissingEditorVersionSchemaError } from '@/lib/admin/style-default-schema';
 import type { Database, Json } from '@/lib/database.types';
 import { invalidateFireworkCatalogueCaches } from '@/lib/shows/cache-keys';
 import { supabaseFetchLong } from '@/lib/supabase/fetch';
@@ -238,12 +237,7 @@ export async function restoreEffectEditorVersion(
     .eq('target_kind', 'effect')
     .eq('firework_effect_id', parsed.data.effectId)
     .maybeSingle();
-  if (versionError) {
-    if (isMissingEditorVersionSchemaError(versionError)) {
-      return { ok: false, error: 'Version history is not available yet.' };
-    }
-    return { ok: false, error: versionError.message };
-  }
+  if (versionError) return { ok: false, error: versionError.message };
   if (!version) return { ok: false, error: 'That version could not be found.' };
 
   const snapshot = parseEffectEditorSnapshot(version.snapshot_json);

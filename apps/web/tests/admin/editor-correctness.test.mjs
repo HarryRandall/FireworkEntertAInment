@@ -4,10 +4,6 @@ import { join } from 'node:path';
 import { test } from 'node:test';
 import { makeOptimisticEditorVersion } from '../../ui/firework-editor/useEditorHistory.ts';
 import { canApplySavedEditorSnapshot } from '../../lib/admin/editor-save-state.ts';
-import {
-  isMissingEditorVersionTableError,
-  isMissingStyleDefaultEditorVersionColumnError,
-} from '../../lib/admin/style-default-schema.ts';
 import { nonNegativeRangeFromMidpoint } from '@showcrafter/fireworks/editor-ranges';
 import {
   replayCuesSimulationKey,
@@ -128,31 +124,6 @@ test('editor ranges never emit negative speed or life endpoints', () => {
 test('save completion only replaces the local snapshot when no newer edit exists', () => {
   assert.equal(canApplySavedEditorSnapshot('same', 'same'), true);
   assert.equal(canApplySavedEditorSnapshot('request', 'newer-edit'), false);
-});
-
-test('editor history schema fallbacks only swallow the expected table or new column', () => {
-  assert.equal(
-    isMissingEditorVersionTableError({
-      code: 'PGRST205',
-      message: "Could not find the table 'public.firework_editor_versions' in the schema cache",
-    }),
-    true,
-  );
-  assert.equal(
-    isMissingStyleDefaultEditorVersionColumnError({
-      code: 'PGRST204',
-      message:
-        "Could not find the 'firework_style_default_id' column of 'firework_editor_versions' in the schema cache",
-    }),
-    true,
-  );
-  assert.equal(
-    isMissingStyleDefaultEditorVersionColumnError({
-      code: '42703',
-      message: 'column unrelated_field does not exist',
-    }),
-    false,
-  );
 });
 
 test('optimistic editor versions map exactly one target before persistence', () => {

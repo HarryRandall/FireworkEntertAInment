@@ -133,14 +133,9 @@ test('editor version history migration is permission-gated and typed', () => {
   assert.match(editorVersions, /row\.changes_json\.currentVersion === true/);
   assert.match(editorVersions, /\.filter\(\(row\) => !isSyntheticCurrentVersion\(row\)\)/);
   assert.match(editorVersions, /function throwHistoryReadError\(/);
-  assert.match(editorVersions, /const LEGACY_EDITOR_VERSION_SELECT/);
-  assert.match(editorVersions, /isMissingStyleDefaultEditorVersionColumnError/);
-  assert.match(editorVersions, /listFireworkEditorVersionsLegacy/);
-  assert.match(editorVersions, /listEffectEditorVersionsLegacy/);
+  assert.doesNotMatch(editorVersions, /LEGACY_EDITOR_VERSION_SELECT|isMissing/);
   assert.match(editorVersions, /fireworkStyleDefaultId: row\.firework_style_default_id \?\? null/);
-  assert.match(styleDefaultSchema, /isMissingEditorVersionTableError/);
-  assert.match(styleDefaultSchema, /isMissingStyleDefaultEditorVersionColumnError/);
-  assert.match(styleDefaultSchema, /includes\('firework_style_default_id'\)/);
+  assert.doesNotMatch(styleDefaultSchema, /isMissing/);
 });
 
 test('effect and product editors compose the shared parts tree and draft tools', () => {

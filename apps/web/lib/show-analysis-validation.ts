@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const ANALYSER_SCHEMA_VERSION = '1.4.0';
+const ANALYSER_SCHEMA_VERSION = '1.4.0';
 
 const finiteNumber = z.number().finite();
 const nonNegativeNumber = finiteNumber.nonnegative();
