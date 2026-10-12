@@ -2,19 +2,30 @@
 import { CanvasSurface } from '@/ui/renderer/CanvasSurface';
 
 /**
- * ShowPreviewPanel is the signature dark "night sky" preview surface. It
- * wraps a live firework canvas with glassy show-control overlays, music
- * metadata, an energy waveform and the show palette.
+ * ShowPreviewPanel is the dark "night sky" stage on the landing page: a live show on the
+ * production renderer, with a song timeline along the bottom that visitors can scrub.
  *
- * The production renderer mounts only as the panel approaches the viewport.
- * The fixed-size starfield remains visible while its client chunk and WebGL
- * context warm, so deferred loading does not shift the surrounding page.
+ * The renderer mounts only as the panel approaches the viewport. The starfield stays
+ * visible while its client chunk and WebGL context warm, so deferred loading does not
+ * shift the page. Playback loops while the panel is on screen.
  */
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState } from 'react';
-import { Loader2, Pause, Play } from 'lucide-react';
-import { EnergyWaveform, PaletteDots } from './decor';
-import { DEMO_SHOW_CUES, DEMO_SHOW_DURATION_SECONDS } from './demoShow';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from 'react';
+import { Move3d, Music4 } from 'lucide-react';
+import type { ReplayCue } from '@/lib/show-domain';
+import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
+import { AudioTimeline } from './AudioTimeline';
+import { DEMO_TRACK_BPM, waveformPeaks } from './audioTrack';
+import { PaletteDots } from './decor';
+import { DEMO_SHOW_CUES, DEMO_SHOW_DURATION_SECONDS, cueMarkers } from './demoShow';
 import styles from './landing.module.css';
 
 const ShowRendererCanvas = dynamic(
@@ -23,74 +34,102 @@ const ShowRendererCanvas = dynamic(
 );
 
 type ShowPreviewPanelProps = {
-  height?: number;
+  height?: number | string;
+  cues?: ReplayCue[];
+  duration?: number;
   title?: string;
-  theme?: string;
+  subtitle?: string;
+  /** Names the song shown beside the timeline. */
+  track?: string;
   palette?: string[];
+  /** What one cue is called beside the count, such as shots for a cake. */
+  unit?: string;
+  /** Extra overlay in the top-right corner. */
+  badge?: ReactNode;
+  /** Lets visitors drag to orbit the camera; defaults to true. */
+  interactive?: boolean;
 };
 
-const DURATION = DEMO_SHOW_DURATION_SECONDS;
 const POSTER_TIME_SECONDS = 4;
-const DISPLAY_UPDATE_INTERVAL_MS = 180;
-const PREVIEW_RENDER_ROOT_MARGIN = '480px 0px';
+const FINE_POINTER_QUERY = '(hover: hover) and (pointer: fine)';
 
-function formatClock(seconds: number): string {
-  const total = Math.max(0, Math.floor(seconds));
-  const m = Math.floor(total / 60);
-  const s = (total % 60).toString().padStart(2, '0');
-  return `${m}:${s}`;
+function subscribeFinePointer(onChange: () => void): () => void {
+  const query = window.matchMedia(FINE_POINTER_QUERY);
+  query.addEventListener('change', onChange);
+  return () => query.removeEventListener('change', onChange);
 }
+
+/** Orbiting is offered to mouse and trackpad users; touch keeps the page scrolling. */
+function useFinePointer(): boolean {
+  return useSyncExternalStore(
+    subscribeFinePointer,
+    () => window.matchMedia(FINE_POINTER_QUERY).matches,
+    () => false,
+  );
+}
+const DISPLAY_UPDATE_INTERVAL_MS = 120;
+const PREVIEW_RENDER_ROOT_MARGIN = '480px 0px';
 
 export function ShowPreviewPanel({
   height = 460,
-  title = 'Bohemian Rhapsody: Gold Finale',
-  theme = `${DEMO_SHOW_CUES.length} cues · 6 drops · large yard`,
+  cues = DEMO_SHOW_CUES,
+  duration = DEMO_SHOW_DURATION_SECONDS,
+  title = 'Gold Finale',
+  subtitle = `${DEMO_SHOW_CUES.length} cues · 6 drops · large yard`,
+  track = `Demo track · ${DEMO_TRACK_BPM} BPM`,
   palette = ['var(--show-gold)', 'var(--show-green)', 'var(--show-violet)'],
+  unit = 'cues',
+  badge,
+  interactive: allowOrbit = true,
 }: ShowPreviewPanelProps) {
+  const finePointer = useFinePointer();
+  const interactive = allowOrbit && finePointer;
+  const skyRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const elapsedRef = useRef(POSTER_TIME_SECONDS);
-  const playbackRef = useRef(POSTER_TIME_SECONDS);
+  const start = Math.min(POSTER_TIME_SECONDS, duration / 2);
+  const elapsedRef = useRef(start);
+  const playbackRef = useRef(start);
   const startedAtRef = useRef<number | null>(null);
   const playheadStartRef = useRef(0);
   const lastDisplayUpdateRef = useRef(0);
-  const [elapsed, setElapsed] = useState(POSTER_TIME_SECONDS);
+  const [elapsed, setElapsed] = useState(start);
   const [shouldMountCanvas, setShouldMountCanvas] = useState(false);
   const [isCanvasReady, setIsCanvasReady] = useState(false);
   const [isInView, setIsInView] = useState(false);
-  const [isUserPaused, setIsUserPaused] = useState(false);
-  const [reducedMotion, setReducedMotion] = useState(false);
+  const reducedMotion = usePrefersReducedMotion();
+  const peaks = useMemo(
+    () =>
+      waveformPeaks(
+        duration,
+        cues.map((cue) => cue.timeSeconds),
+      ),
+    [cues, duration],
+  );
+  const markers = useMemo(() => cueMarkers(cues), [cues]);
 
-  useEffect(() => {
-    elapsedRef.current = elapsed;
-    playbackRef.current = elapsed;
-  }, [elapsed]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const query = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const syncPreference = () => {
-      const nextReducedMotion = query.matches;
-      setReducedMotion(nextReducedMotion);
-      if (nextReducedMotion) {
-        setIsCanvasReady(false);
-        setIsUserPaused(false);
-      }
-    };
-    syncPreference();
-    const onChange = () => syncPreference();
-    query.addEventListener('change', onChange);
-    return () => query.removeEventListener('change', onChange);
+  const seek = useCallback((seconds: number) => {
+    elapsedRef.current = seconds;
+    playbackRef.current = seconds;
+    playheadStartRef.current = seconds;
+    if (startedAtRef.current !== null) startedAtRef.current = performance.now();
+    setElapsed(seconds);
   }, []);
+
+  // A new show starts from its beginning.
+  const shownCues = useRef(cues);
+  useEffect(() => {
+    if (shownCues.current === cues) return;
+    shownCues.current = cues;
+    seek(0);
+  }, [cues, seek]);
 
   useEffect(() => {
     if (shouldMountCanvas || reducedMotion) return;
-
     const element = containerRef.current;
     if (!element || typeof IntersectionObserver === 'undefined') {
       setShouldMountCanvas(true);
       return;
     }
-
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry?.isIntersecting) return;
@@ -110,16 +149,14 @@ export function ShowPreviewPanel({
       return;
     }
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsInView(Boolean(entry?.isIntersecting));
-      },
+      ([entry]) => setIsInView(Boolean(entry?.isIntersecting)),
       { threshold: 0 },
     );
     observer.observe(element);
     return () => observer.disconnect();
   }, []);
 
-  const active = isCanvasReady && isInView && !isUserPaused && !reducedMotion;
+  const active = isCanvasReady && isInView && !reducedMotion;
   const previewIsLoading = shouldMountCanvas && !isCanvasReady && !reducedMotion;
   const previewStatus = reducedMotion
     ? 'Animation disabled by reduced motion preference'
@@ -127,40 +164,22 @@ export function ShowPreviewPanel({
       ? 'Preview loads as this section approaches'
       : !isCanvasReady
         ? 'Loading rendered preview…'
-        : active
-          ? 'Live rendered preview'
-          : isUserPaused
-            ? 'Rendered preview paused'
-            : 'Rendered preview ready';
-  const previewControlLabel = reducedMotion
-    ? 'Animation disabled by reduced motion preference'
-    : !shouldMountCanvas
-      ? 'Preview loads as this section approaches'
-      : !isCanvasReady
-        ? 'Loading live preview'
-        : isUserPaused
-          ? 'Play live preview'
-          : 'Pause live preview';
+        : 'Live rendered preview';
 
   useEffect(() => {
     if (!active) {
       startedAtRef.current = null;
-      setElapsed((current) =>
-        Math.abs(current - elapsedRef.current) < 0.01 ? current : elapsedRef.current,
-      );
       return;
     }
     let frame = 0;
     startedAtRef.current = performance.now();
-    playheadStartRef.current = elapsedRef.current >= DURATION ? 0 : elapsedRef.current;
-    elapsedRef.current = playheadStartRef.current;
-    playbackRef.current = playheadStartRef.current;
+    playheadStartRef.current = elapsedRef.current >= duration ? 0 : elapsedRef.current;
     lastDisplayUpdateRef.current = 0;
 
     function tick(now: number) {
       if (startedAtRef.current == null) return;
       const next = playheadStartRef.current + (now - startedAtRef.current) / 1000;
-      if (next >= DURATION) {
+      if (next >= duration) {
         startedAtRef.current = now;
         playheadStartRef.current = 0;
         elapsedRef.current = 0;
@@ -179,106 +198,107 @@ export function ShowPreviewPanel({
     }
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [active]);
+  }, [active, duration]);
 
   const showCanvas = shouldMountCanvas && !reducedMotion;
+
+  // The viewer zooms on the wheel; on a landing page the wheel must keep scrolling the page.
+  useEffect(() => {
+    const sky = skyRef.current;
+    if (!sky) return;
+    const keepScrolling = (event: WheelEvent) => event.stopPropagation();
+    sky.addEventListener('wheel', keepScrolling, { capture: true });
+    return () => sky.removeEventListener('wheel', keepScrolling, { capture: true });
+  }, []);
+
   return (
-    <div ref={containerRef} className={styles.skyPanel} style={{ height }}>
-      <div className={styles.starfield} />
+    <div ref={containerRef} className={styles.skyPanel} aria-busy={previewIsLoading || undefined}>
+      <div ref={skyRef} className="relative" style={{ height }}>
+        <div className={styles.starfield} />
 
-      {showCanvas ? (
+        {showCanvas ? (
+          <div
+            className={[
+              styles.skyCanvas,
+              interactive ? styles.skyCanvasInteractive : '',
+              isCanvasReady ? styles.skyCanvasReady : styles.skyCanvasLoading,
+            ].join(' ')}
+          >
+            <CanvasSurface className="absolute inset-0">
+              <ShowRendererCanvas
+                compactPreview
+                cues={cues}
+                lowPower="auto"
+                elapsed={elapsed}
+                playbackRef={playbackRef}
+                playing={active}
+                startDistance="farthest"
+                interactive={interactive}
+                allowWheelZoom={false}
+                controlsVisible={false}
+                muted
+                onReady={() => setIsCanvasReady(true)}
+              />
+            </CanvasSurface>
+          </div>
+        ) : null}
+
         <div
-          className={[
-            styles.skyCanvas,
-            isCanvasReady ? styles.skyCanvasReady : styles.skyCanvasLoading,
-          ].join(' ')}
+          className={`${styles.glassTile} pointer-events-none absolute top-4 left-4 z-10 max-w-[62%] px-3.5 py-2.5`}
         >
-          <CanvasSurface className="absolute inset-0">
-            <ShowRendererCanvas
-              compactPreview
-              cues={DEMO_SHOW_CUES}
-              elapsed={elapsed}
-              playbackRef={playbackRef}
-              playing={active}
-              startDistance="farthest"
-              interactive={false}
-              allowWheelZoom={false}
-              controlsVisible={false}
-              muted
-              onReady={() => setIsCanvasReady(true)}
-            />
-          </CanvasSurface>
-        </div>
-      ) : null}
-
-      <div className={`${styles.glassTile} absolute top-4 left-4 z-10 max-w-[62%] px-3.5 py-2.5`}>
-        <div className="flex items-center gap-2 text-[11px] font-bold tracking-[0.04em] text-[var(--hl)]">
-          <span
-            aria-hidden="true"
-            className={active ? styles.liveDot : 'h-[7px] w-[7px] rounded-full bg-white/35'}
-          />{' '}
-          3D PREVIEW
-        </div>
-        <div className="mt-1 text-[15px] font-semibold tracking-[-0.01em] text-white">{title}</div>
-        <div className="text-xs text-white/60">{theme}</div>
-        <div
-          className="mt-1 text-[11px] text-white/40"
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          {previewStatus}
-        </div>
-      </div>
-
-      <div
-        className={`${styles.glassTile} absolute top-4 right-4 z-10 px-3 py-2.5 text-[11px] leading-relaxed text-white/80 tabular-nums`}
-      >
-        BPM 128
-        <br />
-        KEY F&#9839;m
-      </div>
-
-      <div
-        className={`${styles.glassTile} absolute right-4 bottom-4 left-4 z-10 flex items-center gap-3.5 px-3.5 py-3`}
-      >
-        <button
-          type="button"
-          onClick={() => {
-            if (reducedMotion || !isCanvasReady) return;
-            if (elapsedRef.current >= DURATION) {
-              elapsedRef.current = 0;
-              playbackRef.current = 0;
-              setElapsed(0);
-            } else if (!isUserPaused) {
-              setElapsed(elapsedRef.current);
-            }
-            setIsUserPaused((paused) => !paused);
-          }}
-          aria-label={previewControlLabel}
-          aria-busy={previewIsLoading || undefined}
-          disabled={reducedMotion || !isCanvasReady}
-          className="text-stage-night inline-flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-white transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {previewIsLoading ? (
-            <Loader2
+          <div className="flex items-center gap-2 text-[11px] font-bold tracking-[0.04em] text-[var(--hl)]">
+            <span
               aria-hidden="true"
-              size={16}
-              className="animate-spin motion-reduce:animate-none"
-            />
-          ) : !isUserPaused && isCanvasReady ? (
-            <Pause aria-hidden="true" size={16} fill="currentColor" strokeWidth={0} />
-          ) : (
-            <Play aria-hidden="true" size={16} fill="currentColor" strokeWidth={0} />
-          )}
-        </button>
-        <div className="min-w-0 flex-1 opacity-85">
-          <EnergyWaveform height={26} palette={palette} />
+              className={active ? styles.liveDot : 'h-[7px] w-[7px] rounded-full bg-white/35'}
+            />{' '}
+            3D PREVIEW
+          </div>
+          <div className="mt-1 text-[15px] font-semibold tracking-[-0.01em] text-white">
+            {title}
+          </div>
+          <div className="text-xs text-white/60">{subtitle}</div>
+          <div
+            className="mt-1 text-[11px] text-white/40"
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            {previewStatus}
+          </div>
         </div>
-        <div className="flex flex-col items-end gap-1">
+
+        {badge ? <div className="absolute top-4 right-4 z-10">{badge}</div> : null}
+
+        {interactive && active ? (
+          <div
+            className={`${styles.glassTile} pointer-events-none absolute right-4 bottom-4 z-10 hidden items-center gap-2 px-3 py-2 text-[11px] text-white/75 sm:flex`}
+          >
+            <Move3d aria-hidden="true" size={14} />
+            Drag to look around
+          </div>
+        ) : null}
+      </div>
+
+      <div className="relative z-10 flex items-center gap-4 border-t border-white/10 px-4 py-3">
+        <div className="hidden min-w-0 items-center gap-2.5 sm:flex">
+          <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-white/10">
+            <Music4 aria-hidden="true" size={14} className="text-[var(--hl)]" />
+          </span>
+          <span className="max-w-40 truncate text-xs text-white/80">{track}</span>
+        </div>
+        <AudioTimeline
+          peaks={peaks}
+          markers={markers}
+          duration={duration}
+          elapsed={elapsed}
+          onSeek={seek}
+          label={`${title} timeline`}
+          disabled={reducedMotion}
+        />
+        <div className="hidden flex-col items-end gap-1 md:flex">
           <PaletteDots palette={palette} />
-          <span className="text-[11px] text-white/70 tabular-nums">
-            {formatClock(elapsed)} · {DEMO_SHOW_CUES.length} cues
+          <span className="text-[11px] whitespace-nowrap text-white/60 tabular-nums">
+            {cues.length} {unit}
           </span>
         </div>
       </div>

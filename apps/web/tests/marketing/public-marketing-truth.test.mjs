@@ -53,56 +53,57 @@ test('public pricing reflects the runtime starter grant and marks future plans a
   );
 });
 
-test('homepage proof uses capabilities and documented stakeholders', () => {
+test('homepage proof uses real product surfaces and documented stakeholders', () => {
   const home = read('app/(marketing)/page.tsx');
-  const hero = read('ui/marketing/Hero.tsx');
-  const socialProof = read('ui/marketing/SocialProof.tsx');
-  const showcase = read('ui/marketing/Showcase.tsx');
-  const steps = read('ui/marketing/Steps.tsx');
-  const testimonials = read('ui/marketing/Testimonials.tsx');
+  const hero = read('ui/marketing/landing/LandingHero.tsx');
+  const stakeholders = read('ui/marketing/landing/LandingStakeholders.tsx');
+  const starts = read('ui/marketing/landing/LandingStarts.tsx');
+  const story = read('ui/marketing/landing/SongToShow.tsx');
+  const sections = [
+    hero,
+    stakeholders,
+    starts,
+    story,
+    read('ui/marketing/landing/CuratedEffects.tsx'),
+    read('ui/marketing/landing/MultishotShowcase.tsx'),
+    read('ui/marketing/landing/AssortmentDemo.tsx'),
+  ].join('\n');
 
-  assert.match(hero, /Music-aware cue planning/);
-  assert.match(hero, /Catalogue-backed products/);
-  assert.match(hero, /Interactive 3D previews/);
-  assert.doesNotMatch(hero, /PROOF_AVATARS|12,400\+|shows choreographed/);
+  assert.match(hero, /<ShowPreviewPanel height=/);
+  // The hero plays a published Explore show built from catalogue products.
+  assert.match(hero, /await loadHeroShow\(\)/);
+  assert.match(
+    read('ui/marketing/landing/heroShow.server.ts'),
+    /buildTemplateReplayCues\(template\.previewCues, specifications\)/,
+  );
+  assert.match(hero, /same 3D renderer/);
 
-  assert.match(socialProof, /ICON Pyrotechnics International Co Ltd/);
-  assert.match(socialProof, /International Fireworks Pty Ltd/);
-  assert.doesNotMatch(socialProof, /Stocked at retailers nationwide|SkyMart|BIG BANG SUPPLY/);
-  assert.doesNotMatch(socialProof, /text-muted-foreground\/80/);
+  assert.match(stakeholders, /ICON Pyrotechnics International Co Ltd/);
+  assert.match(stakeholders, /International Fireworks Pty Ltd/);
 
-  assert.match(showcase, /same Three\.js firework renderer/);
-  assert.match(showcase, /Catalogue products/);
-  assert.match(showcase, /Curated templates/);
-  assert.doesNotMatch(showcase, /likes:|budget:|community show|Clone & customise/);
+  // Counts come from the renderer library itself rather than invented usage figures.
+  assert.match(starts, /const EFFECT_COUNT = effectTemplates\.length/);
+  assert.match(story, /review every cue before anything is bought/);
 
-  assert.match(steps, /explicit action that creates the show and starts cue planning/);
-  assert.match(steps, /fast deterministic planner is the default mode/);
-  assert.match(steps, /planning tool, not a substitute for local rules/);
   assert.doesNotMatch(
-    steps,
-    /streaming link|never overshooting|Let AI choreograph|in stock|click-track|safe-distance rules/i,
+    sections,
+    /PROOF_AVATARS|12,400\+|shows choreographed|QUOTES|4\.9|\breviews\b|Mia Reyes|Stocked at retailers nationwide|in stock|let AI choreograph/i,
   );
   assert.equal(existsSync(join(root, 'ui/marketing/VendorBand.tsx')), false);
   assert.equal(existsSync(join(root, 'ui/marketing/landing/Mockups.tsx')), false);
-
-  assert.match(testimonials, /Generate only when you are ready/);
-  assert.match(testimonials, /Preview the cue timeline/);
-  assert.doesNotMatch(testimonials, /QUOTES|4\.9|2,100 reviews|Mia Reyes|Tom Klein|Ada Patel/);
-
-  assert.match(home, /build a cue timeline from catalogue products/);
-  assert.match(home, /Watch the renderer demo/);
-  assert.doesNotMatch(
-    home,
-    /VendorBand|products from your local store|let AI choreograph the rest/,
-  );
+  assert.match(home, /<CTABand/);
+  assert.match(home, /<MultishotShowcase \/>/);
+  assert.match(home, /<LandingAssortments \/>/);
+  // The editor is an admin tool, so the homepage does not present a demo of it.
+  assert.equal(existsSync(join(root, 'ui/marketing/landing/EditorDemo.tsx')), false);
+  assert.doesNotMatch(home, /VendorBand|products from your local store/);
 });
 
-test('ambient marketing illustrations stay out of the accessibility tree', () => {
-  const doodle = read('ui/marketing/landing/Doodle.tsx');
-
-  assert.match(doodle, /<span[\s\S]*?aria-hidden="true"/);
-  assert.doesNotMatch(doodle, /role="img"|aria-label=\{meta\.alt\}|DOODLE_META/);
+test('the homepage uses product components instead of stock illustrations', () => {
+  assert.equal(existsSync(join(root, 'ui/marketing/landing/Doodle.tsx')), false);
+  assert.equal(existsSync(join(root, 'public/images/landing')), false);
+  for (const path of ['app/(marketing)/page.tsx', 'ui/marketing/CTABand.tsx'])
+    assert.doesNotMatch(read(path), /Doodle|rainbow-wash|noise-overlay/, path);
 });
 
 test('homepage renderer waits for viewport proximity and canvas readiness', () => {
@@ -113,34 +114,32 @@ test('homepage renderer waits for viewport proximity and canvas readiness', () =
   assert.match(preview, /setShouldMountCanvas\(true\)/);
   assert.match(preview, /const showCanvas = shouldMountCanvas && !reducedMotion/);
   assert.match(preview, /style=\{\{ height \}\}/);
-
-  assert.match(preview, /if \(reducedMotion \|\| !isCanvasReady\) return/);
-  assert.match(preview, /disabled=\{reducedMotion \|\| !isCanvasReady\}/);
+  assert.match(preview, /const active = isCanvasReady && isInView && !reducedMotion/);
   assert.match(preview, /aria-busy=\{previewIsLoading \|\| undefined\}/);
   assert.match(preview, /Loading rendered preview…/);
   assert.match(preview, /Animation disabled by reduced motion preference/);
+  assert.match(preview, /<AudioTimeline/);
   assert.doesNotMatch(preview, /const showCanvas = !reducedMotion/);
-  assert.doesNotMatch(preview, /aria-label=\{active \?/);
+});
+
+test('landing animations run without pause buttons and stop under reduced motion', () => {
+  for (const path of [
+    'ui/marketing/landing/ShowPreviewPanel.tsx',
+    'ui/marketing/landing/SongToShow.tsx',
+    'ui/marketing/landing/AssortmentDemo.tsx',
+    'ui/kit/motion.tsx',
+  ])
+    assert.doesNotMatch(read(path), /\bPause\b|setPaused|isUserPaused/, path);
+  assert.match(read('ui/marketing/landing/SongToShow.tsx'), /if \(!near \|\| reduce\) return/);
+  assert.match(read('ui/marketing/landing/AssortmentDemo.tsx'), /if \(!near \|\| reduce\) return/);
 });
 
 test('homepage headline wraps without a global overflow mask', () => {
-  const hero = read('ui/marketing/Hero.tsx');
-  const landingStyles = read('ui/marketing/landing/landing.module.css');
+  const hero = read('ui/marketing/landing/LandingHero.tsx');
   const rootLayout = read('app/layout.tsx');
 
-  assert.match(hero, /<section className="relative isolate/);
-  assert.match(hero, /absolute inset-0 -z-10 overflow-hidden/);
-  assert.match(hero, /absolute inset-0 z-\[1\] overflow-hidden/);
-  assert.match(hero, /text-\[clamp\(2\.25rem,12vw,5\.625rem\)\]/);
-  assert.match(hero, /sm:text-\[clamp\(46px,7vw,90px\)\]/);
-  assert.match(hero, /right-\[14%\] hidden sm:block/);
-
-  assert.match(landingStyles, /-webkit-box-decoration-break: clone/);
-  assert.match(landingStyles, /box-decoration-break: clone/);
-  assert.match(
-    landingStyles,
-    /@media \(min-width: 40rem\) \{[\s\S]*?\.mark \{[\s\S]*?white-space: nowrap/,
-  );
+  assert.match(hero, /text-\[clamp\(2\.4rem,9vw,4\.5rem\)\]/);
+  assert.match(hero, /text-balance/);
   assert.doesNotMatch(rootLayout, /overflow-x-hidden/);
 });
 
@@ -178,10 +177,6 @@ test('public contact surfaces do not link to an unpublished email domain', () =>
 
 test('placeholder marketing routes are noindex and do not advertise unavailable content', () => {
   const paths = [
-    'app/(marketing)/careers/page.tsx',
-    'app/(marketing)/changelog/page.tsx',
-    'app/(marketing)/docs/page.tsx',
-    'app/(marketing)/tutorials/page.tsx',
     'app/(marketing)/privacy/page.tsx',
     'app/(marketing)/terms/page.tsx',
     'app/(marketing)/cookies/page.tsx',
@@ -195,32 +190,7 @@ test('placeholder marketing routes are noindex and do not advertise unavailable 
     assert.doesNotMatch(source, /@showcrafter\.app|mailto:/, path);
   }
 
-  const careers = read(paths[0]);
-  assert.match(careers, /does not currently publish open roles or an applications channel/);
-  assert.doesNotMatch(
-    careers,
-    /Senior Audio ML Engineer|Founding Product Designer|Pyrotechnics Safety Lead|Equity for everyone|\$2,000\/year/,
-  );
-
-  const changelog = read(paths[1]);
-  assert.match(changelog, /Verified public release notes are not currently published/);
-  assert.doesNotMatch(changelog, /v0\.6\.0|vendor sync|average show generation|18s to 6s/);
-
-  const docs = read(paths[2]);
-  assert.match(docs, /public product guide is still being prepared/);
-  assert.doesNotMatch(
-    docs,
-    /REST API \(beta\)|Stem-based analysis|Stockist availability|Catalogue refresh/,
-  );
-
-  const tutorials = read(paths[3]);
-  assert.match(tutorials, /does not currently publish tutorial articles or an email digest/);
-  assert.doesNotMatch(tutorials, /8 min read|printable PDF|click track|Read tutorial/);
-
-  const privacy = read(paths[4]);
-  const terms = read(paths[5]);
-  const cookies = read(paths[6]);
-  const licences = read(paths[7]);
+  const [privacy, terms, cookies, licences] = paths.map(read);
   assert.match(privacy, /Do not treat this placeholder as a policy statement/);
   assert.match(terms, /Do not treat this placeholder as a legal agreement/);
   assert.match(cookies, /Do not treat this placeholder as a policy statement/);
@@ -229,14 +199,24 @@ test('placeholder marketing routes are noindex and do not advertise unavailable 
   assert.doesNotMatch(terms, /existing ICON Pyrotechnics retail terms apply/);
 });
 
+test('retired marketing pages are gone and their old links reach the homepage', () => {
+  for (const route of ['careers', 'changelog', 'docs', 'tutorials'])
+    assert.equal(existsSync(join(root, `app/(marketing)/${route}`)), false, route);
+  for (const route of ['features', 'how-it-works'])
+    assert.match(read(`app/(marketing)/${route}/page.tsx`), /redirect\('\/'\)/, route);
+  for (const path of ['ui/marketing/NavBar.tsx', 'ui/marketing/Footer.tsx'])
+    assert.doesNotMatch(read(path), /'\/(features|how-it-works)'/, path);
+});
+
 test('the public footer links only to currently grounded destinations', () => {
   const footer = read('ui/marketing/Footer.tsx');
 
   assert.match(footer, /<nav aria-label="Footer"/);
   assert.match(footer, /<ul>/);
   assert.match(footer, /AI-assisted show planning/);
-  assert.match(footer, /href: '\/features'/);
-  assert.match(footer, /href: '\/how-it-works'/);
+  assert.match(footer, /href: '\/#effects'/);
+  assert.match(footer, /href: '\/#multishots'/);
+  assert.match(footer, /href: '\/#assortments'/);
   assert.match(footer, /href: '\/about'/);
   assert.doesNotMatch(footer, /AI-choreographed/);
 });

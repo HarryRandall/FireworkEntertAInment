@@ -14,6 +14,7 @@ them; one app does not need a placeholder package hierarchy.
 | `app/**/_components/` | UI used only by that route or its descendants                                            |
 | `ui/primitives/`      | Low-level shadcn/Radix primitives; respect generated-file headers                        |
 | `ui/patterns/`        | ShowCrafter's reusable controls and patterns, built from primitives                      |
+| `ui/kit/`             | Motion and showcase components (shimmer, beam, marquee, reveal, ticker, show cards)      |
 | `ui/<domain>/`        | Features shared by multiple routes, such as assortments, firework editing and replay     |
 | `ui/shell/`           | App, admin and My Store navigation, account controls and workspace chrome                |
 | `lib/`                | Domain transformations, validation, types and server integrations                        |

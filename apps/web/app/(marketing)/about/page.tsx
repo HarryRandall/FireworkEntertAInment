@@ -59,9 +59,10 @@ export default function AboutPage() {
                 Consumer show planning for people without choreography experience.
               </h2>
               <p className="text-muted-foreground mt-4 max-w-2xl text-base leading-relaxed">
-                Users can browse retail fireworks and curated templates, describe a show, add an
-                optional soundtrack, generate catalogue-linked cues, preview the timeline and review
-                the products it requires.
+                Users can browse retail fireworks, multishot cakes and curated templates, describe a
+                show, add an optional soundtrack, generate catalogue-linked cues, preview the
+                timeline in 3D and review the products it requires. Assortment packs carry a QR code
+                that opens the same planner limited to what is in the box.
               </p>
             </Card>
 
@@ -121,10 +122,10 @@ export default function AboutPage() {
       </section>
 
       <CTABand
-        title="See the planning flow."
-        description="Follow the decisions from the creative brief to the preview and shopping list."
-        primaryHref="/how-it-works"
-        primaryLabel="How it works"
+        title="See it in 3D."
+        description="Watch a show, try the effects and see how multishots and assortments work."
+        primaryHref="/"
+        primaryLabel="See the product"
         secondaryHref="/catalogue"
         secondaryLabel="Browse catalogue"
       />

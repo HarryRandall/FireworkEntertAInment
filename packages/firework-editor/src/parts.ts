@@ -1,6 +1,21 @@
 export type EditorPartDefinition = { path: readonly string[]; label: string; description: string };
 
 export const EDITOR_PARTS: Record<string, EditorPartDefinition> = {
+  quick: {
+    path: ['Quick'],
+    label: 'Adjustments',
+    description: 'Nudge the firework with the same relative words a VDL description uses.',
+  },
+  variations: {
+    path: ['Quick'],
+    label: 'Variations',
+    description: 'Roll and lock variations of the current design.',
+  },
+  library: {
+    path: ['Quick'],
+    label: 'Library',
+    description: 'Apply or save reusable star groups, trails, effects and rising tails.',
+  },
   'launch-flight': {
     path: ['Launch'],
     label: 'Flight',
@@ -93,6 +108,16 @@ export const EDITOR_PARTS: Record<string, EditorPartDefinition> = {
     label: 'Launch and burst',
     description:
       'Choose the reports heard during launch and burst. Crackle audio is in Extra effects → Crackle.',
+  },
+  reference: {
+    path: ['Review'],
+    label: 'Reference video',
+    description: 'Compare the preview with a clip of the real firework.',
+  },
+  checks: {
+    path: ['Review'],
+    label: 'Checks',
+    description: 'Particle budget and warnings checked before saving.',
   },
   details: {
     path: ['Utilities'],

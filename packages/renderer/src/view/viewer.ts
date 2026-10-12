@@ -1,7 +1,6 @@
 import { syncViewerClock, subscribeViewer } from './external-clock';
 /** Browser playback coordinates stateless source sampling, GPU sprays and redraw scheduling. */
 import { ViewerSound } from './sound/scheduler';
-import { prototypeOr } from '../sim/numeric';
 import * as THREE from 'three';
 import type { Design } from '../schema/index';
 import { shotDuration, shakeEvents, type Vec3 } from '../sim/index';
@@ -29,13 +28,12 @@ import {
 } from './viewer-frame';
 import type { Shot, ViewerOptions } from './types';
 import { observeMotionPreference, representativeTime } from './motion';
+import { createViewerRenderer } from './low-power';
 
 // Prototype projection settings, in degrees and metres.
 const FOV_DEG = 45;
 const NEAR_M = 0.5;
 const FAR_M = 4000;
-// Prototype pixel-ratio cap limits fill rate on high-density displays.
-const MAX_DPR = 1.5;
 // Wall clock milliseconds per second.
 const MS_PER_SECOND = 1000;
 const HALF_TURN_DEG = 180;
@@ -87,14 +85,8 @@ export class Viewer {
   ) {
     if (!options.design && !options.shots) throw new Error('A viewer needs a design or shots.');
     this.shots = options.shots ?? (options.design ? [{ design: options.design }] : []);
-    this.renderer = new THREE.WebGLRenderer({
-      antialias: false,
-      powerPreference: 'high-performance',
-    });
+    this.renderer = createViewerRenderer(options.lowPower === true);
     this.profiler = new FrameProfiler(this.renderer.getContext());
-    this.renderer.setPixelRatio(Math.min(MAX_DPR, prototypeOr(window.devicePixelRatio, 1)));
-    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
-    this.renderer.toneMapping = THREE.NoToneMapping;
     this.cleanups.push(mountViewerSurface(container, this.renderer.domElement));
     this.controls = new StageControls(this.camera, this.renderer.domElement, () => {
       this.invalidate();
@@ -169,8 +161,7 @@ export class Viewer {
     if (this.profiler.poll()) this.emit();
     if (this.dirty || this.playing || this.cameraMoving) {
       applyViewerShake(this, this.shake, this.shakeOffset, this.cameraPosition);
-      drawViewerFrame(this, this.gpuSprays);
-      this.dirty = false;
+      this.dirty = !drawViewerFrame(this, this.gpuSprays);
       this.emit();
     }
     this.schedule();

@@ -5,12 +5,12 @@ import { Skeleton } from '@/ui/patterns/Feedback';
 
 export const CATALOGUE_PAGE_SIZE = 15;
 
-export function CatalogueSkeleton() {
+function CatalogueSkeleton() {
   return <FireworkBrowseGridSkeleton count={CATALOGUE_PAGE_SIZE} />;
 }
 
 /** Toolbar-shaped placeholder; search text and filter state are data-driven while loading. */
-export function CatalogueToolbarSkeleton() {
+function CatalogueToolbarSkeleton() {
   return (
     <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
       <Skeleton className="h-10 w-full rounded-md" />
@@ -19,6 +19,21 @@ export function CatalogueToolbarSkeleton() {
         <Skeleton className="h-10 w-36 rounded-md" />
         <Skeleton className="h-10 w-36 rounded-md" />
       </div>
+    </div>
+  );
+}
+
+/** Toolbar, facet chips and grid together, for the page-level Suspense fallback. */
+export function CatalogueBrowserSkeleton() {
+  return (
+    <div className="flex flex-col gap-5">
+      <CatalogueToolbarSkeleton />
+      <div className="flex flex-wrap gap-2">
+        {Array.from({ length: 8 }).map((_, index) => (
+          <Skeleton key={index} className="h-8 w-24 rounded-full" />
+        ))}
+      </div>
+      <CatalogueSkeleton />
     </div>
   );
 }

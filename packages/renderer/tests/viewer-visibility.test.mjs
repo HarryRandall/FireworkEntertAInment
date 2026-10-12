@@ -37,6 +37,7 @@ test('a hidden pending seek draws once when the latest intersection becomes visi
     t: 0.02,
     duration: 10,
     shots: [],
+    options: {},
     listeners: new Set(),
     controls: { update: () => false, stop() {} },
     sound: { hush() {}, reset() {}, frame() {} },

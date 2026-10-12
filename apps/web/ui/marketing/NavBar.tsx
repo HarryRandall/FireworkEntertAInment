@@ -2,23 +2,13 @@
 
 /**
  * MarketingNavBar provides sticky, blurred top navigation for the public
- * marketing site. Desktop shows hover and focus menus for "How it works" and
- * "Features"; the signed-in state is resolved on the client so the
+ * marketing site. Desktop shows a hover and focus menu of the homepage's product
+ * sections; the signed-in state is resolved on the client so the
  * "Home" CTA can swap in for unauthenticated visitors.
  */
 import Link from 'next/link';
 import { useEffect, useId, useRef, useState } from 'react';
-import {
-  ChevronDown,
-  ListChecks,
-  Menu,
-  Music4,
-  ShoppingBag,
-  Sparkles,
-  SlidersHorizontal,
-  Wand2,
-  X,
-} from 'lucide-react';
+import { ChevronDown, Layers, Menu, Music4, QrCode, Sparkles, X } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { BrandLockup } from '@/ui/patterns/BrandMark';
 import { Container } from '@/ui/patterns/Container';
@@ -28,65 +18,27 @@ import styles from './navigation.module.css';
 
 type MenuItem = { t: string; d: string; href: string; Icon: LucideIcon };
 
-const HOW_ITEMS: MenuItem[] = [
+const PRODUCT_ITEMS: MenuItem[] = [
+  { t: 'Effects', d: 'Every effect simulated in 3D', href: '/#effects', Icon: Sparkles },
+  { t: 'Multishots', d: 'Cakes with timed, angled shots', href: '/#multishots', Icon: Layers },
   {
-    t: 'Pick a song',
-    d: 'Upload audio for beat and section analysis',
-    href: '/how-it-works',
+    t: 'Assortments',
+    d: 'Scan a pack, pick a song, get a show',
+    href: '/#assortments',
+    Icon: QrCode,
+  },
+  {
+    t: 'Show planner',
+    d: 'From a song and a brief to a cue list',
+    href: '/#planner',
     Icon: Music4,
-  },
-  {
-    t: 'Describe the show',
-    d: 'Set the budget, venue and creative direction',
-    href: '/how-it-works',
-    Icon: SlidersHorizontal,
-  },
-  {
-    t: 'Generate the timeline',
-    d: 'Create cues only when you press Generate',
-    href: '/how-it-works',
-    Icon: Wand2,
-  },
-  {
-    t: 'Review the plan',
-    d: 'Preview cues and check the shopping list',
-    href: '/how-it-works',
-    Icon: ShoppingBag,
-  },
-];
-
-const FEATURE_ITEMS: MenuItem[] = [
-  {
-    t: 'Audio analysis',
-    d: 'Tempo, sections and musical structure',
-    href: '/features',
-    Icon: Music4,
-  },
-  {
-    t: 'Cue planning',
-    d: 'Fast deterministic planning by default',
-    href: '/features',
-    Icon: ListChecks,
-  },
-  {
-    t: 'Catalogue products',
-    d: 'Browse fireworks available for show plans',
-    href: '/catalogue',
-    Icon: ShoppingBag,
-  },
-  {
-    t: 'Explore templates',
-    d: 'Start from published curated presets',
-    href: '/library',
-    Icon: Sparkles,
   },
 ];
 
 const FLAT_LINKS: { href: string; label: string }[] = [
-  { href: '/how-it-works', label: 'How it works' },
-  { href: '/features', label: 'Features' },
-  { href: '/pricing', label: 'Pricing' },
+  ...PRODUCT_ITEMS.map((item) => ({ href: item.href, label: item.t })),
   { href: '/library', label: 'Explore' },
+  { href: '/pricing', label: 'Pricing' },
   { href: '/catalogue', label: 'Catalogue' },
 ];
 
@@ -169,8 +121,10 @@ export function MarketingNavBar() {
         </Link>
 
         <div className="hidden items-center gap-0.5 lg:flex">
-          <NavMenu label="How it works" href="/how-it-works" items={HOW_ITEMS} />
-          <NavMenu label="Features" href="/features" items={FEATURE_ITEMS} />
+          <NavMenu label="Product" href="/#effects" items={PRODUCT_ITEMS} />
+          <Link href="/library" className={styles.pill}>
+            Explore
+          </Link>
           <Link href="/pricing" className={styles.pill}>
             Pricing
           </Link>

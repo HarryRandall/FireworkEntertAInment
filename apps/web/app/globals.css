@@ -2,6 +2,7 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import '../ui/theme.css';
+@import '../ui/kit/kit.css';
 @custom-variant dark (&:is(.dark *, [data-theme='dark'] *));
 
 html {
@@ -70,24 +71,6 @@ body {
   --brand-logo-trail-start: #166534;
 }
 
-.hero-rainbow-wash {
-  background-image: var(--rainbow-hero-wash);
-  border-radius: 9999px;
-  filter: blur(76px) saturate(135%);
-  opacity: 0.18;
-  -webkit-mask-image: radial-gradient(ellipse at center, black 0%, black 42%, transparent 74%);
-  mask-image: radial-gradient(ellipse at center, black 0%, black 42%, transparent 74%);
-}
-
-.cta-rainbow-wash {
-  background-image: var(--rainbow-hero-wash);
-  border-radius: 9999px;
-  filter: blur(82px) saturate(130%);
-  opacity: 0.2;
-  -webkit-mask-image: radial-gradient(ellipse at center, black 0%, black 46%, transparent 76%);
-  mask-image: radial-gradient(ellipse at center, black 0%, black 46%, transparent 76%);
-}
-
 .prompt-hero-glow {
   position: absolute;
   inset: 0 -10% -25% -10%;
@@ -132,19 +115,6 @@ body {
   .prompt-hero-glow {
     animation: none;
   }
-}
-
-.noise-overlay {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image: radial-gradient(
-    color-mix(in srgb, var(--color-content-emphasis) 18%, transparent) 0.5px,
-    transparent 0.5px
-  );
-  background-size: 3px 3px;
-  opacity: 0.14;
-  mix-blend-mode: soft-light;
 }
 
 /* New-show wizard: step panel enter animation */

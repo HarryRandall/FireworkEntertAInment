@@ -18,3 +18,4 @@ export {
 } from '../poster/index';
 
 export { representativeTime } from './motion';
+export { prefersLowPower } from './low-power';
