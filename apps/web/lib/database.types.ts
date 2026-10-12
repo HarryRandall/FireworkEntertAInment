@@ -841,66 +841,6 @@ export type Database = {
         }
         Relationships: []
       }
-      import_candidate_render_validations: {
-        Row: {
-          artifact_byte_size: number
-          artifact_output_id: string
-          artifact_sha256: string
-          artifact_storage_etag: string
-          artifact_storage_path: string
-          candidate_id: string
-          canonical_evidence: Json
-          created_at: string
-          evidence_hash: string
-          metrics_schema_version: string
-          renderer_contract_version: string
-          validator_version: string
-        }
-        Insert: {
-          artifact_byte_size: number
-          artifact_output_id: string
-          artifact_sha256: string
-          artifact_storage_etag: string
-          artifact_storage_path: string
-          candidate_id: string
-          canonical_evidence: Json
-          created_at?: string
-          evidence_hash: string
-          metrics_schema_version: string
-          renderer_contract_version: string
-          validator_version: string
-        }
-        Update: {
-          artifact_byte_size?: number
-          artifact_output_id?: string
-          artifact_sha256?: string
-          artifact_storage_etag?: string
-          artifact_storage_path?: string
-          candidate_id?: string
-          canonical_evidence?: Json
-          created_at?: string
-          evidence_hash?: string
-          metrics_schema_version?: string
-          renderer_contract_version?: string
-          validator_version?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "import_candidate_render_validations_artifact_output_id_fkey"
-            columns: ["artifact_output_id"]
-            isOneToOne: false
-            referencedRelation: "import_run_outputs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "import_candidate_render_validations_candidate_id_fkey"
-            columns: ["candidate_id"]
-            isOneToOne: false
-            referencedRelation: "import_candidates"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       import_candidate_validations: {
         Row: {
           candidate_id: string
@@ -943,7 +883,6 @@ export type Database = {
           metrics: Json
           ordinal: number
           reconstruction: Json
-          rendered_video_path: string | null
           schema_version: string
           score: number
           selected_at: string | null
@@ -958,7 +897,6 @@ export type Database = {
           metrics?: Json
           ordinal: number
           reconstruction: Json
-          rendered_video_path?: string | null
           schema_version: string
           score: number
           selected_at?: string | null
@@ -973,7 +911,6 @@ export type Database = {
           metrics?: Json
           ordinal?: number
           reconstruction?: Json
-          rendered_video_path?: string | null
           schema_version?: string
           score?: number
           selected_at?: string | null
