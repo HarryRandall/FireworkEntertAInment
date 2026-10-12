@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { syncViewerClock } from '../src/view/external-clock.ts';
+import { FrameTimes } from '../src/view/frame-times.ts';
+import { tickViewerPlayback } from '../src/view/viewer-frame.ts';
 import { launchPos } from '../src/sim/launch.ts';
 import { effectTemplates, simulate } from '../src/index.ts';
 
@@ -74,4 +76,21 @@ test('sixty unchanged paused soundtrack samples request no draws, while seeks re
   assert.equal(draws, 0);
   syncViewerClock(viewer, sound, 3, false);
   assert.equal(draws, 1);
+});
+
+test('soundtrack-clocked frames update the frame rate without advancing show time', () => {
+  const viewer = {
+    t: 4,
+    speed: 1,
+    duration: 20,
+    options: {},
+    playing: true,
+    externalClock: true,
+    fps: 0,
+    frameTimes: new FrameTimes(),
+  };
+  for (let frame = 0; frame < 120; frame++) assert.equal(tickViewerPlayback(viewer, 1 / 60), false);
+  assert.equal(viewer.t, 4);
+  assert.ok(Math.abs(viewer.fps - 60) < 1, `expected about 60 fps, got ${viewer.fps}`);
+  assert.equal(viewer.frameTimes.summary().samples, 120);
 });

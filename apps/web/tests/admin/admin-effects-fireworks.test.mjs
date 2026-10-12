@@ -246,6 +246,23 @@ test('admin replay previews opt into FPS diagnostics', () => {
   assert.doesNotMatch(templatePreview, /showFps/);
 });
 
+test('show previews render the shared FPS graph from the viewer frame rate', () => {
+  const fpsGraph = read('ui/replay/FpsGraph.tsx');
+  const viewerStats = read('ui/replay/ReplayViewerSettings.tsx');
+  const showCanvas = read('ui/replay/ShowRendererCanvas.tsx');
+
+  assert.match(fpsGraph, /FPS_HISTORY_SIZE = 80/);
+  assert.match(fpsGraph, /data-testid="firework-fps-meter"/);
+  assert.match(fpsGraph, /aria-label="Close FPS graph"/);
+  assert.match(viewerStats, /Math\.round\(instance\.fps\)/);
+  assert.match(viewerStats, /slice\(-\(FPS_HISTORY_SIZE - 1\)\)/);
+  assert.match(viewerStats, /<FpsGraph[\s\S]*onClose=\{\(\) => setSetting\('stats', false\)\}/);
+  assert.match(
+    showCanvas,
+    /props\.showStaging \? <ReplayViewerStats viewerRef=\{viewer\} \/> : null/,
+  );
+});
+
 test('catalogue and import mutations invalidate new admin firework caches', () => {
   const catalogue = read('app/(admin)/admin/catalogue/actions.ts');
   const imports = read('app/(admin)/admin/imports/actions.ts');
