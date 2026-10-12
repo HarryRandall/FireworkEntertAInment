@@ -141,9 +141,9 @@ check runtime imports, re-exports and tests before removing a component. Use
 Zod 3 validators, deterministic simulation, templates, posters and WebGL viewer.
 The admin renderer preview loads its browser view without server rendering.
 Shows plan and play stored designs through the renderer library. The legacy
-`packages/fireworks` and `packages/firework-editor` remain for legacy record validation, editor metadata and
-the video import harness. Keep its validators separate from web
-Zod 4 schemas.
+`packages/fireworks` and `packages/firework-editor` remain only for legacy record
+validation and editor metadata; the old particle engine has been removed. Keep
+the renderer's validators separate from web Zod 4 schemas.
 
 ## Renderer design storage
 
@@ -186,9 +186,7 @@ one and two size/brightness levels respectively, clamped with stored adjustments
 `ShowRendererCanvas` adapts the soundtrack-owned playhead to `Viewer.syncTime`.
 It uses stateless simulation for seeks, with no show snapshot cache. Saved launch
 positions use legacy centimetres and convert once at 0.01 metres per unit. New
-site-width layouts convert feet to centimetres before persistence. The legacy
-`FireworkReplayCanvas` remains only for fingerprinted video import evidence and
-the old side of the renderer comparison. Multishot editors use the same Viewer
+site-width layouts convert feet to centimetres before persistence. Multishot editors use the same Viewer
 adapter with a cake prop, authored child offsets and sequence seeds. The legacy
 style-default editor route and its preview endpoint have been removed; its stored
 tables and compatibility fields remain.
