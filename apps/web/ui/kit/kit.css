@@ -66,8 +66,7 @@
   animation: sc-marquee var(--sc-marquee-duration) linear infinite;
 }
 .sc-marquee:hover .sc-marquee-track,
-.sc-marquee:focus-within .sc-marquee-track,
-.sc-marquee[data-paused] .sc-marquee-track {
+.sc-marquee:focus-within .sc-marquee-track {
   animation-play-state: paused;
 }
 @keyframes sc-marquee {

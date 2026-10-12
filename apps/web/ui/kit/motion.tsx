@@ -1,8 +1,7 @@
 /** Decorative motion components adapted from Magic UI; each one is still under reduced motion. */
 'use client';
 import Link from 'next/link';
-import { useState, type ComponentProps, type CSSProperties, type ReactNode } from 'react';
-import { Pause, Play } from 'lucide-react';
+import type { ComponentProps, CSSProperties, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 const shimmerClasses =
@@ -50,8 +49,8 @@ export function BorderBeam({
 }
 
 /**
- * Scrolls a row of items sideways. It pauses on hover, on focus and from its own control,
- * and becomes a wrapped row under reduced motion.
+ * Scrolls a row of items sideways. It pauses on hover and focus, and becomes a wrapped row
+ * under reduced motion.
  */
 export function Marquee({
   items,
@@ -59,15 +58,14 @@ export function Marquee({
   className,
 }: {
   items: readonly { key: string; node: ReactNode }[];
-  /** Names the content for the pause control. */
+  /** Names the scrolling content for assistive technology. */
   label: string;
   className?: string;
 }) {
-  const [paused, setPaused] = useState(false);
   return (
     <div
+      aria-label={label}
       className={cn('sc-marquee relative flex items-center gap-3 overflow-hidden', className)}
-      data-paused={paused || undefined}
     >
       <div className="min-w-0 flex-1 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
         <ul className="sc-marquee-track flex w-max gap-3">
@@ -83,15 +81,6 @@ export function Marquee({
           ))}
         </ul>
       </div>
-      <button
-        type="button"
-        className="border-border bg-card text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex size-7 shrink-0 items-center justify-center rounded-full border transition-colors focus-visible:ring-2 focus-visible:outline-none motion-reduce:hidden"
-        aria-pressed={paused}
-        aria-label={paused ? `Resume ${label}` : `Pause ${label}`}
-        onClick={() => setPaused((current) => !current)}
-      >
-        {paused ? <Play aria-hidden size={12} /> : <Pause aria-hidden size={12} />}
-      </button>
     </div>
   );
 }

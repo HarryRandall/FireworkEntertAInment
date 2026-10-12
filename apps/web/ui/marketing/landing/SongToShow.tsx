@@ -2,7 +2,7 @@
 
 /** An autoplaying story from a typed brief to a planned show, built from the kit's chat and cards. */
 import { useEffect, useState } from 'react';
-import { Music4, Pause, Play } from 'lucide-react';
+import { Music4 } from 'lucide-react';
 import { effectTemplates } from '@showcrafter/renderer';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 import { ChatBubble, TypingIndicator } from '@/ui/kit/chat';
@@ -55,22 +55,26 @@ export function SongToShow() {
   const near = useNearViewport(section, '0px');
   const reduce = usePrefersReducedMotion();
   const posters = useLandingPosters(POSTER_DESIGNS, near);
-  const [paused, setPaused] = useState(false);
   const [stage, setStage] = useState<Stage>({ kind: 'typing', chars: 0 });
   const shown = reduce ? FINAL : stage;
 
   useEffect(() => {
-    if (!near || reduce || paused) return;
+    if (!near || reduce) return;
     const { stage: next, delay } = nextStage(stage);
     const timer = window.setTimeout(() => setStage(next), delay);
     return () => window.clearTimeout(timer);
-  }, [near, reduce, paused, stage]);
+  }, [near, reduce, stage]);
 
   const typed = shown.kind === 'typing' ? BRIEF.slice(0, shown.chars) : BRIEF;
   const planned = shown.kind === 'planned';
 
   return (
-    <section ref={setSection} aria-labelledby="story-heading" className="border-border border-b">
+    <section
+      ref={setSection}
+      id="planner"
+      aria-labelledby="story-heading"
+      className="border-border scroll-mt-16 border-b"
+    >
       <Reveal className="border-border mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-10 sm:py-20 lg:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] lg:border-x">
         <Rise className="space-y-4">
           <p className="text-muted-foreground font-mono text-[11px] tracking-wide uppercase">
@@ -86,15 +90,6 @@ export function SongToShow() {
             Describe the night, add music and set a budget. The planner places catalogue products on
             the song's big moments, and you review every cue before anything is bought.
           </p>
-          <button
-            type="button"
-            aria-pressed={paused}
-            onClick={() => setPaused((current) => !current)}
-            className="border-border bg-card text-muted-foreground hover:text-foreground focus-visible:ring-ring inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium focus-visible:ring-2 focus-visible:outline-none motion-reduce:hidden"
-          >
-            {paused ? <Play aria-hidden size={12} /> : <Pause aria-hidden size={12} />}
-            {paused ? 'Play the example' : 'Pause the example'}
-          </button>
         </Rise>
 
         <Rise delay={120} className="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(0,17rem)]">

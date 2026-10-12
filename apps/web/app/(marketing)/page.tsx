@@ -1,11 +1,12 @@
-/** Marketing homepage: real product surfaces rather than illustrations, from the live sky down. */
+/** Marketing homepage: real product surfaces rather than illustrations, from the live show down. */
 
 import { CTABand } from '@/ui/marketing/CTABand';
 import { CuratedEffects } from '@/ui/marketing/landing/CuratedEffects';
-import { EditorDemo } from '@/ui/marketing/landing/EditorDemo';
+import { LandingAssortments } from '@/ui/marketing/landing/LandingAssortments';
 import { LandingHero } from '@/ui/marketing/landing/LandingHero';
 import { LandingStakeholders } from '@/ui/marketing/landing/LandingStakeholders';
 import { LandingStarts } from '@/ui/marketing/landing/LandingStarts';
+import { MultishotShowcase } from '@/ui/marketing/landing/MultishotShowcase';
 import { SongToShow } from '@/ui/marketing/landing/SongToShow';
 
 export default function MarketingHome() {
@@ -14,7 +15,8 @@ export default function MarketingHome() {
       <LandingHero />
       <LandingStakeholders />
       <CuratedEffects />
-      <EditorDemo />
+      <MultishotShowcase />
+      <LandingAssortments />
       <SongToShow />
       <LandingStarts />
       <CTABand

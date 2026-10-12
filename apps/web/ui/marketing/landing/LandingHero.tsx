@@ -1,19 +1,10 @@
-/** Landing hero: the headline over the ruled grid, then the live sky visitors can launch shells into. */
-import type { CSSProperties } from 'react';
-import { ArrowRight, CalendarClock, Music4, PoundSterling, Sparkles } from 'lucide-react';
+/** Landing hero: the headline over the ruled grid, then a live show with its song timeline. */
+import { ArrowRight } from 'lucide-react';
 import { Button } from '@/ui/patterns/Button';
 import { GridBackground } from '@/ui/kit/grid-background';
 import { AnimatedGradientText, BorderBeam, ShimmerLink } from '@/ui/kit/motion';
 import { Reveal, Rise } from '@/ui/kit/reveal';
 import { ShowPreviewPanel } from './ShowPreviewPanel';
-
-/** Real show states either side of the headline, as shares of the hero text area. */
-const CHIPS = [
-  { x: 0.08, y: 0.2, Icon: Sparkles, label: 'Peony', detail: 'Gold to rose' },
-  { x: 0.92, y: 0.2, Icon: Music4, label: 'Cue 14', detail: 'On the drop at 0:42' },
-  { x: 0.1, y: 0.72, Icon: PoundSterling, label: '£480', detail: 'of a £500 budget' },
-  { x: 0.9, y: 0.72, Icon: CalendarClock, label: '3:00', detail: 'New Year finale' },
-] as const;
 
 export function LandingHero() {
   return (
@@ -24,27 +15,6 @@ export function LandingHero() {
         className="border-border relative mx-auto max-w-6xl px-4 pt-16 pb-12 sm:px-10 sm:pt-24 lg:border-x"
       >
         <div className="relative">
-          <div aria-hidden="true" className="pointer-events-none absolute inset-0 hidden lg:block">
-            {CHIPS.map(({ x, y, Icon, label, detail }, index) => (
-              <div
-                key={label}
-                className="absolute -translate-x-1/2 -translate-y-1/2"
-                style={{ left: `${x * 100}%`, top: `${y * 100}%` }}
-              >
-                <Rise delay={450 + index * 90}>
-                  <div
-                    className="sc-float border-border bg-background/90 flex items-center gap-2 rounded-md border px-2.5 py-1.5 text-[11px] shadow-sm"
-                    style={{ animationDelay: `${index * -1.4}s` } as CSSProperties}
-                  >
-                    <Icon size={13} className="text-primary" />
-                    <span className="text-foreground font-medium whitespace-nowrap">{label}</span>
-                    <span className="text-muted-foreground whitespace-nowrap">{detail}</span>
-                  </div>
-                </Rise>
-              </div>
-            ))}
-          </div>
-
           <div className="relative flex flex-col items-center pb-14 text-center sm:pb-20">
             <Rise delay={0}>
               <p className="border-border bg-background/80 text-muted-foreground inline-flex items-center gap-2 rounded-full border px-3 py-1 font-mono text-[11px] tracking-wide uppercase">
@@ -78,7 +48,7 @@ export function LandingHero() {
 
         <Rise delay={380}>
           <BorderBeam className="rounded-[21px] p-px" surface="var(--stage-night)">
-            <ShowPreviewPanel launchable height="clamp(360px, 62vw, 560px)" />
+            <ShowPreviewPanel height="clamp(360px, 62vw, 560px)" />
           </BorderBeam>
         </Rise>
       </Reveal>
