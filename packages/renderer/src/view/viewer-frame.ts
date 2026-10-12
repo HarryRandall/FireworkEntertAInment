@@ -135,10 +135,9 @@ export function disposeViewerScene(viewer: Viewer, sprays: GpuSprays): void {
 
 /** Advances show seconds by wall-clock seconds times speed; returns whether the final frame needs drawing. */
 function advanceViewerPlayback(
-  viewer: Pick<Viewer, 'fps' | 't' | 'speed' | 'duration' | 'options' | 'playing'>,
+  viewer: Pick<Viewer, 't' | 'speed' | 'duration' | 'options' | 'playing'>,
   dt: number,
 ): boolean {
-  if (dt > 0) viewer.fps = viewer.fps * FPS_OLD_WEIGHT + (1 / dt) * (1 - FPS_OLD_WEIGHT);
   const next = viewer.t + dt * viewer.speed;
   if (next <= viewer.duration) {
     viewer.t = next;
@@ -177,9 +176,16 @@ export function viewerLiveDrawPending(
   return onScreen && !document.hidden && (dirty || viewer.playing || cameraMoving);
 }
 
-/** Records playback cadence and advances only a locally owned sequence clock. */
-export function tickViewerPlayback(viewer: Viewer, dt: number): boolean {
+/** Records playback cadence for any clock and advances only a locally owned sequence clock. */
+export function tickViewerPlayback(
+  viewer: Pick<
+    Viewer,
+    'externalClock' | 'fps' | 'frameTimes' | 't' | 'speed' | 'duration' | 'options' | 'playing'
+  >,
+  dt: number,
+): boolean {
   if (!viewer.playing) return false;
   viewer.frameTimes.record(dt * MS_PER_SECOND);
+  if (dt > 0) viewer.fps = viewer.fps * FPS_OLD_WEIGHT + (1 / dt) * (1 - FPS_OLD_WEIGHT);
   return !viewer.externalClock && advanceViewerPlayback(viewer, dt);
 }

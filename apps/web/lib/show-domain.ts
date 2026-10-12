@@ -84,10 +84,6 @@ export type FireworkSpecification = {
   previewImagePath?: string | null;
   /** Visual-source revision used to key preview payload and poster caches. */
   previewImageRevision?: number | null;
-  /** Multishot children can leave the parent tube, which needs wider overlap modelling. */
-  hasLaunchPositionOverrides?: boolean;
-  /** Absolute launch positions used by multishot children. */
-  launchPositionOverrideIndices?: number[];
   spec: FireworkSpec | null;
   rawSpec: unknown;
   /** Validated stored v1 design, absent only for legacy editor previews. */

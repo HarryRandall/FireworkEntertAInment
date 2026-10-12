@@ -36,7 +36,6 @@ type MultishotShotRow = {
   time_offset_seconds: number | string | null;
   pan_degrees: number | null;
   tilt_degrees: number | null;
-  position_override_json: Json | null;
   caliber: string | null;
   notes: string | null;
   firework_id: string | null;
@@ -56,7 +55,7 @@ type MultishotRow = {
 };
 
 const SHOT_SELECT =
-  'id, sequence_index, timeline_track_index, time_offset_seconds, pan_degrees, tilt_degrees, position_override_json, caliber, notes, firework_id, fireworks (id, slug, name, primary_color, firework_effects (name))';
+  'id, sequence_index, timeline_track_index, time_offset_seconds, pan_degrees, tilt_degrees, caliber, notes, firework_id, fireworks (id, slug, name, primary_color, firework_effects (name))';
 
 function firstFirework(
   value: FireworkLite | FireworkLite[] | null | undefined,
@@ -75,15 +74,6 @@ function numberOrNull(value: number | string | null | undefined): number | null 
   if (value == null) return null;
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
-}
-
-function launchPositionFromOverride(value: Json | null): number {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    const raw = (value as Record<string, unknown>).launchPositionIndex;
-    const n = Number(raw);
-    if (Number.isFinite(n)) return Math.max(0, Math.min(2, Math.floor(n)));
-  }
-  return 0;
 }
 
 function previewFromShots(rows: MultishotShotRow[]): ReturnType<typeof buildEffectPreview> {
@@ -204,7 +194,6 @@ export async function getMultishotById(multishotId: string): Promise<AdminMultis
         timeOffsetSeconds: numberOrNull(shot.time_offset_seconds) ?? 0,
         panDegrees: shot.pan_degrees ?? 0,
         tiltDegrees: shot.tilt_degrees ?? 0,
-        launchPositionIndex: launchPositionFromOverride(shot.position_override_json),
         caliber: shot.caliber,
         notes: shot.notes,
         fireworkId: shot.firework_id ?? firework?.id ?? null,

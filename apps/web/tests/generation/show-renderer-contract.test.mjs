@@ -87,19 +87,26 @@ test('invalid stored designs are typed errors and never use a legacy design', ()
 });
 
 test('legacy positions convert once, while authored aiming and seed overrides survive', () => {
-  const result = buildShowRendererShots([
-    {
-      timeSeconds: 1.234,
-      launchPositionIndex: 2,
-      firework: product('shell'),
-      seedOverride: 42,
-      shotPanDegrees: -20,
-      shotTiltDegrees: 15,
-    },
-  ]);
+  const result = buildShowRendererShots(
+    [
+      {
+        timeSeconds: 1.234,
+        launchPositionIndex: 2,
+        firework: product('shell'),
+        seedOverride: 42,
+        shotPanDegrees: -20,
+        shotTiltDegrees: 15,
+      },
+    ],
+    [
+      { x: -4000, y: 0, z: 0 },
+      { x: 0, y: 0, z: 0 },
+      { x: 4000, y: 0, z: 0 },
+    ],
+  );
   assert.equal(LEGACY_LAUNCH_UNIT_METRES, 0.01);
   assert.equal(result.ok, true);
-  assert.deepEqual(result.shots[0].position, [2, 0]);
+  assert.deepEqual(result.shots[0].position, [40, 0]);
   assert.equal(result.shots[0].design.launch.tilt_deg, -20);
   assert.equal(result.shots[0].tilt_deg, 15);
   assert.equal(result.shots[0].seed, 42);

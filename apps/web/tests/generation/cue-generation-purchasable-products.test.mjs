@@ -14,13 +14,11 @@ function read(path) {
 test('cue generation restricts the planning pool to priced supplier inventory', () => {
   const runner = read('lib/cue-generation/runner.server.ts');
 
-  // The purchasable filter must run before the type and launch-position
-  // filters so every planner (fast, beat, LLM) sees the same pool.
+  // The purchasable filter must run before the type filter so every planner
+  // (fast, beat, LLM) sees the same pool.
   const purchasableIndex = runner.indexOf('product.minPriceCents != null');
-  const fitsIndex = runner.indexOf('productFitsLaunchPositions(product, maxTubes)');
   const typesIndex = runner.indexOf('productMatchesTypes(product, allowedTypes)');
   assert.ok(purchasableIndex > 0, 'runner filters unpurchasable products');
-  assert.ok(fitsIndex > purchasableIndex, 'purchasable filter precedes launch-position filter');
   assert.ok(typesIndex > purchasableIndex, 'purchasable filter precedes firework-type filter');
   assert.match(runner, /No purchasable fireworks are available/);
 });

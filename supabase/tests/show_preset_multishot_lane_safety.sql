@@ -125,7 +125,7 @@ begin
       'Test preset child conflict',
       'Test',
       10,
-      pg_temp.show_preset_test_cues(2, 2),
+      pg_temp.show_preset_test_cues(2, 0),
       true,
       now()
     );
@@ -136,9 +136,9 @@ begin
   end;
 
   if not rejected
-    or failure_message not like '%overlaps occupied launch position 2%'
+    or failure_message not like '%overlaps occupied launch position 0%'
   then
-    raise exception 'A published preset ignored an absolute multishot child-position conflict.';
+    raise exception 'A published preset ignored a conflict at the multishot cake position.';
   end if;
 end;
 $$;
@@ -160,12 +160,12 @@ values (
   'Test preset exact boundary',
   'Test',
   10,
-  pg_temp.show_preset_test_cues(4, 2),
+  pg_temp.show_preset_test_cues(4, 0),
   true,
   now()
 );
 
--- A position outside the parent and child occupied set remains independent.
+-- A multishot is one cake: a stale per-shot launchPositionIndex no longer reserves position 2.
 insert into public.show_presets (
   id,
   slug,
@@ -182,33 +182,15 @@ values (
   'Test preset independent position',
   'Test',
   10,
-  pg_temp.show_preset_test_cues(2, 1),
+  pg_temp.show_preset_test_cues(2, 2),
   true,
   now()
 );
 
-do $$
-declare
-  rejected boolean := false;
-begin
-  begin
-    update public.multishot_fireworks
-    set position_override_json = '{"launchPositionIndex": 1}'::jsonb
-    where id = '91000000-0000-4000-8000-000000000004'::uuid;
-  exception
-    when check_violation then
-      rejected := true;
-  end;
-
-  if not rejected or (
-    select position_override_json ->> 'launchPositionIndex'
-    from public.multishot_fireworks
-    where id = '91000000-0000-4000-8000-000000000004'::uuid
-  ) <> '2' then
-    raise exception 'A multishot child-position edit invalidated a published preset.';
-  end if;
-end;
-$$;
+-- Per-shot launch positions no longer affect occupancy, so editing one is allowed.
+update public.multishot_fireworks
+set position_override_json = '{"launchPositionIndex": 1}'::jsonb
+where id = '91000000-0000-4000-8000-000000000004'::uuid;
 
 do $$
 declare

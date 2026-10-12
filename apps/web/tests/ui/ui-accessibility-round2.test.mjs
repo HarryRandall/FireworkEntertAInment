@@ -18,6 +18,17 @@ test('show creation keeps file focus visible without forcing mobile keyboard foc
   assert.doesNotMatch(wizard, /\bautoFocus\b/);
 });
 
+test('QR audio upload exposes keyboard focus and its disabled state on the visible control', () => {
+  const upload = read('app/(kiosk)/a/[token]/_components/AssortmentEntryClient.tsx');
+  assert.match(
+    upload,
+    /<label[\s\S]*has-\[input:focus-visible\]:ring-3[\s\S]*<input[\s\S]*disabled=\{pending\}[\s\S]*<\/label>/,
+  );
+  assert.match(upload, /has-\[input:focus-visible\]:ring-offset-2/);
+  assert.match(upload, /has-\[input:disabled\]:cursor-not-allowed/);
+  assert.match(upload, /has-\[input:disabled\]:opacity-50/);
+});
+
 test('privileged user row actions lock and report pending work', () => {
   const actions = read('app/(admin)/admin/users/_components/UserRowActions.tsx');
   const menu = read('ui/patterns/RowActionsMenu.tsx');
