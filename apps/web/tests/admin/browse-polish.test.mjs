@@ -269,3 +269,33 @@ test('controlled pagination calls the supplied callback and disables boundary ac
   assert.equal(render(1).find((node) => node.type === 'button').props.disabled, true);
   assert.equal(render(3).filter((node) => node.type === 'button')[1].props.disabled, true);
 });
+
+test('streamed show cues distinguish loading from a completed empty show', () => {
+  const { ShowCueTable } = load('ui/shows/ShowCueTable.tsx', {
+    react: { useState: (initial) => [initial, () => {}], useEffect: () => {} },
+    'next/navigation': { useRouter: () => ({}) },
+    'lucide-react': { Pencil: 'pencil', Play: 'play', Plus: 'plus', Trash2: 'trash' },
+    '@/ui/patterns/Button': { Button: 'button' },
+    '@/ui/patterns/RowActionsMenu': { RowActionsMenu: 'actions' },
+    '@/ui/patterns/SelectField': { SelectField: 'select' },
+    '@/ui/patterns/TablePagination': { TablePagination: 'pagination' },
+    '@/ui/primitives/badge': { Badge: 'badge' },
+    '@/ui/patterns/DataTable': {
+      DataTableShell: 'table-shell',
+      tableClasses: () => '',
+      tableHeadClasses: () => '',
+      tableHeaderCellClasses: () => '',
+      tableCellClasses: () => '',
+      tableRowClasses: () => '',
+    },
+    '@/lib/utils': { cn: (...values) => values.filter(Boolean).join(' ') },
+    './show-display': { formatCueTime: String },
+  });
+  const props = { builderCues: [], productNameById: new Map(), activeBaseCueIds: new Set() };
+  const loading = ShowCueTable({ ...props, isLoading: true });
+  assert.match(text(loading), /Loading show cues/);
+  assert.doesNotMatch(text(loading), /No cues yet/);
+  const loaded = ShowCueTable({ ...props, isLoading: false });
+  assert.match(text(loaded), /No cues yet/);
+  assert.doesNotMatch(text(loaded), /Loading show cues/);
+});

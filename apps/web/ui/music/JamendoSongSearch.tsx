@@ -297,7 +297,7 @@ export function JamendoSongSearch({
       setTracks(resolvedTracks);
       setNextOffset(resolvedOffset);
       setHasMore(resolvedHasMore);
-      if (useCache) {
+      if (useCache && resolvedTracks.length > 0) {
         browseCacheRef.current.set(cacheKey, {
           tracks: resolvedTracks,
           nextOffset: resolvedOffset,
@@ -578,13 +578,24 @@ export function JamendoSongSearch({
                     : 'Loading tracks'}
               </div>
             ) : tracks.length === 0 && hasSearched && !error ? (
-              <p className="text-muted-foreground py-10 text-center text-sm">
-                {mode === 'recommend'
-                  ? 'No recommendations available. Browse the library or use your own song.'
-                  : mode === 'search'
-                    ? 'No tracks matched. Try another search or browse by genre.'
-                    : 'No tracks to show right now. Try a different genre.'}
-              </p>
+              <div className="text-muted-foreground space-y-3 py-10 text-center text-sm">
+                <p>
+                  {mode === 'recommend'
+                    ? 'No recommendations available. Browse the library or use your own song.'
+                    : mode === 'search'
+                      ? 'No tracks matched. Try another search or browse by genre.'
+                      : 'No tracks to show right now. Try again or choose a different genre.'}
+                </p>
+                {mode === 'browse' ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => void loadBrowse(genre, 0, false, false)}
+                  >
+                    Retry loading tracks
+                  </Button>
+                ) : null}
+              </div>
             ) : (
               <ul className="flex w-full flex-col gap-2">
                 {tracks.map((track) => (
