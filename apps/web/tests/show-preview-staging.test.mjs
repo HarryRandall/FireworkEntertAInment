@@ -44,7 +44,7 @@ test('cakes persist at distinct slots near their assigned rack, with local tube 
   assert.equal(result[0].muzzle_m, 1.17);
   // The second cake sits beside the first in the same row rather than further forward.
   assert.equal(result[2].hardwarePosition[1], result[0].hardwarePosition[1]);
-  assert.ok(Math.abs(result[2].hardwarePosition[0] - result[0].hardwarePosition[0]) >= 4);
+  assert.ok(Math.abs(result[2].hardwarePosition[0] - result[0].hardwarePosition[0]) >= 6);
 });
 test('default aerial lean follows outer racks, preserving explicit zero and authored design angles', () => {
   const result = shots([
@@ -141,22 +141,23 @@ test('each rack keeps its cakes in its own lane instead of sharing one row', () 
     { x: 200, y: 0, z: 0 },
   ];
   const cakes = [0, 1, 2].flatMap((rack) =>
-    Array.from({ length: 4 }, (_, i) =>
+    Array.from({ length: 6 }, (_, i) =>
       cue(`r${rack}-c${i}`, { cakeId: `r${rack}-c${i}`, cakeLaunchPositionIndex: rack }),
     ),
   );
   const result = shots(cakes, true, tight);
   const halfLane = MIN_LAUNCH_POSITION_GAP_M / 2;
   for (const [index, shot] of result.entries()) {
-    const rackX = (Math.floor(index / 4) - 1) * MIN_LAUNCH_POSITION_GAP_M;
+    const rackX = (Math.floor(index / 6) - 1) * MIN_LAUNCH_POSITION_GAP_M;
     assert.ok(
       Math.abs(shot.hardwarePosition[0] - rackX) + 1.1 <= halfLane,
       `cake ${index} stays inside its rack's lane`,
     );
-    assert.ok(shot.hardwarePosition[1] >= 4, 'cakes sit in front of their rack');
+    assert.ok(shot.hardwarePosition[1] >= 6, 'cakes sit in front of their rack');
   }
-  // Three cakes fit across a lane, so the fourth steps forward a row.
-  assert.ok(result[3].hardwarePosition[1] > result[0].hardwarePosition[1]);
+  // Five cakes fit across a lane, so the sixth steps forward a row.
+  assert.equal(result[4].hardwarePosition[1], result[0].hardwarePosition[1]);
+  assert.ok(result[5].hardwarePosition[1] > result[0].hardwarePosition[1]);
 });
 
 test('authored shot offsets stay close to their own position', () => {

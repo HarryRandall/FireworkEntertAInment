@@ -99,14 +99,14 @@ test('legacy positions convert once, while authored aiming and seed overrides su
       },
     ],
     [
-      { x: -2000, y: 0, z: 0 },
+      { x: -4000, y: 0, z: 0 },
       { x: 0, y: 0, z: 0 },
-      { x: 2000, y: 0, z: 0 },
+      { x: 4000, y: 0, z: 0 },
     ],
   );
   assert.equal(LEGACY_LAUNCH_UNIT_METRES, 0.01);
   assert.equal(result.ok, true);
-  assert.deepEqual(result.shots[0].position, [20, 0]);
+  assert.deepEqual(result.shots[0].position, [40, 0]);
   assert.equal(result.shots[0].design.launch.tilt_deg, -20);
   assert.equal(result.shots[0].tilt_deg, 15);
   assert.equal(result.shots[0].seed, 42);

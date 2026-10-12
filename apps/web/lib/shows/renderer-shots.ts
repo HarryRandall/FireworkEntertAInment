@@ -18,10 +18,10 @@ export const SHOW_OUTER_LEAN_DEGREES = 8;
 /** Smallest drawn gap between neighbouring launch positions, in metres. Bursts are
  * tens of metres across, so closer racks read as one firework. Wider saved layouts
  * keep their measured spacing; only the drawing changes, never the saved show. */
-export const MIN_LAUNCH_POSITION_GAP_M = 15;
+export const MIN_LAUNCH_POSITION_GAP_M = 35;
 // Leave clearance around the cake lid and between successive audience-facing rows.
-const CAKE_SLOT_SPACING_M = CAKE_WIDTH_M + 1.8;
-const CAKE_FRONT_OFFSET_M = 4;
+const CAKE_SLOT_SPACING_M = CAKE_WIDTH_M + 3.8;
+const CAKE_FRONT_OFFSET_M = 6;
 // Upper bound on cakes per audience-facing row for a rack with no close neighbour,
 // so a busy rack grows sideways first and only a few rows deep.
 const MAX_CAKES_PER_ROW = 5;
