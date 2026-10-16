@@ -12,6 +12,7 @@ import { OutputPass } from './output';
 import { makeProps } from './props';
 import { audienceFraming } from './audience-framing';
 import { disposeTree, makeWorld } from './world';
+import { FINALE_FOV_DEG, finaleFrontFraming } from './finale-camera';
 import { StageControls } from './stage-controls';
 import { onSettings, onVisualSettings } from './settings';
 import { viewerInput, mountViewerSurface } from './viewer-input';
@@ -32,6 +33,7 @@ import { createViewerRenderer } from './low-power';
 
 // Prototype projection settings, in degrees and metres.
 const FOV_DEG = 45;
+
 const NEAR_M = 0.5;
 const FAR_M = 4000;
 // Wall clock milliseconds per second.
@@ -85,6 +87,7 @@ export class Viewer {
   ) {
     if (!options.design && !options.shots) throw new Error('A viewer needs a design or shots.');
     this.shots = options.shots ?? (options.design ? [{ design: options.design }] : []);
+    if (options.startDistance === 'finale') this.camera.fov = FINALE_FOV_DEG;
     this.renderer = createViewerRenderer(options.lowPower === true);
     this.profiler = new FrameProfiler(this.renderer.getContext());
     this.cleanups.push(mountViewerSurface(container, this.renderer.domElement));
@@ -180,7 +183,7 @@ export class Viewer {
     const dpr = this.renderer.getPixelRatio();
     this.output.resize(Math.round(width * dpr), Math.round(height * dpr));
     this.layers.uniforms.uScale.value =
-      (height * dpr) / (2 * Math.tan((FOV_DEG * Math.PI) / HALF_TURN_DEG / 2));
+      (height * dpr) / (2 * Math.tan((this.camera.fov * Math.PI) / HALF_TURN_DEG / 2));
     this.layers.uniforms.uDpr.value = dpr;
     if (!this.controls.touched) this.resetCamera(true);
     else this.invalidate();
@@ -282,11 +285,9 @@ export class Viewer {
   /** Restores the configured starting framing in world metres; snap skips camera easing. */
   resetCamera(snap = false): void {
     if (this.disposed) return;
-    this.controls.frame(
-      audienceFraming(this),
-      snap,
-      this.options.startDistance ?? (this.shots.length === 1 ? 'elevated' : 'framed'),
-    );
+    const start = this.options.startDistance ?? (this.shots.length === 1 ? 'elevated' : 'framed');
+    if (start === 'finale') this.controls.frame(finaleFrontFraming(), snap, 'framed');
+    else this.controls.frame(audienceFraming(this), snap, start);
   }
   /** Whether live drawing owns the frame budget; background posters yield throughout playback. */
   get liveDrawPending(): boolean {

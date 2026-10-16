@@ -763,7 +763,7 @@ export function FireworkReplayViewer({
                 elapsed={elapsed}
                 playbackRef={elapsedRef}
                 playing={isPlaying}
-                startDistance="farthest"
+                startDistance="finale"
                 showStaging
                 scrubbing={isScrubbing}
                 launchPositions={launchPositions}

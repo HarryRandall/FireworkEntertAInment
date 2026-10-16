@@ -26,7 +26,7 @@ type Props = {
   launchPositions?: Show['launchPositions'];
   prop?: 'mortar' | 'cake';
   /** Starts and resets whole-show playback at the normal zoom-out cap when requested. */
-  startDistance?: 'framed' | 'farthest';
+  startDistance?: 'framed' | 'farthest' | 'finale';
   muted?: boolean;
   /** Whether the external playhead advances, independent of sound muting. */
   playing?: boolean;
