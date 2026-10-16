@@ -169,9 +169,9 @@ test('angles beyond the multishot limit are limited with a warning', () => {
   assert.equal(result.warnings.length, 1);
 });
 
-test('cake shots use Finale 3D sizes: HTM metres, else one metre and 0.3 m radius per mm', () => {
+test('cake shots use Finale 3D sizes: HTM metres, else one metre and 0.6 m radius per mm', () => {
   // 25 mm with no HTM: Finale's default 25 m height. "Slightly Big" enlarges the
-  // 7.5 m default break through the size level, never the launch height.
+  // 15 m default break through the size level, never the launch height.
   const willow = Object.values(preview(samples[1]).fireworks)[0];
   assert.equal(willow.design.launch.height_m, 25);
   assert.equal(willow.heightM, 25);
@@ -182,7 +182,8 @@ test('cake shots use Finale 3D sizes: HTM metres, else one metre and 0.3 m radiu
   const radii = literal.design.breaks.flatMap((burst) =>
     burst.layers.map((layer) => layer.radius_m),
   );
-  assert.ok(Math.abs(Math.max(...radii) - 9) < 0.01, `radius ${Math.max(...radii)}`);
+  // 30 mm at 0.6 m per mm, at the full two-second default burn.
+  assert.ok(Math.abs(Math.max(...radii) - 18) < 0.01, `radius ${Math.max(...radii)}`);
 });
 
 test('a mine-to-shell part fires its mine as well as the shell', () => {
