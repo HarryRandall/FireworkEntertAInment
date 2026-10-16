@@ -85,7 +85,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
         .select(
           `id, part_number, name, finale_product_id, finale_effect_name, manufacturer, firework_type, duration_seconds, description,
        fireworks (caliber, design),
-       multishots (multishot_fireworks (sequence_index, caliber))`,
+       multishots (multishot_fireworks (sequence_index, caliber, time_offset_seconds))`,
         )
         .in('id', ids),
     ),
@@ -139,9 +139,20 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     show.launchPositions,
   );
 
+  // Finale reads a cake's Duration as first-to-last launch and spreads untimed rows
+  // over it, so send the drawn span rather than the catalogue's occupancy time.
+  const cakeLaunchSpan = (item: NonNullable<typeof catalogueItems>[number]) => {
+    const multishot = Array.isArray(item.multishots) ? item.multishots[0] : item.multishots;
+    const offsets = (multishot?.multishot_fireworks ?? []).map(
+      (shot: { time_offset_seconds: number }) => Number(shot.time_offset_seconds),
+    );
+    return offsets.length > 1 ? Math.max(...offsets) : null;
+  };
+
   const csvCues = cues.map((c) => {
     const catalogueItem = catalogueItemById.get(c.catalogue_item_id)!;
     const placement = placements.get(c.id);
+    const span = cakeLaunchSpan(catalogueItem);
     return {
       placement: placement && {
         positionName: placement.positionName,
@@ -154,6 +165,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       launchPositionIndex: c.launch_position_index ?? 0,
       sourcePayload: productToSourcePayload({
         ...catalogueItem,
+        duration_seconds: span ?? catalogueItem.duration_seconds,
         caliber: firstCaliberForItem(catalogueItem),
       }),
     };

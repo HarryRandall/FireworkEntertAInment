@@ -36,7 +36,16 @@ const products = Array.from({ length: 501 }, (_, index) => ({
   duration_seconds: 5,
   description: null,
   fireworks: { caliber: '30mm' },
-  multishots: null,
+  // Product 1 is a two-shot cake whose last shot fires 2.5 s after its first.
+  multishots:
+    index === 1
+      ? {
+          multishot_fireworks: [
+            { sequence_index: 1, caliber: null, time_offset_seconds: 0 },
+            { sequence_index: 2, caliber: null, time_offset_seconds: 2.5 },
+          ],
+        }
+      : null,
 }));
 const cues = Array.from({ length: 1250 }, (_, index) => ({
   id: `cue-${index}`,
@@ -140,12 +149,15 @@ test('actual route warns for all unmatched cues beyond one API page, then export
   assert.equal(rows[2][21], '');
   assert.equal(rows[2][20], 'No Finale 3D equivalent');
   assert.equal(rows.at(-1)[2], cues.at(-1).time_seconds.toFixed(3));
-  // Every row carries the replay's spread rack, in metres.
+  // A cake's Duration is its first-to-last launch, which Finale spreads untimed rows over.
+  assert.equal(rows[2][4], '2.5');
+  assert.equal(rows[1][4], '5');
+  // Rows carry the replay's spread racks in metres; the cake sits in its slot in front.
   assert.deepEqual(
     rows.slice(1, 4).map((row) => [row[14], row[5]]),
     [
       ['P-01', '-35.00 0.00 0.00'],
-      ['P-02', '0.00 0.00 0.00'],
+      ['P-02 C1', '0.00 0.00 6.00'],
       ['P-03', '35.00 0.00 0.00'],
     ],
   );
