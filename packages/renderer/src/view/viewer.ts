@@ -251,6 +251,10 @@ export class Viewer {
     this.speed = speed;
     this.emit();
   }
+  /** True once the viewer has orbited, panned or zoomed since the last framing. */
+  get cameraMoved(): boolean {
+    return this.controls.touched;
+  }
   /** Replaces firing-relative seconds and metre placements; keepCamera retains the user pose. */
   setShots(shots: readonly Shot[], keepCamera = false): void {
     if (this.disposed) return;

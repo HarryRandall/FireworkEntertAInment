@@ -81,7 +81,9 @@ export function ShowRendererCanvas(props: Props) {
     if (shots.ok && viewer.current) {
       readiness.current?.reset();
       setLoading(true);
-      viewer.current.setShots(shots.shots, true);
+      // Cues stream in after the viewer starts on an empty site, so frame the loaded
+      // show unless the viewer has already moved the camera themselves.
+      viewer.current.setShots(shots.shots, viewer.current.cameraMoved);
       clock.current?.wake();
     }
   }, [shots]);
