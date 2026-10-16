@@ -28,7 +28,7 @@ function read(table) {
 }
 
 /** Deterministic UUID v5-style identity, so re-running the migration updates in place. */
-function id(identity) {
+export function id(identity) {
   const bytes = createHash('sha256').update(`showcrafter-vdl-product:${identity}`).digest();
   bytes[6] = (bytes[6] & 15) | 80;
   bytes[8] = (bytes[8] & 63) | 128;
@@ -36,22 +36,22 @@ function id(identity) {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-function literal(value) {
+export function literal(value) {
   return `'${JSON.stringify(value).replaceAll("'", "''")}'::jsonb`;
 }
 
-function text(value) {
+export function text(value) {
   return `'${String(value).replaceAll("'", "''")}'`;
 }
 
-function caliberMm(caliber) {
+export function caliberMm(caliber) {
   const match = String(caliber ?? '').match(/^(\d+(?:\.\d+)?)\s*(mm|"|in)$/i);
   if (!match) return null;
   return match[2].toLowerCase() === 'mm' ? Number(match[1]) : Number(match[1]) * MM_PER_INCH;
 }
 
 /** The legacy engine has no exact conversion for these designs; it schedules a plain sphere. */
-function legacySnapshot() {
+export function legacySnapshot() {
   const model = canonicaliseEffectModelJson({
     geometry: 'sphere',
     trailProfile: 'none',
@@ -60,7 +60,7 @@ function legacySnapshot() {
   return JSON.parse(JSON.stringify(compileFireworkDesign({ baseModel: model })));
 }
 
-function fireworkRow(part, index, plan, caliber, snapshot) {
+export function fireworkRow(part, index, plan, caliber, snapshot) {
   return {
     id: id(`${part}:${plan.key}`),
     slug: `vdl-${part.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${index + 1}`,
