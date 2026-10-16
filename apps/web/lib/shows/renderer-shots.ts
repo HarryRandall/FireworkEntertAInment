@@ -30,15 +30,29 @@ const MAX_SHOT_OFFSET_M = CAKE_WIDTH_M / 2;
 
 type StagedPosition = { x: number; y: number; z: number };
 
-export type RendererShotsResult = { ok: true; shots: Shot[] } | { ok: false; error: string };
+/** The placement facts staging needs from a cue; expanded cake shots share their cake id. */
+export type StageCue = Pick<
+  ReplayCue,
+  'cakeId' | 'cakeLaunchPositionIndex' | 'launchPositionIndex'
+>;
 
-/** Builds one shot per already-expanded cue, retaining child offsets, aiming and seeds. */
-export function buildShowRendererShots(
-  cues: readonly ReplayCue[],
+/** Drawn site layout in metres: spread racks, the rack each cake uses and each cake's slot. */
+export interface ShowStage {
+  positions: StagedPosition[];
+  racks: ReadonlyMap<string, number>;
+  slots: ReadonlyMap<string, readonly [number, number]>;
+  centreX: number;
+}
+
+/**
+ * Lays out the drawn site once, so playback and the Finale 3D export place every
+ * rack and cake at the same metres. Cues must be in firing order.
+ */
+export function stageShow(
+  cues: readonly StageCue[],
   positions: readonly LaunchPosition[] = DEFAULT_LAUNCH_POSITIONS,
   showStaging = true,
-): RendererShotsResult {
-  const shots: Shot[] = [];
+): ShowStage {
   const racks = showStaging ? cakeRacks(cues, positions.length) : new Map<string, number>();
   // Only spread layouts that fire from more than one position, so a single
   // firework or cake preview stays where the camera and poster expect it.
@@ -54,9 +68,29 @@ export function buildShowRendererShots(
   const slots = showStaging
     ? cakeSlots(cues, staged, racks)
     : new Map<string, readonly [number, number]>();
-  const childIndices = new Map<string, number>();
   const xs = staged.map((position) => position.x);
   const centreX = xs.length ? (Math.min(...xs) + Math.max(...xs)) / 2 : 0;
+  return { positions: staged, racks, slots, centreX };
+}
+
+/** Outward lean, in degrees with positive to the right, for an unauthored aerial on a rack. */
+export function rackLeanDegrees(stage: ShowStage, launchPositionIndex: number): number {
+  const launchX = stage.positions[launchPositionIndex]?.x ?? stage.centreX;
+  return Math.sign(launchX - stage.centreX) * SHOW_OUTER_LEAN_DEGREES;
+}
+
+export type RendererShotsResult = { ok: true; shots: Shot[] } | { ok: false; error: string };
+
+/** Builds one shot per already-expanded cue, retaining child offsets, aiming and seeds. */
+export function buildShowRendererShots(
+  cues: readonly ReplayCue[],
+  positions: readonly LaunchPosition[] = DEFAULT_LAUNCH_POSITIONS,
+  showStaging = true,
+): RendererShotsResult {
+  const shots: Shot[] = [];
+  const stage = stageShow(cues, positions, showStaging);
+  const { positions: staged, slots } = stage;
+  const childIndices = new Map<string, number>();
   for (const cue of cues) {
     if (!cue.firework.design)
       return {
@@ -75,8 +109,7 @@ export function buildShowRendererShots(
       design.launch?.tilt_deg === 0 &&
       (design.kind === 'shell' || design.kind === 'rocket')
     ) {
-      const launchX = staged[cue.launchPositionIndex]?.x ?? centreX;
-      design.launch.tilt_deg = Math.sign(launchX - centreX) * SHOW_OUTER_LEAN_DEGREES;
+      design.launch.tilt_deg = rackLeanDegrees(stage, cue.launchPositionIndex);
     }
     const position = staged[cue.launchPositionIndex] ?? { x: 0, y: 0, z: 0 };
     const override = cue.shotPositionOverride;
@@ -155,7 +188,7 @@ function cakesPerRow(rack: StagedPosition, positions: readonly StagedPosition[])
  * unless a neighbouring position holds fewer cakes, so shows that cue every
  * cake on one position still spread across the site instead of bunching.
  */
-function cakeRacks(cues: readonly ReplayCue[], rackCount: number): Map<string, number> {
+function cakeRacks(cues: readonly StageCue[], rackCount: number): Map<string, number> {
   const racks = new Map<string, number>();
   const counts = Array.from({ length: rackCount }, () => 0);
   for (const cue of cues) {
@@ -175,7 +208,7 @@ function cakeRacks(cues: readonly ReplayCue[], rackCount: number): Map<string, n
 
 /** Allocates stable, non-overlapping cake footprints in rows just in front of their racks. */
 function cakeSlots(
-  cues: readonly ReplayCue[],
+  cues: readonly StageCue[],
   positions: readonly StagedPosition[],
   racks: ReadonlyMap<string, number>,
 ) {
