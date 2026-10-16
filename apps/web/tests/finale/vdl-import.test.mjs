@@ -225,3 +225,19 @@ test('malformed lines explain what is missing', () => {
     /\(b\)/,
   );
 });
+
+test('a part whose label was dropped between labelled parts takes the missing letter', () => {
+  const result = parseVdlLine(
+    '3 Shot Cake (a) Red Peony + Green Peony + (c) Blue Peony, 1 Row (0a500/b500/c/CAK)',
+  );
+  assert.equal(result.kind, 'cake', result.message);
+  assert.deepEqual(
+    result.cake.parts.map((part) => [part.letter, part.text]),
+    [
+      ['a', 'Red Peony'],
+      ['b', 'Green Peony'],
+      ['c', 'Blue Peony'],
+    ],
+  );
+  assert.match(result.cake.warnings.join(' '), /Part \(b\) had no label/);
+});

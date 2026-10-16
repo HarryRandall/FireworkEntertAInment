@@ -177,6 +177,8 @@ export const BUILT_IN_VDL_TERMS: Readonly<Record<string, VdlTerm>> = {
   trail: { type: 'ignore' },
   'same color': { type: 'ignore' },
   'same colour': { type: 'ignore' },
+  // Supplier lines repeat "Tip" after a tip adjective ("Very Bright Tip"); the star is already described.
+  tip: { type: 'ignore' },
   // Devices.
   shell: { type: 'device', device: 'shell' },
   aerial: { type: 'device', device: 'shell' },
@@ -214,6 +216,7 @@ export const BUILT_IN_VDL_TERMS: Readonly<Record<string, VdlTerm>> = {
   palm: effect('palm', { tail: 'comet' }),
   'palm dahlia': effect('palm', { layer: { head_size: 2 } }),
   coconut: effect('coconut'),
+  coco: effect('coconut'),
   horsetail: effect('horsetail'),
   waterfall: effect('waterfall'),
   crown: effect('brocadeCrown'),
@@ -281,6 +284,13 @@ export const BUILT_IN_VDL_TERMS: Readonly<Record<string, VdlTerm>> = {
     tail: 'crackle',
     sound: 'crackle',
   },
+  sizzle: {
+    type: 'appearance',
+    modifiers: [{ kind: 'crackle', at: 0.2, spread: 'continuous' }],
+    tail: 'crackle',
+    sound: 'crackle',
+    approximate: 'Sizzle is drawn as a fine continuous crackle.',
+  },
   'tight crackling': {
     type: 'appearance',
     modifiers: [{ kind: 'crackle', at: 0.65, count: 16, spread: 'burst' }],
@@ -324,6 +334,7 @@ export const BUILT_IN_VDL_TERMS: Readonly<Record<string, VdlTerm>> = {
   report: { type: 'appearance', modifiers: [{ kind: 'pop', at: 0.95, count: 12, amount: 2 }] },
   bees: { type: 'appearance', modifiers: [{ kind: 'bees', at: 0.2, amount: 1.8 }] },
   fish: { type: 'appearance', modifiers: [{ kind: 'fish', at: 0.3, amount: 3 }] },
+  'flying fish': { type: 'appearance', modifiers: [{ kind: 'fish', at: 0.3, amount: 3 }] },
   'no trail': { type: 'appearance', layer: { trail_sparks: 0 }, tail: 'dark' },
   dark: { type: 'appearance', layer: { brightness: 0.05 } },
   // Adjustment words. Slightly, plain and Very give levels 1, 2 and 3.

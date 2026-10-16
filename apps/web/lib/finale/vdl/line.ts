@@ -75,14 +75,27 @@ function splitTopLevel(text: string, separator: string): string[] {
   return pieces;
 }
 
-function parseParts(body: string): VdlPart[] {
+/**
+ * Reads `(a) … + (b) …`. A part whose label was dropped between two labelled parts
+ * (supplier data such as `(l) … + … + (n) …`) takes the missing letter, with a warning.
+ */
+function parseParts(body: string, warnings: string[]): VdlPart[] {
   const parts: VdlPart[] = [];
   for (const piece of splitTopLevel(body.trim(), ' + ')) {
     const match = piece.trim().match(/^\(([a-z]{1,2})\)\s+([\s\S]+)$/);
-    if (!match) throw new Error(`Could not read the part "${piece.trim().slice(0, 60)}".`);
-    if (parts.some((part) => part.letter === match[1]))
-      throw new Error(`Part (${match[1]}) appears twice.`);
-    parts.push({ letter: match[1], text: match[2].trim() });
+    const previous = parts.at(-1)?.letter;
+    const inferred =
+      !match && previous?.length === 1 && previous < 'z'
+        ? String.fromCharCode(previous.charCodeAt(0) + 1)
+        : null;
+    if (!match && !inferred)
+      throw new Error(`Could not read the part "${piece.trim().slice(0, 60)}".`);
+    const letter = match ? match[1] : (inferred ?? '');
+    const text = match ? match[2] : piece;
+    if (parts.some((part) => part.letter === letter))
+      throw new Error(`Part (${letter}) appears twice.`);
+    if (!match) warnings.push(`Part (${letter}) had no label, so it was read as (${letter}).`);
+    parts.push({ letter, text: text.trim() });
   }
   return parts;
 }
@@ -279,7 +292,7 @@ export function parseVdlLine(
     const durationS =
       durationGroup === undefined ? (options.durationS ?? null) : Number(durationGroup);
     const { partsText, firing } = splitBody(rest);
-    const parts = parseParts(partsText);
+    const parts = parseParts(partsText, warnings);
     const fanMatch = rest.match(/(\d+(?:\.\d+)?)\s+Degrees\b/i);
     const fanDegrees = fanMatch ? Number(fanMatch[1]) : DEFAULT_FAN_DEGREES;
     const exact = firing.match(/^1\s+Row\s*\(([^()]*\/CAK)\)$/i);
