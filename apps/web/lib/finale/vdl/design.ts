@@ -19,16 +19,14 @@ type TourbillonDesign = Extract<Design, { kind: 'tourbillon' }>;
 const DESIGN_VERSION = 1; // Stored renderer schema version.
 const MAX_LEVEL = 3; // Stored adjustment range, levels either side of zero.
 const DEFAULT_CALIBER_MM = 30; // Typical consumer cake shot when the line gives no caliber, millimetres.
-// The catalogue draws cake shots at template size (its 1.87" cakes keep the 60 m, ~28 m-radius
-// templates), so calibers scale gently around that rather than in literal metres per millimetre.
+// Star counts still follow the template drawn at this caliber, scaled gently.
 const TEMPLATE_CALIBER_MM = 50; // Caliber the templates are drawn at, millimetres.
-const MIN_SIZE_SCALE = 0.75; // Smallest caliber scale for tiny cakes, fraction of template.
-const MAX_SIZE_SCALE = 1.5; // Largest caliber scale for big shells, fraction of template.
-// Finale's own defaults, used only to read an edited effect as bigger or smaller than usual.
+const MIN_SIZE_SCALE = 0.75; // Smallest caliber star-count scale for tiny cakes, fraction of template.
+const MAX_SIZE_SCALE = 1.5; // Largest caliber star-count scale for big shells, fraction of template.
+// Finale 3D's physical defaults. Heights and spreads follow them literally, so a show
+// looks the same here as when its exported script is opened in Finale.
 const FINALE_RADIUS_M_PER_MM = 0.3; // Finale's default break radius per millimetre, metres.
 const FINALE_HEIGHT_M_PER_MM = 1; // Finale's default height per millimetre, metres.
-const MIN_FINALE_RATIO = 0.5; // Smallest edited-effect change applied, fraction.
-const MAX_FINALE_RATIO = 2; // Largest edited-effect change applied, fraction.
 const EXTRA_LAYER_COUNT = 0.6; // Star share for a second full-size layer, fraction.
 const PISTIL_RADIUS = 0.45; // Pistil radius relative to the outer break, fraction.
 const PISTIL_COUNT = 0.4; // Pistil star count relative to the outer break, fraction.
@@ -90,9 +88,14 @@ function sizeScale(caliberMm: number): number {
 }
 
 /** How much an edited Finale value differs from Finale's default for the caliber. */
-function finaleRatio(value: number | null | undefined, defaultValue: number): number {
-  if (!value || defaultValue <= 0) return 1;
-  return clamp(value / defaultValue, MIN_FINALE_RATIO, MAX_FINALE_RATIO);
+/** Finale's literal height (HTM, or the encoded height), else its default for the caliber, metres. */
+function finaleHeightM(mm: number, htm: number | null | undefined): number {
+  return htm ?? mm * FINALE_HEIGHT_M_PER_MM;
+}
+
+/** Largest break radius in a design, metres. */
+function outerRadiusM(design: BreakDesign): number {
+  return Math.max(...design.breaks.flatMap((burst) => burst.layers.map((layer) => layer.radius_m)));
 }
 
 function round(value: number, places = 2): number {
@@ -406,8 +409,8 @@ function shellFirework(
   const mm = caliber(context, segments[0]);
   const encoded = context.encoded;
   const scale = sizeScale(mm);
-  const radiusRatio = finaleRatio(encoded?.breakRadiusM, mm * FINALE_RADIUS_M_PER_MM);
-  scaleLayers(design, scale * radiusRatio, scale);
+  const radius = encoded?.breakRadiusM ?? mm * FINALE_RADIUS_M_PER_MM;
+  scaleLayers(design, radius / outerRadiusM(design), scale);
   if (encoded?.breakRadiusM)
     for (const key of [...levels.keys()]) if (key.endsWith('.size')) levels.delete(key);
   // Finale's star time for edited effects is a literal burn that looks far too short at
@@ -416,14 +419,12 @@ function shellFirework(
     setLife(design, numbers.DUR);
     for (const key of [...levels.keys()]) if (key.endsWith('.burn')) levels.delete(key);
   }
-  // HTM and LFT are Finale's literal metres and seconds, read relative to Finale's defaults.
+  // HTM and LFT are Finale's literal metres and seconds.
   const templateHeight = design.launch.height_m;
-  const finaleHeight = numbers.HTM ?? encoded?.heightM ?? null;
-  const finaleDefault = mm * FINALE_HEIGHT_M_PER_MM;
-  const height = round(templateHeight * scale * finaleRatio(finaleHeight, finaleDefault), 1);
+  const height = round(finaleHeightM(mm, numbers.HTM ?? encoded?.heightM), 1);
   const finaleLift = numbers.LFT ?? encoded?.liftS;
   design.launch.time_s = finaleLift
-    ? round(finaleLift * Math.sqrt(height / (finaleHeight ?? finaleDefault)), 3)
+    ? round(finaleLift, 3)
     : liftTime(templateHeight, design.launch.time_s, height);
   design.launch.height_m = height;
   const text = [...segments, ...tailSegments].map((segment) => segment.text).join(' w/ ');
@@ -464,10 +465,9 @@ function mineFirework(
     design.sound.crackle = CRACKLE_SOUND;
   const mm = caliber(context, segment);
   const scale = sizeScale(mm);
-  const templateReach = design.breaks[0].layers[0].radius_m;
-  const radiusScale = scale * finaleRatio(segment.numbers.HTM, mm * FINALE_HEIGHT_M_PER_MM);
-  scaleLayers(design, radiusScale, scale);
-  const reach = round(templateReach * radiusScale, 1);
+  // A mine's stars reach its height, so its spread is Finale's literal height.
+  const reach = round(finaleHeightM(mm, segment.numbers.HTM), 1);
+  scaleLayers(design, reach / outerRadiusM(design), scale);
   if (segment.numbers.DUR !== undefined) setLife(design, segment.numbers.DUR);
   context.approximations.push('Mine height is approximated from the spread of its stars.');
   design.seed = seed(segment.text);
@@ -528,10 +528,7 @@ function cometFirework(
     }
   if (phases.some((phase) => phase.sounds.has('whistle'))) design.sound.whistle = WHISTLE_SOUND;
   const mm = caliber(context, segment);
-  const height = round(
-    comets.height_m * sizeScale(mm) * finaleRatio(segment.numbers.HTM, mm * FINALE_HEIGHT_M_PER_MM),
-    1,
-  );
+  const height = round(finaleHeightM(mm, segment.numbers.HTM), 1);
   comets.time_s = segment.numbers.DUR ?? liftTime(comets.height_m, comets.time_s, height);
   comets.height_m = height;
   design.seed = seed(segment.text);
@@ -552,12 +549,7 @@ function tourbillonFirework(
   const design = template('tourbillon') as TourbillonDesign;
   const tourbillon = design.ground.tourbillon;
   const mm = caliber(context, segment);
-  const height = round(
-    tourbillon.height_m *
-      sizeScale(mm) *
-      finaleRatio(segment.numbers.HTM, mm * FINALE_HEIGHT_M_PER_MM),
-    1,
-  );
+  const height = round(finaleHeightM(mm, segment.numbers.HTM), 1);
   tourbillon.time_s =
     segment.numbers.DUR ?? liftTime(tourbillon.height_m, tourbillon.time_s, height);
   tourbillon.height_m = height;
@@ -596,6 +588,18 @@ export function buildVdlFireworks(
     else others.push({ segment, family });
   });
   const fireworks: Omit<VdlFireworkPlan, 'templateName'>[] = [];
+  // "… Mine To … Shell" fires a ground mine with the shell rising through it; Finale
+  // draws both, so the mine phase becomes its own mine as well as the shell's lift.
+  for (const segment of shellSegments) {
+    const { rising } = phasesOf(segment);
+    if (rising[0]?.devices.has('mine'))
+      fireworks.push(
+        mineFirework(
+          { ...segment, text: segment.text.split(/\s+to\s+/i)[0], phases: rising },
+          context,
+        ),
+      );
+  }
   if (shellSegments.length) fireworks.push(shellFirework(shellSegments, tailSegments, context));
   else if (tailSegments.length)
     context.approximations.push('A tail without a shell or comet is not drawn.');

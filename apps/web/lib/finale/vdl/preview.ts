@@ -84,9 +84,14 @@ function packTracks(shots: VdlPreviewShot[], fireworks: Record<string, VdlPrevie
 /** Parses the line, builds a design per part and binds each to an existing firework of the same name. */
 export function previewVdlCake(
   text: string,
-  options: { glossary: VdlGlossary; existing: readonly VdlExistingFirework[] },
+  options: {
+    glossary: VdlGlossary;
+    existing: readonly VdlExistingFirework[];
+    /** The product's first-to-last launch time, for lines that give none. */
+    durationS?: number | null;
+  },
 ): VdlPreviewResult {
-  const line = parseVdlLine(text);
+  const line = parseVdlLine(text, { durationS: options.durationS });
   if (line.kind === 'error') return line;
   const { cake } = line;
   const existing = new Map<string, VdlExistingFirework>();
