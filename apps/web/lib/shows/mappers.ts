@@ -108,7 +108,7 @@ export function mapCatalogueFireworkCard(
   const caliber = shotCaliber ?? row.caliber;
   const stored = readShowDesign(row.design, row.design_schema);
   const duration = stored.ok
-    ? shotDuration(resolvedShowDesign({ design: stored.design, caliber }))
+    ? shotDuration(resolvedShowDesign({ design: stored.design }))
     : row.duration_seconds;
 
   return {
@@ -119,7 +119,7 @@ export function mapCatalogueFireworkCard(
     sortOrder: index,
     durationSeconds: duration,
     occupancyDurationSeconds: stored.ok
-      ? shotDuration(resolvedShowDesign({ design: stored.design, caliber }, 'peak'))
+      ? shotDuration(resolvedShowDesign({ design: stored.design }, 'peak'))
       : duration,
     design: stored.ok ? stored.design : null,
     kind: stored.ok ? stored.design.kind : null,
@@ -160,7 +160,7 @@ export function mapFireworkVariantSpecification(
   const caliber = shotCaliber ?? row.caliber;
   const stored = readShowDesign(row.design, row.design_schema);
   const duration = stored.ok
-    ? shotDuration(resolvedShowDesign({ design: stored.design, caliber }))
+    ? shotDuration(resolvedShowDesign({ design: stored.design }))
     : row.duration_seconds;
   const renderResult =
     row.render_snapshot_json == null
@@ -175,7 +175,7 @@ export function mapFireworkVariantSpecification(
     sortOrder: index,
     durationSeconds: duration,
     occupancyDurationSeconds: stored.ok
-      ? shotDuration(resolvedShowDesign({ design: stored.design, caliber }, 'peak'))
+      ? shotDuration(resolvedShowDesign({ design: stored.design }, 'peak'))
       : duration,
     design: stored.ok ? stored.design : null,
     kind: stored.ok ? stored.design.kind : null,

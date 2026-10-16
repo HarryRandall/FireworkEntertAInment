@@ -75,14 +75,27 @@ function splitTopLevel(text: string, separator: string): string[] {
   return pieces;
 }
 
-function parseParts(body: string): VdlPart[] {
+/**
+ * Reads `(a) … + (b) …`. A part whose label was dropped between two labelled parts
+ * (supplier data such as `(l) … + … + (n) …`) takes the missing letter, with a warning.
+ */
+function parseParts(body: string, warnings: string[]): VdlPart[] {
   const parts: VdlPart[] = [];
   for (const piece of splitTopLevel(body.trim(), ' + ')) {
     const match = piece.trim().match(/^\(([a-z]{1,2})\)\s+([\s\S]+)$/);
-    if (!match) throw new Error(`Could not read the part "${piece.trim().slice(0, 60)}".`);
-    if (parts.some((part) => part.letter === match[1]))
-      throw new Error(`Part (${match[1]}) appears twice.`);
-    parts.push({ letter: match[1], text: match[2].trim() });
+    const previous = parts.at(-1)?.letter;
+    const inferred =
+      !match && previous?.length === 1 && previous < 'z'
+        ? String.fromCharCode(previous.charCodeAt(0) + 1)
+        : null;
+    if (!match && !inferred)
+      throw new Error(`Could not read the part "${piece.trim().slice(0, 60)}".`);
+    const letter = match ? match[1] : (inferred ?? '');
+    const text = match ? match[2] : piece;
+    if (parts.some((part) => part.letter === letter))
+      throw new Error(`Part (${letter}) appears twice.`);
+    if (!match) warnings.push(`Part (${letter}) had no label, so it was read as (${letter}).`);
+    parts.push({ letter, text: text.trim() });
   }
   return parts;
 }
@@ -199,21 +212,27 @@ function rowAngles(
   }
 }
 
-function rowTubes(specs: VdlRow[], fanDegrees: number, warnings: string[]): VdlTube[] {
+/**
+ * Lays rows out with every unspecified gap (spacing inside a row with no duration,
+ * and the step into a row with no delay) set to `freeMs`; explicit delays and
+ * durations are kept as written.
+ */
+function layoutRows(specs: VdlRow[], fanDegrees: number, freeMs: number, warnings: string[]) {
   const tubes: VdlTube[] = [];
   let previousStartMs = 0;
   let previousEndMs = 0;
   for (const [index, spec] of specs.entries()) {
     // Finale ignores the leading delay of the first row.
     const delayMs = index === 0 ? 0 : Math.round(spec.delayS * MILLISECONDS_PER_SECOND);
-    const startMs = (spec.parallel ? previousStartMs : previousEndMs) + delayMs;
+    const stepMs = index > 0 && !spec.parallel && delayMs === 0 ? freeMs : delayMs;
+    const startMs = (spec.parallel ? previousStartMs : previousEndMs) + stepMs;
     const together = spec.pattern.endsWith('T');
     const count = spec.labels.length;
     const spanMs =
       together || count < 2
         ? 0
         : spec.durationS === null
-          ? DEFAULT_SPACING_MS * (count - 1)
+          ? freeMs * (count - 1)
           : Math.round(spec.durationS * MILLISECONDS_PER_SECOND);
     const angles = rowAngles(spec.pattern, count, fanDegrees, warnings);
     spec.labels.forEach((letter, shot) => {
@@ -231,8 +250,37 @@ function rowTubes(specs: VdlRow[], fanDegrees: number, warnings: string[]): VdlT
   return tubes.sort((a, b) => a.timeMs - b.timeMs);
 }
 
-/** Parses the header, lettered parts and either exact tube syntax or Finale row syntax. */
-export function parseVdlLine(text: string): VdlLineResult {
+/**
+ * Finale sets every unspecified delay equal, filling the cake's first-to-last launch
+ * time when it is known; otherwise unspecified gaps default to 0.5 s.
+ */
+function rowTubes(
+  specs: VdlRow[],
+  fanDegrees: number,
+  durationS: number | null,
+  warnings: string[],
+): VdlTube[] {
+  const lastMs = (freeMs: number) => layoutRows(specs, fanDegrees, freeMs, []).at(-1)?.timeMs ?? 0;
+  // The last launch is linear in the free gap: fixed + count × free.
+  const fixedMs = lastMs(0);
+  const freeGaps = (lastMs(MILLISECONDS_PER_SECOND) - fixedMs) / MILLISECONDS_PER_SECOND;
+  const targetMs = durationS === null ? null : durationS * MILLISECONDS_PER_SECOND;
+  const freeMs =
+    targetMs !== null && freeGaps > 0 && targetMs > fixedMs
+      ? (targetMs - fixedMs) / freeGaps
+      : DEFAULT_SPACING_MS;
+  return layoutRows(specs, fanDegrees, freeMs, warnings);
+}
+
+/**
+ * Parses the header, lettered parts and either exact tube syntax or Finale row syntax.
+ * `durationS` (the product's first-to-last launch time) and `caliberText` fill in
+ * when the line's header gives none, as Finale reads them from the product row.
+ */
+export function parseVdlLine(
+  text: string,
+  options: { durationS?: number | null; caliberText?: string | null } = {},
+): VdlLineResult {
   try {
     const line = text.replace(/^﻿/, '').replace(/\s+/g, ' ').trim();
     if (line === '') throw new Error('Paste one VDL cake line.');
@@ -242,16 +290,17 @@ export function parseVdlLine(text: string): VdlLineResult {
     const [, caliberGroup, pftGroup, countGroup, durationGroup, rest] = match;
     const warnings: string[] = [];
     const shotCount = Number(countGroup);
-    const durationS = durationGroup === undefined ? null : Number(durationGroup);
+    const durationS =
+      durationGroup === undefined ? (options.durationS ?? null) : Number(durationGroup);
     const { partsText, firing } = splitBody(rest);
-    const parts = parseParts(partsText);
+    const parts = parseParts(partsText, warnings);
     const fanMatch = rest.match(/(\d+(?:\.\d+)?)\s+Degrees\b/i);
     const fanDegrees = fanMatch ? Number(fanMatch[1]) : DEFAULT_FAN_DEGREES;
     const exact = firing.match(/^1\s+Row\s*\(([^()]*\/CAK)\)$/i);
     const rows = exact ? null : parseRowSpecs(firing);
     const tubes = exact
       ? exactTubes(exact[1], durationS, warnings)
-      : rowTubes(rows ?? [], fanDegrees, warnings);
+      : rowTubes(rows ?? [], fanDegrees, durationS, warnings);
     if (tubes.length === 0 || tubes.length > MAX_TUBES)
       throw new Error(`A multishot needs between 1 and ${MAX_TUBES} shots.`);
     if (tubes.length !== shotCount)
@@ -264,7 +313,7 @@ export function parseVdlLine(text: string): VdlLineResult {
       throw new Error(
         `No description for part ${missing.map((letter) => `(${letter})`).join(', ')}.`,
       );
-    const caliberText = caliberGroup ?? null;
+    const caliberText = caliberGroup ?? options.caliberText ?? null;
     return {
       kind: 'cake',
       cake: {

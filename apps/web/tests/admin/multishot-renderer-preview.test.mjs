@@ -115,13 +115,19 @@ test('active preview surfaces all load the stored-design adapter', () => {
   }
 });
 
-test('whole-show playback starts at the normal zoom-out cap while product previews stay framed', () => {
+test("the show preview opens on Finale 3D's front camera so it can be compared 1-1", () => {
+  assert.match(
+    readFileSync('ui/replay/FireworkReplayViewer.tsx', 'utf8'),
+    /startDistance="finale"/,
+  );
+});
+
+test('other whole-show playback starts at the normal zoom-out cap while product previews stay framed', () => {
   const wholeShowSurfaces = [
     'app/(app)/shows/_components/ShowReplayPreviewContext.tsx',
     'app/(admin)/admin/multishots/[id]/_components/MultishotPreviewStage.tsx',
     'app/(admin)/admin/show-presets/[id]/_components/ShowPresetEditor.tsx',
     'ui/marketing/landing/ShowPreviewPanel.tsx',
-    'ui/replay/FireworkReplayViewer.tsx',
     'ui/replay/ReplayPanelLoadingStage.tsx',
     'ui/replay/TemplateReplayPreview.tsx',
   ];
@@ -130,7 +136,7 @@ test('whole-show playback starts at the normal zoom-out cap while product previe
 
   const canvas = readFileSync('ui/replay/ShowRendererCanvas.tsx', 'utf8');
   assert.match(canvas, /startDistance: props\.startDistance/);
-  assert.match(canvas, /startDistance\?: 'framed' \| 'farthest'/);
+  assert.match(canvas, /startDistance\?: 'framed' \| 'farthest' \| 'finale'/);
   assert.doesNotMatch(
     readFileSync('ui/catalogue/FireworkBrowsePreviewContext.tsx', 'utf8'),
     /startDistance=/,

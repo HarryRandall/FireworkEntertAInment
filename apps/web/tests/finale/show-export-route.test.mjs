@@ -4,6 +4,8 @@ import { readFileSync } from 'node:fs';
 import { stripTypeScriptTypes } from 'node:module';
 import { buildFinale3dCsv, finaleExportWarning } from '../../lib/finale3d.ts';
 import { readCsv } from '../../lib/finale/csv.ts';
+await import('../../../../scripts/renderer/register-typescript.mjs');
+const { finaleCoordinates, finalePlacements } = await import('../../lib/shows/finale-placement.ts');
 
 // Execute the actual route with request/session/database boundaries replaced;
 // no database or network connection is created by this harness.
@@ -19,6 +21,8 @@ const routeFactory = new Function(
   'getShowBySlug',
   'buildFinale3dCsv',
   'finaleExportWarning',
+  'finaleCoordinates',
+  'finalePlacements',
   `${source}\nreturn GET;`,
 );
 const products = Array.from({ length: 501 }, (_, index) => ({
@@ -32,9 +36,19 @@ const products = Array.from({ length: 501 }, (_, index) => ({
   duration_seconds: 5,
   description: null,
   fireworks: { caliber: '30mm' },
-  multishots: null,
+  // Product 1 is a two-shot cake whose last shot fires 2.5 s after its first.
+  multishots:
+    index === 1
+      ? {
+          multishot_fireworks: [
+            { sequence_index: 1, caliber: null, time_offset_seconds: 0 },
+            { sequence_index: 2, caliber: null, time_offset_seconds: 2.5 },
+          ],
+        }
+      : null,
 }));
 const cues = Array.from({ length: 1250 }, (_, index) => ({
+  id: `cue-${index}`,
   time_seconds: index / 10,
   catalogue_item_id: products[index % products.length].id,
   launch_position_index: index % 3,
@@ -94,9 +108,19 @@ function route({ failCuesAfter = Infinity, failCatalogue = false, missingProduct
       async () => ({}),
       Response,
       () => client,
-      async () => ({ id: 'show', title: 'Sample show' }),
+      async () => ({
+        id: 'show',
+        title: 'Sample show',
+        launchPositions: [
+          { x: -200, y: 0, z: 0 },
+          { x: 0, y: 0, z: 0 },
+          { x: 200, y: 0, z: 0 },
+        ],
+      }),
       buildFinale3dCsv,
       finaleExportWarning,
+      finaleCoordinates,
+      finalePlacements,
     ),
     reads,
   };
@@ -125,6 +149,18 @@ test('actual route warns for all unmatched cues beyond one API page, then export
   assert.equal(rows[2][21], '');
   assert.equal(rows[2][20], 'No Finale 3D equivalent');
   assert.equal(rows.at(-1)[2], cues.at(-1).time_seconds.toFixed(3));
+  // A cake's Duration is its first-to-last launch, which Finale spreads untimed rows over.
+  assert.equal(rows[2][4], '2.5');
+  assert.equal(rows[1][4], '5');
+  // Rows carry the replay's spread racks in metres; the cake sits in its slot in front.
+  assert.deepEqual(
+    rows.slice(1, 4).map((row) => [row[14], row[5]]),
+    [
+      ['P-01', '-35.00 0.00 0.00'],
+      ['P-02 C1', '0.00 0.00 6.00'],
+      ['P-03', '35.00 0.00 0.00'],
+    ],
+  );
 });
 
 test('actual route rejects failed later cue pages, catalogue reads and unresolved references', async () => {

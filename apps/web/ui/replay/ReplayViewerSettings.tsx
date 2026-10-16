@@ -12,6 +12,7 @@ import { Switch } from '@/ui/primitives/switch';
 const OPTIONS = [
   ['smoke', 'Smoke'],
   ['ground', 'Ground lattice'],
+  ['dusk', 'Finale dusk sky'],
   ['shake', 'Camera shake'],
   ['stats', 'Frame rate stats'],
   ['free', 'Free camera'],

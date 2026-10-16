@@ -60,3 +60,49 @@ test('a multishot mapping is decided solely by its own catalogue product', () =>
   );
   assert.equal(finaleExportWarning([matchedParent]), null);
 });
+
+test('placements reproduce the replay site: spread racks, cake slots and outward leans', async () => {
+  await import('../../../../scripts/renderer/register-typescript.mjs');
+  const { finalePlacements, finaleCoordinates } =
+    await import('../../lib/shows/finale-placement.ts');
+  const { MIN_LAUNCH_POSITION_GAP_M, SHOW_OUTER_LEAN_DEGREES } =
+    await import('../../lib/shows/renderer-shots.ts');
+  const positions = [
+    { x: -200, y: 0, z: 0 },
+    { x: 0, y: 0, z: 0 },
+    { x: 200, y: 0, z: 0 },
+  ];
+  const placements = finalePlacements(
+    [
+      { id: 'shell-left', launchPositionIndex: 0, isCake: false, leansOnRack: true },
+      { id: 'cake', launchPositionIndex: 1, isCake: true, leansOnRack: false },
+      { id: 'shell-right', launchPositionIndex: 2, isCake: false, leansOnRack: true },
+      { id: 'shell-centre', launchPositionIndex: 1, isCake: false, leansOnRack: true },
+    ],
+    positions,
+  );
+  const left = placements.get('shell-left');
+  const right = placements.get('shell-right');
+  assert.equal(left.positionName, 'P-01');
+  assert.equal(right.coordinates[0] - left.coordinates[0], 2 * MIN_LAUNCH_POSITION_GAP_M);
+  assert.equal(left.leanDeg, -SHOW_OUTER_LEAN_DEGREES);
+  assert.equal(placements.get('shell-centre').leanDeg, 0);
+  const cake = placements.get('cake');
+  assert.equal(cake.positionName, 'P-02 C1');
+  assert.ok(cake.coordinates[2] > 0, 'cakes sit in front of their rack, towards the audience');
+  assert.equal(finaleCoordinates(placements.get('shell-centre')), '0.00 0.00 0.00');
+  assert.equal(
+    finaleCoordinates(right),
+    `${MIN_LAUNCH_POSITION_GAP_M.toFixed(2)} 0.00 0.00 0 0 0 90.00 ${SHOW_OUTER_LEAN_DEGREES.toFixed(2)} -90.00`,
+  );
+});
+
+test('rows with a placement export its position name and coordinates', () => {
+  const rows = readCsv(
+    buildFinale3dCsv([
+      cue({ placement: { positionName: 'P-02 C1', coordinates: '0.00 0.00 6.00' } }),
+    ]),
+  );
+  assert.equal(rows[1][14], 'P-02 C1');
+  assert.equal(rows[1][5], '0.00 0.00 6.00');
+});

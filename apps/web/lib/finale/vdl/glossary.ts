@@ -177,6 +177,8 @@ export const BUILT_IN_VDL_TERMS: Readonly<Record<string, VdlTerm>> = {
   trail: { type: 'ignore' },
   'same color': { type: 'ignore' },
   'same colour': { type: 'ignore' },
+  // Supplier lines repeat "Tip" after a tip adjective ("Very Bright Tip"); the star is already described.
+  tip: { type: 'ignore' },
   // Devices.
   shell: { type: 'device', device: 'shell' },
   aerial: { type: 'device', device: 'shell' },
@@ -214,6 +216,7 @@ export const BUILT_IN_VDL_TERMS: Readonly<Record<string, VdlTerm>> = {
   palm: effect('palm', { tail: 'comet' }),
   'palm dahlia': effect('palm', { layer: { head_size: 2 } }),
   coconut: effect('coconut'),
+  coco: effect('coconut'),
   horsetail: effect('horsetail'),
   waterfall: effect('waterfall'),
   crown: effect('brocadeCrown'),
@@ -239,14 +242,16 @@ export const BUILT_IN_VDL_TERMS: Readonly<Record<string, VdlTerm>> = {
     approximate: 'Lace is approximated with small twinkling stars.',
   }),
   cycas: effect('palm', { approximate: 'Cycas is drawn as a palm.' }),
-  'go getter': effect('mine', {
-    family: 'mine',
-    modifiers: [{ kind: 'bees', at: 0.2, amount: 1.8 }],
-    approximate: 'Go getters are drawn as darting mine stars.',
+  // Finale draws each go getter as one bright self-propelled star climbing from the tube.
+  'go getter': effect('whiteComet', {
+    family: 'comet',
+    layer: { trail_sparks: 0 },
+    approximate: 'Go getters are drawn as single climbing stars without their wander.',
   }),
-  'go getters': effect('mine', {
-    family: 'mine',
-    modifiers: [{ kind: 'bees', at: 0.2, amount: 1.8 }],
+  'go getters': effect('whiteComet', {
+    family: 'comet',
+    layer: { trail_sparks: 0 },
+    approximate: 'Go getters are drawn as single climbing stars without their wander.',
   }),
   whistles: effect('whistleCake', { family: 'comet', tail: 'whistle' }),
   whistle: effect('whistleCake', { family: 'comet', tail: 'whistle' }),
@@ -280,6 +285,13 @@ export const BUILT_IN_VDL_TERMS: Readonly<Record<string, VdlTerm>> = {
     modifiers: [{ kind: 'crackle', at: 0.2, spread: 'continuous' }],
     tail: 'crackle',
     sound: 'crackle',
+  },
+  sizzle: {
+    type: 'appearance',
+    modifiers: [{ kind: 'crackle', at: 0.2, spread: 'continuous' }],
+    tail: 'crackle',
+    sound: 'crackle',
+    approximate: 'Sizzle is drawn as a fine continuous crackle.',
   },
   'tight crackling': {
     type: 'appearance',
@@ -324,6 +336,7 @@ export const BUILT_IN_VDL_TERMS: Readonly<Record<string, VdlTerm>> = {
   report: { type: 'appearance', modifiers: [{ kind: 'pop', at: 0.95, count: 12, amount: 2 }] },
   bees: { type: 'appearance', modifiers: [{ kind: 'bees', at: 0.2, amount: 1.8 }] },
   fish: { type: 'appearance', modifiers: [{ kind: 'fish', at: 0.3, amount: 3 }] },
+  'flying fish': { type: 'appearance', modifiers: [{ kind: 'fish', at: 0.3, amount: 3 }] },
   'no trail': { type: 'appearance', layer: { trail_sparks: 0 }, tail: 'dark' },
   dark: { type: 'appearance', layer: { brightness: 0.05 } },
   // Adjustment words. Slightly, plain and Very give levels 1, 2 and 3.
@@ -387,8 +400,10 @@ export const BUILT_IN_VDL_TERMS: Readonly<Record<string, VdlTerm>> = {
   'pastel colours': colour(AQUA, FRESH_YELLOW, LIME, ORANGE, LAVENDER),
   // Spark colours set the trail and, with no other colour, the stars.
   silver: { type: 'trail-colour', colour: '#ffffff', star: '#eef2ff', tail: 'silver' },
-  gold: { type: 'trail-colour', colour: '#ffc66a', star: '#ffd27a', tail: 'gold' },
-  charcoal: { type: 'trail-colour', colour: '#c8501a', star: '#ff9a4a', tail: 'willow' },
+  // Finale's gold sparks read cream-white at their heads with a pale gold streak.
+  gold: { type: 'trail-colour', colour: '#ffdc9a', star: '#fff0cc', tail: 'gold' },
+  // Finale draws charcoal as pale gold sparks over an amber trail, not the orange of its Tip colour.
+  charcoal: { type: 'trail-colour', colour: '#ff9c40', star: '#ffd28a', tail: 'willow' },
   gamboge: { type: 'trail-colour', colour: '#ff5a0d', star: '#ff8a3a', tail: 'gold' },
   'gold tip': { type: 'tip', colour: '#ffd27a' },
   'silver tip': { type: 'tip', colour: '#eef2ff' },

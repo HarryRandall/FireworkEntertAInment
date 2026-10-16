@@ -26,6 +26,8 @@ export type Finale3dCueInput = {
   /** Tube the cue fires from; maps deterministically to a Finale position name. */
   launchPositionIndex: number;
   sourcePayload: Json | null;
+  /** Drawn site placement; when absent the row falls back to P-01..P-03 with no coordinates. */
+  placement?: { positionName: string; coordinates: string };
 };
 
 const POSITIONS = ['P-01', 'P-02', 'P-03'] as const;
@@ -93,14 +95,14 @@ export function buildFinale3dCsv(cues: Finale3dCueInput[]): string {
       Number.isInteger(cue.launchPositionIndex) && cue.launchPositionIndex >= 0
         ? cue.launchPositionIndex % POSITIONS.length
         : 0;
-    const pos = POSITIONS[positionIndex];
+    const pos = cue.placement?.positionName ?? POSITIONS[positionIndex];
     const row = [
       'FIRING_DATA_ROW',
       '',
       cue.timeSeconds.toFixed(3),
       '1',
       p.duration ?? '',
-      '',
+      cue.placement?.coordinates ?? '',
       '',
       '',
       '0.0',

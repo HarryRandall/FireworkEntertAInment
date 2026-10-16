@@ -19,17 +19,56 @@ type TourbillonDesign = Extract<Design, { kind: 'tourbillon' }>;
 const DESIGN_VERSION = 1; // Stored renderer schema version.
 const MAX_LEVEL = 3; // Stored adjustment range, levels either side of zero.
 const DEFAULT_CALIBER_MM = 30; // Typical consumer cake shot when the line gives no caliber, millimetres.
-// The catalogue draws cake shots at template size (its 1.87" cakes keep the 60 m, ~28 m-radius
-// templates), so calibers scale gently around that rather than in literal metres per millimetre.
-const TEMPLATE_CALIBER_MM = 50; // Caliber the templates are drawn at, millimetres.
-const MIN_SIZE_SCALE = 0.75; // Smallest caliber scale for tiny cakes, fraction of template.
-const MAX_SIZE_SCALE = 1.5; // Largest caliber scale for big shells, fraction of template.
-// Finale's own defaults, used only to read an edited effect as bigger or smaller than usual.
-const FINALE_RADIUS_M_PER_MM = 0.3; // Finale's default break radius per millimetre, metres.
+// Finale 3D's physical defaults. Heights and spreads follow them literally, so a show
+// looks the same here as when its exported script is opened in Finale.
+// Measured against Finale 3D: a 30 mm "Small" charcoal willow spans about 34 m, so the
+// unadjusted break is roughly 0.6 m of radius per millimetre of caliber.
+const FINALE_RADIUS_M_PER_MM = 0.6; // Finale's default break radius per millimetre, metres.
 const FINALE_HEIGHT_M_PER_MM = 1; // Finale's default height per millimetre, metres.
-const MIN_FINALE_RATIO = 0.5; // Smallest edited-effect change applied, fraction.
-const MAX_FINALE_RATIO = 2; // Largest edited-effect change applied, fraction.
-const EXTRA_LAYER_COUNT = 0.6; // Star share for a second full-size layer, fraction.
+// Finale's 30 m cake shells break 1.75 to 1.95 s after firing; lift follows the square root of height.
+const FINALE_LIFT_S_PER_ROOT_M = 0.34; // Lift seconds per square-root metre of height.
+// Finale counts about 36 stars in a plain 30 mm break; Dense/Sparse levels scale from there.
+const FINALE_STARS_PER_MM = 1.2; // Main-layer stars per millimetre of caliber.
+// DUR is Finale's burn before the fade: a 0.8 DUR gold peony is bright at 0.85 s and gone by 1.25 s.
+const FINALE_BURN_TO_LIFE = 1.4; // Star life as a multiple of the DUR burn.
+// Gold, silver and charcoal stars leave a short trail of sparks in Finale.
+const FINALE_SPARK_TRAIL_S = 0.6; // Trail length for spark-trailing star colours, seconds.
+const FINALE_SPARK_TRAIL_SPARKS = 60; // Spark density on those trails, which Finale draws as streaks.
+const FINALE_SPARK_HEAD_SIZE = 0.35; // Head size on spark-trailing stars; the streak dominates.
+// Brocade and kamuro are drawn by their glittering trails: Finale shows short-lived stars
+// trailing dense, drooping gold streaks that are gone about 2.4 s after the break.
+const TRAIL_LED_TEMPLATES = new Set(['brocade', 'kamuro', 'brocadeCrown', 'glitterWillow']);
+const TRAIL_LED_LIFE_S = 1.4; // Star burn for trail-led effects, seconds.
+const TRAIL_LED_TRAIL_S = 1; // Trail length for trail-led effects, seconds.
+const TRAIL_LED_SPARKS = 90; // Trail spark density for trail-led effects.
+const TRAIL_LED_GRAVITY = 7; // Droop for trail-led effects, metres per second squared.
+const TRAIL_LED_GLITTER = 0.3; // Most trail blinking; Finale's brocade streaks read continuous.
+const TRAIL_LED_COLOUR = '#ffdc9a'; // Finale's pale gold brocade streak, matching its gold sparks.
+// The mine under a "Mine To … Shell" part reaches about 0.6 of the shell height in Finale
+// (18 m under a 30 m shell), with a sparse fan of thin streaks.
+const MINE_TO_SHELL_REACH = 0.6; // Mine reach as a fraction of the shell height.
+const MINE_TO_SHELL_STARS = 40; // Streaks in that mine's fan.
+const FINALE_MINE_REACH_M_PER_MM = 0.45; // Plain mine height per millimetre of caliber, metres.
+const FINALE_MINE_STARS_PER_MM = 0.4; // Plain mine stars per millimetre of caliber.
+const MINE_TO_SHELL_TRAIL_S = 1.5; // Trail length on those stars, seconds.
+// Strong drag and light gravity let the streaks travel close to their reach before they
+// fade, as Finale's straight mine fans do; plain gravity pulled them back to the ground.
+const MINE_TO_SHELL_GRAVITY = 4; // Gravity on those stars, metres per second squared.
+const MINE_TO_SHELL_DRAG = 1.5; // Drag on those stars, per second.
+const MINE_TO_SHELL_RADIUS = 1.1; // Star radius relative to the reach, offsetting the residual fall.
+const EXTRA_LAYER_COUNT = 0.6; // Star share for a second layer, fraction.
+// Finale draws a "w/ … Shell" companion at full size; its own adjectives (Small, Big) scale it.
+const EXTRA_LAYER_RADIUS = 1; // Companion layer radius relative to the main break, fraction.
+const COMPANION_HEAD_SIZE = 0.5; // Largest companion star head; Finale's colour pips are fine points.
+// Finale's default star burn and trail time (before Long/Short levels): its shells
+// fade within about two seconds, measured against charcoal willow and gold peony cakes.
+const FINALE_STAR_LIFE_S = 2; // Default star burn, seconds.
+const FINALE_TRAIL_S = 1; // Longest default spark trail, seconds.
+const FINALE_TRAIL_SPARKS = 36; // Densest default spark trail, sparks; Finale trails are thin lines.
+// Finale's breaks open to nearly full size within half a second, then barely droop over
+// the two-second burn: quick drag, light gravity.
+const FINALE_STAR_DRAG_PER_S = 3; // Default star drag, per second.
+const FINALE_STAR_GRAVITY = 4; // Largest default star gravity, metres per second squared.
 const PISTIL_RADIUS = 0.45; // Pistil radius relative to the outer break, fraction.
 const PISTIL_COUNT = 0.4; // Pistil star count relative to the outer break, fraction.
 const PISTIL_LIFE = 0.85; // Pistil burn time relative to the outer break, fraction.
@@ -80,19 +119,16 @@ function caliber(context: Context, segment?: VdlSegment): number {
   );
 }
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
-
 /** Size relative to the template: area-like growth with caliber, kept near template size. */
-function sizeScale(caliberMm: number): number {
-  return clamp(Math.sqrt(caliberMm / TEMPLATE_CALIBER_MM), MIN_SIZE_SCALE, MAX_SIZE_SCALE);
+/** How much an edited Finale value differs from Finale's default for the caliber. */
+/** Finale's literal height (HTM, or the encoded height), else its default for the caliber, metres. */
+function finaleHeightM(mm: number, htm: number | null | undefined): number {
+  return htm ?? mm * FINALE_HEIGHT_M_PER_MM;
 }
 
-/** How much an edited Finale value differs from Finale's default for the caliber. */
-function finaleRatio(value: number | null | undefined, defaultValue: number): number {
-  if (!value || defaultValue <= 0) return 1;
-  return clamp(value / defaultValue, MIN_FINALE_RATIO, MAX_FINALE_RATIO);
+/** Largest break radius in a design, metres. */
+function outerRadiusM(design: BreakDesign): number {
+  return Math.max(...design.breaks.flatMap((burst) => burst.layers.map((layer) => layer.radius_m)));
 }
 
 function round(value: number, places = 2): number {
@@ -226,7 +262,13 @@ function dressLayer(
         [1, [NEUTRAL_STAR]],
       ],
     };
-  if (starColour) layer.trail.colour = starColour.colour;
+  if (starColour)
+    Object.assign(layer.trail, {
+      colour: starColour.colour,
+      sparks: Math.max(layer.trail.sparks, FINALE_SPARK_TRAIL_SPARKS),
+      length_s: Math.max(layer.trail.length_s, FINALE_SPARK_TRAIL_S),
+    });
+  if (starColour) layer.head.size = Math.min(layer.head.size, FINALE_SPARK_HEAD_SIZE);
   if (tip) layer.trail.sparks = 0;
   phases.forEach((phase, index) => {
     phase.patches.forEach((patch) => patchLayer(layer, patch));
@@ -339,15 +381,15 @@ function shellFirework(
     if (index === 0) {
       layer = design.breaks[0].layers[0];
     } else {
-      const source = nounPhase?.effect ? template(nounPhase.effect.template) : null;
+      // A companion named only by colour ("w/ Purple Shell") is a plain trail-less peony in Finale.
+      const source = template(nounPhase?.effect ? nounPhase.effect.template : 'peony');
       const sourceLayer =
-        source && (source.kind === 'shell' || source.kind === 'mine')
-          ? source.breaks[0].layers[0]
-          : baseLayer;
+        source.kind === 'shell' || source.kind === 'mine' ? source.breaks[0].layers[0] : baseLayer;
       layer = structuredClone(sourceLayer);
       layer.id = nextLayerId(design);
       layer.name = segment.text.slice(0, 120) || 'Layer';
-      layer.radius_m = baseLayer.radius_m;
+      layer.radius_m = baseLayer.radius_m * EXTRA_LAYER_RADIUS;
+      layer.head.size = Math.min(layer.head.size, COMPANION_HEAD_SIZE);
       layer.count = Math.max(3, Math.round(sourceLayer.count * EXTRA_LAYER_COUNT));
       if (pistil) {
         layer.radius_m = baseLayer.radius_m * PISTIL_RADIUS;
@@ -405,26 +447,44 @@ function shellFirework(
   ) as VdlSegment['numbers'];
   const mm = caliber(context, segments[0]);
   const encoded = context.encoded;
-  const scale = sizeScale(mm);
-  const radiusRatio = finaleRatio(encoded?.breakRadiusM, mm * FINALE_RADIUS_M_PER_MM);
-  scaleLayers(design, scale * radiusRatio, scale);
+  // Finale's break grows with burn time: a short DUR burn travels less far.
+  const lifeS = numbers.DUR !== undefined ? numbers.DUR * FINALE_BURN_TO_LIFE : FINALE_STAR_LIFE_S;
+  const burnScale = Math.sqrt(Math.min(1, lifeS / FINALE_STAR_LIFE_S));
+  const radius = encoded?.breakRadiusM ?? mm * FINALE_RADIUS_M_PER_MM * burnScale;
+  const stars = FINALE_STARS_PER_MM * mm;
+  scaleLayers(design, radius / outerRadiusM(design), stars / design.breaks[0].layers[0].count);
   if (encoded?.breakRadiusM)
     for (const key of [...levels.keys()]) if (key.endsWith('.size')) levels.delete(key);
-  // Finale's star time for edited effects is a literal burn that looks far too short at
-  // template size, so only an explicit DUR replaces the template's burn.
   if (numbers.DUR !== undefined) {
-    setLife(design, numbers.DUR);
+    setLife(design, lifeS);
     for (const key of [...levels.keys()]) if (key.endsWith('.burn')) levels.delete(key);
+  } else
+    setLife(design, TRAIL_LED_TEMPLATES.has(templateKey) ? TRAIL_LED_LIFE_S : FINALE_STAR_LIFE_S);
+  for (const layer of design.breaks.flatMap((burst) => burst.layers)) {
+    Object.assign(layer.trail, {
+      length_s: Math.min(layer.trail.length_s, FINALE_TRAIL_S),
+      sparks: Math.min(
+        layer.trail.sparks,
+        Math.max(FINALE_TRAIL_SPARKS, FINALE_SPARK_TRAIL_SPARKS),
+      ),
+    });
+    layer.drag_per_s = FINALE_STAR_DRAG_PER_S;
+    layer.gravity_m_s2 = Math.min(layer.gravity_m_s2, FINALE_STAR_GRAVITY);
+    if (TRAIL_LED_TEMPLATES.has(templateKey) && layer.trail.sparks > 0) {
+      Object.assign(layer.trail, {
+        length_s: TRAIL_LED_TRAIL_S,
+        sparks: TRAIL_LED_SPARKS,
+        glitter: Math.min(layer.trail.glitter, TRAIL_LED_GLITTER),
+        colour: TRAIL_LED_COLOUR,
+      });
+      layer.gravity_m_s2 = TRAIL_LED_GRAVITY;
+      layer.head.size = Math.min(layer.head.size, FINALE_SPARK_HEAD_SIZE);
+    }
   }
-  // HTM and LFT are Finale's literal metres and seconds, read relative to Finale's defaults.
-  const templateHeight = design.launch.height_m;
-  const finaleHeight = numbers.HTM ?? encoded?.heightM ?? null;
-  const finaleDefault = mm * FINALE_HEIGHT_M_PER_MM;
-  const height = round(templateHeight * scale * finaleRatio(finaleHeight, finaleDefault), 1);
+  // HTM and LFT are Finale's literal metres and seconds.
+  const height = round(finaleHeightM(mm, numbers.HTM ?? encoded?.heightM), 1);
   const finaleLift = numbers.LFT ?? encoded?.liftS;
-  design.launch.time_s = finaleLift
-    ? round(finaleLift * Math.sqrt(height / (finaleHeight ?? finaleDefault)), 3)
-    : liftTime(templateHeight, design.launch.time_s, height);
+  design.launch.time_s = round(finaleLift ?? FINALE_LIFT_S_PER_ROOT_M * Math.sqrt(height), 3);
   design.launch.height_m = height;
   const text = [...segments, ...tailSegments].map((segment) => segment.text).join(' w/ ');
   design.seed = seed(text);
@@ -463,11 +523,25 @@ function mineFirework(
   if (segment.phases.some((item) => item.sounds.has('crackle')))
     design.sound.crackle = CRACKLE_SOUND;
   const mm = caliber(context, segment);
-  const scale = sizeScale(mm);
-  const templateReach = design.breaks[0].layers[0].radius_m;
-  const radiusScale = scale * finaleRatio(segment.numbers.HTM, mm * FINALE_HEIGHT_M_PER_MM);
-  scaleLayers(design, radiusScale, scale);
-  const reach = round(templateReach * radiusScale, 1);
+  // Finale's plain mine is a sparse spray about 0.45 m high per millimetre (11 m for 25 mm);
+  // HTM gives its height literally.
+  const reach = round(segment.numbers.HTM ?? mm * FINALE_MINE_REACH_M_PER_MM, 1);
+  scaleLayers(design, 1, (FINALE_MINE_STARS_PER_MM * mm) / design.breaks[0].layers[0].count);
+  for (const layer of design.breaks[0].layers) {
+    // Strong drag and light gravity keep the streaks near their reach until they fade.
+    layer.radius_m = round(reach * MINE_TO_SHELL_RADIUS);
+    layer.drag_per_s = MINE_TO_SHELL_DRAG;
+    layer.gravity_m_s2 = MINE_TO_SHELL_GRAVITY;
+    Object.assign(layer.trail, {
+      length_s: Math.min(layer.trail.length_s, FINALE_TRAIL_S),
+      sparks: Math.min(layer.trail.sparks, FINALE_TRAIL_SPARKS),
+    });
+    // A coloured mine star with no spark colour word trails in its own colour, as in Finale.
+    const star = layer.colour.stops[0]?.[1];
+    const starHex = Array.isArray(star) ? star[0] : star;
+    if (!segment.phases.some((item) => item.trailColour) && typeof starHex === 'string')
+      layer.trail.colour = starHex;
+  }
   if (segment.numbers.DUR !== undefined) setLife(design, segment.numbers.DUR);
   context.approximations.push('Mine height is approximated from the spread of its stars.');
   design.seed = seed(segment.text);
@@ -528,10 +602,7 @@ function cometFirework(
     }
   if (phases.some((phase) => phase.sounds.has('whistle'))) design.sound.whistle = WHISTLE_SOUND;
   const mm = caliber(context, segment);
-  const height = round(
-    comets.height_m * sizeScale(mm) * finaleRatio(segment.numbers.HTM, mm * FINALE_HEIGHT_M_PER_MM),
-    1,
-  );
+  const height = round(finaleHeightM(mm, segment.numbers.HTM), 1);
   comets.time_s = segment.numbers.DUR ?? liftTime(comets.height_m, comets.time_s, height);
   comets.height_m = height;
   design.seed = seed(segment.text);
@@ -552,12 +623,7 @@ function tourbillonFirework(
   const design = template('tourbillon') as TourbillonDesign;
   const tourbillon = design.ground.tourbillon;
   const mm = caliber(context, segment);
-  const height = round(
-    tourbillon.height_m *
-      sizeScale(mm) *
-      finaleRatio(segment.numbers.HTM, mm * FINALE_HEIGHT_M_PER_MM),
-    1,
-  );
+  const height = round(finaleHeightM(mm, segment.numbers.HTM), 1);
   tourbillon.time_s =
     segment.numbers.DUR ?? liftTime(tourbillon.height_m, tourbillon.time_s, height);
   tourbillon.height_m = height;
@@ -596,8 +662,46 @@ export function buildVdlFireworks(
     else others.push({ segment, family });
   });
   const fireworks: Omit<VdlFireworkPlan, 'templateName'>[] = [];
-  if (shellSegments.length) fireworks.push(shellFirework(shellSegments, tailSegments, context));
-  else if (tailSegments.length)
+  // "… Mine To … Shell" fires a ground mine with the shell rising through it; Finale
+  // draws both, so the mine phase becomes its own mine as well as the shell's lift.
+  for (const segment of shellSegments) {
+    const { rising } = phasesOf(segment);
+    if (rising[0]?.devices.has('mine')) {
+      const mm = caliber(context, segment);
+      const reach = finaleHeightM(mm, segment.numbers.HTM) * MINE_TO_SHELL_REACH;
+      // mineFirework reads HTM as the mine's own height.
+      const mine = mineFirework(
+        {
+          ...segment,
+          text: segment.text.split(/\s+to\s+/i)[0],
+          phases: rising,
+          numbers: { ...segment.numbers, HTM: reach },
+        },
+        context,
+      );
+      if (mine.design.kind === 'mine')
+        for (const layer of mine.design.breaks[0].layers) {
+          layer.count = MINE_TO_SHELL_STARS;
+          layer.trail.length_s = MINE_TO_SHELL_TRAIL_S;
+          layer.gravity_m_s2 = MINE_TO_SHELL_GRAVITY;
+          layer.drag_per_s = MINE_TO_SHELL_DRAG;
+          layer.radius_m = reach * MINE_TO_SHELL_RADIUS;
+          // Charcoal fan streaks have no bright star at their tips.
+          layer.head.visible = false;
+          layer.count = MINE_TO_SHELL_STARS;
+        }
+      fireworks.push(mine);
+    }
+  }
+  if (shellSegments.length) {
+    const shell = shellFirework(shellSegments, tailSegments, context);
+    // The shell rises inside its mine's fan, so Finale draws no separate lift tail.
+    const fromMine = shellSegments.some((segment) =>
+      phasesOf(segment).rising[0]?.devices.has('mine'),
+    );
+    if (fromMine && shell.design.kind === 'shell') shell.design.launch.tail = 'dark';
+    fireworks.push(shell);
+  } else if (tailSegments.length)
     context.approximations.push('A tail without a shell or comet is not drawn.');
   for (const { segment, family } of others) {
     if (family === 'mine') fireworks.push(mineFirework(segment, context));

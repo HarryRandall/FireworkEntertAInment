@@ -169,12 +169,45 @@ test('angles beyond the multishot limit are limited with a warning', () => {
   assert.equal(result.warnings.length, 1);
 });
 
-test('small cakes stay near template size so they read like catalogue cakes', () => {
+test('cake shots use Finale 3D sizes: HTM metres, else one metre and 0.6 m radius per mm', () => {
+  // 25 mm with no HTM: Finale's default 25 m height. "Slightly Big" enlarges the
+  // 15 m default break through the size level, never the launch height.
   const willow = Object.values(preview(samples[1]).fireworks)[0];
-  const layer = willow.design.breaks[0].layers[0];
-  assert.ok(willow.design.launch.height_m >= 40, `height ${willow.design.launch.height_m}`);
-  assert.ok(layer.radius_m >= 20, `radius ${layer.radius_m}`);
-  assert.ok(layer.count >= 40, `count ${layer.count}`);
+  assert.equal(willow.design.launch.height_m, 25);
+  assert.equal(willow.heightM, 25);
+  const literal = Object.values(
+    preview('30mm 2 Shot Cake (a) 42 HTM Gold Peony, 1 Row (0a500/a/CAK)').fireworks,
+  )[0];
+  assert.equal(literal.design.launch.height_m, 42);
+  const radii = literal.design.breaks.flatMap((burst) =>
+    burst.layers.map((layer) => layer.radius_m),
+  );
+  // 30 mm at 0.6 m per mm, at the full two-second default burn.
+  assert.ok(Math.abs(Math.max(...radii) - 18) < 0.01, `radius ${Math.max(...radii)}`);
+});
+
+test('a mine-to-shell part fires its mine as well as the shell', () => {
+  const result = preview(
+    '30mm 2 Shot Cake (a) 30.0 HTM Charcoal Willow Mine To Ragged Small Charcoal Willow w/ Slightly Long Purple Shell, 1 Row (0a439/a/CAK)',
+  );
+  const kinds = result.parts[0].fireworks.map((key) => result.fireworks[key].design.kind);
+  assert.deepEqual(kinds, ['mine', 'shell']);
+  assert.equal(result.shots.length, 4);
+});
+
+test('rows with no timing spread evenly over the product duration, like Finale', () => {
+  const line =
+    '6 Shot Cake (a) Red Peony + (b) Green Peony, 2 Rows, Row 1 (aba), Row 2 (2.0/bab/STT)';
+  const free = preview(line);
+  // Default 0.5 s gaps: 0, 0.5, 1.0 then a 2 s delay into a together row.
+  assert.deepEqual([...new Set(free.shots.map((shot) => shot.timeMs))], [0, 500, 1000, 3000]);
+  const spread = previewVdlCake(line, { glossary, existing: [], durationS: 4 });
+  assert.equal(spread.kind, 'preview');
+  // The two free gaps fill the 2 s the fixed delay leaves.
+  assert.deepEqual(
+    [...new Set(spread.preview.shots.map((shot) => shot.timeMs))],
+    [0, 1000, 2000, 4000],
+  );
 });
 
 test('shots share timeline tracks once earlier shots have finished', () => {
@@ -192,4 +225,20 @@ test('malformed lines explain what is missing', () => {
     parseVdlLine('30mm 2 Shot Cake (a) Red Peony, 1 Row (0a500/b/CAK)').message,
     /\(b\)/,
   );
+});
+
+test('a part whose label was dropped between labelled parts takes the missing letter', () => {
+  const result = parseVdlLine(
+    '3 Shot Cake (a) Red Peony + Green Peony + (c) Blue Peony, 1 Row (0a500/b500/c/CAK)',
+  );
+  assert.equal(result.kind, 'cake', result.message);
+  assert.deepEqual(
+    result.cake.parts.map((part) => [part.letter, part.text]),
+    [
+      ['a', 'Red Peony'],
+      ['b', 'Green Peony'],
+      ['c', 'Blue Peony'],
+    ],
+  );
+  assert.match(result.cake.warnings.join(' '), /Part \(b\) had no label/);
 });

@@ -26,7 +26,7 @@ type Props = {
   launchPositions?: Show['launchPositions'];
   prop?: 'mortar' | 'cake';
   /** Starts and resets whole-show playback at the normal zoom-out cap when requested. */
-  startDistance?: 'framed' | 'farthest';
+  startDistance?: 'framed' | 'farthest' | 'finale';
   muted?: boolean;
   /** Whether the external playhead advances, independent of sound muting. */
   playing?: boolean;
@@ -81,7 +81,9 @@ export function ShowRendererCanvas(props: Props) {
     if (shots.ok && viewer.current) {
       readiness.current?.reset();
       setLoading(true);
-      viewer.current.setShots(shots.shots, true);
+      // Cues stream in after the viewer starts on an empty site, so frame the loaded
+      // show unless the viewer has already moved the camera themselves.
+      viewer.current.setShots(shots.shots, viewer.current.cameraMoved);
       clock.current?.wake();
     }
   }, [shots]);

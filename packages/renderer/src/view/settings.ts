@@ -11,6 +11,8 @@ export interface ViewerSettings {
   ground: boolean;
   free: boolean;
   shake: boolean;
+  /** Finale 3D's default dusk sky and grass instead of the midnight sky and dark ground. */
+  dusk: boolean;
 }
 /** Current preferences; use setSetting so mounted viewers and storage stay in sync. */
 export const SETTINGS: ViewerSettings = {
@@ -22,10 +24,11 @@ export const SETTINGS: ViewerSettings = {
   ground: true,
   free: false,
   shake: true,
+  dusk: false,
 };
 const defaults = { ...SETTINGS };
 // Only these preferences affect rendered pixels or camera controls.
-const VISUAL_KEYS = ['smoke', 'ground', 'free', 'shake'] as const;
+const VISUAL_KEYS = ['smoke', 'ground', 'free', 'shake', 'dusk'] as const;
 const listeners = new Set<() => void>();
 let loaded = false;
 function readSettings(encoded: string | null): void {

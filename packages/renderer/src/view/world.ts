@@ -1,4 +1,4 @@
-/** A midnight sky and ground lattice provide a shared world for every firework view. */
+/** A midnight (or Finale-style dusk) sky and ground lattice provide a shared world for every view. */
 import * as THREE from 'three';
 
 // Prototype scene dimensions in metres, and tessellation chosen for a smooth horizon.
@@ -28,7 +28,12 @@ const float VISUAL_TUNING_STAR_DENSITY = 0.003;
 const float VISUAL_TUNING_STAR_INTENSITY = 0.055;
 const float VISUAL_TUNING_STAR_RADIUS_CELLS = 0.055;
 const float VISUAL_TUNING_STAR_MIN_ELEVATION = 0.025;
-varying vec3 vD;
+// Visual tuning: Finale 3D's default dusk, sampled from its viewport in sRGB and converted
+// to linear RGB: red horizon glow (90,45,45), slate mid sky (35,45,65), navy zenith (15,20,30).
+const vec3 VISUAL_TUNING_DUSK_HORIZON_COLOUR = vec3(0.100, 0.026, 0.026);
+const vec3 VISUAL_TUNING_DUSK_MID_SKY_COLOUR = vec3(0.016, 0.026, 0.053);
+const vec3 VISUAL_TUNING_DUSK_OVERHEAD_COLOUR = vec3(0.005, 0.007, 0.013);
+varying vec3 vD; uniform float uDusk;
 float starHash(vec2 cell){return fract(sin(dot(cell,vec2(127.1,311.7)))*43758.5453);}
 float starfield(vec3 direction){
   if(direction.y<VISUAL_TUNING_STAR_MIN_ELEVATION)return 0.0;
@@ -42,7 +47,7 @@ float starfield(vec3 direction){
   float dotCoverage=1.0-smoothstep(VISUAL_TUNING_STAR_RADIUS_CELLS,VISUAL_TUNING_STAR_RADIUS_CELLS+coverage,distanceCells);
   return selected*dotCoverage*VISUAL_TUNING_STAR_INTENSITY*step(VISUAL_TUNING_STAR_MIN_ELEVATION,direction.y);
 }
-void main(){ vec3 c = mix(VISUAL_TUNING_HORIZON_COLOUR,VISUAL_TUNING_MID_SKY_COLOUR,smoothstep(VISUAL_TUNING_HORIZON_START,VISUAL_TUNING_HORIZON_END,vD.y)); c = mix(c,VISUAL_TUNING_OVERHEAD_COLOUR,smoothstep(VISUAL_TUNING_OVERHEAD_START,VISUAL_TUNING_OVERHEAD_END,vD.y)); float horizonBand=1.0-smoothstep(0.0,VISUAL_TUNING_HORIZON_BAND_HALF_WIDTH,abs(vD.y-VISUAL_TUNING_HORIZON_BAND_CENTRE)); gl_FragColor = vec4(c+VISUAL_TUNING_HORIZON_BAND_COLOUR*horizonBand+vec3(starfield(normalize(vD))),1.0); }`;
+void main(){ vec3 horizon=mix(VISUAL_TUNING_HORIZON_COLOUR,VISUAL_TUNING_DUSK_HORIZON_COLOUR,uDusk); vec3 mid=mix(VISUAL_TUNING_MID_SKY_COLOUR,VISUAL_TUNING_DUSK_MID_SKY_COLOUR,uDusk); vec3 overhead=mix(VISUAL_TUNING_OVERHEAD_COLOUR,VISUAL_TUNING_DUSK_OVERHEAD_COLOUR,uDusk); vec3 c = mix(horizon,mid,smoothstep(VISUAL_TUNING_HORIZON_START,VISUAL_TUNING_HORIZON_END,vD.y)); c = mix(c,overhead,smoothstep(VISUAL_TUNING_OVERHEAD_START,VISUAL_TUNING_OVERHEAD_END,vD.y)); float horizonBand=1.0-smoothstep(0.0,VISUAL_TUNING_HORIZON_BAND_HALF_WIDTH,abs(vD.y-VISUAL_TUNING_HORIZON_BAND_CENTRE)); gl_FragColor = vec4(c+VISUAL_TUNING_HORIZON_BAND_COLOUR*horizonBand+vec3(starfield(normalize(vD)))*(1.0-uDusk),1.0); }`;
 const groundVertex =
   'varying vec3 vW; void main(){ vec4 w = modelMatrix * vec4(position,1.0); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }';
 const groundFragment = `
@@ -56,24 +61,29 @@ const float VISUAL_TUNING_GRID_FADE_START_M = 18.0;
 const float VISUAL_TUNING_GRID_FADE_END_M = 150.0;
 const vec3 VISUAL_TUNING_GROUND_COLOUR = vec3(0.0015);
 const vec3 VISUAL_TUNING_GRID_COLOUR = vec3(0.018);
-varying vec3 vW; uniform float uGrid;
+// Visual tuning: Finale 3D's dusk grass, sRGB (20,30,20) as linear RGB.
+const vec3 VISUAL_TUNING_DUSK_GROUND_COLOUR = vec3(0.0037, 0.0089, 0.0037);
+varying vec3 vW; uniform float uGrid; uniform float uDusk;
 float polarLine(float distanceToLineM){float antialiasWidthM=max(fwidth(distanceToLineM)*VISUAL_TUNING_LINE_WIDTH_PX,0.00001);return 1.0-smoothstep(0.0,antialiasWidthM,distanceToLineM);}
-void main(){float radiusM=length(vW.xz);float ringDistanceM=abs(fract(radiusM/VISUAL_TUNING_RING_SPACING_M+0.5)-0.5)*VISUAL_TUNING_RING_SPACING_M;float angleRad=atan(vW.z,vW.x);float spokePhase=angleRad/(VISUAL_TUNING_SPOKE_SPACING_DEG*VISUAL_TUNING_RADIANS_PER_DEGREE);float spokeDistanceM=abs(sin(spokePhase*3.14159265359))*radiusM;float polarGrid=max(polarLine(ringDistanceM),polarLine(spokeDistanceM));float horizonFade=1.0-smoothstep(VISUAL_TUNING_GRID_FADE_START_M,VISUAL_TUNING_GRID_FADE_END_M,radiusM);gl_FragColor=vec4(VISUAL_TUNING_GROUND_COLOUR+VISUAL_TUNING_GRID_COLOUR*polarGrid*horizonFade*uGrid,1.0);}`;
+void main(){float radiusM=length(vW.xz);float ringDistanceM=abs(fract(radiusM/VISUAL_TUNING_RING_SPACING_M+0.5)-0.5)*VISUAL_TUNING_RING_SPACING_M;float angleRad=atan(vW.z,vW.x);float spokePhase=angleRad/(VISUAL_TUNING_SPOKE_SPACING_DEG*VISUAL_TUNING_RADIANS_PER_DEGREE);float spokeDistanceM=abs(sin(spokePhase*3.14159265359))*radiusM;float polarGrid=max(polarLine(ringDistanceM),polarLine(spokeDistanceM));float horizonFade=1.0-smoothstep(VISUAL_TUNING_GRID_FADE_START_M,VISUAL_TUNING_GRID_FADE_END_M,radiusM);gl_FragColor=vec4(mix(VISUAL_TUNING_GROUND_COLOUR,VISUAL_TUNING_DUSK_GROUND_COLOUR,uDusk)+VISUAL_TUNING_GRID_COLOUR*polarGrid*horizonFade*uGrid,1.0);}`;
 
 /** Creates the static world shared by the live viewer and detached poster renderer. */
 export function makeWorld(scene: THREE.Scene) {
+  // Shared by sky and ground: 0 for the midnight world, 1 for Finale-style dusk.
+  const dusk = { value: 0 };
   scene.add(
     new THREE.Mesh(
       new THREE.SphereGeometry(SKY_RADIUS_M, SKY_SEGMENTS, SKY_RINGS),
       new THREE.ShaderMaterial({
         side: THREE.BackSide,
         depthWrite: false,
+        uniforms: { uDusk: dusk },
         vertexShader: skyVertex,
         fragmentShader: skyFragment,
       }),
     ),
   );
-  const groundUniforms = { uGrid: { value: 1 } };
+  const groundUniforms = { uGrid: { value: 1 }, uDusk: dusk };
   const groundMaterial = new THREE.ShaderMaterial({
     uniforms: groundUniforms,
     vertexShader: groundVertex,
@@ -86,8 +96,9 @@ export function makeWorld(scene: THREE.Scene) {
   ground.rotation.x = -Math.PI / 2;
   scene.add(ground);
   return {
-    setSettings(showGround: boolean) {
+    setSettings(showGround: boolean, duskSky = false) {
       groundUniforms.uGrid.value = showGround ? 1 : 0;
+      dusk.value = duskSky ? 1 : 0;
     },
   };
 }

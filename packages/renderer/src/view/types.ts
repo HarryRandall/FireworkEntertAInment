@@ -27,8 +27,9 @@ export interface ViewerOptions {
   startAt?: number;
   /** Audience distance multiplier, applied only when a caller requests extra breathing room. */
   framingDistanceScale?: number;
-  /** Starts and resets at the framed view, furthest normal orbit distance, or elevated single-shot pose. */
-  startDistance?: 'framed' | 'farthest' | 'elevated';
+  /** Starts and resets at the framed view, furthest normal orbit distance, elevated single-shot
+   * pose, or Finale 3D's fixed front (audience) camera for side-by-side comparison. */
+  startDistance?: 'framed' | 'farthest' | 'elevated' | 'finale';
   /** Forces the portable 8-bit output target, useful for fallback verification. */
   forceLdr?: boolean;
   /** Renders at one device pixel per CSS pixel, without smoke, at up to 30 frames per second. */
