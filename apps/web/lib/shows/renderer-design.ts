@@ -23,22 +23,12 @@ export function readShowDesign(value: unknown, schema: number): ShowDesignResult
   }
 }
 
-/** Show convention, dimensionless levels from the renderer adjustment registry.
- * Calibre baseline is 75 mm; each band raises launch height (1.12 per level,
- * lift time by its square root) and layer radius (1.15 per level). Authored
- * catalogue height is retained as the baseline, never converted from old geometry.
+/** Show emphasis, dimensionless levels from the renderer adjustment registry.
  * Accent adds one size/brightness level; peak adds two. Combined levels clamp to -3..3.
+ * Catalogue designs already carry their physical height and spread (Finale-mapped
+ * products are built from their VDL at Finale 3D's sizes), so calibre adds nothing.
  */
 const SHOW_DESIGN_ADJUSTMENTS = {
-  calibre: [
-    { maximumMm: 30, level: -3 },
-    { maximumMm: 50, level: -2 },
-    { maximumMm: 60, level: -1 },
-    { maximumMm: 75, level: 0 },
-    { maximumMm: 100, level: 1 },
-    { maximumMm: 125, level: 2 },
-    { maximumMm: Infinity, level: 3 },
-  ],
   emphasis: { normal: 0, accent: 1, peak: 2 },
 } as const;
 
@@ -48,16 +38,11 @@ function level(value: number): AdjustmentLevel {
 
 /** Resolves the same quick adjustments for both musical timing and visible shots. */
 export function resolvedShowDesign(
-  product: { design?: Design | null; caliber?: string | null },
+  product: { design?: Design | null },
   emphasis: CueEmphasis = 'normal',
 ): Design {
   if (!product.design) throw new Error('This firework has no valid renderer design.');
   const design = product.design;
-  const mm = showCalibreMillimetres(product.caliber);
-  const calibreLevel =
-    mm != null && mm > 0
-      ? (SHOW_DESIGN_ADJUSTMENTS.calibre.find((band) => mm <= band.maximumMm)?.level ?? 0)
-      : 0;
   const emphasisLevel = SHOW_DESIGN_ADJUSTMENTS.emphasis[emphasis];
   const adjustments: Record<string, AdjustmentLevel> = Object.fromEntries(
     Object.entries(design.adjustments ?? {}).map(([key, value]) => [key, level(value)]),
@@ -65,12 +50,11 @@ export function resolvedShowDesign(
   const add = (key: string, amount: number) => {
     adjustments[key] = level((adjustments[key] ?? 0) + amount);
   };
-  add('launch.height', calibreLevel);
-  add('ground.star_size', calibreLevel + emphasisLevel);
+  add('ground.star_size', emphasisLevel);
   add('break.flash', emphasisLevel);
   const layerIds = new Set(design.breaks.flatMap((burst) => burst.layers.map((layer) => layer.id)));
   for (const id of layerIds) {
-    add(`layer.${id}.size`, calibreLevel + emphasisLevel);
+    add(`layer.${id}.size`, emphasisLevel);
     add(`layer.${id}.brightness`, emphasisLevel);
   }
   return resolveDesign({ ...design, adjustments });
@@ -107,15 +91,4 @@ export function showProductColours(product: {
   ])
     if (value) values.add(value);
   return [...values];
-}
-
-// Millimetres per international inch, exact SI conversion.
-const MILLIMETRES_PER_INCH = 25.4;
-
-/** Parses catalogue calibre in millimetres or common inch notation; unknown values use the baseline. */
-function showCalibreMillimetres(calibre: string | null | undefined): number | null {
-  const mm = calibre?.trim().match(/^(\d+(?:\.\d+)?)\s*mm$/i);
-  if (mm) return Number(mm[1]);
-  const inch = calibre?.trim().match(/^(\d+(?:\.\d+)?)\s*(?:["\u201D\u2033]|in(?:ch(?:es)?)?)$/i);
-  return inch ? Number(inch[1]) * MILLIMETRES_PER_INCH : null;
 }
