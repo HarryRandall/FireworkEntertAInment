@@ -274,11 +274,12 @@ function rowTubes(
 
 /**
  * Parses the header, lettered parts and either exact tube syntax or Finale row syntax.
- * `durationS` is the product's first-to-last launch time, used when the line gives none.
+ * `durationS` (the product's first-to-last launch time) and `caliberText` fill in
+ * when the line's header gives none, as Finale reads them from the product row.
  */
 export function parseVdlLine(
   text: string,
-  options: { durationS?: number | null } = {},
+  options: { durationS?: number | null; caliberText?: string | null } = {},
 ): VdlLineResult {
   try {
     const line = text.replace(/^﻿/, '').replace(/\s+/g, ' ').trim();
@@ -312,7 +313,7 @@ export function parseVdlLine(
       throw new Error(
         `No description for part ${missing.map((letter) => `(${letter})`).join(', ')}.`,
       );
-    const caliberText = caliberGroup ?? null;
+    const caliberText = caliberGroup ?? options.caliberText ?? null;
     return {
       kind: 'cake',
       cake: {
