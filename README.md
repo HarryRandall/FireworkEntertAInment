@@ -74,8 +74,8 @@ flowchart LR
     Web <--> Supabase[(Supabase<br/>Postgres, Auth and Storage)]
     Web --> Analyser[Python music analyser]
     Web --> Importer[Python firework import worker]
-    Importer --> Render[Internal browser render harness]
-    Analyser --> Supabase
+    Importer --> Render[Node CPU renderer scorer]
+    Analyser -->|Result callback| Web
     Importer --> Supabase
 ```
 
@@ -98,6 +98,12 @@ See [Architecture](docs/architecture.md) for ownership and dependency rules,
 | Services     | Python 3.11, Modal-compatible deployments, FFmpeg and Playwright |
 | Integrations | OpenRouter, Jamendo and Upstash Redis when configured            |
 | Delivery     | pnpm workspace, GitHub Actions and Vercel                        |
+
+## Client handover
+
+The [client handover guides](docs/handover/README.md) cover the product, Mac/Windows/Linux
+setup, accounts and authentication, configuration, deployment, troubleshooting and
+the walkthrough acceptance record. Start there when taking ownership of ShowCrafter.
 
 ## Getting started
 
