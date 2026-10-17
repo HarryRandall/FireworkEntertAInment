@@ -72,7 +72,7 @@ type FireworkPreviewImageProjection = {
   storage_path: string | null;
 };
 
-export type FireworkPreviewImageProjectionRelation =
+type FireworkPreviewImageProjectionRelation =
   | FireworkPreviewImageProjection
   | FireworkPreviewImageProjection[]
   | null;

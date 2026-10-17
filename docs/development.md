@@ -56,9 +56,12 @@ pnpm test:import-contract
 SHOWCRAFTER_RUN_CROSS_LANGUAGE_CONTRACT=1 services/music-analyser/.venv/bin/python services/music-analyser/tests/test_schema_validation.py
 ```
 
-`pnpm knip` reports unused files, exports and dependencies (CI runs it). Generated
-files are excluded in `knip.json`; exports kept only for tests are listed under
-`ignoreIssues`.
+`pnpm knip` reports unused files, exports and dependencies; `pnpm check` and CI
+run it. Generated files and a few legacy test-only export sets are listed in
+`knip.json`. Prefer making a helper private or giving the test a statically
+discoverable import over adding to that list: tests that load modules through
+`await import()` should destructure the bindings they use directly, because a
+namespace alias or `Promise.all` destructuring hides them from Knip.
 
 Use `pnpm audit:ui` when adding or moving pages/components. Candidates need review
 before deletion. Check rendered light/dark, mobile and interaction states when

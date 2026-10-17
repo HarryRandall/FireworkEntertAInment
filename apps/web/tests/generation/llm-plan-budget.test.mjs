@@ -43,31 +43,23 @@ registerHooks({
   },
 });
 
-const [
-  llmPlan,
-  plan,
-  { parseCreativeDirection },
-  { parsePromptConstraints },
-  { DEFAULT_DESIGN },
-  { DEFAULT_FIREWORK_SPEC },
-] = await Promise.all([
-  import('../../lib/cue-generation/llm-plan.server.ts'),
-  import('../../lib/cue-generation/show-plan.ts'),
-  import('../../lib/cue-generation/creative-direction.ts'),
-  import('../../lib/cue-generation/prompt-constraints.ts'),
-  import('@showcrafter/renderer').then(({ effectTemplates }) => ({
-    DEFAULT_DESIGN: effectTemplates.find((entry) => entry.key === 'peony').design,
-  })),
-  import('@showcrafter/fireworks/spec'),
-]);
-
+// Imports stay dynamic so the resolve hook above is registered first. Each one
+// destructures its bindings directly so Knip can see which exports tests use.
 const {
   requestShowPlan,
   isRetryableModelFailure,
   LLM_PLAN_TIMEOUT_MS,
   LLM_PLAN_TOTAL_BUDGET_MS,
   LLM_PLAN_MIN_RETRY_WINDOW_MS,
-} = llmPlan;
+} = await import('../../lib/cue-generation/llm-plan.server.ts');
+const { buildPlanSections, describeCataloguePalette, buildDefaultShowPlan } =
+  await import('../../lib/cue-generation/show-plan.ts');
+const { parseCreativeDirection } = await import('../../lib/cue-generation/creative-direction.ts');
+const { parsePromptConstraints } = await import('../../lib/cue-generation/prompt-constraints.ts');
+const { effectTemplates } = await import('@showcrafter/renderer');
+const { DEFAULT_FIREWORK_SPEC } = await import('@showcrafter/fireworks/spec');
+
+const DEFAULT_DESIGN = effectTemplates.find((entry) => entry.key === 'peony').design;
 
 const songDuration = 120;
 const products = ['red', 'green', 'gold'].map((colour, index) => ({
@@ -96,10 +88,10 @@ const products = ['red', 'green', 'gold'].map((colour, index) => ({
   baseEffect: null,
   variant: null,
 }));
-const sections = plan.buildPlanSections(null, songDuration);
-const palette = plan.describeCataloguePalette(products);
+const sections = buildPlanSections(null, songDuration);
+const palette = describeCataloguePalette(products);
 const constraints = parsePromptConstraints('');
-const fallback = plan.buildDefaultShowPlan({
+const fallback = buildDefaultShowPlan({
   sections,
   direction: parseCreativeDirection('', 'signature'),
   constraints,

@@ -35,7 +35,7 @@ export const LLM_PLAN_TIMEOUT_MS = 75_000;
 export const LLM_PLAN_TOTAL_BUDGET_MS = 90_000;
 /** A retry is pointless unless the model has at least this long to answer. */
 export const LLM_PLAN_MIN_RETRY_WINDOW_MS = 20_000;
-export const LLM_PLAN_MAX_ATTEMPTS = 2;
+const LLM_PLAN_MAX_ATTEMPTS = 2;
 const LLM_PLAN_MAX_TOKENS = 4000;
 
 export type LlmPlanOutcome = {
@@ -50,7 +50,7 @@ export type LlmPlanOutcome = {
 };
 
 /** The slice of the OpenAI client this module calls, so tests can inject a fake. */
-export type ShowPlanModelClient = {
+type ShowPlanModelClient = {
   chat: {
     completions: {
       create: (
