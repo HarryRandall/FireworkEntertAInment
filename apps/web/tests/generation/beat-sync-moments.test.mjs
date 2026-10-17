@@ -1,9 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import {
-  buildBeatMoments,
-  launchPositionCountForSlots,
-} from '../../lib/cue-generation/beat-sync-moments.ts';
+await import('../../../../scripts/renderer/register-typescript.mjs');
+const { buildBeatMoments, launchPositionCountForSlots } =
+  await import('../../lib/cue-generation/beat-sync-moments.ts');
 
 const direction = {
   style: 'beat_test',
@@ -97,4 +96,21 @@ test('quiet-middle filtering preserves a protected climax group intact', () => {
     [50, 60],
   );
   assert.deepEqual(moments[1].tubes, [0, 1, 2]);
+});
+
+test('a fuller chorus overrides whole-show sparsity without filling the verse', () => {
+  const slots = [
+    slot({ index: 0, time: 10, vibe: 'verse', sectionLabel: 'Verse', isDownbeat: false }),
+    slot({ index: 1, time: 20, vibe: 'chorus', isDownbeat: false }),
+    slot({ index: 2, time: 30, vibe: 'chorus', isDownbeat: true }),
+  ];
+  const moments = buildBeatMoments({
+    slots,
+    songDuration: 40,
+    direction: { ...direction, density: 'sparse', sectionDensity: { chorus: 'dense' } },
+  });
+  assert.deepEqual(
+    moments.map((moment) => moment.time),
+    [20, 30],
+  );
 });

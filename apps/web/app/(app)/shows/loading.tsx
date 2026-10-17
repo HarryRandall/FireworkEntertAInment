@@ -13,9 +13,10 @@
 
 import type { ReactNode } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { ChevronDown, ListFilter, Search } from 'lucide-react';
+import { ChevronDown, ListFilter, Plus, Search } from 'lucide-react';
 import { GeneratingShowAnimation } from '@/ui/shows/GeneratingShowAnimation';
 import { GENERATING_ROUTE_SPLASH_CLASS } from '@/ui/shows/generatingSplashLayout';
+import { Button } from '@/ui/patterns/Button';
 import { Skeleton } from '@/ui/patterns/Feedback';
 import { ShowDetailContentSkeleton } from '@/app/(app)/shows/_components/ShowDetailContentSkeleton';
 import { ShowTabs } from '@/app/(app)/shows/_components/ShowTabs';
@@ -34,11 +35,17 @@ function ShowsListSkeleton() {
       aria-busy="true"
       aria-label="Loading shows"
     >
-      <header>
-        <h1 className="text-foreground text-2xl font-bold tracking-tight">My shows</h1>
-        <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
-          Search, preview and continue editing your saved show plans.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+        <div className="min-w-0">
+          <h1 className="text-foreground text-2xl font-bold tracking-tight">My shows</h1>
+          <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
+            Search, preview and continue editing your saved show plans.
+          </p>
+        </div>
+        <Button href="/shows/new" className="h-9 shrink-0 rounded-full px-4">
+          <Plus size={16} aria-hidden />
+          New show
+        </Button>
       </header>
       <section className="space-y-3">
         <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
@@ -46,6 +53,7 @@ function ShowsListSkeleton() {
             <span className="sr-only">Search shows</span>
             <Search
               size={17}
+              aria-hidden
               className="text-muted-foreground pointer-events-none absolute top-1/2 left-4 -translate-y-1/2"
             />
             <input
@@ -54,7 +62,10 @@ function ShowsListSkeleton() {
               className="border-input bg-background text-foreground placeholder:text-muted-foreground h-11 w-full rounded-xl border pr-12 pl-11 text-sm shadow-xs"
             />
           </label>
-          <div className="border-input bg-background text-foreground inline-flex h-11 items-center justify-between rounded-xl border px-4 text-sm sm:min-w-36">
+          <div
+            aria-hidden
+            className="border-input bg-background text-foreground inline-flex h-11 items-center justify-between rounded-xl border px-4 text-sm sm:min-w-36"
+          >
             <span className="inline-flex min-w-0 items-center gap-2">
               <ListFilter size={16} className="text-muted-foreground shrink-0" />
               <span className="min-w-0 truncate">Last edited</span>

@@ -1,5 +1,5 @@
 import type { CueSlot, SlotEmphasis, SlotVibe } from '../beat-grid.server';
-import type { CreativeDirection } from './creative-direction';
+import { densityForSection, type CreativeDirection } from './creative-direction';
 
 export type BeatMoment = {
   time: number;
@@ -88,7 +88,7 @@ export function buildBeatMoments(params: {
     if (quietMiddle && !moment.nearClimax && !moment.isSurprise) return false;
     if (moment.nearClimax || moment.isSurprise) return true;
     if (direction.softEnding && moment.finale) return moment.isDownbeat;
-    if (direction.density === 'sparse') return moment.isDownbeat;
+    if (densityForSection(direction, moment.vibe) === 'sparse') return moment.isDownbeat;
     return true;
   });
 

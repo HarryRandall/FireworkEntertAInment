@@ -5,18 +5,25 @@
 
 export type GenerationPhase = 'analysing' | 'generating' | 'finalising';
 
+/** Seconds before the finalising handover admits the preview is slow and offers a way out. */
+export const FINALISING_DELAY_SECONDS = 20;
+
 export function generationDelayLabel(
   phase: GenerationPhase,
   elapsedSeconds: number,
   estimateSeconds: number,
 ): string | null {
-  if (elapsedSeconds < Math.max(estimateSeconds * 1.5, 60)) return null;
+  // Opening the preview is a page load, not a pipeline step: a minute of
+  // silence there reads as a hang, so it owns up much sooner.
+  const threshold =
+    phase === 'finalising' ? FINALISING_DELAY_SECONDS : Math.max(estimateSeconds * 1.5, 60);
+  if (elapsedSeconds < threshold) return null;
   if (phase === 'analysing' && elapsedSeconds >= 300)
     return 'Analysis delayed. Contact an admin if it does not finish.';
   return phase === 'analysing'
     ? 'Your track is taking longer than expected.'
     : phase === 'finalising'
-      ? 'The preview is taking longer than expected.'
+      ? 'The preview is taking longer than expected to load. Your show is saved.'
       : 'Your show is taking longer than expected.';
 }
 

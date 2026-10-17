@@ -16,8 +16,11 @@ const ECHO_DISTANCE_M = 250;
 // Positive floor permits exponential gain envelopes; prototype default filter resonance.
 const ENVELOPE_FLOOR = 0.0001;
 const FILTER_Q = 0.7;
-// Prototype bus retention: at least eight seconds or the sustained voice plus four echo seconds.
-const MIN_BUS_TAIL_S = 8;
+// Bus retention: the sustained voice plus four echo seconds, and never under four seconds. The
+// shared convolver keeps ringing on its own once an event's send is disconnected, so holding
+// every event graph for eight seconds (as the prototype did) only multiplied live nodes on
+// dense shows.
+const MIN_BUS_TAIL_S = 4;
 const ECHO_TAIL_S = 4;
 // Converts audio-clock seconds to the browser timer's milliseconds.
 const MS_PER_S = 1000;

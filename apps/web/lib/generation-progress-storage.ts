@@ -2,6 +2,7 @@ import { parseCover, randomCover, type ShowCover } from '@/lib/cover';
 
 const STORAGE_PREFIX = 'gen-show-startedAt:';
 const COVER_PREFIX = 'gen-show-cover:';
+const HANDOVER_PREFIX = 'gen-show-handoverAt:';
 
 /**
  * Session-scoped random cover for a generating show, keyed by slug. Lets the
@@ -92,7 +93,32 @@ export function clearPersistedGenerationStart(persistKey: string | undefined): v
   if (!persistKey || typeof window === 'undefined') return;
   try {
     window.sessionStorage.removeItem(STORAGE_PREFIX + persistKey);
+    window.sessionStorage.removeItem(HANDOVER_PREFIX + persistKey);
   } catch {
     // Ignore unavailable sessionStorage.
+  }
+}
+
+/**
+ * When the finished show first handed over to the preview. The handover splash
+ * remounts across the route loading state, the streaming fallback and the
+ * viewer, so its "taking longer" judgement anchors here rather than on any one
+ * mount, and a mid-handover refresh keeps the same clock.
+ */
+export function resolveGenerationHandoverStartedAt(
+  persistKey: string | undefined,
+  fallbackStartedAt = Date.now(),
+): number {
+  if (!persistKey || typeof window === 'undefined') return fallbackStartedAt;
+  try {
+    const raw = window.sessionStorage.getItem(HANDOVER_PREFIX + persistKey);
+    if (raw) {
+      const parsed = Number(raw);
+      if (Number.isFinite(parsed) && parsed > 0) return parsed;
+    }
+    window.sessionStorage.setItem(HANDOVER_PREFIX + persistKey, String(fallbackStartedAt));
+    return fallbackStartedAt;
+  } catch {
+    return fallbackStartedAt;
   }
 }

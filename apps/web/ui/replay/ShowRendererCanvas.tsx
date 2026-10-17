@@ -39,6 +39,8 @@ type Props = {
   onSceneReady?: () => void;
   onPrimeProgress?: (progress: number | null) => void;
   onReady?: () => void;
+  /** The stage cannot show this sequence (no WebGL, invalid shots); the message is what it renders. */
+  onError?: (message: string) => void;
   showLoadingBar?: boolean;
   loadingBarPosition?: 'bottom' | 'center';
   allowFullscreen?: boolean;
@@ -89,7 +91,9 @@ export function ShowRendererCanvas(props: Props) {
   }, [shots]);
 
   useEffect(() => {
-    if (!shots.ok) latest.current.onSceneReady?.();
+    if (shots.ok) return;
+    latest.current.onSceneReady?.();
+    latest.current.onError?.(shots.error);
   }, [shots]);
 
   useEffect(() => {
@@ -112,8 +116,10 @@ export function ShowRendererCanvas(props: Props) {
         lowPower: props.lowPower === 'auto' ? prefersLowPower() : props.lowPower,
       });
     } catch {
-      setError('The firework viewer could not start. Please check WebGL support and reload.');
+      const message = 'The firework viewer could not start. Please check WebGL support and reload.';
+      setError(message);
       latest.current.onSceneReady?.();
+      latest.current.onError?.(message);
       setLoading(false);
       return;
     }

@@ -599,7 +599,10 @@ export async function generateCuesForShow(params: {
       [brief.title, brief.description, ...(brief.mood_tags ?? [])].filter(Boolean).join(' '),
       asShowStyleKey(brief.show_style),
     );
-    const sparseGeneration = showStyle === 'minimalist' || creativeDirection.density === 'sparse';
+    const sparseGeneration =
+      showStyle === 'minimalist' ||
+      (creativeDirection.density === 'sparse' &&
+        Object.values(creativeDirection.sectionDensity).every((density) => density === 'sparse'));
 
     /** Deterministic beat planner: the Beat precision style and the rescue path. */
     const buildBeatPlan = () => {

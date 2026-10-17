@@ -2,7 +2,15 @@
 
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react';
 import { BadgeDollarSign, ChevronRight, Clock3, ListMusic, Play } from 'lucide-react';
 import { CoverPoster } from '@/ui/covers/CoverPoster';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
@@ -83,6 +91,10 @@ function FeaturedShowCard({
   release: (id: string) => void;
 }) {
   const prefersReducedMotion = usePrefersReducedMotion();
+  const cardId = useId();
+  const titleId = `${cardId}-title`;
+  const descriptionId = `${cardId}-description`;
+  const statsId = `${cardId}-stats`;
   const [hovered, setIsPreviewHovered] = useState(false);
   const isPreviewHovered = hovered && previewActive;
   const [isPreviewReady, setIsPreviewReady] = useState(false);
@@ -166,7 +178,8 @@ function FeaturedShowCard({
     <Link
       href={`/library/${template.slug}`}
       prefetch={false}
-      aria-label={`Watch ${template.title}`}
+      aria-labelledby={titleId}
+      aria-describedby={`${descriptionId} ${statsId}`}
       className="group focus-visible:ring-primary/45 focus-visible:ring-offset-background bg-popover relative isolate min-h-[14rem] overflow-hidden rounded-2xl shadow-sm transition-transform duration-200 hover:-translate-y-0.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 motion-reduce:transform-none motion-reduce:transition-none"
       onPointerEnter={startPreview}
       onPointerLeave={stopPreview}
@@ -198,13 +211,16 @@ function FeaturedShowCard({
       ) : null}
       <div
         aria-hidden
-        className="absolute inset-0 z-[2] bg-[radial-gradient(circle_at_82%_18%,rgba(255,255,255,0.18),transparent_32%),linear-gradient(90deg,rgba(0,0,0,0.78)_0%,rgba(0,0,0,0.5)_48%,rgba(0,0,0,0.12)_100%)]"
+        className="absolute inset-0 z-[2] bg-[radial-gradient(circle_at_82%_18%,rgba(255,255,255,0.18),transparent_32%),linear-gradient(90deg,rgba(0,0,0,0.78)_0%,rgba(0,0,0,0.68)_48%,rgba(0,0,0,0.62)_100%)]"
       />
       <span
         aria-hidden
         className="pointer-events-none absolute inset-px z-20 rounded-[calc(var(--radius-2xl)-1px)] border border-white/20"
       />
-      <span className="absolute top-4 right-4 z-10 hidden h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white transition-transform duration-200 group-hover:scale-105 motion-reduce:transform-none motion-reduce:transition-none sm:flex">
+      <span
+        aria-hidden
+        className="absolute top-4 right-4 z-10 hidden h-11 w-11 items-center justify-center rounded-full bg-black/55 text-white transition-transform duration-200 group-hover:scale-105 motion-reduce:transform-none motion-reduce:transition-none sm:flex"
+      >
         <Play size={18} fill="currentColor" />
       </span>
       {/* Tucked into the top-left corner, out of the content flow. No
@@ -214,30 +230,38 @@ function FeaturedShowCard({
         {index === 0 ? 'Featured show' : 'Full replay'}
       </span>
       <div className="relative z-10 flex min-h-[14rem] max-w-xl flex-col justify-end p-5 text-white sm:p-6">
-        <h2 className="line-clamp-1 text-xl font-semibold tracking-tight">{template.title}</h2>
-        <p className="mt-1 line-clamp-2 text-sm text-white/78">
+        <h2 id={titleId} className="line-clamp-1 text-xl font-semibold tracking-tight">
+          {template.title}
+        </h2>
+        <p id={descriptionId} className="mt-1 line-clamp-2 text-sm text-white/78">
           {template.description ?? template.theme}
         </p>
-        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-white/78">
+        <div
+          id={statsId}
+          className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-white/78"
+        >
           <span className="inline-flex items-center gap-1.5">
-            <Clock3 size={13} />
+            <Clock3 size={13} aria-hidden />
+            <span className="sr-only">Duration </span>
             <span className="tabular-nums">{formatDuration(template.durationSeconds)}</span>
           </span>
           <span className="inline-flex items-center gap-1.5">
-            <ListMusic size={13} />
+            <ListMusic size={13} aria-hidden />
             <span className="tabular-nums">{template.effectsCount}</span>
+            <span className="sr-only"> {template.effectsCount === 1 ? 'effect' : 'effects'}</span>
           </span>
           <span
             className="inline-flex items-center gap-1.5"
             title="Estimated retail cost of fireworks"
           >
-            <BadgeDollarSign size={13} />
+            <BadgeDollarSign size={13} aria-hidden />
+            <span className="sr-only">Estimated retail </span>
             <span className="tabular-nums">{formatBudget(template.totalCents)}</span>
           </span>
         </div>
         <span className="mt-5 inline-flex h-10 w-fit items-center gap-2 rounded-full bg-white/16 px-4 text-sm font-medium text-white transition-colors duration-200 group-hover:bg-white/22">
           Watch replay
-          <ChevronRight size={15} />
+          <ChevronRight size={15} aria-hidden />
         </span>
       </div>
     </Link>
@@ -254,15 +278,20 @@ export function HomeFeaturedShows({ templates }: { templates: ShowTemplateSummar
   if (featured.length === 0) return null;
 
   return (
-    <section className="space-y-3">
+    <section className="space-y-3" aria-labelledby="home-featured-heading">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-foreground text-lg font-semibold tracking-tight">Watch real shows</h2>
+        <h2
+          id="home-featured-heading"
+          className="text-foreground text-lg font-semibold tracking-tight"
+        >
+          Watch real shows
+        </h2>
         <Link
           href="/library"
-          className="text-muted-foreground hover:text-foreground border-border inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors"
+          className="text-muted-foreground hover:text-foreground border-border focus-visible:ring-primary/45 focus-visible:ring-offset-background inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
         >
-          See all
-          <ChevronRight size={14} />
+          See all<span className="sr-only"> real shows</span>
+          <ChevronRight size={14} aria-hidden />
         </Link>
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
@@ -349,24 +378,32 @@ export function HomeCollectionsSection() {
   }, [updateScrollState]);
 
   return (
-    <section className="space-y-4">
-      <h2 className="text-foreground text-lg font-semibold tracking-tight">Curated collections</h2>
-      <div className="relative -mx-4 sm:-mx-6 lg:mx-0">
+    <section className="space-y-4" aria-labelledby="home-collections-heading">
+      <h2
+        id="home-collections-heading"
+        className="text-foreground text-lg font-semibold tracking-tight"
+      >
+        Curated collections
+      </h2>
+      {/* Bleeds to the workspace edge below `lg`; the negative margins mirror
+          the shell's `px-4 sm:px-8` main padding so the first card lines up
+          with the heading and the last card scrolls fully into view. */}
+      <div className="relative -mx-4 sm:-mx-8 lg:mx-0">
         {canScrollLeft ? (
           <div
             aria-hidden
-            className="from-card pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r to-transparent lg:hidden"
+            className="from-background pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r to-transparent lg:hidden"
           />
         ) : null}
         {canScrollRight ? (
           <div
             aria-hidden
-            className="from-card pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l to-transparent lg:hidden"
+            className="from-background pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l to-transparent lg:hidden"
           />
         ) : null}
         <div
           ref={scrollerRef}
-          className="flex snap-x snap-mandatory scroll-px-4 [scrollbar-width:none] gap-5 overflow-x-auto px-4 pt-1 pb-4 sm:scroll-px-6 sm:gap-6 sm:px-6 lg:grid lg:grid-cols-5 lg:gap-[clamp(1.25rem,2.4vw,2.75rem)] lg:overflow-visible lg:px-0 lg:pb-2 [&::-webkit-scrollbar]:hidden"
+          className="flex snap-x snap-mandatory scroll-px-4 [scrollbar-width:none] gap-5 overflow-x-auto px-4 pt-1 pb-4 sm:scroll-px-8 sm:gap-6 sm:px-8 lg:grid lg:grid-cols-5 lg:gap-[clamp(1.25rem,2.4vw,2.75rem)] lg:overflow-visible lg:px-0 lg:pb-2 [&::-webkit-scrollbar]:hidden"
         >
           {COLLECTION_CARDS.map((card) => (
             <Link

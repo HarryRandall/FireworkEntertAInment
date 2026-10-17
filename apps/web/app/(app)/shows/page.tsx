@@ -1,6 +1,9 @@
 /** My shows page listing every show outside the dashboard. */
 import { Suspense } from 'react';
-import { Skeleton } from '@/ui/patterns/Feedback';
+import Link from 'next/link';
+import { Plus } from 'lucide-react';
+import { Button } from '@/ui/patterns/Button';
+import { EmptyNotice, Skeleton } from '@/ui/patterns/Feedback';
 import { TablePagination } from '@/ui/patterns/TablePagination';
 import { getDashboardSummary } from '@/lib/show-summary.server';
 import type { ShowSummaryCard } from '@/lib/show-summary';
@@ -86,11 +89,21 @@ export default async function ShowsPage({ searchParams }: PageProps) {
 
   return (
     <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-5">
-      <header>
-        <h1 className="text-foreground text-2xl font-bold tracking-tight">My shows</h1>
-        <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
-          Search, preview and continue editing your saved show plans.
-        </p>
+      <header className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+        <div className="min-w-0">
+          <h1 className="text-foreground text-2xl font-bold tracking-tight">My shows</h1>
+          <p className="text-muted-foreground mt-1 max-w-2xl text-sm leading-relaxed">
+            Search, preview and continue editing your saved show plans.
+          </p>
+        </div>
+        {/* The empty state carries its own create action, so the header
+            button only appears once there is a grid to sit above. */}
+        {summary.showCount > 0 ? (
+          <Button href="/shows/new" className="h-9 shrink-0 rounded-full px-4">
+            <Plus size={16} aria-hidden />
+            New show
+          </Button>
+        ) : null}
       </header>
       {summary.showCount === 0 ? (
         <ShowsEmptyState />
@@ -128,9 +141,22 @@ async function ShowsGrid({ query, sort, page }: { query: string; sort: SortKey; 
           </div>
         </ShowReplayPreviewProvider>
       ) : (
-        <div className="border-border text-muted-foreground rounded-2xl border border-dashed p-6 text-sm">
-          No shows match that search.
-        </div>
+        <EmptyNotice>
+          {query.trim() ? (
+            <>
+              No shows match &ldquo;{query.trim()}&rdquo;.{' '}
+              <Link
+                href={sort === 'updated' ? '/shows' : `/shows?sort=${sort}`}
+                scroll={false}
+                className="text-foreground underline underline-offset-4"
+              >
+                Clear search
+              </Link>
+            </>
+          ) : (
+            'No shows to display.'
+          )}
+        </EmptyNotice>
       )}
 
       {shows.length > 0 ? (

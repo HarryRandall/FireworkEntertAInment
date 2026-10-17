@@ -41,7 +41,8 @@ type Props = {
   deletingCueId: string | null;
   playFrom: (time: number) => void;
   seekTo: (time: number, resume: boolean) => void;
-  setIsPlaying: (playing: boolean) => void;
+  /** Stops playback before a seek so the jump lands on a still show. */
+  pausePlayback: () => void;
   setInsertBeforeTime: (time: number) => void;
   openCueDialog: (tab: 'manual' | 'ai') => void;
   requestCueDeletion: (target: { cueId: string; fireworkName: string; timeLabel: string }) => void;
@@ -59,7 +60,7 @@ export function ShowCueTable({
   deletingCueId,
   playFrom,
   seekTo,
-  setIsPlaying,
+  pausePlayback,
   setInsertBeforeTime,
   openCueDialog,
   requestCueDeletion,
@@ -129,7 +130,7 @@ export function ShowCueTable({
                             aria-current={isActive ? 'true' : undefined}
                             onClick={(event) => {
                               event.stopPropagation();
-                              setIsPlaying(false);
+                              pausePlayback();
                               seekTo(cue.timeSeconds, false);
                             }}
                             variant="ghost"

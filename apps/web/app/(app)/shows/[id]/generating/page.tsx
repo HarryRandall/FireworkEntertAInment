@@ -8,6 +8,7 @@ import { Button } from '@/ui/patterns/Button';
 import { Card } from '@/ui/patterns/Card';
 import { getAnalyserWarmthState } from '@/lib/analyser-warmth.server';
 import { describeGenerationFailure } from '@/lib/cue-generation/failure-presentation';
+import { buildGenerationHandoverUrl } from '@/lib/generation-handover';
 import { getMusicAnalysisStatus } from '@/lib/show-analyses.server';
 import { getShowBySlug } from '@/lib/shows/queries.server';
 
@@ -71,7 +72,11 @@ export default async function ShowGeneratingPage({ params, searchParams }: PageP
   }
 
   if (show.generationStatus === 'completed') {
-    redirect(`/shows/${show.slug}/preview?autoplay=1`);
+    // Generation is done, but the preview is not watchable yet: the replay
+    // route still streams its data and loads the renderer. Hand over to it
+    // with the context the splash needs to stay up, in its finalising phase,
+    // until the canvas is genuinely ready.
+    redirect(buildGenerationHandoverUrl(show.slug, { title: show.title, hasAudio }));
   }
 
   if (show.generationStatus === 'failed') {

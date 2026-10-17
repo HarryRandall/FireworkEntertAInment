@@ -20,6 +20,7 @@ import {
   use,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useOptimistic,
   useRef,
@@ -70,12 +71,19 @@ import { rehydrateReplayCues, type ReplayCuePayload } from '@/lib/shows/replay-p
 import type { FireworkSpecification, ReplayCue } from '@/lib/show-domain';
 import { formatDuration } from '@/lib/show-domain';
 import type { LaunchPosition } from '@showcrafter/fireworks/design';
+import { handoverSplashVisible, type GenerationHandover } from '@/lib/generation-handover';
 import {
   clearPersistedGenerationCover,
   clearPersistedGenerationStart,
 } from '@/lib/generation-progress-storage';
 import { cn } from '@/lib/utils';
+import {
+  SoundtrackTransport,
+  soundtrackInterruptionMessage,
+  type SoundtrackInterruption,
+} from '@/lib/replay-soundtrack-transport';
 import { OPEN_SHOW_REFINEMENT_EVENT } from '@/lib/show-detail-events';
+import { GenerationHandoverSplash } from '@/ui/shows/GenerationHandoverSplash';
 
 const REFINEMENT_CREDIT_COST = 2;
 
@@ -96,6 +104,12 @@ type FireworkReplayViewerProps = {
   fireworkSpecificationsPromise: Promise<FireworkSpecification[]>;
   /** Server-streamed signed audio URL, kept independent from catalogue work. */
   audioUrlPromise: Promise<string | null>;
+  /**
+   * Set when the user arrives straight from the generating route. The splash
+   * stays over the viewer, in its finalising phase, until the replay is
+   * genuinely watchable, then the session-scoped progress is dropped.
+   */
+  generationHandover?: GenerationHandover | null;
 };
 
 type CueDialogTab = 'manual' | 'ai';
@@ -194,6 +208,7 @@ export function FireworkReplayViewer({
   replayCuesPromise,
   fireworkSpecificationsPromise,
   audioUrlPromise,
+  generationHandover = null,
 }: FireworkReplayViewerProps) {
   const [streamedCues, setStreamedCues] = useState<ReplayCue[] | null>(null);
   const [streamedSpecifications, setStreamedSpecifications] = useState<
@@ -227,7 +242,11 @@ export function FireworkReplayViewer({
     optimisticCues.length > 0 ? Math.max(...optimisticCues.map((cue) => cue.timeSeconds)) + 5 : 30;
   const duration = Math.max(durationSeconds ?? inferredDuration, inferredDuration);
   const [elapsed, setElapsed] = useState(0);
+  // `isPlaying` is the clock actually running; `playIntent` is what the user
+  // last asked for and flips synchronously in the handlers, so the button and
+  // the next click agree even while the browser is still starting the media.
   const [isPlaying, setIsPlaying] = useState(false);
+  const [playIntent, setPlayIntent] = useState(false);
   const [isScrubbing, setIsScrubbing] = useState(false);
   const [playbackControlsActive, setPlaybackControlsActive] = useState(true);
   const [actionResult, setActionResult] = useState<CueActionResult | null>(null);
@@ -251,7 +270,19 @@ export function FireworkReplayViewer({
   const lastUIElapsedRef = useRef(elapsed);
   const lastScrubCommitRef = useRef(0);
   const pendingScrubRef = useRef<number | null>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  // On soundtrack shows the media element is the only clock. The transport
+  // reports every stop we did not ask for (browser pause, media error, source
+  // swap, failed start) and the show freezes at that media time rather than
+  // running on silently; Play resumes both from there.
+  const interruptionHandlerRef = useRef<(interruption: SoundtrackInterruption) => void>(() => {});
+  const [soundtrack] = useState(
+    () => new SoundtrackTransport((interruption) => interruptionHandlerRef.current(interruption)),
+  );
+  const attachSoundtrack = useCallback(
+    (node: HTMLAudioElement | null) => soundtrack.attach(node),
+    [soundtrack],
+  );
+  useLayoutEffect(() => () => soundtrack.dispose(), [soundtrack]);
   const playbackControlsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoplayStartedRef = useRef(false);
   const deletingCueIdRef = useRef<string | null>(null);
@@ -299,26 +330,14 @@ export function FireworkReplayViewer({
     };
   }, [isFullscreen]);
 
-  // Starting audible media belongs in the user's event handler so browser
-  // activation is preserved. This effect only propagates pause state from
-  // non-interaction paths such as reaching the end of the show.
-  useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || isPlaying) return;
-    audio.pause();
-  }, [isPlaying]);
-
   // Keep paused audio aligned with the playhead (e.g. cue-row jumps). While a
   // drag is mid-flight the media element is left alone, because seeking it at
-  // 15 Hz forces repeated decodes. commitScrub seeks it once on release.
+  // 15 Hz forces repeated decodes. commitScrub seeks it once on release. A
+  // pending Play owns the media too: its request already seeked it.
   useEffect(() => {
-    const audio = audioRef.current;
-    if (!audio || isPlaying) return;
-    if (pendingScrubRef.current != null) return;
-    if (Math.abs(audio.currentTime - elapsed) > 0.1) {
-      audio.currentTime = elapsed;
-    }
-  }, [elapsed, isPlaying]);
+    if (isPlaying || playIntent || pendingScrubRef.current != null) return;
+    soundtrack.seek(elapsed);
+  }, [elapsed, isPlaying, playIntent, soundtrack]);
 
   // While playing, the RAF loop owns elapsedRef and writes it at 60Hz, and
   // while scrubbing the drag handler owns it at input rate; mirroring the
@@ -374,28 +393,28 @@ export function FireworkReplayViewer({
       const dtFromStart = (now - startedAt.current) / 1000;
       const frameGap = (now - lastFrameAt) / 1000;
       lastFrameAt = now;
-      const audio = audioRef.current;
-      const audioTime =
-        audio && !audio.paused && !audio.ended && Number.isFinite(audio.currentTime)
-          ? audio.currentTime
-          : null;
-      // Browsers throttle/pause RAF on hidden tabs but performance.now() keeps
-      // ticking. Without this re-anchor we'd leap the playhead by however long
-      // the tab was backgrounded and force the engine into a full replay. Only
-      // a long gap between frames means that; normal frames keep the anchor.
-      if (audioTime == null && frameGap > 0.5) {
-        startedAt.current = now;
-        playheadStart.current = elapsedRef.current;
-        frame = requestAnimationFrame(tick);
-        return;
-      }
-      // When soundtrack audio exists it is the playback clock. Driving both
-      // the renderer and transport from media currentTime prevents cumulative
-      // wall-clock drift between a correctly planned burst and its beat.
-      const next = Math.min(duration, audioTime ?? playheadStart.current + dtFromStart);
-      if (audioTime != null) {
-        startedAt.current = now;
-        playheadStart.current = next;
+      let next: number;
+      if (hasSoundtrack) {
+        // The soundtrack is the playback clock, always. Driving the renderer
+        // and transport from media currentTime prevents drift between a
+        // planned burst and its beat, and when the media stops or starves the
+        // show holds at that same media time instead of running on without it.
+        const clock = soundtrack.sample();
+        if (clock.state === 'interrupted') return; // The interruption handler has frozen the show.
+        next = Math.min(duration, clock.time);
+      } else {
+        // Browsers throttle/pause RAF on hidden tabs but performance.now()
+        // keeps ticking. Without this re-anchor we'd leap the playhead by
+        // however long the tab was backgrounded and force the engine into a
+        // full replay. Only a long gap between frames means that; normal
+        // frames keep the anchor.
+        if (frameGap > 0.5) {
+          startedAt.current = now;
+          playheadStart.current = elapsedRef.current;
+          frame = requestAnimationFrame(tick);
+          return;
+        }
+        next = Math.min(duration, playheadStart.current + dtFromStart);
       }
       // 60Hz drive for the engine and timeline via the ref; React state
       // (active cue, table highlight) is throttled to ~15Hz. The transport
@@ -406,6 +425,9 @@ export function FireworkReplayViewer({
         setElapsed(next);
       }
       if (next >= duration) {
+        // The show is over: stop the music with it, synchronously.
+        soundtrack.pause();
+        setPlayIntent(false);
         setIsPlaying(false);
         return;
       }
@@ -414,7 +436,7 @@ export function FireworkReplayViewer({
 
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [duration, isPlaying]);
+  }, [duration, hasSoundtrack, isPlaying, soundtrack]);
 
   const sortedCues = useMemo(
     () => [...optimisticCues].sort((a, b) => a.timeSeconds - b.timeSeconds),
@@ -483,11 +505,24 @@ export function FireworkReplayViewer({
   const replayReadyCleanupRef = useRef(false);
   useEffect(() => {
     if (!replayReady || replayReadyCleanupRef.current) return;
-    if (searchParams.get('autoplay') !== '1') return;
+    if (searchParams.get('autoplay') !== '1' && !generationHandover) return;
     replayReadyCleanupRef.current = true;
     clearPersistedGenerationStart(showSlug);
     clearPersistedGenerationCover(showSlug);
-  }, [replayReady, searchParams, showSlug]);
+  }, [generationHandover, replayReady, searchParams, showSlug]);
+
+  // The handover splash never pretends and never times out on its own: it
+  // leaves when the replay is ready, when the stage has a real failure to show
+  // in its place (no WebGL, invalid cues), or when the user takes the way out
+  // the splash offers once the wait is overdue.
+  const [stageError, setStageError] = useState<string | null>(null);
+  const [handoverDismissed, setHandoverDismissed] = useState(false);
+  const showHandoverSplash = handoverSplashVisible({
+    handover: generationHandover,
+    replayReady,
+    stageError,
+    dismissed: handoverDismissed,
+  });
 
   function wakePlaybackControls() {
     if (!isPlaying) {
@@ -502,16 +537,48 @@ export function FireworkReplayViewer({
     );
   }
 
+  /**
+   * What the user last asked for. On soundtrack shows the transport holds it,
+   * because a Play may still be pending in the browser when the next click
+   * lands; without a soundtrack there is nothing to wait for and the clock
+   * state is current by the next discrete event.
+   */
+  function wantsPlayback() {
+    return hasSoundtrack ? soundtrack.wantsPlayback : isPlaying;
+  }
+
+  /** Where the show is right now: the media clock while it runs, else the frozen playhead. */
+  function transportTime() {
+    return hasSoundtrack && soundtrack.running ? soundtrack.time : elapsedRef.current;
+  }
+
+  /** Stops the clock exactly at `timeSeconds`; the transport and engine both settle there. */
+  function freezeAt(timeSeconds: number) {
+    const pauseAt = Math.max(0, Math.min(duration, timeSeconds));
+    startedAt.current = null;
+    playheadStart.current = pauseAt;
+    lastUIElapsedRef.current = pauseAt;
+    elapsedRef.current = pauseAt;
+    setElapsed(pauseAt);
+    setIsPlaying(false);
+  }
+
+  /**
+   * Pauses music and fireworks together, synchronously, at the same media
+   * time, and withdraws any Play the browser has not answered yet. Nothing
+   * else may pause the media: an effect-driven pause would run after the
+   * next click and could cancel the Play it just requested.
+   */
+  function pausePlayback(timeSeconds = transportTime()) {
+    soundtrack.pause();
+    setPlayIntent(false);
+    freezeAt(timeSeconds);
+  }
+
   function togglePlayback() {
     if (!hasReplayCues) return;
-    if (isPlaying) {
-      const pauseAt = Math.max(0, Math.min(duration, elapsedRef.current));
-      startedAt.current = null;
-      playheadStart.current = pauseAt;
-      lastUIElapsedRef.current = pauseAt;
-      elapsedRef.current = pauseAt;
-      setElapsed(pauseAt);
-      setIsPlaying(false);
+    if (wantsPlayback()) {
+      pausePlayback();
       return;
     }
     if (elapsedRef.current >= duration) seekTo(0, false);
@@ -519,9 +586,8 @@ export function FireworkReplayViewer({
   }
 
   function startPlayback() {
-    const audio = audioRef.current;
     if (hasSoundtrack) {
-      if (!audio) {
+      if (!soundtrack.attached) {
         toast.error(
           streamedAudioUrl === undefined
             ? 'Your soundtrack is still loading. Try again in a moment.'
@@ -529,25 +595,35 @@ export function FireworkReplayViewer({
         );
         return;
       }
-      const drift = Math.abs(audio.currentTime - elapsedRef.current);
-      if (drift > 0.25) audio.currentTime = elapsedRef.current;
       // Calling play synchronously from the interaction preserves the browser's
-      // media activation. Only start the replay clock after audio really starts.
-      void audio
-        .play()
-        .then(() => setIsPlaying(true))
-        .catch((error) => {
-          console.error('[firework-replay] soundtrack playback failed:', error);
-          setIsPlaying(false);
-          toast.error('The soundtrack could not start. Try pressing Play again.');
-        });
+      // media activation. The replay clock only starts once audio really has,
+      // and never for a request that a pause or unmount has since withdrawn.
+      setPlayIntent(true);
+      void soundtrack.play(elapsedRef.current).then((started) => {
+        if (started) setIsPlaying(true);
+      });
       return;
     }
+    setPlayIntent(true);
     setIsPlaying(true);
   }
 
+  useEffect(() => {
+    interruptionHandlerRef.current = (interruption) => {
+      pausePlayback(interruption.time);
+      if (interruption.reason === 'ended') return;
+      console.error(`[firework-replay] soundtrack ${interruption.reason}:`, interruption.error);
+      toast.error(soundtrackInterruptionMessage(interruption.reason), {
+        id: 'soundtrack-interrupted',
+        action: { label: 'Play', onClick: () => startPlayback() },
+      });
+    };
+  });
+
   function restart() {
-    if (isPlaying) {
+    if (wantsPlayback()) {
+      // Playing, or about to: the media moves to zero and carries on (or
+      // starts there when the pending Play is answered).
       seekTo(0, true);
       return;
     }
@@ -555,15 +631,13 @@ export function FireworkReplayViewer({
     startPlayback();
   }
 
-  function seekTo(timeSeconds: number, continuePlaying = isPlaying) {
+  function seekTo(timeSeconds: number, continuePlaying = wantsPlayback()) {
     const next = Math.max(0, Math.min(duration, timeSeconds));
     elapsedRef.current = next;
     lastUIElapsedRef.current = next;
     playheadStart.current = next;
     startedAt.current = continuePlaying ? performance.now() : null;
-    if (audioRef.current && Math.abs(audioRef.current.currentTime - next) > 0.1) {
-      audioRef.current.currentTime = next;
-    }
+    soundtrack.seek(next);
     setElapsed(next);
   }
 
@@ -612,13 +686,12 @@ export function FireworkReplayViewer({
     lastUIElapsedRef.current = 0;
     playheadStart.current = 0;
     startedAt.current = performance.now();
-    if (audioRef.current && Math.abs(audioRef.current.currentTime) > 0.1) {
-      audioRef.current.currentTime = 0;
-    }
+    soundtrack.seek(0);
     setElapsed(0);
+    setPlayIntent(true);
     setIsPlaying(true);
     router.replace(`/shows/${showSlug}/preview`, { scroll: false });
-  }, [hasReplayCues, hasSoundtrack, isCanvasReady, router, searchParams, showSlug]);
+  }, [hasReplayCues, hasSoundtrack, isCanvasReady, router, searchParams, showSlug, soundtrack]);
 
   function openCueDialog(tab: CueDialogTab, prompt?: string) {
     if (!hasFireworkSpecifications) return;
@@ -719,6 +792,15 @@ export function FireworkReplayViewer({
 
   return (
     <>
+      {showHandoverSplash && generationHandover ? (
+        <GenerationHandoverSplash
+          persistKey={showSlug}
+          title={generationHandover.title}
+          hasAudio={generationHandover.hasAudio}
+          cover={generationHandover.cover ?? null}
+          onDismiss={() => setHandoverDismissed(true)}
+        />
+      ) : null}
       <Suspense fallback={null}>
         <StreamedDataReader promise={replayCuesPromise} onLoaded={handleReplayCuesLoaded} />
       </Suspense>
@@ -775,18 +857,22 @@ export function FireworkReplayViewer({
                 showLoadingBar
                 loadingBarPosition="bottom"
                 onReady={() => setIsCanvasReady(true)}
+                onError={setStageError}
               />
             </CanvasSurface>
 
             {!isSceneReady ? <ReplayCanvasPlaceholder /> : null}
             {replayReady && !hasReplayCues ? <EmptyPreview /> : null}
             {audioUrl ? (
+              // Keyed on the URL so a new source is a fresh element: the
+              // transport detaches the old one (withdrawing its play request)
+              // and binds the new one through the ref.
               <audio
-                ref={audioRef}
+                key={audioUrl}
+                ref={attachSoundtrack}
                 src={audioUrl}
                 preload="auto"
                 className="hidden"
-                onEnded={() => setIsPlaying(false)}
               />
             ) : null}
 
@@ -801,14 +887,14 @@ export function FireworkReplayViewer({
                   elapsed={elapsed}
                   playheadRef={elapsedRef}
                   duration={duration}
-                  isPlaying={isPlaying}
+                  isPlaying={playIntent}
                   disabled={!hasReplayCues}
                   fullscreen={isFullscreen}
                   onPlayPause={togglePlayback}
                   onReset={restart}
                   onFullscreenToggle={toggleFullscreen}
                   onScrub={(next) => {
-                    setIsPlaying(false);
+                    if (wantsPlayback()) pausePlayback();
                     scrubTo(next);
                   }}
                   onScrubEnd={commitScrub}
@@ -1045,7 +1131,9 @@ export function FireworkReplayViewer({
               deletingCueId={deletingCueId}
               playFrom={playFrom}
               seekTo={seekTo}
-              setIsPlaying={setIsPlaying}
+              pausePlayback={() => {
+                if (wantsPlayback()) pausePlayback();
+              }}
               setInsertBeforeTime={setInsertBeforeTime}
               openCueDialog={openCueDialog}
               requestCueDeletion={requestCueDeletion}

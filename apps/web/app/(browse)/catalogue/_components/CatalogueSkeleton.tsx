@@ -9,30 +9,37 @@ function CatalogueSkeleton() {
   return <FireworkBrowseGridSkeleton count={CATALOGUE_PAGE_SIZE} />;
 }
 
-/** Toolbar-shaped placeholder; search text and filter state are data-driven while loading. */
+/** Toolbar-shaped placeholder mirroring `CatalogueToolbar`: a full-width search
+ *  field, then the Filters and Sort buttons (the sort label is hidden below `md`). */
 function CatalogueToolbarSkeleton() {
   return (
-    <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
-      <Skeleton className="h-10 w-full rounded-md" />
-      <div className="flex flex-wrap items-center justify-center gap-2 sm:justify-end">
-        <Skeleton className="h-10 w-36 rounded-md" />
-        <Skeleton className="h-10 w-36 rounded-md" />
-        <Skeleton className="h-10 w-36 rounded-md" />
+    <div className="flex flex-col gap-2 sm:flex-row">
+      <Skeleton className="h-10 w-full flex-1 rounded-md" />
+      <div className="flex gap-2">
+        <Skeleton className="h-10 w-[5.5rem] rounded-md" />
+        <Skeleton className="h-10 w-[4.25rem] rounded-md md:w-40" />
       </div>
     </div>
   );
 }
 
-/** Toolbar, facet chips and grid together, for the page-level Suspense fallback. */
+/** Toolbar, facet chips, result count and grid together, for the page-level
+ *  Suspense fallback and `loading.tsx`. */
 export function CatalogueBrowserSkeleton() {
   return (
-    <div className="flex flex-col gap-5">
+    <div
+      className="flex flex-col gap-5"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading catalogue"
+    >
       <CatalogueToolbarSkeleton />
-      <div className="flex flex-wrap gap-2">
-        {Array.from({ length: 8 }).map((_, index) => (
-          <Skeleton key={index} className="h-8 w-24 rounded-full" />
+      <div className="-mx-1 flex gap-2 overflow-hidden px-1 pb-1">
+        {Array.from({ length: 7 }).map((_, index) => (
+          <Skeleton key={index} className="h-8 w-24 shrink-0 rounded-full" />
         ))}
       </div>
+      <Skeleton className="h-5 w-28" />
       <CatalogueSkeleton />
     </div>
   );

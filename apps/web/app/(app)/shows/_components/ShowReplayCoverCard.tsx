@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { memo, useRef } from 'react';
+import { memo, useId, useRef } from 'react';
 import { BadgeDollarSign, Clock3, ListMusic, Play } from 'lucide-react';
 import { CoverPoster } from '@/ui/covers/CoverPoster';
 import { ReplayCanvasSkeleton } from '@/ui/replay/ReplayCanvasSkeleton';
@@ -31,8 +31,13 @@ export const ShowReplayCoverCard = memo(function ShowReplayCoverCard({
 }) {
   const preview = useShowReplayPreview();
   const coverRef = useRef<HTMLDivElement | null>(null);
+  const cardId = useId();
+  const titleId = `${cardId}-title`;
+  const metaId = `${cardId}-meta`;
+  const statsId = `${cardId}-stats`;
   const isPreviewHovering = preview?.pendingId === show.id || preview?.activeId === show.id;
   const isPreviewRevealed = preview?.readyId === show.id;
+  const editedAt = formatEditedAt(show.lastEditedAt);
 
   function requestPreview() {
     if (coverRef.current) preview?.requestPreview(show.id, coverRef.current, show);
@@ -46,7 +51,8 @@ export const ShowReplayCoverCard = memo(function ShowReplayCoverCard({
     <Link
       href={`/shows/${show.slug}/preview`}
       prefetch={false}
-      aria-label={`Open ${show.title}`}
+      aria-labelledby={titleId}
+      aria-describedby={`${metaId} ${statsId}`}
       className="group focus-visible:ring-primary/45 focus-visible:ring-offset-background block min-w-0 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
       onPointerEnter={requestPreview}
       onPointerLeave={releasePreview}
@@ -55,7 +61,7 @@ export const ShowReplayCoverCard = memo(function ShowReplayCoverCard({
     >
       <div
         ref={coverRef}
-        className="relative aspect-[4/5] overflow-hidden rounded-xl bg-black shadow-sm transition-shadow duration-200 [content-visibility:auto] group-hover:shadow-[0_18px_42px_-30px_rgba(0,0,0,0.68)]"
+        className="relative aspect-[4/5] overflow-hidden rounded-xl bg-black shadow-sm transition-shadow duration-200 [content-visibility:auto] group-hover:shadow-[0_18px_42px_-30px_rgba(0,0,0,0.68)] motion-reduce:transition-none"
       >
         {isPreviewHovering ? (
           <ReplayCanvasSkeleton
@@ -72,40 +78,53 @@ export const ShowReplayCoverCard = memo(function ShowReplayCoverCard({
           imagePath={show.coverImagePath}
           fallbackCover={show.coverShader}
           className={cn(
-            'transition-[opacity,transform] duration-200 ease-out group-hover:scale-105',
+            'transition-[opacity,transform] duration-200 ease-out group-hover:scale-105 motion-reduce:transform-none motion-reduce:transition-none',
             isPreviewRevealed ? 'opacity-0' : 'opacity-100',
           )}
         />
-        <span className="pointer-events-none absolute top-2 left-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute top-2 left-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none"
+        >
           <Play size={16} fill="currentColor" />
         </span>
         <span className="absolute top-2 right-2 z-10 rounded-full bg-black/55 px-2.5 py-1 font-mono text-[10px] font-medium text-white/90 tabular-nums">
-          {formatEditedAt(show.lastEditedAt)}
+          <span className="sr-only">Edited </span>
+          {editedAt}
         </span>
       </div>
 
       <div className="mt-2.5 min-w-0">
-        <h2 className="text-foreground group-hover:text-primary line-clamp-1 text-sm font-semibold transition-colors">
+        <h2
+          id={titleId}
+          className="text-foreground group-hover:text-primary line-clamp-1 text-sm font-semibold transition-colors"
+        >
           {show.title}
         </h2>
-        <span className="text-muted-foreground mt-0.5 line-clamp-1 block text-xs">
+        <span id={metaId} className="text-muted-foreground mt-0.5 line-clamp-1 block text-xs">
           {showMeta(show)}
         </span>
 
-        <div className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs">
+        <div
+          id={statsId}
+          className="text-muted-foreground mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs"
+        >
           <span className="inline-flex items-center gap-1">
-            <Clock3 size={12} />
+            <Clock3 size={12} aria-hidden />
+            <span className="sr-only">Duration </span>
             <span className="tabular-nums">{formatDuration(show.lengthSeconds)}</span>
           </span>
           <span className="inline-flex items-center gap-1">
-            <ListMusic size={12} />
+            <ListMusic size={12} aria-hidden />
             <span className="tabular-nums">{show.cueCount}</span>
+            <span className="sr-only"> {show.cueCount === 1 ? 'cue' : 'cues'}</span>
           </span>
           <span
             className="inline-flex items-center gap-1"
             title="Estimated retail cost of fireworks"
           >
-            <BadgeDollarSign size={12} />
+            <BadgeDollarSign size={12} aria-hidden />
+            <span className="sr-only">Estimated retail </span>
             <span className="tabular-nums">{formatBudget(show.totalCostCents)}</span>
           </span>
         </div>

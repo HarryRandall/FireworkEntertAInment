@@ -193,14 +193,18 @@
   color: var(--stage-glass-foreground);
 }
 
+/* The live step carries the brand green; everything else stays neutral so
+   the one moving element is the one that matters. */
 .stageActive .stageIcon {
-  color: var(--color-content-emphasis);
-  border-color: color-mix(in srgb, var(--color-content-emphasis) 55%, transparent);
+  color: var(--color-primary);
+  border-color: color-mix(in srgb, var(--color-primary) 60%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 10%, transparent);
 }
 
 .hasCover .stageActive .stageIcon {
-  color: var(--stage-glass-foreground);
-  border-color: color-mix(in srgb, var(--stage-glass-foreground) 55%, transparent);
+  color: var(--color-hl);
+  border-color: color-mix(in srgb, var(--color-hl) 60%, transparent);
+  background: color-mix(in srgb, var(--color-hl) 12%, transparent);
 }
 
 .stageIconPulse {
@@ -305,12 +309,12 @@
   inset: 0;
   width: 45%;
   border-radius: inherit;
-  background: var(--color-content-emphasis);
+  background: var(--color-primary);
   animation: segment-sweep 1.6s ease-in-out infinite;
 }
 
 .hasCover .segmentActive::after {
-  background: var(--stage-glass-foreground);
+  background: var(--color-hl);
 }
 
 @keyframes segment-sweep {
@@ -353,6 +357,17 @@
 
 .hasCover .elapsed {
   color: var(--stage-glass-foreground);
+}
+
+/* Recovery controls appear only once a step is overdue; they sit inside the
+   card so keyboard focus stays within the splash. */
+.recovery {
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid color-mix(in srgb, var(--color-border-subtle) 70%, transparent);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 /* === Light theme ======================================================== */

@@ -1,5 +1,5 @@
 /** Frame construction and submission, separate from viewer transport and lifecycle. */
-import { simulate, shotDuration } from '../sim/index';
+import { simulate, type Particles } from '../sim/index';
 import { CAKE_TOP_M, cakeHole } from './props';
 import type { makeWorld } from './world';
 import { SETTINGS } from './settings';
@@ -10,6 +10,7 @@ import { disposeTree } from './world';
 import type { SoundShot } from '../sim/events';
 import type { GpuSprays } from './gpu-sprays';
 import { frameDue } from './low-power';
+import { forEachActiveShot } from './shot-windows';
 // Prototype smoothing weight for displayed milliseconds, dimensionless.
 const TIMING_OLD_WEIGHT = 0.9;
 // Prototype exponential smoothing weight for displayed frame rate, dimensionless.
@@ -47,12 +48,11 @@ export function drawViewerFrame(
   if (profiling) viewer.profiler.begin(viewer.t);
   const start = performance.now();
   sprays.sources.reset(viewer.t);
-  const frames = viewer.shots.flatMap((shot, index) => {
-    const time = viewer.t - (shot.t0 ?? 0);
-    if (time < 0 || time > shotDuration(shot.design)) return [];
+  const frames: Particles[] = [];
+  forEachActiveShot(viewer, viewer.shots, viewer.t, (shot, index, time) => {
     const placement =
       viewer.options.prop === 'cake' ? { position: cakeHole(index), muzzle_m: CAKE_TOP_M } : {};
-    return [
+    frames.push(
       simulate(shot.design, time, {
         ...shot,
         ...placement,
@@ -60,7 +60,7 @@ export function drawViewerFrame(
         sprayPhase: profiling ? viewer.profiler.sprayPhase : undefined,
         spraySource: viewer.sprayMode === 'gpu' ? sprays.sources.receive : undefined,
       }),
-    ];
+    );
   });
   const simulated = performance.now();
   if (profiling) viewer.profiler.simulation(simulated - start);
