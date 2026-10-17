@@ -42,13 +42,18 @@ test('unknown VDL words, wrong families and duplicate parts are refused', () => 
 test('the migration creates, then describes and lists each product', () => {
   const products = buildImport(readProducts(`${header}\n${cake}\n${shell}\n`));
   const sql = importMigration(products, 'test.csv');
-  assert.match(sql, /select pg_temp\.import_cake\('SC-T1'/);
-  assert.match(sql, /select pg_temp\.import_single\('SC-T2'/);
+  assert.match(sql, /perform pg_temp\.import_cake\('SC-T1'/);
+  assert.match(sql, /perform pg_temp\.import_single\('SC-T2'/);
   assert.match(
     sql,
-    /select pg_temp\.describe_product\('SC-T1', 'Test Cake', .*'Cake', 4, 'ShowCrafter Originals', null\)/,
+    /perform pg_temp\.describe_product\('SC-T1', 'Test Cake', .*'Cake', 4, 'ShowCrafter Originals', null\)/,
   );
   assert.match(sql, /is_listed = true/);
+  // Empty databases skip the import instead of failing on missing renderer templates.
+  assert.match(
+    sql,
+    /if not exists \(select 1 from public\.firework_effects where template_key is not null\)/,
+  );
 });
 
 test('the checked-in ShowCrafter originals all build cleanly', () => {
