@@ -94,12 +94,15 @@ export function CatalogueToolbar({
         <span className="sr-only">Search catalogue</span>
         <Search
           size={16}
+          aria-hidden
           className="text-muted-foreground pointer-events-none absolute top-1/2 left-3.5 -translate-y-1/2"
         />
         <input
           value={draft.q}
           onChange={(event) => update({ q: event.target.value })}
           placeholder="Search fireworks, effects, codes"
+          autoComplete="off"
+          enterKeyHint="search"
           className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/45 h-10 w-full rounded-md border pr-11 pl-10 text-sm shadow-xs transition-colors focus:outline-none focus-visible:ring-3"
         />
         {draft.q.trim() ? (
@@ -109,7 +112,7 @@ export function CatalogueToolbar({
             className="text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:ring-border-emphasis absolute top-1/2 right-2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-md transition-colors focus:outline-none focus-visible:ring-2"
             aria-label="Clear search"
           >
-            <X size={14} />
+            <X size={14} aria-hidden />
           </button>
         ) : null}
       </label>
@@ -143,9 +146,9 @@ function SortMenu({ selected, onSelect }: { selected: string; onSelect: (sort: s
           className="h-10 rounded-md px-3"
           aria-label={`Sort products: ${label}`}
         >
-          <ArrowDownUp size={15} className="text-muted-foreground shrink-0" />
+          <ArrowDownUp size={15} aria-hidden className="text-muted-foreground shrink-0" />
           <span className="hidden truncate md:inline">{label}</span>
-          <ChevronDown size={15} className="text-muted-foreground shrink-0" />
+          <ChevronDown size={15} aria-hidden className="text-muted-foreground shrink-0" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-52 p-1">
@@ -210,11 +213,12 @@ function FiltersMenu({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button type="button" variant="secondary" className="h-10 rounded-md px-3">
-          <SlidersHorizontal size={15} className="text-muted-foreground shrink-0" />
+          <SlidersHorizontal size={15} aria-hidden className="text-muted-foreground shrink-0" />
           Filters
           {activeCount > 0 ? (
             <span className="bg-foreground text-background inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs tabular-nums">
               {activeCount}
+              <span className="sr-only"> active</span>
             </span>
           ) : null}
         </Button>

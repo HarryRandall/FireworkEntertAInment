@@ -211,20 +211,26 @@ test('beat planner reserves the direct firework for the final beat of an exact p
   });
 
   assertExactFinale(result, products);
-  const cakeImpacts = result.cues
-    .filter((cue) => cue.productId.startsWith('cake-'))
-    .map((cue) => cue.impactTimeSeconds);
-  const groupedCakeImpacts = Map.groupBy(cakeImpacts, (time) => time);
+  const cakes = result.cues.filter((cue) => cue.productId.startsWith('cake-'));
+  const groupedCakeImpacts = Map.groupBy(cakes, (cue) => cue.impactTimeSeconds);
   assert.equal(groupedCakeImpacts.size, 3);
-  assert.deepEqual(
-    [...groupedCakeImpacts.values()].map((group) => group.length),
-    [2, 2, 2],
-  );
   const orderedImpacts = [...groupedCakeImpacts.keys()].sort((left, right) => left - right);
   assert.equal(
     orderedImpacts.every((time, index) => index === 0 || time - orderedImpacts[index - 1] >= 10),
     true,
   );
+  // Six thirty-second cakes do not all fit three positions between these
+  // moments, so the pack is still placed in full; only the unavoidable
+  // overflow may stack a running cake on a position already in use.
+  const stacked = cakes.filter((cue, index) =>
+    cakes.some(
+      (other, otherIndex) =>
+        otherIndex > index &&
+        other.tube === cue.tube &&
+        Math.abs(other.timeSeconds - cue.timeSeconds) < 30,
+    ),
+  );
+  assert.ok(stacked.length <= 1);
 });
 
 test('beat planner keeps exact quantities when the remaining pack cannot fill a group', () => {

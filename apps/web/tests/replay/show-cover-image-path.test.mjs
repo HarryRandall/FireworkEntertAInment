@@ -128,7 +128,7 @@ test('embedded admin backfill + service-role action write preset posters', () =>
   assert.match(list, /requirePermission\('admin\.manage_catalogue'\)/);
 });
 
-test('generation completion goes directly to preview and uses replay skeleton loading', () => {
+test('generation completion goes directly to preview without loading cues on the way', () => {
   const generatingPage = read('app/(app)/shows/[id]/generating/page.tsx');
   const previewPage = read('app/(app)/shows/[id]/preview/page.tsx');
   const previewLoading = read('app/(app)/shows/[id]/preview/loading.tsx');
@@ -136,16 +136,14 @@ test('generation completion goes directly to preview and uses replay skeleton lo
   const viewer = read('ui/replay/FireworkReplayViewer.tsx');
 
   assert.match(generatingPage, /show\.generationStatus === 'completed'/);
-  assert.match(generatingPage, /redirect\(`\/shows\/\$\{show\.slug\}\/preview\?autoplay=1`\)/);
+  assert.match(generatingPage, /redirect\(buildGenerationHandoverUrl\(show\.slug/);
   assert.doesNotMatch(generatingPage, /listReplayCuesForShow/);
-  assert.doesNotMatch(generatingPage, /handoffParams|handoff: '1'/);
-  assert.match(previewPage, /<Suspense fallback=\{<ReplayPanelSkeleton \/>\}>/);
-  assert.doesNotMatch(previewPage, /GenerationHandoffSplash|handoff|generationHandoff/);
+  // The preview owns the handover: its route loading state is the streaming
+  // fallback, and the viewer clears the persisted generation state itself.
+  assert.match(previewPage, /<Suspense fallback=\{<ShowPreviewLoading \/>\}>/);
   assert.match(previewLoading, /return <ReplayPanelSkeleton \/>/);
-  assert.doesNotMatch(previewLoading, /GenerationHandoffSplash|handoff/);
-  assert.doesNotMatch(showsLoading, /GenerationHandoffSplash|handoff/);
-  assert.doesNotMatch(viewer, /GenerationHandoffSplash|generationHandoff/);
-  assert.match(viewer, /searchParams\.get\('autoplay'\) !== '1'/);
+  assert.doesNotMatch(showsLoading, /GenerationHandoverSplash|handover/);
+  assert.match(viewer, /searchParams\.get\('autoplay'\) !== '1' && !generationHandover/);
   assert.match(viewer, /clearPersistedGenerationStart\(showSlug\)/);
   assert.match(viewer, /clearPersistedGenerationCover\(showSlug\)/);
   assert.equal(existsSync(join(root, 'ui/shows/GenerationHandoffSplash.tsx')), false);

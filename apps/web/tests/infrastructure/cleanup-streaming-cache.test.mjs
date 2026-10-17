@@ -85,8 +85,13 @@ test('app and admin routes have granular loading coverage and streaming boundari
   const previewPage = read('app/(app)/shows/[id]/preview/page.tsx');
   const previewShell = functionBody(previewPage, 'ShowPreviewPage');
   const previewLoader = functionBody(previewPage, 'ShowPreviewReplay');
-  assert.match(previewShell, /<Suspense fallback=\{<ReplayPanelSkeleton \/>\}>/);
-  assert.match(previewShell, /<ShowPreviewReplay params=\{params\} \/>/);
+  // The route loading state is reused as the streaming fallback so the
+  // generation handover splash survives the preview page streaming in.
+  assert.match(previewShell, /<Suspense fallback=\{<ShowPreviewLoading \/>\}>/);
+  assert.match(
+    previewShell,
+    /<ShowPreviewReplay params=\{params\} searchParams=\{searchParams\} \/>/,
+  );
   assert.doesNotMatch(previewShell, /await params/);
   assert.doesNotMatch(previewShell, /getShowBySlug\(/);
   assert.doesNotMatch(previewShell, /getReplayCuePayloadForShow\(/);

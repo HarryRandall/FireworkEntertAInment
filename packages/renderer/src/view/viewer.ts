@@ -63,6 +63,8 @@ export class Viewer {
   speed = 1;
   playing = false;
   externalClock = false;
+  /** Wall-clock seconds of the last external clock sample, to tell seeks from slow playback. */
+  clockSampledAt_s: number | null = null;
   fps = 0;
   fillMs = 0;
   frameMs = 0;
@@ -228,7 +230,7 @@ export class Viewer {
   /** Samples a soundtrack-owned clock in seconds; discontinuities reset sound, smooth ticks retain voices. */
   syncTime(time_s: number, playing: boolean): void {
     if (this.disposed) return;
-    syncViewerClock(this, this.sound, time_s, playing);
+    syncViewerClock(this, this.sound, { time_s, playing });
   }
 
   /** Toggles the current playback state. */

@@ -1,6 +1,14 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+  type ReactNode,
+} from 'react';
 import { useRouter } from 'next/navigation';
 import { AudioLines, Check, MonitorPlay, Sparkles, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -13,10 +21,12 @@ import {
 } from '@/lib/generation-progress-storage';
 import { isCssCover, randomCover, type ShowCover } from '@/lib/cover';
 import { COVER_POSTER_VERSION, isCurrentCoverPosterPath } from '@/lib/cover-poster-url';
+import { shouldPollGeneration } from '@/lib/generation-handover';
 import { renderCoverToPng } from '@/lib/render-cover-poster';
 import { setShowCoverImagePath } from '@/lib/shows/cover-actions.server';
 import { createClient } from '@/lib/supabase/client';
 import { Cover } from '@/ui/covers/Cover';
+import { CoverErrorBoundary } from '@/ui/covers/CoverErrorBoundary';
 import styles from './GeneratingShowAnimation.module.css';
 import { formatElapsed, stageStatusNote } from './generation-delay';
 
@@ -37,6 +47,15 @@ type GeneratingShowAnimationProps = {
   /** Null lets a caller own status polling and recovery. */
   pollIntervalMs?: number | null;
   startedAt?: string | null;
+  /**
+   * Epoch milliseconds the current phase began, when the caller knows better
+   * than this instance's mount (the handover splash remounts several times).
+   * Anchors the "taking longer than expected" note without touching the
+   * overall elapsed readout.
+   */
+  phaseStartedAt?: number | null;
+  /** Honest recovery controls shown inside the card once a step is overdue. */
+  recovery?: ReactNode;
   /** When true, the analyser container is already warm; otherwise its cold start is explained. */
   isWarm?: boolean;
   /** Persisted visual identity for the show, rendered behind the progress card. */
@@ -89,8 +108,8 @@ const GENERATING_WITHOUT_AUDIO_STAGE: Stage = {
 
 const FINALISING_STAGE: Stage = {
   phase: 'finalising',
-  label: 'Loading the preview',
-  description: 'Preparing the replay.',
+  label: 'Opening the preview',
+  description: 'Loading the fireworks and the replay controls.',
   icon: MonitorPlay,
 };
 
@@ -133,6 +152,8 @@ export function GeneratingShowAnimation({
   hasAudio = false,
   pollIntervalMs = 2500,
   startedAt,
+  phaseStartedAt = null,
+  recovery,
   isWarm = false,
   coverShader,
   randomiseCoverOnLoad = false,
@@ -221,7 +242,8 @@ export function GeneratingShowAnimation({
 
     const tick = () => {
       const now = Date.now();
-      const phaseElapsedSeconds = (now - (phaseStartedAtRef.current ?? resolvedStartedAt)) / 1000;
+      const phaseAnchor = phaseStartedAt ?? phaseStartedAtRef.current ?? resolvedStartedAt;
+      const phaseElapsedSeconds = (now - phaseAnchor) / 1000;
       const next: ProgressUi = {
         elapsedSeconds: Math.max(0, Math.floor((now - resolvedStartedAt) / 1000)),
         statusNote:
@@ -241,12 +263,37 @@ export function GeneratingShowAnimation({
     // Once a second is enough for an m:ss readout and avoids a render per frame.
     const interval = window.setInterval(tick, 1000);
     return () => window.clearInterval(interval);
-  }, [hasAudio, isWarm, persistKey, phase, startedAt, status]);
+  }, [hasAudio, isWarm, persistKey, phase, phaseStartedAt, startedAt, status]);
 
+  // Poll the server for the real phase. A hidden tab skips refreshes (each one
+  // re-renders the route on the server) and catches up the moment it returns.
+  // Refreshes run in a transition so a slow status read is never stacked with
+  // the next tick: one in-flight server render at a time.
+  const [isRefreshing, startRefresh] = useTransition();
+  const isRefreshingRef = useRef(false);
+  isRefreshingRef.current = isRefreshing;
   useEffect(() => {
     if (status !== 'running' || pollIntervalMs === null) return;
-    const refresh = window.setInterval(() => router.refresh(), pollIntervalMs);
-    return () => window.clearInterval(refresh);
+    const poll = () => {
+      if (
+        shouldPollGeneration({
+          status,
+          pollIntervalMs,
+          visibilityState: document.visibilityState,
+          refreshPending: isRefreshingRef.current,
+        })
+      )
+        startRefresh(() => router.refresh());
+    };
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') poll();
+    };
+    const refresh = window.setInterval(poll, pollIntervalMs);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => {
+      window.clearInterval(refresh);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
   }, [router, status, pollIntervalMs]);
 
   useEffect(() => {
@@ -326,7 +373,9 @@ export function GeneratingShowAnimation({
     >
       {displayCover ? (
         <div className={styles.shaderLayer} aria-hidden="true">
-          <Cover cover={displayCover} />
+          <CoverErrorBoundary cover={displayCover}>
+            <Cover cover={displayCover} />
+          </CoverErrorBoundary>
         </div>
       ) : null}
       <div className={styles.overlay}>
@@ -408,6 +457,7 @@ export function GeneratingShowAnimation({
               {formatElapsed(progressUi.elapsedSeconds)}
             </span>
           </div>
+          {recovery ? <div className={styles.recovery}>{recovery}</div> : null}
         </div>
       </div>
     </section>

@@ -18,7 +18,7 @@ test('cue rows expose a labelled keyboard-operable seek action', () => {
   // play-from-here handler does not also fire.
   assert.match(
     cueTable,
-    /onClick=\{\(event\) => \{\s*event\.stopPropagation\(\);\s*setIsPlaying\(false\);\s*seekTo\(cue\.timeSeconds, false\);/,
+    /onClick=\{\(event\) => \{\s*event\.stopPropagation\(\);\s*pausePlayback\(\);\s*seekTo\(cue\.timeSeconds, false\);/,
   );
   assert.match(cueTable, /variant="ghost"/);
   // Selecting a row plays the show live from that cue (same as the menu action).

@@ -2,9 +2,10 @@
 
 /** Consumer replay presentation and transport integration. */
 
-import { type MutableRefObject, useEffect, useRef, useState } from 'react';
+import { type FocusEvent, type MutableRefObject, useEffect, useState } from 'react';
 import { Maximize2, Minimize2, Pause, Play, Repeat, RotateCcw } from 'lucide-react';
 import { playbackReadoutGate } from '@/ui/renderer/playback-readout';
+import { createScrubGesture } from '@/ui/replay/scrub-gesture';
 import { formatDuration } from '@/lib/show-domain';
 import { cn } from '@/lib/utils';
 import { Button } from '@/ui/patterns/Button';
@@ -76,15 +77,17 @@ export function ReplayTransportControls({
   onScrubEnd,
 }: ReplayTransportControlsProps) {
   const safeDuration = Math.max(0.1, duration);
-  const scrubbingRef = useRef(false);
   const [localElapsed, setLocalElapsed] = useState(elapsed);
   const selfAnimated = playheadRef != null && isPlaying;
+  // One gesture machine for the life of the control; the handlers it tells us
+  // to call are always the ones from the current render.
+  const [gesture] = useState(createScrubGesture);
 
   useEffect(() => {
     // While self-animating, the RAF below owns localElapsed; syncing the
     // throttled prop on top would step the thumb backwards between frames.
-    if (!scrubbingRef.current && !selfAnimated) setLocalElapsed(elapsed);
-  }, [elapsed, selfAnimated]);
+    if (!gesture.active && !selfAnimated) setLocalElapsed(elapsed);
+  }, [elapsed, gesture, selfAnimated]);
 
   // Keep the transport clock in sync without a React update on every display frame.
   useEffect(() => {
@@ -93,16 +96,13 @@ export function ReplayTransportControls({
     const playhead = playheadRef;
     const readout = playbackReadoutGate();
     function tick(nowMs: number) {
-      if (
-        !scrubbingRef.current &&
-        readout({ time: playhead.current, duration, playing: true }, nowMs)
-      )
+      if (!gesture.active && readout({ time: playhead.current, duration, playing: true }, nowMs))
         setLocalElapsed(playhead.current);
       frame = requestAnimationFrame(tick);
     }
     frame = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(frame);
-  }, [selfAnimated, playheadRef, duration]);
+  }, [selfAnimated, playheadRef, duration, gesture]);
 
   const safeElapsed = Math.min(safeDuration, Math.max(0, localElapsed));
   const visibleTicks = ticks.filter(
@@ -114,21 +114,28 @@ export function ReplayTransportControls({
   function scrubTo(seconds: number) {
     if (disabled) return;
     const next = Math.min(safeDuration, Math.max(0, seconds));
-    scrubbingRef.current = true;
     setLocalElapsed(next);
     onScrub(next);
+    if (gesture.change()) onScrubEnd?.();
   }
 
   function commitScrub() {
-    if (!scrubbingRef.current) return;
-    scrubbingRef.current = false;
-    onScrubEnd?.();
+    if (gesture.commit()) onScrubEnd?.();
   }
 
   function jumpToTick(seconds: number) {
-    scrubTo(seconds);
-    scrubbingRef.current = false;
-    onScrubEnd?.();
+    if (disabled) return;
+    const next = Math.min(safeDuration, Math.max(0, seconds));
+    setLocalElapsed(next);
+    onScrub(next);
+    if (gesture.jump()) onScrubEnd?.();
+  }
+
+  // A drag the pointer never finished on the slider (focus left mid-gesture)
+  // still ends, so the parent does not stay in its scrubbing state.
+  function endScrubOnLeave(event: FocusEvent<HTMLDivElement>) {
+    if (event.currentTarget.contains(event.relatedTarget)) return;
+    if (gesture.leave()) onScrubEnd?.();
   }
 
   return (
@@ -183,7 +190,7 @@ export function ReplayTransportControls({
         <span className="text-muted-foreground min-w-[2.55rem] text-right font-mono text-[11px] tabular-nums">
           {formatDuration(safeElapsed)}
         </span>
-        <div className="relative min-w-0 py-2">
+        <div className="relative min-w-0 py-2" onBlur={endScrubOnLeave}>
           <Slider
             min={0}
             max={safeDuration}

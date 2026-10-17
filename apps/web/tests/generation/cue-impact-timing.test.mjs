@@ -138,7 +138,7 @@ test('beat precision honours sparse pacing, palette and requested structural mom
   const beatPlanning = `${beat}\n${moments}`;
 
   assert.match(beatPlanning, /parseCreativeDirection/);
-  assert.match(beatPlanning, /direction\.density === 'sparse'/);
+  assert.match(beatPlanning, /densityForSection\(direction, moment\.vibe\) === 'sparse'/);
   assert.match(beatPlanning, /direction\.quietMiddle/);
   assert.match(beatPlanning, /direction\.softEnding/);
   assert.match(beatPlanning, /direction\.bigEnding/);
@@ -192,12 +192,4 @@ test('dice brief wording maps to the promised timing and pacing controls', () =>
   assert.equal(beatSynced.density, 'dense');
   assert.equal(quietMoment.quietMiddle, true);
   assert.equal(exactBeat.precise, true);
-});
-
-test('soundtrack playback is the replay clock while audio is active', () => {
-  const viewer = read('ui/replay/FireworkReplayViewer.tsx');
-
-  assert.match(viewer, /audio\.currentTime/);
-  assert.match(viewer, /audioTime \?\? playheadStart\.current \+ dtFromStart/);
-  assert.match(viewer, /soundtrack audio exists it is the playback clock/);
 });

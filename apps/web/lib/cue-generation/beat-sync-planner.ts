@@ -14,6 +14,7 @@ import {
 } from '@/lib/assortments/constraints';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
 import type { CueSlot } from '@/lib/beat-grid.server';
+import type { ProductTimingProfile } from '@/lib/fireworks/timing-profile';
 import {
   buildBeatMoments,
   findFinalMusicalHit,
@@ -35,6 +36,18 @@ import { recurringMotifIds } from './motifs';
 import type { CueEmphasis, ShowBriefRow } from './schemas';
 import { isGroundEffect } from './show-options';
 import { asShowStyleKey } from './show-styles';
+import {
+  PHASE_LIMITS,
+  SustainedLayerLedger,
+  finishesWithSong,
+  isSustainedProduct,
+  slotDensityPhase,
+  sustainedLayerLimit,
+  sustainedLayerSeconds,
+  sustainedShotRate,
+  type DensityPhase,
+  type LayerStartOptions,
+} from './sustained-layers';
 
 export type BeatSyncPlanResult = {
   cues: PlannedCue[];
@@ -60,6 +73,8 @@ type BeatProductPools = {
 type PlanningTarget = BeatMoment & {
   exactFinalRole: 'reserved' | 'remainder' | null;
   allowRepeatedSustained: boolean;
+  /** Final pack-consuming passes may stack a cake on a busy position. */
+  relaxLayers: boolean;
 };
 
 export function planCuesOnBeats(params: {
@@ -111,6 +126,20 @@ export function planCuesOnBeats(params: {
     );
   }
   const sustainedSections = new Set<string>();
+  const layers = new SustainedLayerLedger();
+  // A chorus bed belongs at the start of the chorus. Climax beats are planned
+  // first for their tubes, so the bed waits for its section's opening beat
+  // and only falls back to a later beat once that opening has been tried.
+  const sectionSpans = sectionSpansForTargets(targets, songDuration);
+  const bedOpenings = bedOpeningTimes(targets, direction);
+  const bedOpeningTried = new Set<string>();
+  // A physical pack or a cake-only catalogue has to be placed in full, so
+  // beds then keep only one cake per launch position rather than a musical cap.
+  const physicalLayers =
+    availabilityByProductId != null ||
+    products.every((product) =>
+      isSustainedProduct(product, params.timingProfiles?.get(product.id)?.normal),
+    );
   // Reserve requested surprises and structural peaks before ordinary beats.
   // Lift compensation can put their launches earlier than the beats around them.
   const rankedTargets = splitFinalTarget(targets, finalMusicalHit).sort(
@@ -120,15 +149,22 @@ export function planCuesOnBeats(params: {
   );
   const finalRemainders = rankedTargets.filter((target) => target.exactFinalRole === 'remainder');
   const primaryTargets = rankedTargets.filter((target) => target.exactFinalRole !== 'remainder');
-  // Exact packs first spread multishots across distinct sections. A bounded
-  // overflow pass revisits the ordinary targets before using spare finale
+  // Exact packs first spread multishots across distinct sections. Bounded
+  // overflow passes revisit the ordinary targets before using spare finale
   // tubes, so deferral cannot make a schedulable pack under-use its inventory.
+  // The first pass still keeps one running cake per position; only the last
+  // resort stacks cakes, so an oversized pack is placed rather than rejected.
   const overflowTargets = finalMusicalHit
     ? primaryTargets
         .filter((target) => target.exactFinalRole == null)
         .map((target) => ({ ...target, allowRepeatedSustained: true }))
     : [];
-  const planningTargets = [...primaryTargets, ...overflowTargets, ...finalRemainders];
+  const planningTargets = [
+    ...primaryTargets,
+    ...overflowTargets,
+    ...overflowTargets.map((target) => ({ ...target, relaxLayers: true })),
+    ...finalRemainders,
+  ];
 
   for (let i = 0; i < planningTargets.length; i += 1) {
     if (cues.length >= MAX_BEAT_CUES) {
@@ -145,8 +181,20 @@ export function planCuesOnBeats(params: {
     const targetTubes = isExactFinalTarget
       ? target.tubes.filter((tube) => tube < maxTubes)
       : tubesForTarget(target, direction, maxTubes);
+    const bedOpening = bedOpenings.get(target.sectionKey);
     const wantsSustained =
-      !isExactFinalTarget && shouldStartSustainedLayer(target, direction, sustainedSections);
+      !isExactFinalTarget &&
+      shouldStartSustainedLayer(target, direction, sustainedSections) &&
+      (bedOpening == null ||
+        Math.abs(bedOpening - target.time) <= 0.001 ||
+        bedOpeningTried.has(target.sectionKey));
+    if (bedOpening != null && Math.abs(bedOpening - target.time) <= 0.001) {
+      bedOpeningTried.add(target.sectionKey);
+    }
+    const phase = slotDensityPhase(target);
+    const sectionEnd = target.finale
+      ? songDuration
+      : (sectionSpans.get(target.sectionKey)?.end ?? songDuration);
     const remainingExactQuantity = availabilityByProductId
       ? Math.max(0, requiredCueCount - cues.length)
       : null;
@@ -164,7 +212,10 @@ export function planCuesOnBeats(params: {
       availabilityByProductId && target.exactFinalRole == null && onlyMultishotsRemain
         ? Math.min(2, remainingExactQuantity ?? 2)
         : (remainingExactQuantity ?? targetTubes.length);
-    const tubeOrder = limitExactTubeOrder(orderedTubes, exactMomentLimit);
+    // The limit caps cues per moment; every position stays a fallback so a
+    // cake still running on the preferred rack does not block the moment.
+    const tubeOrder = preferExactTubeOrder(orderedTubes, exactMomentLimit);
+    const momentCueLimit = Math.min(exactMomentLimit, tubeOrder.length);
     const deferRepeatedSustainedSection =
       availabilityByProductId != null &&
       target.exactFinalRole == null &&
@@ -178,25 +229,50 @@ export function planCuesOnBeats(params: {
             candidate.sectionKey !== target.sectionKey &&
             !sustainedSections.has(candidate.sectionKey),
         );
+    // The last pack-consuming passes fall back to ignition spacing alone and
+    // leave the honest failure to the assortment ledger.
+    const layerLimits: LayerStartOptions | null =
+      target.relaxLayers || target.exactFinalRole === 'remainder'
+        ? null
+        : physicalLayers
+          ? { activeLimit: maxTubes, shotRateLimit: null }
+          : {
+              activeLimit: sustainedLayerLimit(phase, maxTubes),
+              shotRateLimit: PHASE_LIMITS[phase].shotRate,
+            };
     const occupiedStart = occupied.length;
+    const layersStart = layers.size;
     const cueStart = cues.length;
     const productRotorStart = productRotor;
     const alreadyHadSustainedLayer = sustainedSections.has(target.sectionKey);
     let acceptedForMoment = 0;
+    let bedPlaced = false;
 
     for (let tubeIndex = 0; tubeIndex < tubeOrder.length; tubeIndex += 1) {
-      if (cues.length >= MAX_BEAT_CUES) break;
+      if (cues.length >= MAX_BEAT_CUES || acceptedForMoment >= momentCueLimit) break;
       const tube = tubeOrder[tubeIndex];
-      const preferSustained = wantsSustained && tubeIndex === 0;
+      // The bed tries every position until one is free of a running cake,
+      // so an earlier layer on the preferred rack does not cost the section
+      // its bed.
+      const preferSustained = wantsSustained && !bedPlaced;
+      const timingPreference = (product: FireworkSpecification) =>
+        musicTimingPreference(params.timingProfiles?.get(product.id)?.[emphasis], {
+          ...target,
+          beatIntervalSeconds: beatIntervals.get(target.time) ?? null,
+        });
       const preferredProductOrder = orderProductsForTarget(
         productPools,
         productRotor,
         target,
         preferSustained,
+        timingPreference,
         (product) =>
-          musicTimingPreference(params.timingProfiles?.get(product.id)?.[emphasis], {
-            ...target,
-            beatIntervalSeconds: beatIntervals.get(target.time) ?? null,
+          sustainedBedFit({
+            product,
+            profile: params.timingProfiles?.get(product.id)?.[emphasis],
+            phase,
+            remainingSectionSeconds: sectionEnd - impactTimeSeconds,
+            timingPreference: timingPreference(product),
           }),
       );
       const productOrder = availabilityByProductId
@@ -230,14 +306,28 @@ export function planCuesOnBeats(params: {
         ) {
           continue;
         }
+        const profile = params.timingProfiles?.get(product.id)?.[emphasis];
         const timing = scheduleProductForCueSlot({
           product,
           emphasis,
           targetTimeSeconds: impactTimeSeconds,
-          timingProfile: params.timingProfiles?.get(product.id)?.[emphasis],
+          timingProfile: profile,
         });
         if (!timing) continue;
         if (tube >= maxTubes) continue;
+        // A cake must finish with the music. Only the last pack-consuming
+        // passes may let one run past the end rather than reject the pack.
+        if (
+          layerLimits &&
+          (product.shotCount ?? 1) > 1 &&
+          !finishesWithSong({
+            product,
+            profile,
+            launchTimeSeconds: timing.launchTimeSeconds,
+            songDuration,
+          })
+        )
+          continue;
         const windows = [
           {
             start: timing.launchTimeSeconds,
@@ -248,6 +338,22 @@ export function planCuesOnBeats(params: {
           },
         ];
         if (windows.some((window) => overlaps(window, occupied))) continue;
+        // A cake keeps firing well past its ignition window: it needs this
+        // launch position for its whole run and a passage with room for
+        // another layer beside the cakes already burning, whatever product
+        // they are.
+        const layer =
+          layerLimits && isSustainedProduct(product, profile)
+            ? {
+                productId: product.id,
+                tube,
+                start: timing.launchTimeSeconds,
+                end: timing.launchTimeSeconds + sustainedLayerSeconds(product, profile),
+                shotRate: sustainedShotRate(product, profile),
+              }
+            : null;
+        if (layer && layerLimits && !layers.canStart(layer, layerLimits)) continue;
+        if (layer) layers.add(layer);
         accepted = { product, timing, windows };
         const cadenceIndex = productPools.cadence.indexOf(product);
         if (cadenceIndex >= 0) {
@@ -263,6 +369,7 @@ export function planCuesOnBeats(params: {
       acceptedForMoment += 1;
       if ((accepted.product.shotCount ?? 1) > 1) {
         sustainedSections.add(target.sectionKey);
+        bedPlaced = true;
       }
       cues.push({
         timeSeconds: accepted.timing.launchTimeSeconds,
@@ -279,7 +386,7 @@ export function planCuesOnBeats(params: {
 
     if (
       !shouldKeepPlannedMoment({
-        requestedTubeCount: tubeOrder.length,
+        requestedTubeCount: momentCueLimit,
         acceptedTubeCount: acceptedForMoment,
         vibe: target.vibe,
         nearClimax: target.nearClimax,
@@ -292,6 +399,7 @@ export function planCuesOnBeats(params: {
         else productUsage.delete(cue.productId);
       }
       occupied.length = occupiedStart;
+      layers.truncate(layersStart);
       cues.length = cueStart;
       productRotor = productRotorStart;
       if (!alreadyHadSustainedLayer) sustainedSections.delete(target.sectionKey);
@@ -355,14 +463,18 @@ function splitFinalTarget(
 ): PlanningTarget[] {
   return targets.flatMap((target): PlanningTarget[] => {
     if (!finalMusicalHit || Math.abs(target.time - finalMusicalHit.time) > 0.001) {
-      return [{ ...target, exactFinalRole: null, allowRepeatedSustained: false }];
+      return [
+        { ...target, exactFinalRole: null, allowRepeatedSustained: false, relaxLayers: false },
+      ];
     }
 
     const reservedTube = target.tubes.includes(finalMusicalHit.tube)
       ? finalMusicalHit.tube
       : target.tubes[0];
     if (reservedTube == null) {
-      return [{ ...target, exactFinalRole: null, allowRepeatedSustained: false }];
+      return [
+        { ...target, exactFinalRole: null, allowRepeatedSustained: false, relaxLayers: false },
+      ];
     }
 
     const reservedSlotIndices = target.slotIndices.map((slotIndex, tube) =>
@@ -374,6 +486,7 @@ function splitFinalTarget(
       slotIndices: reservedSlotIndices,
       exactFinalRole: 'reserved',
       allowRepeatedSustained: false,
+      relaxLayers: false,
     };
     const remainingTubes = target.tubes.filter((tube) => tube !== reservedTube);
     if (!remainingTubes.length) return [reserved];
@@ -390,6 +503,7 @@ function splitFinalTarget(
       slotIndices: remainderSlotIndices,
       exactFinalRole: 'remainder',
       allowRepeatedSustained: false,
+      relaxLayers: false,
     };
     return [reserved, remainder];
   });
@@ -486,6 +600,7 @@ function orderProductsForTarget(
   target: BeatMoment,
   preferSustained: boolean,
   timingPreference: (product: FireworkSpecification) => number,
+  bedFit: (product: FireworkSpecification) => number,
 ): FireworkSpecification[] {
   const motifIds = new Set(
     recurringMotifIds(
@@ -509,18 +624,56 @@ function orderProductsForTarget(
           (_, offset) => recurringCadence[(rotor + offset) % recurringCadence.length],
         );
   if (preferSustained && pools.sustained.length) {
+    // The bed is chosen for the passage: a cake that fills the section at a
+    // rate the phase can carry and ends with it, rather than whichever cake
+    // the rotation happened to reach.
     const sustainedOffset = target.sourceIndex % pools.sustained.length;
     const sustained = Array.from(
       { length: pools.sustained.length },
       (_, offset) => pools.sustained[(sustainedOffset + offset) % pools.sustained.length],
     );
-    sustained.sort((left, right) => timingPreference(right) - timingPreference(left));
+    const fit = new Map(sustained.map((product) => [product.id, bedFit(product)]));
+    sustained.sort((left, right) => (fit.get(right.id) ?? 0) - (fit.get(left.id) ?? 0));
     return [...sustained, ...direct];
   }
   if (target.isSurprise || target.nearClimax) {
     return pools.spectacle;
   }
   return direct;
+}
+
+/** Weighting of the bed-fit components; the sum bounds the score near 2.5. */
+const BED_RATE_WEIGHT = 1;
+const BED_SPAN_WEIGHT = 1;
+const BED_TIMING_WEIGHT = 0.6;
+/** A cake firing faster than the passage's ceiling costs this much per multiple over it. */
+const BED_OVERDENSE_PENALTY = 0.5;
+
+/**
+ * How well a cake serves as this passage's bed. Rate is rewarded up to the
+ * phase's shot-rate ceiling, so a chorus gets a cake that actually fills it
+ * rather than one shot every few seconds; span is rewarded for ending with
+ * the section, so a chorus bed does not keep running through the verse that
+ * follows; and the cadence preference breaks ties towards the beat.
+ */
+function sustainedBedFit(params: {
+  product: FireworkSpecification;
+  profile: ProductTimingProfile | undefined;
+  phase: DensityPhase;
+  remainingSectionSeconds: number;
+  timingPreference: number;
+}): number {
+  const { product, profile, phase, remainingSectionSeconds, timingPreference } = params;
+  const rate = sustainedShotRate(product, profile);
+  const ceiling = PHASE_LIMITS[phase].shotRate;
+  const rateScore =
+    Math.min(rate, ceiling) / ceiling - BED_OVERDENSE_PENALTY * Math.max(0, rate / ceiling - 1);
+  const layerSeconds = sustainedLayerSeconds(product, profile);
+  const overflow = Math.max(0, layerSeconds - Math.max(0, remainingSectionSeconds));
+  const spanScore = 1 - overflow / Math.max(1, layerSeconds);
+  return (
+    rateScore * BED_RATE_WEIGHT + spanScore * BED_SPAN_WEIGHT + timingPreference * BED_TIMING_WEIGHT
+  );
 }
 
 function shouldStartSustainedLayer(
@@ -530,11 +683,52 @@ function shouldStartSustainedLayer(
 ): boolean {
   if (sustainedSections.has(target.sectionKey)) return false;
   if (target.isSurprise || (direction.softEnding && target.finale)) return false;
-  if (target.nearClimax) return true;
-  if (!target.isDownbeat) return false;
-  return (
-    target.vibe === 'chorus' || target.vibe === 'drop' || (target.finale && !direction.softEnding)
-  );
+  const rising = target.vibe === 'pre-chorus' || target.vibe === 'buildup';
+  const busy = target.vibe === 'chorus' || target.vibe === 'drop';
+  // A climax that spills into the first beat of a verse must not seed a cake
+  // there: beds belong to the passages that carry them, and a verse running
+  // a cake under the chorus's bed would erase the contrast between them.
+  if (target.nearClimax) return busy || rising || target.finale;
+  if (!target.isDownbeat && !target.isSectionStart) return false;
+  return busy || (target.finale && !direction.softEnding);
+}
+
+/** First and last planned beat of every section occurrence, in song time. */
+function sectionSpansForTargets(
+  targets: readonly BeatMoment[],
+  songDuration: number,
+): Map<string, { start: number; end: number }> {
+  const spans = new Map<string, { start: number; end: number }>();
+  const ordered = [...targets].sort((a, b) => a.time - b.time);
+  for (const target of ordered) {
+    const span = spans.get(target.sectionKey);
+    if (span) span.end = target.time;
+    else spans.set(target.sectionKey, { start: target.time, end: target.time });
+  }
+  // A section runs until the next one starts, or to the end of the song.
+  const keys = [...spans.keys()];
+  keys.forEach((key, index) => {
+    const next = keys[index + 1];
+    const span = spans.get(key);
+    if (!span) return;
+    span.end = next ? (spans.get(next)?.start ?? songDuration) : songDuration;
+  });
+  return spans;
+}
+
+/** The beat each section's bed should open on: its earliest eligible beat. */
+function bedOpeningTimes(
+  targets: readonly BeatMoment[],
+  direction: CreativeDirection,
+): Map<string, number> {
+  const openings = new Map<string, number>();
+  for (const target of [...targets].sort((a, b) => a.time - b.time)) {
+    if (openings.has(target.sectionKey)) continue;
+    if (shouldStartSustainedLayer(target, direction, new Set())) {
+      openings.set(target.sectionKey, target.time);
+    }
+  }
+  return openings;
 }
 
 function tubesForTarget(
@@ -558,11 +752,12 @@ function orderTubesForMoment(tubes: Array<0 | 1 | 2>, wantsSustained: boolean): 
   return [1, ...tubes.filter((tube) => tube !== 1)];
 }
 
-function limitExactTubeOrder(orderedTubes: Array<0 | 1 | 2>, limit: number): Array<0 | 1 | 2> {
+/** A pair of cakes from one pack prefers the outer positions. */
+function preferExactTubeOrder(orderedTubes: Array<0 | 1 | 2>, limit: number): Array<0 | 1 | 2> {
   if (limit === 2 && orderedTubes.includes(0) && orderedTubes.includes(2)) {
-    return [0, 2];
+    return [0, 2, ...orderedTubes.filter((tube) => tube !== 0 && tube !== 2)];
   }
-  return orderedTubes.slice(0, limit);
+  return orderedTubes;
 }
 
 function describeBeatCue(target: BeatMoment, product: FireworkSpecification): string {

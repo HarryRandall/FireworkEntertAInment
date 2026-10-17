@@ -15,7 +15,11 @@ import {
 import { fireworkOccupancyDurationSeconds, type FireworkSpecification } from '@/lib/show-domain';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
 import { findFinalMusicalHit, launchPositionCountForSlots } from './beat-sync-moments';
-import { parseCreativeDirection, type CreativeDirection } from './creative-direction';
+import {
+  densityForSection,
+  parseCreativeDirection,
+  type CreativeDirection,
+} from './creative-direction';
 import { scheduleProductForCueSlot } from './impact-timing';
 import {
   localBeatIntervalSeconds,
@@ -25,6 +29,16 @@ import {
 import { GENERATED_LAUNCH_INTERVAL_SECONDS } from './launch-spacing';
 import type { CueEmphasis, ShowBriefRow } from './schemas';
 import { asShowStyleKey, type ShowStyleKey } from './show-styles';
+import {
+  PHASE_LIMITS,
+  SustainedLayerLedger,
+  isSustainedProduct,
+  slotDensityPhase,
+  sustainedLayerLimit,
+  sustainedLayerSeconds,
+  sustainedShotRate,
+  type LayerStartOptions,
+} from './sustained-layers';
 
 export type PlannedCue = {
   /** Renderer launch time persisted to `show_timeline_items.time_seconds`. */
@@ -153,6 +167,14 @@ export function planCuesFast(params: {
 
   const occupied: OccupiedWindow[] = [];
   const multiImpacts = new Set<number>();
+  const layers = new SustainedLayerLedger();
+  // A physical pack or a cake-only catalogue has to be placed in full, so
+  // beds then keep only one cake per launch position rather than a musical cap.
+  const physicalLayers =
+    availabilityByProductId != null ||
+    productInfos.every((product) =>
+      isSustainedProduct(product.product, params.timingProfiles?.get(product.product.id)?.normal),
+    );
   const choiceContext: ProductChoiceContext = {
     usage: new Map(),
     recentProductIds: [],
@@ -198,7 +220,15 @@ export function planCuesFast(params: {
       : wantsMulti
         ? [multiPool, singlePool]
         : [singlePool];
-    const accepted = findAcceptedPlacement({
+    const phase = slotDensityPhase(slot);
+    const layerLimits: LayerStartOptions =
+      physicalLayers || isFinalHit
+        ? { activeLimit: maxTubes, shotRateLimit: null }
+        : {
+            activeLimit: sustainedLayerLimit(phase, maxTubes),
+            shotRateLimit: PHASE_LIMITS[phase].shotRate,
+          };
+    const placementParams = {
       pools,
       slot,
       emphasis,
@@ -210,7 +240,16 @@ export function planCuesFast(params: {
       occupied,
       multiImpacts,
       availabilityByProductId,
-    });
+      layers,
+    };
+    // An exact pack must still be consumed in full: when no launch position
+    // can hold another cake for its whole run, fall back to ignition spacing
+    // alone so the honest failure remains the assortment ledger's.
+    const accepted =
+      findAcceptedPlacement({ ...placementParams, layerLimits }) ??
+      (availabilityByProductId
+        ? findAcceptedPlacement({ ...placementParams, layerLimits: null })
+        : undefined);
 
     if (!accepted) {
       skippedSlots += 1;
@@ -268,6 +307,9 @@ function findAcceptedPlacement(params: {
   occupied: OccupiedWindow[];
   multiImpacts: Set<number>;
   availabilityByProductId: ProductQuantityLedger | null;
+  layers: SustainedLayerLedger;
+  /** Null skips the sustained-layer ledger entirely. */
+  layerLimits: LayerStartOptions | null;
 }): AcceptedPlacement | undefined {
   const {
     pools,
@@ -292,7 +334,7 @@ function findAcceptedPlacement(params: {
       preferFastCadence:
         !preferSpectacle &&
         (direction.precise ||
-          direction.density === 'dense' ||
+          densityForSection(direction, slot.vibe) === 'dense' ||
           slot.vibe === 'pre-chorus' ||
           slot.vibe === 'buildup' ||
           slot.vibe === 'chorus' ||
@@ -307,6 +349,8 @@ function findAcceptedPlacement(params: {
       multiImpacts,
       choiceContext,
       availabilityByProductId,
+      params.layers,
+      params.layerLimits,
     );
     if (placement) return placement;
   }
@@ -322,6 +366,8 @@ function acceptFirstPlacement(
   multiImpacts: Set<number>,
   choiceContext: ProductChoiceContext,
   availabilityByProductId: ProductQuantityLedger | null,
+  layers: SustainedLayerLedger,
+  layerLimits: LayerStartOptions | null,
 ): AcceptedPlacement | undefined {
   for (const product of ranked) {
     const quantityLimit = availabilityByProductId?.get(product.product.id);
@@ -331,14 +377,16 @@ function acceptFirstPlacement(
     ) {
       continue;
     }
+    const profile = choiceContext.timingProfiles?.get(product.product.id)?.[emphasis];
     const timing = scheduleProductForCueSlot({
       product: product.product,
       emphasis,
       targetTimeSeconds: slot.time,
-      timingProfile: choiceContext.timingProfiles?.get(product.product.id)?.[emphasis],
+      timingProfile: profile,
     });
     if (!timing) continue;
     if (product.isMultiShot && multiImpacts.has(timing.impactTimeSeconds)) continue;
+    const sustained = layerLimits != null && isSustainedProduct(product.product, profile);
     const tubeOrder = [
       slot.tube,
       ...Array.from({ length: maxTubes }, (_, tube) => tube as 0 | 1 | 2).filter(
@@ -355,7 +403,21 @@ function acceptFirstPlacement(
         },
       ];
       if (windows.some((window) => overlapsOccupiedWindow(window, occupied))) continue;
+      // A cake keeps firing long after its ignition window, so it needs a
+      // launch position free for its whole run and a passage that can carry
+      // another layer alongside the cakes already burning.
+      const layer = sustained
+        ? {
+            productId: product.product.id,
+            tube,
+            start: timing.launchTimeSeconds,
+            end: timing.launchTimeSeconds + sustainedLayerSeconds(product.product, profile),
+            shotRate: sustainedShotRate(product.product, profile),
+          }
+        : null;
+      if (layer && layerLimits && !layers.canStart(layer, layerLimits)) continue;
       occupied.push(...windows);
+      if (layer) layers.add(layer);
       if (product.isMultiShot) multiImpacts.add(timing.impactTimeSeconds);
       return { product, timing, tube, windows };
     }
@@ -396,7 +458,9 @@ function selectSlots(
   }
 
   const styleMinimum =
-    direction.style === 'minimalist' || direction.density === 'sparse'
+    direction.style === 'minimalist' ||
+    (direction.density === 'sparse' &&
+      Object.values(direction.sectionDensity ?? {}).every((density) => density === 'sparse'))
       ? MIN_MINIMALIST_CUES
       : MIN_STANDARD_CUES;
   const minimum = Math.max(styleMinimum, requiredCueCount);
@@ -493,8 +557,9 @@ function fillRatioFor(slot: CueSlot, direction: CreativeDirection): number {
   };
   const style = direction.style === 'beat_test' ? 'signature' : direction.style;
   let ratio = byStyle[style][slot.vibe];
-  if (direction.density === 'dense') ratio += 0.12;
-  if (direction.density === 'sparse') ratio -= 0.14;
+  const requestedDensity = densityForSection(direction, slot.vibe);
+  if (requestedDensity === 'dense') ratio += 0.12;
+  if (requestedDensity === 'sparse') ratio -= 0.14;
   if (direction.precise && !slot.isDownbeat && slot.barPosition >= 0) ratio -= 0.06;
   if (slot.finale) {
     ratio = direction.softEnding ? ratio * 0.48 : direction.bigEnding ? 1 : Math.max(ratio, 0.86);

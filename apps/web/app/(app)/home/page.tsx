@@ -6,6 +6,7 @@ import { ExploreRow } from '@/ui/explore/ExploreRow';
 import { HomeCollectionsSection, HomeFeaturedShows } from '@/ui/home/HomeDiscoverySections';
 import { PromptHero } from '@/ui/shows/ShowSummaryCards';
 import { HomeSectionsSkeleton } from '@/ui/home/HomeLoadingSkeleton';
+import { EmptyNotice } from '@/ui/patterns/Feedback';
 import { listShowTemplates } from '@/lib/show-templates/queries.server';
 
 export default function HomePage() {
@@ -27,6 +28,11 @@ async function HomeContent() {
   return (
     <>
       <HomeFeaturedShows templates={featuredShowTemplates} />
+      {exploreTemplates.length === 0 ? (
+        <EmptyNotice>
+          Published shows will appear here once the Explore library has content.
+        </EmptyNotice>
+      ) : null}
       <HomeCollectionsSection />
 
       {explorePreviewTemplates.length > 0 ? (

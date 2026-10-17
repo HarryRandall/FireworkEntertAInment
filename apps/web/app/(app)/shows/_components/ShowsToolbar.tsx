@@ -105,12 +105,15 @@ export function ShowsToolbar({ query, sort, sorts }: ShowsToolbarProps) {
           <span className="sr-only">Search shows</span>
           <Search
             size={17}
+            aria-hidden
             className="text-muted-foreground pointer-events-none absolute top-1/2 left-4 -translate-y-1/2"
           />
           <input
             value={draftQuery}
             onChange={(event) => changeQuery(event.target.value)}
             placeholder="Search shows or songs"
+            autoComplete="off"
+            enterKeyHint="search"
             className="border-input bg-background text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/45 h-11 w-full rounded-xl border pr-12 pl-11 text-sm shadow-xs transition-colors focus:outline-none focus-visible:ring-3"
           />
           {hasQuery ? (
@@ -120,7 +123,7 @@ export function ShowsToolbar({ query, sort, sorts }: ShowsToolbarProps) {
               className="text-muted-foreground hover:bg-secondary hover:text-foreground focus-visible:ring-border-emphasis absolute top-1/2 right-3 inline-flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-lg transition-colors focus:outline-none focus-visible:ring-2"
               aria-label="Clear search"
             >
-              <X size={15} />
+              <X size={15} aria-hidden />
             </button>
           ) : null}
         </label>
@@ -131,13 +134,13 @@ export function ShowsToolbar({ query, sort, sorts }: ShowsToolbarProps) {
               type="button"
               variant="secondary"
               className="h-11 justify-between rounded-xl px-4 sm:min-w-36"
-              aria-label="Sort shows"
+              aria-label={`Sort shows: ${selectedSortOption.label}`}
             >
               <span className="inline-flex min-w-0 items-center gap-2">
-                <ListFilter size={16} className="text-muted-foreground shrink-0" />
+                <ListFilter size={16} aria-hidden className="text-muted-foreground shrink-0" />
                 <span className="min-w-0 truncate">{selectedSortOption.label}</span>
               </span>
-              <ChevronDown size={16} className="text-muted-foreground shrink-0" />
+              <ChevronDown size={16} aria-hidden className="text-muted-foreground shrink-0" />
             </Button>
           </PopoverTrigger>
           <PopoverContent align="end" className="w-56 rounded-xl p-1.5">

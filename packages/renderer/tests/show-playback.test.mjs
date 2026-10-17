@@ -20,14 +20,15 @@ test('soundtrack ticks keep sound voices, while pause and scrub reset them', () 
       hushes++;
     },
   };
-  syncViewerClock(viewer, sound, 0, true);
-  for (let frame = 1; frame <= 60; frame++) syncViewerClock(viewer, sound, frame / 60, true);
+  syncViewerClock(viewer, sound, { time_s: 0, playing: true });
+  for (let frame = 1; frame <= 60; frame++)
+    syncViewerClock(viewer, sound, { time_s: frame / 60, playing: true });
   assert.equal(resets, 1);
   assert.equal(viewer.t, 1);
   assert.equal(viewer.externalClock, true);
-  syncViewerClock(viewer, sound, 8, true);
+  syncViewerClock(viewer, sound, { time_s: 8, playing: true });
   assert.equal(resets, 2);
-  syncViewerClock(viewer, sound, 8, false);
+  syncViewerClock(viewer, sound, { time_s: 8, playing: false });
   assert.equal(resets, 3);
   assert.equal(hushes, 1);
 });
@@ -72,9 +73,10 @@ test('sixty unchanged paused soundtrack samples request no draws, while seeks re
     },
   };
   const sound = { reset() {}, hush() {} };
-  for (let index = 0; index < 60; index++) syncViewerClock(viewer, sound, 2, false);
+  for (let index = 0; index < 60; index++)
+    syncViewerClock(viewer, sound, { time_s: 2, playing: false });
   assert.equal(draws, 0);
-  syncViewerClock(viewer, sound, 3, false);
+  syncViewerClock(viewer, sound, { time_s: 3, playing: false });
   assert.equal(draws, 1);
 });
 

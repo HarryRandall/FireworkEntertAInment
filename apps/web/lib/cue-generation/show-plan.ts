@@ -12,7 +12,7 @@ import { z } from 'zod';
 import { vibeForSectionLabel, type SlotVibe } from '@/lib/beat-grid.server';
 import type { FireworkSpecification } from '@/lib/show-domain';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
-import type { CreativeDirection } from './creative-direction';
+import { densityForSection, type CreativeDirection } from './creative-direction';
 import {
   productColourFamilies,
   productEffectFamilies,
@@ -342,8 +342,9 @@ function densityFor(
     finale: 3,
     outro: 1,
   };
-  const sparse = direction.density === 'sparse' || direction.style === 'minimalist';
-  let shift = sparse ? -1 : direction.density === 'dense' ? 1 : 0;
+  const requestedDensity = densityForSection(direction, section.vibe);
+  const sparse = requestedDensity === 'sparse' || direction.style === 'minimalist';
+  let shift = sparse ? -1 : requestedDensity === 'dense' ? 1 : 0;
   // Cinematic shows open quieter than the music and grow into the finale.
   if (direction.style === 'cinematic' && position < 0.4 && role !== 'finale') shift -= 1;
   const ceiling = role === 'lull' || role === 'outro' ? 2 : 4;

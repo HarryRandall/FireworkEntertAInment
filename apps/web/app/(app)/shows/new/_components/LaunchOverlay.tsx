@@ -29,9 +29,10 @@ export function LaunchOverlay({
     // must stay inside the form's box: the wizard screen is overflow-hidden,
     // so anything extending past it would be clipped.
     <div className="absolute inset-0 z-40">
-      {/* Long poll interval: the animation's router.refresh() polling is for the
-          generating route; while this overlay briefly covers the wizard there is
-          nothing to poll. */}
+      {/* No polling: the animation's router.refresh() polling belongs to the
+          generating route. While this overlay briefly covers the wizard the
+          server action is already in flight, and a refresh here would only
+          re-render the wizard underneath it. */}
       <GeneratingShowAnimation
         showTitle={title}
         persistKey={slug}
@@ -39,7 +40,7 @@ export function LaunchOverlay({
         isWarm={isWarm}
         phase={hasAudio ? 'analysing' : 'generating'}
         randomiseCoverOnLoad
-        pollIntervalMs={60_000}
+        pollIntervalMs={null}
         className="h-full"
       />
     </div>

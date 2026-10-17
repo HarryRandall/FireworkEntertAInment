@@ -62,7 +62,9 @@ export function evaluateMusicSync({
     anchors.push(
       Math.max(0, Math.min(1, 1 - Math.abs(actualAnchor - slot.time) / ANCHOR_TOLERANCE_SECONDS)),
     );
-    if ((profile.intervals?.regularityScore ?? 0) >= 0.65) {
+    // Irregular cake rhythms are evidence too. Omitting them gave a perfect
+    // sync score whenever the first burst was aligned but the rest were not.
+    if ((profile.intervals?.count ?? 0) >= 2) {
       const cadence = cadenceCompatibility(profile, localBeatIntervalSeconds(analysis, slot.time));
       if (cadence != null) cadences.push(cadence);
     }

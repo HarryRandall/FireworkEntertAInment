@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ChevronRight, Clock3, ListMusic, Play } from 'lucide-react';
+import { ChevronRight, Clock3, ListMusic } from 'lucide-react';
 import { HomeCollectionsSection } from '@/ui/home/HomeDiscoverySections';
 import { PromptHero } from '@/ui/shows/ShowSummaryCards';
 import { Skeleton } from '@/ui/patterns/Feedback';
@@ -10,10 +10,10 @@ function SectionHeader({ title, href }: { title: string; href: string }) {
       <h2 className="text-foreground text-lg font-semibold tracking-tight">{title}</h2>
       <Link
         href={href}
-        className="text-muted-foreground hover:text-foreground border-border inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors"
+        className="text-muted-foreground hover:text-foreground border-border focus-visible:ring-primary/45 focus-visible:ring-offset-background inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2"
       >
         See all
-        <ChevronRight size={14} />
+        <ChevronRight size={14} aria-hidden />
       </Link>
     </div>
   );
@@ -39,17 +39,17 @@ function FeaturedShowsSkeleton() {
               <Skeleton className="mt-2 h-4 w-72 max-w-full" />
               <div className="mt-4 flex flex-wrap gap-4 text-white/78">
                 <span className="inline-flex items-center gap-1.5">
-                  <Clock3 size={13} />
+                  <Clock3 size={13} aria-hidden />
                   <Skeleton className="h-3 w-10 bg-white/25" />
                 </span>
                 <span className="inline-flex items-center gap-1.5">
-                  <ListMusic size={13} />
+                  <ListMusic size={13} aria-hidden />
                   <Skeleton className="h-3 w-6 bg-white/25" />
                 </span>
               </div>
               <span className="mt-5 inline-flex h-10 w-fit items-center gap-2 rounded-full bg-white/16 px-4 text-sm font-medium text-white">
                 Watch replay
-                <Play size={14} />
+                <ChevronRight size={15} aria-hidden />
               </span>
             </div>
           </div>
@@ -109,14 +109,11 @@ export function HomeSectionsSkeleton() {
   );
 }
 
+/** Route-level fallback. The prompt hero is real, interactive chrome, so only
+ *  the discovery sections below it are announced as a busy status region. */
 export function HomePageSkeleton() {
   return (
-    <div
-      className="mx-auto flex w-full max-w-[1400px] flex-col gap-7 pt-10 sm:pt-14 lg:pt-20"
-      role="status"
-      aria-busy="true"
-      aria-label="Loading home"
-    >
+    <div className="mx-auto flex w-full max-w-[1400px] flex-col gap-7 pt-10 sm:pt-14 lg:pt-20">
       <PromptHero headingLevel="h1" />
       <HomeSectionsSkeleton />
     </div>

@@ -3,36 +3,42 @@
 import { notFound, redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { FireworkReplayViewer } from '@/ui/replay/FireworkReplayViewer';
-import { ReplayPanelSkeleton } from '@/ui/shell/RouteSkeletons';
 import { getCurrentProfile } from '@/lib/access/current-profile.server';
+import { parseGenerationHandover } from '@/lib/generation-handover';
 import { getAudioSignedUrl } from '@/lib/shows/audio.server';
 import {
   getShowBySlug,
   listFireworkProducts,
   getReplayCuePayloadForShow,
 } from '@/lib/shows/queries.server';
+import ShowPreviewLoading from './loading';
 
 type PageProps = {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ handover?: string; t?: string; a?: string }>;
 };
 
 export default function ShowPreviewPage(props: PageProps) {
-  const { params } = props;
+  const { params, searchParams } = props;
 
+  // The route loading state doubles as the streaming fallback: it reads the
+  // URL itself, so arriving from the generating route keeps that splash up
+  // while this page streams instead of dropping to the replay skeleton.
   return (
-    <Suspense fallback={<ReplayPanelSkeleton />}>
-      <ShowPreviewReplay params={params} />
+    <Suspense fallback={<ShowPreviewLoading />}>
+      <ShowPreviewReplay params={params} searchParams={searchParams} />
     </Suspense>
   );
 }
 
 async function ShowPreviewReplay(props: PageProps) {
-  const { params } = props;
+  const { params, searchParams } = props;
   const { id } = await params;
   const show = await getShowBySlug(id);
   if (!show) notFound();
   if (show.generationStatus === 'running') redirect(`/shows/${show.slug}/generating`);
   const currentProfilePromise = getCurrentProfile();
+  const handover = parseGenerationHandover(await searchParams);
 
   // Stream the replay data into the client viewer as promises rather than
   // awaiting it here. The cues are the payload the user is waiting on, so they
@@ -61,6 +67,15 @@ async function ShowPreviewReplay(props: PageProps) {
       replayCuesPromise={replayCuesPromise}
       fireworkSpecificationsPromise={fireworkSpecificationsPromise}
       audioUrlPromise={audioUrlPromise}
+      generationHandover={
+        handover
+          ? {
+              title: handover.title ?? show.title,
+              hasAudio: handover.hasAudio || Boolean(show.audioPath || show.musicAnalysisId),
+              cover: show.coverShader,
+            }
+          : null
+      }
     />
   );
 }

@@ -1,6 +1,7 @@
 /** Public firework catalogue: browse, filter and preview every listed product. */
 
 import { Suspense } from 'react';
+import Link from 'next/link';
 import { listFireworkProducts } from '@/lib/shows/queries.server';
 import {
   catalogueFacets,
@@ -105,10 +106,20 @@ async function CatalogueBrowser({
 
       {products.length === 0 ? (
         <EmptyNotice>
-          No catalogue products match those filters.{' '}
-          <a href={catalogueHref({}, {})} className="text-foreground underline underline-offset-4">
-            Clear all filters
-          </a>
+          {allProducts.length === 0 ? (
+            'No fireworks are listed in the catalogue yet.'
+          ) : (
+            <>
+              No fireworks match those filters.{' '}
+              <Link
+                href={catalogueHref({ sort: params.sort }, {})}
+                scroll={false}
+                className="text-foreground underline underline-offset-4"
+              >
+                Clear all filters
+              </Link>
+            </>
+          )}
         </EmptyNotice>
       ) : (
         <div className="space-y-5">

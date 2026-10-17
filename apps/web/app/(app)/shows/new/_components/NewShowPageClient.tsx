@@ -896,6 +896,10 @@ export default function NewShowPageClient({
         toast.error(result.error);
         return;
       }
+      // The title and soundtrack flag stay on the URL so the route's loading
+      // state renders the same card during the hop; the saved route ignores
+      // them otherwise.
+      const savedRoute = `/shows/${result.slug}/generating?t=${titleParam}${hasAudio ? '&a=1' : ''}`;
       // Collision: the server assigned a suffixed slug. Redirect to the real
       // one so the route stops waiting on a row that will never appear.
       if (result.slug !== desiredSlug) {
@@ -903,12 +907,12 @@ export default function NewShowPageClient({
         copyPersistedGenerationCover(desiredSlug, result.slug);
         clearPersistedGenerationStart(desiredSlug);
         clearPersistedGenerationCover(desiredSlug);
-        router.replace(`/shows/${result.slug}/generating`);
+        router.replace(savedRoute);
       } else {
-        // Strip the provisional `creating=1` params: the row now exists and is
-        // ours, and the completed handover only engages on the clean URL (a
+        // Strip the provisional `creating=1` param: the row now exists and is
+        // ours, and the completed handover only engages without it (a
         // completed show under `creating=1` is treated as a slug collision).
-        router.replace(`/shows/${result.slug}/generating`);
+        router.replace(savedRoute);
       }
     });
   };

@@ -12,8 +12,25 @@ const REFERENCE_M = 90;
 const MIN_GAIN = 0.15;
 // Prototype stereo width, normalised pan; echoes remain centred.
 const PAN_WIDTH = 0.8;
-// Prototype maximum catch-up after gesture resume, in sequence seconds.
-const MAX_UNLOCK_CATCHUP_S = 0.6;
+// Maximum catch-up after a gesture resume or a stalled frame, in sequence seconds. Anything
+// older is skipped instead of being fired at once, so a long frame never bursts the backlog.
+const MAX_CATCHUP_S = 0.6;
+// A backward move into the opening is a loop or restart and replays the zero lift; any other
+// backward move is a seek and stays silent until the next forward tick.
+const RESTART_WINDOW_S = 0.6;
+/**
+ * Bounded audio load: cues scheduled per second of sequence time and per forward tick. A dense
+ * finale can cross far more cues than the audio thread can mix; the loudest and nearest keep
+ * their voices and the rest are dropped deterministically, which protects both the effect mix
+ * and any soundtrack sharing the output device.
+ */
+export const MAX_CUES_PER_SECOND = 16;
+export const MAX_CUES_PER_TICK = 8;
+const LOAD_WINDOW_S = 1;
+// Relative perceptual priorities for retaining the clearest cues under load.
+const BOOM_PRIORITY = 4;
+const LOUD_PRIORITY = 3;
+const MAX_DISTANCE_PENALTY = 3;
 /** A forward sequence interval, in seconds; listener/right are unshaken world-space vectors. */
 export interface SoundInterval {
   from_s: number;
@@ -35,6 +52,8 @@ export class ViewerSound {
   private readonly listener: Vec3 = [0, 0, 0];
   private readonly right: Vec3 = [1, 0, 0];
   private heldFrom: number | null = null;
+  /** Sequence times of recently scheduled cues, oldest first, for the load window. */
+  private recent: number[] = [];
   private readonly abort = new AbortController();
   /** Registers scoped gesture unlock after the view mounts successfully; never creates audio. */
   listen(): void {
@@ -89,6 +108,7 @@ export class ViewerSound {
     this.hush();
     this.includeStart = time_s === 0;
     this.cursor_s = time_s;
+    this.recent = [];
   }
   /** Samples the unshaken camera and forwards only real playback intervals, never paused redraws. */
   frame(viewer: Viewer): void {
@@ -101,8 +121,9 @@ export class ViewerSound {
     if (!this.ready()) return;
     let from = previous;
     if (viewer.t < previous) {
-      this.reset(0);
-      from = 0;
+      const restart = viewer.t <= RESTART_WINDOW_S;
+      this.reset(restart ? 0 : viewer.t);
+      from = restart ? 0 : viewer.t;
       this.cursor_s = viewer.t;
     }
     viewer.camera.position.toArray(this.listener);
@@ -132,10 +153,6 @@ export class ViewerSound {
       !this.disposed
     );
   }
-  private crossed(event: SoundEvent, from_s: number, to_s: number): boolean {
-    const startsHere = event.time_s === from_s && this.includeStart;
-    return (event.time_s > from_s || startsHere) && event.time_s <= to_s;
-  }
   /** Schedules only crossed cues while playing forwards; lag and sustained lengths stretch with speed. */
   advance(interval: SoundInterval): void {
     const context = this.context;
@@ -147,8 +164,8 @@ export class ViewerSound {
     if (context.state !== 'running' || interval.to_s <= interval.from_s) return;
     const from = this.takeStart(interval);
     this.ensureVoice(context, this.buffers);
-    for (const event of this.cues()) {
-      if (this.crossed(event, from, interval.to_s)) this.scheduleEvent(event, interval);
+    for (const event of this.select(this.crossing(from, interval.to_s), interval)) {
+      this.scheduleEvent(event, interval);
     }
     this.includeStart = false;
   }
@@ -156,12 +173,52 @@ export class ViewerSound {
     this.events ??= soundEvents(this.shots);
     return this.events;
   }
+  /**
+   * The interval start after a held resume or a stalled frame: at most the trailing catch-up
+   * window is replayed, so the opening lift at zero survives only when playback is still near it.
+   */
   private takeStart(interval: SoundInterval): number {
     const held = this.heldFrom;
-    const start =
-      held !== null && interval.to_s - held < MAX_UNLOCK_CATCHUP_S ? held : interval.from_s;
     this.heldFrom = null;
-    return start;
+    const start = held !== null && held < interval.from_s ? held : interval.from_s;
+    return Math.max(start, interval.to_s - MAX_CATCHUP_S);
+  }
+  /** Cues inside (from, to], or [from, to] on a fresh start; cues are sorted so this is a search. */
+  private crossing(from_s: number, to_s: number): SoundEvent[] {
+    const events = this.cues();
+    const crossed: SoundEvent[] = [];
+    for (let index = firstCueAfter(events, from_s, this.includeStart && from_s === 0); ; index++) {
+      const event = events[index];
+      if (event === undefined || event.time_s > to_s) return crossed;
+      crossed.push(event);
+    }
+  }
+  /** Keeps the cues the load budget allows, loudest and nearest first, in time order. */
+  private select(crossed: SoundEvent[], interval: SoundInterval): SoundEvent[] {
+    const windowStart = interval.to_s - LOAD_WINDOW_S;
+    this.recent = this.recent.filter((time) => time > windowStart);
+    const budget = Math.min(MAX_CUES_PER_TICK, MAX_CUES_PER_SECOND - this.recent.length);
+    if (budget <= 0) return [];
+    if (crossed.length <= budget) {
+      for (const event of crossed) this.recent.push(event.time_s);
+      return crossed;
+    }
+    const ranked = crossed
+      .map((event, index) => ({
+        event,
+        index,
+        priority: cuePriority(event, soundDistance(event, interval.listener)),
+      }))
+      .sort((left, right) => {
+        const priorityDifference = right.priority - left.priority;
+        return priorityDifference !== 0 ? priorityDifference : left.index - right.index;
+      })
+      .slice(0, budget)
+      .sort((left, right) => left.index - right.index)
+      .map((entry) => entry.event);
+    for (const event of ranked) this.recent.push(event.time_s);
+    this.recent.sort((left, right) => left - right);
+    return ranked;
   }
   private ensureVoice(context: AudioContext, buffers: SoundBuffers): void {
     this.voice ??= new SoundVoice(context, buffers, SETTINGS.volume);
@@ -220,4 +277,34 @@ export class ViewerSound {
     this.context = null;
     this.buffers = null;
   }
+}
+/** Index of the first chronological cue after `from_s` (or at it, when the start is included). */
+function firstCueAfter(events: readonly SoundEvent[], from_s: number, inclusive: boolean): number {
+  let low = 0;
+  let high = events.length;
+  while (low < high) {
+    const middle = (low + high) >>> 1;
+    const time = events[middle]?.time_s ?? Infinity;
+    if (time < from_s || (time === from_s && !inclusive)) low = middle + 1;
+    else high = middle;
+  }
+  return low;
+}
+/**
+ * Which cues survive an overloaded tick: breaks and heavy crackle before lifts and air, loud before
+ * soft, then nearer sources first. Pure, so culling is reproducible for the same frame timings.
+ */
+export function cuePriority(
+  event: Pick<SoundEvent, 'kind' | 'loud' | 'heavy' | 'quiet' | 'soft' | 'size'>,
+  distance_m: number,
+): number {
+  let priority = 0;
+  if (event.kind === 'boom') priority = BOOM_PRIORITY;
+  else if (event.kind === 'lift') priority = 2;
+  if (event.loud) priority += LOUD_PRIORITY;
+  if (event.heavy) priority += 2;
+  if (event.soft) priority -= 1;
+  if (event.quiet) priority -= 2;
+  priority += Math.min(2, Math.max(0, event.size - 1));
+  return priority - Math.min(MAX_DISTANCE_PENALTY, distance_m / REFERENCE_M);
 }

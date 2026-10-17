@@ -51,7 +51,20 @@ const TARGET_SLOTS = 160;
 const MAX_TARGET_SLOTS = 220;
 const MIN_INTENSITY = 0.1;
 const WINDOW_COUNT = 12;
-const COVERAGE_SLOT_SHARE = 0.75;
+/** Under the cap, every passage reserves one firing beat per this many seconds. */
+const COVERAGE_FLOOR_SECONDS = 5;
+/** Gaps wider than this are closed before the remaining cap goes to the strongest beats. */
+const MAX_COVERAGE_GAP_SECONDS = 6;
+/** Climax-adjacent beats further apart than this belong to separate runs. */
+const CLIMAX_RUN_GAP_SECONDS = 1.5;
+/** Share of the cap held back from the passage shares so gap repair has room. */
+const GAP_REPAIR_RESERVE_SHARE = 0.04;
+/** A near-silent passage still earns a little of the cap above its coverage floor. */
+const MIN_SLOT_WEIGHT = 0.02;
+/** Choruses and drops earn more of the cap than an equally loud verse. */
+const CHORUS_SLOT_WEIGHT = 1.35;
+/** The finale window earns more than the body even when it is not labelled a chorus. */
+const FINALE_SLOT_WEIGHT = 1.2;
 
 /** Map an analyser section label to the vibe planners reason about. */
 export function vibeForSectionLabel(label: string): SlotVibe {
@@ -487,7 +500,13 @@ export function buildCueSlots(
   const finalAnalysedBeatTime = finalAnalysedBeat
     ? Number(finalAnalysedBeat.time.toFixed(3))
     : null;
-  const cappedSlots = capSlotGroups(slots, MAX_TARGET_SLOTS, sections, finalAnalysedBeatTime);
+  const cappedSlots = capSlotGroups({
+    slots,
+    maxSlots: MAX_TARGET_SLOTS,
+    sections,
+    finalAnalysedBeatTime,
+    beatsPerBar,
+  });
   cappedSlots.forEach((s, i) => (s.index = i));
   return cappedSlots;
 }
@@ -500,8 +519,25 @@ type SlotGroup = {
   peak: boolean;
   finale: boolean;
   downbeat: boolean;
+  halfBar: boolean;
   accent: boolean;
   intensity: number;
+  /** The beat at the heart of a climax run, or a peak outside any run. */
+  climaxCentre: boolean;
+};
+
+/** Beats grouped by analysed section, with the share of the cap they earn. */
+type SlotBucket = {
+  start: number;
+  end: number;
+  groups: SlotGroup[];
+  /** Musical weight: span scaled by how loud and chorus-like the passage is. */
+  weight: number;
+  /** Every slot the bucket could use. */
+  demand: number;
+  /** Slots needed to keep the passage covered at the coverage spacing. */
+  floor: number;
+  budget: number;
 };
 
 function compareSlotGroupPriority(a: SlotGroup, b: SlotGroup): number {
@@ -510,18 +546,70 @@ function compareSlotGroupPriority(a: SlotGroup, b: SlotGroup): number {
     Number(b.peak) - Number(a.peak) ||
     Number(b.finale) - Number(a.finale) ||
     Number(b.downbeat) - Number(a.downbeat) ||
+    Number(b.halfBar) - Number(a.halfBar) ||
     Number(b.accent) - Number(a.accent) ||
     b.intensity - a.intensity ||
     a.time - b.time
   );
 }
 
-function capSlotGroups(
-  slots: CueSlot[],
-  maxSlots: number,
-  sections: AnalyserSection[],
-  finalAnalysedBeatTime: number | null,
-): CueSlot[] {
+/**
+ * Strong beats come first inside a passage: the climax itself and other
+ * peaks, then downbeats and finale beats, then the rest of a climax run,
+ * then half-bars, then the remaining fill. Under a tight budget a chorus
+ * therefore keeps its bar pulse rather than spending everything on a few
+ * seconds of barrage around the climax.
+ */
+const SLOT_TIERS = 5;
+
+function slotGroupTier(group: SlotGroup): number {
+  if (group.climaxCentre || (group.peak && !group.nearClimax)) return 0;
+  if (group.downbeat || group.finale) return 1;
+  if (group.nearClimax || group.peak) return 2;
+  if (group.halfBar) return 3;
+  return 4;
+}
+
+/** Mark the middle beat of every run of consecutive climax-adjacent groups. */
+function markClimaxCentres(groups: SlotGroup[]): void {
+  let run: SlotGroup[] = [];
+  const close = () => {
+    const centre = run[Math.floor((run.length - 1) / 2)];
+    if (centre) centre.climaxCentre = true;
+    run = [];
+  };
+  for (const group of groups) {
+    if (group.nearClimax) {
+      const previous = run[run.length - 1];
+      if (previous && group.time - previous.time > CLIMAX_RUN_GAP_SECONDS) close();
+      run.push(group);
+    } else if (run.length) {
+      close();
+    }
+  }
+  if (run.length) close();
+}
+
+/**
+ * Fit the grid under the cap while keeping the song's shape.
+ *
+ * Every analysed passage earns a share of the cap from its length, loudness
+ * and vibe, after a coverage floor so quiet passages stay represented without
+ * piling up. Within a passage the strongest beats are kept first (climaxes,
+ * downbeats, half-bars) and, when a tier does not fit, its beats are spread
+ * evenly rather than clustered. Choruses therefore keep meaningfully more of
+ * their beats than verses, and an intro cannot consume the budget a later
+ * chorus or finale needs. Groups stay atomic so a three-position accent is
+ * never truncated.
+ */
+function capSlotGroups(params: {
+  slots: CueSlot[];
+  maxSlots: number;
+  sections: AnalyserSection[];
+  finalAnalysedBeatTime: number | null;
+  beatsPerBar: number;
+}): CueSlot[] {
+  const { slots, maxSlots, sections, finalAnalysedBeatTime, beatsPerBar } = params;
   if (slots.length <= maxSlots) return slots;
 
   const slotsByTime = new Map<number, CueSlot[]>();
@@ -534,24 +622,30 @@ function capSlotGroups(
     }
   }
 
-  const groups: SlotGroup[] = [...slotsByTime.entries()].map(([time, groupSlots]) => {
-    const sectionIndex = sections.findIndex(
-      (section) => time >= section.start && time < section.end,
-    );
-    return {
-      time,
-      slots: groupSlots,
-      sectionIndex,
-      nearClimax: groupSlots.some((slot) => slot.nearClimax),
-      peak: groupSlots.some((slot) => slot.emphasis === 'peak'),
-      finale: groupSlots.some((slot) => slot.finale),
-      downbeat: groupSlots.some((slot) => slot.isDownbeat),
-      accent: groupSlots.some((slot) => slot.emphasis === 'accent'),
-      intensity: Math.max(...groupSlots.map((slot) => slot.intensity)),
-    };
-  });
-
-  const rankedGroups = [...groups].sort(compareSlotGroupPriority);
+  const halfBarPosition = beatsPerBar >= 4 ? Math.floor(beatsPerBar / 2) : null;
+  const groups: SlotGroup[] = [...slotsByTime.entries()]
+    .map(([time, groupSlots]) => {
+      const sectionIndex = sections.findIndex(
+        (section) => time >= section.start && time < section.end,
+      );
+      return {
+        time,
+        slots: groupSlots,
+        sectionIndex,
+        nearClimax: groupSlots.some((slot) => slot.nearClimax),
+        peak: groupSlots.some((slot) => slot.emphasis === 'peak'),
+        finale: groupSlots.some((slot) => slot.finale),
+        downbeat: groupSlots.some((slot) => slot.isDownbeat),
+        halfBar:
+          halfBarPosition != null &&
+          groupSlots.some((slot) => slot.barPosition === halfBarPosition),
+        accent: groupSlots.some((slot) => slot.emphasis === 'accent'),
+        intensity: Math.max(...groupSlots.map((slot) => slot.intensity)),
+        climaxCentre: false,
+      };
+    })
+    .sort((a, b) => a.time - b.time);
+  markClimaxCentres(groups);
 
   const selectedTimes = new Set<number>();
   let selectedSlotCount = 0;
@@ -562,6 +656,9 @@ function capSlotGroups(
     selectedSlotCount += group.slots.length;
     return true;
   };
+  const selectedGroups = () => groups.filter((group) => selectedTimes.has(group.time));
+  const distanceToSelected = (group: SlotGroup) =>
+    Math.min(Infinity, ...selectedGroups().map((other) => Math.abs(other.time - group.time)));
 
   // Anchor the timeline at both ends. The final analysed beat is selected
   // explicitly because it represents the last musical hit rather than merely
@@ -576,67 +673,76 @@ function capSlotGroups(
   if (finalAnalysedGroup) selectGroup(finalAnalysedGroup);
   else if (lastGroup) selectGroup(lastGroup);
 
-  // Reserve two representative events per analysed section before global
-  // ranking. Select one from every section in each pass so a long or repeated
-  // section label cannot consume another section's coverage.
-  for (const fraction of [1 / 3, 2 / 3]) {
-    for (const [sectionIndex, section] of sections.entries()) {
-      const target = section.start + (section.end - section.start) * fraction;
-      const candidates = groups
-        .filter((group) => group.sectionIndex === sectionIndex && !selectedTimes.has(group.time))
-        .sort(
+  const buckets = buildSlotBuckets(groups, sections, maxSlots);
+
+  // Within each passage keep whole tiers while they fit; spread a tier that
+  // does not fit by always taking the beat farthest from anything selected,
+  // so coverage stays even and the strongest beats keep their place.
+  for (const bucket of buckets) {
+    const used = () =>
+      bucket.groups
+        .filter((group) => selectedTimes.has(group.time))
+        .reduce((total, group) => total + group.slots.length, 0);
+    for (let tier = 0; tier < SLOT_TIERS; tier += 1) {
+      const candidates = bucket.groups.filter(
+        (group) => slotGroupTier(group) === tier && !selectedTimes.has(group.time),
+      );
+      const tierSize = candidates.reduce((total, group) => total + group.slots.length, 0);
+      if (used() + tierSize <= bucket.budget) {
+        for (const group of candidates) selectGroup(group);
+        continue;
+      }
+      const pending = new Set(candidates);
+      while (pending.size) {
+        const remaining = bucket.budget - used();
+        const fitting = [...pending].filter((group) => group.slots.length <= remaining);
+        if (!fitting.length) break;
+        const pick = fitting.sort(
           (a, b) =>
-            Math.abs(a.time - target) - Math.abs(b.time - target) || compareSlotGroupPriority(a, b),
-        );
-      const candidate = candidates[0];
-      if (candidate) selectGroup(candidate);
+            distanceToSelected(b) - distanceToSelected(a) ||
+            compareSlotGroupPriority(a, b) ||
+            a.time - b.time,
+        )[0];
+        if (!pick || !selectGroup(pick)) break;
+        pending.delete(pick);
+      }
+      break;
     }
   }
 
-  // Build a temporal backbone by repeatedly splitting the widest remaining
-  // gap. Reserving most, rather than all, of the cap for coverage leaves room
-  // for climaxes, downbeats and finale accents during the priority fill.
-  const coverageBudget = Math.max(selectedSlotCount, Math.floor(maxSlots * COVERAGE_SLOT_SHARE));
-  while (selectedSlotCount < coverageBudget) {
-    const selectedGroups = groups.filter((group) => selectedTimes.has(group.time));
-    let widestGap = -1;
-    let coverageCandidate: SlotGroup | undefined;
-
-    for (let i = 1; i < selectedGroups.length; i++) {
-      const left = selectedGroups[i - 1];
-      const right = selectedGroups[i];
-      if (!left || !right) continue;
-      const gap = right.time - left.time;
-      if (gap < widestGap) continue;
-
-      const midpoint = left.time + gap / 2;
-      const candidates = groups
+  // Close any gap the per-passage shares left open before spending the rest.
+  let repaired = true;
+  while (repaired && selectedSlotCount < maxSlots) {
+    repaired = false;
+    const selected = selectedGroups();
+    for (let i = 1; i < selected.length; i++) {
+      const left = selected[i - 1];
+      const right = selected[i];
+      if (!left || !right || right.time - left.time <= MAX_COVERAGE_GAP_SECONDS) continue;
+      const midpoint = (left.time + right.time) / 2;
+      const candidate = groups
         .filter(
           (group) =>
             group.time > left.time &&
             group.time < right.time &&
             !selectedTimes.has(group.time) &&
-            selectedSlotCount + group.slots.length <= coverageBudget,
+            selectedSlotCount + group.slots.length <= maxSlots,
         )
         .sort(
           (a, b) =>
             Math.abs(a.time - midpoint) - Math.abs(b.time - midpoint) ||
             compareSlotGroupPriority(a, b),
-        );
-      const candidate = candidates[0];
-      if (!candidate) continue;
-      if (gap > widestGap || !coverageCandidate) {
-        widestGap = gap;
-        coverageCandidate = candidate;
+        )[0];
+      if (candidate && selectGroup(candidate)) {
+        repaired = true;
+        break;
       }
     }
-
-    if (!coverageCandidate || !selectGroup(coverageCandidate, coverageBudget)) break;
   }
 
   // Spend the remaining cap on the strongest musical events. Groups remain
   // atomic even when the final few slots cannot accommodate another group.
-  for (const group of rankedGroups) {
+  for (const group of [...groups].sort(compareSlotGroupPriority)) {
     selectGroup(group);
   }
 
@@ -644,6 +750,81 @@ function capSlotGroups(
     .filter((group) => selectedTimes.has(group.time))
     .sort((a, b) => a.time - b.time)
     .flatMap((group) => group.slots);
+}
+
+/**
+ * Share the cap between analysed passages. Each passage first receives the
+ * slots it needs for coverage; the remainder is divided by musical weight,
+ * and a passage that cannot use its share passes the surplus on.
+ */
+function buildSlotBuckets(
+  groups: SlotGroup[],
+  sections: AnalyserSection[],
+  maxSlots: number,
+): SlotBucket[] {
+  const bySection = new Map<number, SlotGroup[]>();
+  for (const group of groups) {
+    const list = bySection.get(group.sectionIndex);
+    if (list) list.push(group);
+    else bySection.set(group.sectionIndex, [group]);
+  }
+  const buckets: SlotBucket[] = [...bySection.entries()].map(([sectionIndex, bucketGroups]) => {
+    const section = sections[sectionIndex];
+    const start = section?.start ?? bucketGroups[0].time;
+    const end = section?.end ?? bucketGroups[bucketGroups.length - 1].time;
+    const span = Math.max(1, end - start);
+    const vibe = vibeForSectionLabel(section?.label ?? '');
+    const demand = bucketGroups.reduce((total, group) => total + group.slots.length, 0);
+    const meanIntensity =
+      bucketGroups.reduce((total, group) => total + group.intensity * group.slots.length, 0) /
+      Math.max(1, demand);
+    const vibeWeight =
+      vibe === 'chorus' || vibe === 'drop'
+        ? CHORUS_SLOT_WEIGHT
+        : bucketGroups.some((group) => group.finale)
+          ? FINALE_SLOT_WEIGHT
+          : 1;
+    // The floor reserves a typical group at every coverage step; gap repair
+    // covers the odd wider group a coverage pick lands on.
+    const sizes = bucketGroups.map((group) => group.slots.length).sort((a, b) => a - b);
+    const typicalGroup = sizes[Math.floor(sizes.length / 2)] ?? 1;
+    const floor = Math.min(demand, Math.ceil(span / COVERAGE_FLOOR_SECONDS) * typicalGroup);
+    // Loudness counts steeply: a verse at half intensity earns a fraction of
+    // a chorus's share, so the contrast the audience hears is one they see.
+    const loudness = MIN_SLOT_WEIGHT + meanIntensity ** 3;
+    return {
+      start,
+      end,
+      groups: bucketGroups,
+      weight: span * loudness * vibeWeight,
+      demand,
+      floor,
+      budget: floor,
+    };
+  });
+
+  // Water-fill the slots above the floors by weight until the cap is spent
+  // or every passage is saturated. A small reserve stays back for gap repair.
+  let spare =
+    Math.floor(maxSlots * (1 - GAP_REPAIR_RESERVE_SHARE)) -
+    buckets.reduce((total, bucket) => total + bucket.budget, 0);
+  for (let round = 0; round < buckets.length + 1 && spare > 0.5; round += 1) {
+    const open = buckets.filter((bucket) => bucket.budget < bucket.demand);
+    if (!open.length) break;
+    const totalWeight = open.reduce((total, bucket) => total + bucket.weight, 0);
+    if (totalWeight <= 0) break;
+    let granted = 0;
+    for (const bucket of open) {
+      const share = (spare * bucket.weight) / totalWeight;
+      const grant = Math.min(bucket.demand - bucket.budget, share);
+      bucket.budget += grant;
+      granted += grant;
+    }
+    spare -= granted;
+    if (granted <= 0) break;
+  }
+  for (const bucket of buckets) bucket.budget = Math.floor(bucket.budget);
+  return buckets.sort((a, b) => a.start - b.start);
 }
 
 function clampBeatsPerBar(value: number): number {

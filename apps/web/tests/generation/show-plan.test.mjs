@@ -602,6 +602,15 @@ test('near-identical palms share a soft family target rather than dominating the
     );
   assert.ok(realised.cues.length > 100);
   assert.ok(familyShare < 0.65);
+  // The three-shot cakes are light volleys, so they stay eligible as beat
+  // accents under the cake caps; counting their fan-out, the palms are a
+  // minority of what the audience actually sees.
+  const shotsOf = (cue) => items.find((item) => item.id === cue.productId).shotCount ?? 1;
+  const totalShots = realised.cues.reduce((sum, cue) => sum + shotsOf(cue), 0);
+  const palmShots = realised.cues
+    .filter((cue) => cue.productId.startsWith('palm-'))
+    .reduce((sum, cue) => sum + shotsOf(cue), 0);
+  assert.ok(palmShots / totalShots < 0.5, `palms fired ${palmShots} of ${totalShots} shots`);
   assert.equal(new Set(realised.cues.map((cue) => cue.productId)).size, items.length);
 });
 
@@ -700,4 +709,29 @@ test('fresh-install prompt guidance uses section planning without legacy fallbac
   assert.doesNotMatch(result.prompt, /slotIndex|slot vibe|catalogue ids exactly/i);
   assert.match(result.prompt, /one entry per section/);
   assert.match(result.prompt, /catalogue aliases/);
+});
+
+test('default section plans keep verses sparse while making the requested choruses fuller', () => {
+  const sections = ['intro', 'verse', 'chorus', 'verse', 'chorus'].map((vibe, index) => ({
+    index,
+    start: index * 20,
+    end: (index + 1) * 20,
+    label: vibe,
+    vibe,
+    energy: vibe === 'chorus' ? 0.8 : 0.4,
+    energyRank: vibe === 'chorus' ? 1 : 0.3,
+    containsClimax: false,
+    inFinaleWindow: false,
+  }));
+  const build = (text) =>
+    plan.buildDefaultShowPlan({
+      sections,
+      direction: parseCreativeDirection(text, 'beat_test'),
+      constraints: parsePromptConstraints(''),
+      palette: plan.describeCataloguePalette(products),
+    });
+  const sparse = build('Keep the whole show sparse.');
+  const shaped = build('Keep the whole show sparse except for fuller choruses.');
+  assert.equal(shaped.sections[1].density, sparse.sections[1].density);
+  assert.ok(shaped.sections[2].density > sparse.sections[2].density);
 });
