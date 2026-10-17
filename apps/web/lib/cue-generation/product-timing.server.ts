@@ -14,20 +14,13 @@ export async function loadProductTimingProfiles(
 ): Promise<ProductTimingProfiles> {
   // Read every selected item so a catalogue multishot with one child row is
   // not mistaken for a direct product merely because its declared count is 1.
-  const ids = products.map(({ id }) => id);
-  const batches: string[][] = [];
-  for (let offset = 0; offset < ids.length; offset += 100) {
-    batches.push(ids.slice(offset, offset + 100));
-  }
-  const resolved = await Promise.all(
-    batches.map((batch) =>
-      fetchShotsByCatalogueItem(supabase, batch, {
-        failOnError: true,
-        preserveUnknownTiming: true,
-      }),
-    ),
+  // Only the multishot children are consumed, so the direct firework payloads
+  // already present on `products` are not fetched again.
+  const childrenByProduct = await fetchShotsByCatalogueItem(
+    supabase,
+    products.map(({ id }) => id),
+    { preserveUnknownTiming: true, multishotChildrenOnly: true },
   );
-  const childrenByProduct = new Map(resolved.flatMap((batch) => [...batch]));
   return new Map(
     products.map((product) => {
       const resolvedChildren = childrenByProduct.get(product.id);

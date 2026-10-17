@@ -57,6 +57,7 @@ function previewLoader({ effect, firework }) {
     '@/lib/show-preview': { SHOW_CARD_PREVIEW_WINDOW_SECONDS: 20 },
     '@/lib/firework-import/reconstruction-shot': { parseReconstructionShotVariant: () => null },
     '@/lib/shows/queries.server': {},
+    '@/lib/shows/read-errors': { ShowsNetworkError: class ShowsNetworkError extends Error {} },
     '@/lib/shows/supabase': {},
     '@/lib/supabase/server-client': {
       getServerClient: async () => ({

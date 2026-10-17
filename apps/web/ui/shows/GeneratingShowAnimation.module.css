@@ -122,7 +122,7 @@
 
 .stageRow {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.7rem;
   color: var(--color-content-muted);
   font-size: 0.875rem;
@@ -156,10 +156,31 @@
   background: color-mix(in srgb, var(--stage-glass-foreground) 6%, transparent);
 }
 
-.stageText {
+.stageBody {
   min-width: 0;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  /* Centre single-line rows against the 1.75rem icon ring. */
+  padding-top: 0.3rem;
+}
+
+.stageText {
+  min-width: 0;
   transition: color 220ms ease;
+}
+
+/* What the active step is doing, in the muted tone so the label stays primary. */
+.stageDescription {
+  font-size: 0.8125rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--color-content-muted);
+}
+
+.hasCover .stageDescription {
+  color: var(--stage-glass-muted);
 }
 
 /* Active row: emphasised text, pulsing icon ring, trailing ellipsis dots. */
@@ -206,7 +227,7 @@
 
 /* Animated trailing dots on the active row. */
 .stageDots {
-  flex: none;
+  display: inline-block;
   width: 1.1rem;
   text-align: left;
 }
@@ -247,38 +268,58 @@
   background: color-mix(in srgb, var(--color-status-success) 10%, transparent);
 }
 
-/* === Progress bar ======================================================= */
+/* === Step indicator ===================================================== */
 
-.barRow {
+/* One segment per real pipeline step. Finished steps fill; the active step
+   sweeps as an indeterminate indicator rather than a guessed percentage. */
+.segments {
   display: flex;
+  gap: 0.35rem;
+  width: 100%;
 }
 
-.progressTrack {
-  width: 100%;
+.segment {
+  position: relative;
+  flex: 1 1 0;
   height: 6px;
-  background: color-mix(in srgb, var(--color-border-subtle) 55%, transparent);
   border-radius: 999px;
   overflow: hidden;
-  position: relative;
+  background: color-mix(in srgb, var(--color-border-subtle) 55%, transparent);
 }
 
-.hasCover .progressTrack {
+.hasCover .segment {
   background: color-mix(in srgb, var(--stage-glass-foreground) 14%, transparent);
 }
 
-.progressFill {
-  width: 100%;
-  height: 100%;
-  border-radius: 999px;
+.segmentDone {
   background: var(--color-content-emphasis);
-  transform: scaleX(var(--progress-scale, 0));
-  transform-origin: left center;
-  will-change: transform;
-  transition: transform 300ms ease-out;
 }
 
-.hasCover .progressFill {
+.hasCover .segmentDone {
   background: var(--stage-glass-foreground);
+}
+
+.segmentActive::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 45%;
+  border-radius: inherit;
+  background: var(--color-content-emphasis);
+  animation: segment-sweep 1.6s ease-in-out infinite;
+}
+
+.hasCover .segmentActive::after {
+  background: var(--stage-glass-foreground);
+}
+
+@keyframes segment-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(225%);
+  }
 }
 
 .meta {
@@ -286,10 +327,23 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 0.6rem;
+  gap: 0.75rem;
 }
 
-.percent {
+.statusNote {
+  min-width: 0;
+  flex: 1;
+  color: var(--color-content-muted);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.hasCover .statusNote {
+  color: var(--stage-glass-muted);
+}
+
+.elapsed {
+  flex: none;
   font-family: var(--font-mono, monospace);
   font-variant-numeric: tabular-nums;
   font-weight: 600;
@@ -297,20 +351,8 @@
   color: var(--color-content-emphasis);
 }
 
-.hasCover .percent {
+.hasCover .elapsed {
   color: var(--stage-glass-foreground);
-}
-
-.eta {
-  text-align: right;
-  max-width: 80%;
-  font-variant-numeric: tabular-nums;
-  color: var(--color-content-muted);
-  font-size: 0.8125rem;
-}
-
-.hasCover .eta {
-  color: var(--stage-glass-muted);
 }
 
 /* === Light theme ======================================================== */
@@ -329,5 +371,13 @@
   .stageIconPulse,
   .stageDots::after {
     animation: none;
+  }
+
+  /* A static half fill still marks the active step without movement. */
+  .segmentActive::after {
+    animation: none;
+    width: 50%;
+    transform: none;
+    opacity: 0.7;
   }
 }

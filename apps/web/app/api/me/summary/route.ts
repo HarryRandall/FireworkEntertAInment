@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import { getCurrentUserId } from '@/lib/auth/current-user.server';
 import { getWorkspaceSummary } from '@/lib/show-summary.server';
 import { AiCreditReadError, getSidebarAiUsageSummary } from '@/lib/ai-credits.server';
-import { ShowsNetworkError } from '@/lib/shows/queries.server';
+import { ShowsNetworkError } from '@/lib/shows/read-errors';
 import { isSupabaseTransientNetworkError } from '@/lib/supabase/errors';
 
 export async function GET() {

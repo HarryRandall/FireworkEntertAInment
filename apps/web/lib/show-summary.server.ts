@@ -7,7 +7,8 @@ import { getCurrentUserId } from '@/lib/auth/current-user.server';
 import { mapShow } from '@/lib/shows/mappers';
 import { getServerClient } from '@/lib/shows/supabase';
 import { SHOW_SELECT, type ShowProjection } from '@/lib/shows/types';
-import { listShowsForCurrentUser, ShowsNetworkError } from '@/lib/shows/queries.server';
+import { listShowsForCurrentUser } from '@/lib/shows/queries.server';
+import { ShowsNetworkError } from '@/lib/shows/read-errors';
 import type { Show } from '@/lib/show-domain';
 import type { ShowTemplateSummary } from '@/lib/show-template-summary';
 import {

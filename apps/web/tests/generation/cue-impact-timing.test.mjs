@@ -71,10 +71,12 @@ test('every planner lands the first visible burst on the musical time', () => {
 
 test('the card-preview lead-in cannot leak into full show replay timing', () => {
   const queries = read('lib/shows/queries.server.ts');
+  const catalogue = read('lib/shows/catalogue-products.ts');
   const preview = read('lib/firework-card-preview.server.ts');
 
   assert.doesNotMatch(queries, /FIREWORK_CARD_PREVIEW_CUE_TIME_SECONDS/);
-  assert.match(queries, /kind: 'direct',[\s\S]*?DIRECT_SHOW_REPLAY_SHOT_OFFSET_SECONDS/);
+  assert.doesNotMatch(catalogue, /FIREWORK_CARD_PREVIEW_CUE_TIME_SECONDS/);
+  assert.match(catalogue, /kind: 'direct',[\s\S]*?DIRECT_SHOW_REPLAY_SHOT_OFFSET_SECONDS/);
   assert.match(
     preview,
     /fireworkCardPreviewShotTimeSeconds\(shot\.kind, shot\.timeOffsetSeconds\)/,
@@ -84,6 +86,7 @@ test('the card-preview lead-in cannot leak into full show replay timing', () => 
 test('multishot child positions participate in site and overlap safety', () => {
   const domain = read('lib/show-domain.ts');
   const queries = read('lib/shows/queries.server.ts');
+  const catalogue = read('lib/shows/catalogue-products.ts');
   const options = read('lib/cue-generation/show-options.ts');
   const fast = read('lib/cue-generation/fast-planner.ts');
   const beat = read('lib/cue-generation/beat-sync-planner.ts');
@@ -102,7 +105,8 @@ test('multishot child positions participate in site and overlap safety', () => {
   assert.match(runner, /launchPositionIndex: cue\.tube,/);
   assert.match(runner, /acceptedWindows\.push\(window\)/);
   assert.match(showTypes, /CACHE_PREFIX = 'shows:v16'/);
-  assert.match(queries, /occupancyDurationSeconds: occupancy/);
+  assert.match(catalogue, /occupancyDurationSeconds: isMultishot/);
+  assert.match(catalogue, /child\.offset \+ \(child\.spec\.occupancyDurationSeconds \?\? 0\)/);
   assert.match(fast, /fireworkOccupancyDurationSeconds\(product\)/);
   assert.match(spacing, /GENERATED_LAUNCH_INTERVAL_SECONDS = 0\.5/);
   assert.match(fast, /timing\.launchTimeSeconds \+ GENERATED_LAUNCH_INTERVAL_SECONDS/);

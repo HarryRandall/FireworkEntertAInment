@@ -14,19 +14,8 @@ import { cache } from 'react';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
 import { getCurrentUserId } from '@/lib/auth/current-user.server';
-import type { LaunchPosition } from '@showcrafter/fireworks/design';
-import { resolveFireworkPreviewImage } from '@/lib/firework-preview-image';
-import {
-  parseReconstructionShotVariant,
-  parseShotPositionOverride,
-  parseShotSeedOverride,
-  type ReconstructionShotMetadata,
-} from '@/lib/firework-import/reconstruction-shot';
 import { getCachedJson, setCachedJson } from '@/lib/server-cache';
-import {
-  DIRECT_SHOW_REPLAY_SHOT_OFFSET_SECONDS,
-  showReplayShotTimeSeconds,
-} from '@/lib/replay-shot-timing';
+import { showReplayShotTimeSeconds } from '@/lib/replay-shot-timing';
 import { isSupabaseTransientNetworkError } from '@/lib/supabase/errors';
 import type {
   FireworkSpecification,
@@ -45,12 +34,17 @@ import {
   getUserShowsCacheKey,
 } from './cache-keys';
 import {
-  mapCue,
-  mapCatalogueFireworkCard,
-  mapFireworkVariantSpecification,
-  mapReplayCueBase,
-  mapShow,
-} from './mappers';
+  assembleCatalogueItemShots,
+  assembleCatalogueProducts,
+  type CatalogueItemShotSpec,
+} from './catalogue-products';
+import {
+  createReadLimiter,
+  readCatalogueGraph,
+  readCatalogueItems,
+} from './catalogue-products.server';
+import { mapCue, mapFireworkVariantSpecification, mapReplayCueBase, mapShow } from './mappers';
+import { CatalogueReadError, ShowsNetworkError } from './read-errors';
 import { computeShoppingListForShow } from './shopping.server';
 import { getCatalogueReadClient, getServerClient } from './supabase';
 import {
@@ -61,9 +55,7 @@ import {
   SHOW_CUE_SELECT,
   SHOW_SELECT,
   type FireworkVariantProjection,
-  type FireworkPreviewImageProjectionRelation,
   type ReplayCueRow,
-  type CatalogueFireworkCardProjection,
 } from './types';
 
 const catalogueLoadsInFlight = new Map<string, Promise<unknown>>();
@@ -82,45 +74,17 @@ async function loadCachedCatalogue<T>(cacheKey: string, loader: () => Promise<T>
   return promise;
 }
 
-/**
- * Thrown when a shows read fails due to a network or connect issue, so the page
- * can render a real error state instead of a fake empty list. Previously
- * `listShowsForCurrentUser` returned `[]` on `fetch failed`, which made
- * `/shows?page=3` show an empty library after an 18s hang even when the user had
- * shows.
- */
-export class ShowsNetworkError extends Error {
-  constructor(cause: unknown) {
-    super('Shows service is temporarily unavailable. Please retry.', { cause });
-    this.name = 'ShowsNetworkError';
-  }
-}
-
-function firstVariant<T>(variant: T | T[] | null | undefined): T | null {
-  if (!variant) return null;
-  return Array.isArray(variant) ? (variant[0] ?? null) : variant;
-}
-
-/** `variant_json.reconstructionShot` is shared by show replay and card previews. */
-function parseDirectReconstructionShot(input: unknown): ReconstructionShotMetadata | null {
-  return parseReconstructionShotVariant(input);
-}
-
 function finiteOrZero(value: unknown): number {
   const n = Number(value);
   return Number.isFinite(n) ? n : 0;
 }
 
-/** Cheapest purchasable supplier price for a catalogue item; null when unlisted. */
-function cheapestAvailablePriceCents(
-  rows: Array<{ price_cents: number | null; available: boolean | null }> | null | undefined,
-): number | null {
-  let cheapest: number | null = null;
-  for (const row of rows ?? []) {
-    if (!row.available || row.price_cents == null || !Number.isFinite(row.price_cents)) continue;
-    if (cheapest == null || row.price_cents < cheapest) cheapest = row.price_cents;
-  }
-  return cheapest;
+/** Catalogue reads never degrade to an empty list: the caller must know the read failed. */
+function throwCatalogueRead(table: string, error: unknown): never {
+  if (error instanceof ShowsNetworkError || error instanceof CatalogueReadError) throw error;
+  console.error('[shows.server] catalogue read failed:', { table, error });
+  if (isSupabaseTransientNetworkError(error)) throw new ShowsNetworkError(error);
+  throw new CatalogueReadError(error, { table });
 }
 
 /** Returns every show owned by the current user, sorted by `updated_at` desc. */
@@ -210,11 +174,7 @@ export const listFireworkSpecifications = cache(async (): Promise<FireworkSpecif
       .from('fireworks')
       .select(FIREWORK_VARIANT_SELECT)
       .order('name', { ascending: true });
-    if (error) {
-      if (isSupabaseTransientNetworkError(error)) throw new ShowsNetworkError(error);
-      console.error('[shows.server] listFireworkSpecifications failed:', error);
-      return [];
-    }
+    if (error) throwCatalogueRead('fireworks', error);
     const mapped = ((data ?? []) as FireworkVariantProjection[]).map((row, i) =>
       mapFireworkVariantSpecification(row, i),
     );
@@ -236,6 +196,11 @@ export type ListFireworkProductsOptions = {
  * Single-firework items read directly from `fireworks`. Multishots use their
  * first child firework for prompt/render preview data, while replay expands
  * the full sequence through `multishot_fireworks`.
+ *
+ * The read is a series of bounded, batched lookups (see
+ * `catalogue-products.server`). A failure in any of them throws
+ * {@link CatalogueReadError} or {@link ShowsNetworkError}; an empty array only
+ * means that nothing is listed.
  */
 export const listFireworkProducts = cache(
   async (options?: ListFireworkProductsOptions): Promise<FireworkSpecification[]> => {
@@ -245,157 +210,22 @@ export const listFireworkProducts = cache(
 
     const load = async () => {
       const supabase = options?.scopedRead?.supabase ?? (await getCatalogueReadClient());
-      let query = supabase
-        .from('catalogue_items')
-        .select(
-          `id, name, part_number, manufacturer, description, duration_seconds, catalogue_item_kind,
-       supplier_inventory_items (price_cents, available),
-       fireworks (${fireworkSelect}),
-       multishots (
-         id,
-         shot_count,
-         firework_preview_images(source_revision, renderer_version, storage_path),
-         multishot_fireworks (
-           sequence_index,
-           time_offset_seconds,
-           caliber,
-           fireworks (${fireworkSelect})
-         )
-       )`,
-        )
-        .eq('is_listed', true)
-        .order('name', { ascending: true });
-      if (options?.scopedRead) query = query.in('id', options.scopedRead.ids);
-      const { data, error } = await query;
-      if (error) {
-        if (options?.scopedRead || isSupabaseTransientNetworkError(error))
-          throw new ShowsNetworkError(error);
-        console.error('[shows.server] listFireworkProducts failed:', error);
-        return [];
-      }
-
-      type CatalogueItemRow = {
-        id: string;
-        name: string;
-        part_number: string;
-        manufacturer: string | null;
-        description: string | null;
-        duration_seconds: number | null;
-        catalogue_item_kind: string;
-        supplier_inventory_items: Array<{
-          price_cents: number | null;
-          available: boolean | null;
-        }> | null;
-        fireworks:
-          | FireworkVariantProjection
-          | FireworkVariantProjection[]
-          | CatalogueFireworkCardProjection
-          | CatalogueFireworkCardProjection[]
-          | null;
-        multishots: {
-          id: string;
-          shot_count: number;
-          firework_preview_images: FireworkPreviewImageProjectionRelation;
-          multishot_fireworks: Array<{
-            sequence_index: number;
-            time_offset_seconds: number;
-            caliber: string | null;
-            fireworks:
-              | FireworkVariantProjection
-              | FireworkVariantProjection[]
-              | CatalogueFireworkCardProjection
-              | CatalogueFireworkCardProjection[]
-              | null;
-          }>;
-        } | null;
-      };
-
-      const mapped: FireworkSpecification[] = [];
-      for (const row of (data ?? []) as CatalogueItemRow[]) {
-        const directFirework = firstVariant(row.fireworks);
-        const multishotRows = [...(row.multishots?.multishot_fireworks ?? [])].sort(
-          (a, b) => a.sequence_index - b.sequence_index,
-        );
-        const firstMultishotFirework = multishotRows.find((shot) => shot.fireworks != null);
-        const primary = directFirework ?? firstVariant(firstMultishotFirework?.fireworks);
-        if (!primary) continue;
-
-        const base = lightweight
-          ? mapCatalogueFireworkCard(
-              primary as CatalogueFireworkCardProjection,
-              mapped.length,
-              firstMultishotFirework?.caliber ?? null,
-            )
-          : mapFireworkVariantSpecification(
-              primary as FireworkVariantProjection,
-              mapped.length,
-              firstMultishotFirework?.caliber ?? null,
-            );
-        const previewImage =
-          row.catalogue_item_kind === 'multishot'
-            ? resolveFireworkPreviewImage(row.multishots?.firework_preview_images)
-            : {
-                previewImagePath: base.previewImagePath ?? null,
-                previewImageRevision: base.previewImageRevision ?? null,
-              };
-        const children = multishotRows.map((child) => {
-          const firework = firstVariant(child.fireworks);
-          if (!firework) return null;
-          const spec = lightweight
-            ? mapCatalogueFireworkCard(
-                firework as CatalogueFireworkCardProjection,
-                0,
-                child.caliber,
-              )
-            : mapFireworkVariantSpecification(
-                firework as FireworkVariantProjection,
-                0,
-                child.caliber,
-              );
-          return { spec, offset: child.time_offset_seconds };
-        });
-        const invalidChild = children.find((child) => !child?.spec.design);
-        const duration =
-          row.catalogue_item_kind === 'multishot'
-            ? Math.max(
-                0,
-                ...children.map((child) =>
-                  child ? child.offset + (child.spec.durationSeconds ?? 0) : 0,
-                ),
-              )
-            : base.durationSeconds;
-        const occupancy =
-          row.catalogue_item_kind === 'multishot'
-            ? Math.max(
-                0,
-                ...children.map((child) =>
-                  child ? child.offset + (child.spec.occupancyDurationSeconds ?? 0) : 0,
-                ),
-              )
-            : base.occupancyDurationSeconds;
-        mapped.push({
-          ...base,
-          ...previewImage,
-          id: row.id,
-          slug: row.part_number,
-          name: row.name,
-          manufacturer: row.manufacturer,
-          description: row.description ?? base.description,
-          minPriceCents: cheapestAvailablePriceCents(row.supplier_inventory_items),
-          durationSeconds: duration,
-          occupancyDurationSeconds: occupancy,
-          designError:
-            invalidChild === undefined
-              ? base.designError
-              : 'A multishot child has no valid renderer design.',
-
-          shotCount:
-            row.catalogue_item_kind === 'multishot'
-              ? (row.multishots?.shot_count ?? multishotRows.length)
-              : 1,
-        });
-      }
-
+      // One limiter spans the item read and every graph table.
+      const limiter = createReadLimiter();
+      const items = await readCatalogueItems(
+        supabase,
+        { ids: options?.scopedRead?.ids, listedOnly: true },
+        limiter,
+      );
+      const graph = await readCatalogueGraph(
+        supabase,
+        items,
+        fireworkSelect,
+        { inventory: true, multishotMeta: true, multishotPreviews: true },
+        limiter,
+      );
+      const mapped = assembleCatalogueProducts(graph, { lightweight });
+      // Only a complete graph reaches the cache: any page or table failure threw above.
       if (!options?.scopedRead) await setCachedJson(cacheKey, mapped, FIREWORK_SPECS_TTL_SECONDS);
       return mapped;
     };
@@ -403,41 +233,11 @@ export const listFireworkProducts = cache(
   },
 );
 
-type CatalogueFireworkRow = {
-  id: string;
-  catalogue_item_kind: string;
-  fireworks: FireworkVariantProjection | FireworkVariantProjection[] | null;
-  multishots: {
-    id: string;
-    multishot_fireworks: Array<{
-      id: string;
-      sequence_index: number;
-      time_offset_seconds: number;
-      pan_degrees: number | null;
-      tilt_degrees: number | null;
-      position_override_json: unknown;
-      caliber: string | null;
-      fireworks: FireworkVariantProjection | FireworkVariantProjection[] | null;
-    }>;
-  } | null;
-};
-
-export type CatalogueItemShotSpec = {
-  kind: 'direct' | 'multishot';
-  sourceCueId: string;
-  timeOffsetSeconds: number;
-  panDegrees: number | null;
-  tiltDegrees: number | null;
-  positionOverride: LaunchPosition | null;
-  seedOverride: number | null;
-  firework: FireworkSpecification;
-};
-
 type FetchCatalogueItemShotsOptions = {
-  /** Card-preview APIs must surface read failures instead of treating them as no preview. */
-  failOnError?: boolean;
   /** Timing analysis must distinguish a missing offset from a real zero. */
   preserveUnknownTiming?: boolean;
+  /** Timing profiles only need multishot children, so skip the direct firework payloads. */
+  multishotChildrenOnly?: boolean;
 };
 
 /**
@@ -445,89 +245,34 @@ type FetchCatalogueItemShotsOptions = {
  * firework becomes one shot; a multishot fans out into one shot per ordered
  * `multishot_fireworks` row. Shared by the per-show and batched replay loaders
  * so the catalogue join logic has one source of truth.
+ *
+ * Read failures propagate as {@link CatalogueReadError} or
+ * {@link ShowsNetworkError}: an empty map would replay a saved show as silent.
  */
 export async function fetchShotsByCatalogueItem(
   supabase: SupabaseClient<Database>,
   catalogueItemIds: string[],
   options: FetchCatalogueItemShotsOptions = {},
 ): Promise<Map<string, CatalogueItemShotSpec[]>> {
-  const shotsByCatalogueItem = new Map<string, CatalogueItemShotSpec[]>();
-  if (catalogueItemIds.length === 0) return shotsByCatalogueItem;
+  if (catalogueItemIds.length === 0) return new Map();
 
-  const { data, error } = await supabase
-    .from('catalogue_items')
-    .select(
-      `id, catalogue_item_kind,
-       fireworks (${FIREWORK_VARIANT_SELECT}),
-       multishots (
-         id,
-         multishot_fireworks (
-           id,
-           sequence_index,
-           time_offset_seconds,
-           pan_degrees,
-           tilt_degrees,
-           position_override_json,
-           caliber,
-           fireworks (${FIREWORK_VARIANT_SELECT})
-         )
-       )`,
-    )
-    .in('id', catalogueItemIds);
-
-  if (error) {
-    if (options.failOnError || isSupabaseTransientNetworkError(error)) {
-      throw new ShowsNetworkError(error);
-    }
-    console.error('[shows.server] catalogue_items load failed:', error);
-    return shotsByCatalogueItem;
-  }
-
-  for (const item of (data ?? []) as CatalogueFireworkRow[]) {
-    const directFirework = firstVariant(item.fireworks);
-    if (directFirework) {
-      const reconstructionShot = parseDirectReconstructionShot(directFirework.variant_json);
-      shotsByCatalogueItem.set(item.id, [
-        {
-          kind: 'direct',
-          sourceCueId: `${directFirework.id}-card-preview`,
-          timeOffsetSeconds: DIRECT_SHOW_REPLAY_SHOT_OFFSET_SECONDS,
-          panDegrees: reconstructionShot?.panDegrees ?? null,
-          tiltDegrees: reconstructionShot?.tiltDegrees ?? null,
-          positionOverride: reconstructionShot?.positionOverride ?? null,
-          seedOverride: reconstructionShot?.seedOverride ?? null,
-          firework: mapFireworkVariantSpecification(directFirework, 0),
-        },
-      ]);
-      continue;
-    }
-
-    const multishotRows = [...(item.multishots?.multishot_fireworks ?? [])].sort(
-      (a, b) => a.sequence_index - b.sequence_index,
-    );
-    const shots: CatalogueItemShotSpec[] = [];
-    for (const shot of multishotRows) {
-      const firework = firstVariant(shot.fireworks);
-      if (!firework) continue;
-      shots.push({
-        kind: 'multishot',
-        sourceCueId: shot.id,
-        timeOffsetSeconds: options.preserveUnknownTiming
-          ? shot.time_offset_seconds == null || String(shot.time_offset_seconds).trim() === ''
-            ? Number.NaN
-            : Number(shot.time_offset_seconds)
-          : finiteOrZero(shot.time_offset_seconds),
-        panDegrees: shot.pan_degrees == null ? null : Number(shot.pan_degrees),
-        tiltDegrees: shot.tilt_degrees == null ? null : Number(shot.tilt_degrees),
-        positionOverride: parseShotPositionOverride(shot.position_override_json),
-        seedOverride: parseShotSeedOverride(shot.position_override_json),
-        firework: mapFireworkVariantSpecification(firework, shots.length, shot.caliber),
-      });
-    }
-    if (shots.length > 0) shotsByCatalogueItem.set(item.id, shots);
-  }
-
-  return shotsByCatalogueItem;
+  const limiter = createReadLimiter();
+  // Replay must still expand items that were unlisted after the show was saved.
+  const items = await readCatalogueItems(
+    supabase,
+    { ids: catalogueItemIds, listedOnly: false },
+    limiter,
+  );
+  const graph = await readCatalogueGraph<FireworkVariantProjection>(
+    supabase,
+    items,
+    FIREWORK_VARIANT_SELECT,
+    { multishotChildrenOnly: options.multishotChildrenOnly },
+    limiter,
+  );
+  return assembleCatalogueItemShots(graph, {
+    preserveUnknownTiming: options.preserveUnknownTiming,
+  });
 }
 
 /**

@@ -2,7 +2,8 @@
 import 'server-only';
 
 import { getCatalogueReadClient } from '@/lib/supabase/server-client';
-import { listFireworkProducts, ShowsNetworkError } from '@/lib/shows/queries.server';
+import { listFireworkProducts } from '@/lib/shows/queries.server';
+import { ShowsNetworkError } from '@/lib/shows/read-errors';
 import { isSupabaseTransientNetworkError } from '@/lib/supabase/errors';
 import type { FireworkSpecification } from '@/lib/show-domain';
 
