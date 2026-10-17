@@ -43,6 +43,7 @@
     "knip": "knip",
     "db:design-schema": "node scripts/database/design-schema.mjs",
     "catalogue:designs": "node --import ./scripts/renderer/register-typescript.mjs scripts/catalogue/generate.mjs",
+    "catalogue:import": "node --import ./scripts/renderer/register-typescript.mjs scripts/catalogue/import-vdl.mjs",
     "catalogue:vdl": "node --import ./scripts/renderer/register-typescript.mjs scripts/catalogue/vdl-products.mjs",
     "catalogue:designs:test": "node --import ./scripts/renderer/register-typescript.mjs --test scripts/catalogue/*.test.mjs"
   },
