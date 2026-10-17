@@ -24,7 +24,7 @@ complete a run.
 - FFmpeg and ffprobe
 - Supabase and OpenRouter credentials
 
-Copy the relevant values from the root `.env.example`. The required service
+Copy the relevant values from `apps/web/.env.example`. The required service
 credentials are:
 
 ```text
@@ -56,9 +56,12 @@ renderer scorer can start.
 
 ## Modal
 
-Create `showcrafter-firework-import-worker` and
-`showcrafter-firework-import-dispatch` secrets with the values described in
-`.env.example`, then verify the endpoint before deploying:
+Create `showcrafter-firework-import-worker` with `SUPABASE_URL`,
+`SUPABASE_SERVICE_ROLE_KEY` and `OPENROUTER_API_KEY`. Create
+`showcrafter-firework-import-dispatch` with `FIREWORK_IMPORT_SHARED_SECRET`.
+Install the Modal CLI separately and authenticate it as described in the
+[handover account guide](../../docs/handover/accounts-and-access.md#modal), then
+verify the endpoint before deploying:
 
 ```bash
 modal serve services/firework-import-worker/modal_app.py
