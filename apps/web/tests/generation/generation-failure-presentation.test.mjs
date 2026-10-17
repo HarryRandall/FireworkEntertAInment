@@ -8,10 +8,9 @@ import { test } from 'node:test';
 
 await import('../../../../scripts/renderer/register-typescript.mjs');
 
-const [{ classifyGenerationFailure, describeGenerationFailure }, splash] = await Promise.all([
-  import('../../lib/cue-generation/failure-presentation.ts'),
-  import('../../ui/shows/generation-delay.ts'),
-]);
+const { classifyGenerationFailure, describeGenerationFailure } =
+  await import('../../lib/cue-generation/failure-presentation.ts');
+const { formatElapsed, stageStatusNote } = await import('../../ui/shows/generation-delay.ts');
 
 const CREDITS_NOTE = 'No AI credits were charged for this attempt.';
 
@@ -140,37 +139,37 @@ test('unknown and empty messages fall back to a neutral retry message', () => {
 });
 
 test('the splash reports elapsed time and honest stage notes without a countdown', () => {
-  assert.equal(splash.formatElapsed(0), '0:00');
-  assert.equal(splash.formatElapsed(65.9), '1:05');
-  assert.equal(splash.formatElapsed(600), '10:00');
-  assert.equal(splash.formatElapsed(Number.NaN), '0:00');
+  assert.equal(formatElapsed(0), '0:00');
+  assert.equal(formatElapsed(65.9), '1:05');
+  assert.equal(formatElapsed(600), '10:00');
+  assert.equal(formatElapsed(Number.NaN), '0:00');
 
   const notes = [
-    splash.stageStatusNote({
+    stageStatusNote({
       phase: 'analysing',
       hasAudio: true,
       isWarm: false,
       phaseElapsedSeconds: 5,
     }),
-    splash.stageStatusNote({
+    stageStatusNote({
       phase: 'analysing',
       hasAudio: true,
       isWarm: true,
       phaseElapsedSeconds: 5,
     }),
-    splash.stageStatusNote({
+    stageStatusNote({
       phase: 'generating',
       hasAudio: true,
       isWarm: true,
       phaseElapsedSeconds: 5,
     }),
-    splash.stageStatusNote({
+    stageStatusNote({
       phase: 'generating',
       hasAudio: false,
       isWarm: true,
       phaseElapsedSeconds: 5,
     }),
-    splash.stageStatusNote({
+    stageStatusNote({
       phase: 'finalising',
       hasAudio: true,
       isWarm: true,
@@ -189,7 +188,7 @@ test('the splash reports elapsed time and honest stage notes without a countdown
 
   // Overdue phases switch to the delay note instead of pretending progress.
   assert.match(
-    splash.stageStatusNote({
+    stageStatusNote({
       phase: 'generating',
       hasAudio: true,
       isWarm: true,
@@ -198,7 +197,7 @@ test('the splash reports elapsed time and honest stage notes without a countdown
     /longer than expected/,
   );
   assert.match(
-    splash.stageStatusNote({
+    stageStatusNote({
       phase: 'analysing',
       hasAudio: true,
       isWarm: false,

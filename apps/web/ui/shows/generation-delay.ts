@@ -24,7 +24,7 @@ export function generationDelayLabel(
  * Typical phase length in seconds. This is never shown as a countdown; it
  * only decides when the "taking longer than expected" note should appear.
  */
-export function phaseEstimateSeconds(phase: GenerationPhase, isWarm: boolean): number {
+function phaseEstimateSeconds(phase: GenerationPhase, isWarm: boolean): number {
   if (phase === 'analysing') return isWarm ? 35 : 110;
   if (phase === 'finalising') return 5;
   return isWarm ? 18 : 45;

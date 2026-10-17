@@ -67,23 +67,27 @@ registerHooks({
   },
 });
 
-const [
-  catalogueProducts,
-  catalogueReads,
-  queries,
-  { CatalogueReadError, ShowsNetworkError },
-  { FIREWORK_PREVIEW_RENDERER_VERSION },
-  { CATALOGUE_FIREWORK_CARD_SELECT, FIREWORK_VARIANT_SELECT },
-  { effectTemplates },
-] = await Promise.all([
-  import('../../lib/shows/catalogue-products.ts'),
-  import('../../lib/shows/catalogue-products.server.ts'),
-  import('../../lib/shows/queries.server.ts'),
-  import('../../lib/shows/read-errors.ts'),
-  import('../../lib/firework-preview-image.ts'),
-  import('../../lib/shows/types.ts'),
-  import('@showcrafter/renderer'),
-]);
+// Imports stay dynamic so the resolve hook above is registered first. Each one
+// destructures its bindings directly so Knip can see which exports tests use.
+const { assembleCatalogueItemShots, assembleCatalogueProducts } =
+  await import('../../lib/shows/catalogue-products.ts');
+const {
+  CATALOGUE_FIREWORK_BATCH_SIZE,
+  CATALOGUE_ID_BATCH_SIZE,
+  CATALOGUE_PAGE_SIZE,
+  CATALOGUE_READ_CONCURRENCY,
+  CATALOGUE_SHOT_BATCH_SIZE,
+  createReadLimiter,
+  readCatalogueGraph,
+  readCatalogueItems,
+} = await import('../../lib/shows/catalogue-products.server.ts');
+const { fetchShotsByCatalogueItem, listFireworkProducts } =
+  await import('../../lib/shows/queries.server.ts');
+const { CatalogueReadError, ShowsNetworkError } = await import('../../lib/shows/read-errors.ts');
+const { FIREWORK_PREVIEW_RENDERER_VERSION } = await import('../../lib/firework-preview-image.ts');
+const { CATALOGUE_FIREWORK_CARD_SELECT, FIREWORK_VARIANT_SELECT } =
+  await import('../../lib/shows/types.ts');
+const { effectTemplates } = await import('@showcrafter/renderer');
 
 const PEONY = effectTemplates.find((entry) => entry.key === 'peony').design;
 
@@ -313,9 +317,9 @@ async function loadGraph(
   supabase,
   { ids, listedOnly = true, fireworkSelect = FIREWORK_VARIANT_SELECT, include } = {},
 ) {
-  const limiter = catalogueReads.createReadLimiter();
-  const items = await catalogueReads.readCatalogueItems(supabase, { ids, listedOnly }, limiter);
-  return catalogueReads.readCatalogueGraph(
+  const limiter = createReadLimiter();
+  const items = await readCatalogueItems(supabase, { ids, listedOnly }, limiter);
+  return readCatalogueGraph(
     supabase,
     items,
     fireworkSelect,
@@ -328,7 +332,7 @@ async function loadGraph(
   );
 }
 
-const PAGE = catalogueReads.CATALOGUE_PAGE_SIZE;
+const PAGE = CATALOGUE_PAGE_SIZE;
 
 /** Every request is a bounded page with a total ordering ending in a unique column. */
 function assertPagedRequests(requests) {
@@ -369,7 +373,7 @@ function cake(index, shotCount, tables) {
 test('assembled products keep catalogue order, pricing, multishot timing and previews', async () => {
   const supabase = fakeSupabase(fixtureTables());
   const graph = await loadGraph(supabase);
-  const products = catalogueProducts.assembleCatalogueProducts(graph, { lightweight: false });
+  const products = assembleCatalogueProducts(graph, { lightweight: false });
 
   // Gamma points at a firework that does not exist, so it is skipped; Zeta is unlisted.
   assert.deepEqual(
@@ -417,7 +421,7 @@ test('assembled products keep catalogue order, pricing, multishot timing and pre
 test('lightweight products omit renderer payloads but keep card data', async () => {
   const supabase = fakeSupabase(fixtureTables());
   const graph = await loadGraph(supabase, { fireworkSelect: CATALOGUE_FIREWORK_CARD_SELECT });
-  const products = catalogueProducts.assembleCatalogueProducts(graph, { lightweight: true });
+  const products = assembleCatalogueProducts(graph, { lightweight: true });
   assert.deepEqual(
     products.map((product) => product.id),
     ['alpha', 'beta', 'delta', 'epsilon'],
@@ -436,7 +440,7 @@ test('replay shots fan multishots out in order and preserve unknown timing on re
     listedOnly: false,
     include: {},
   });
-  const shots = catalogueProducts.assembleCatalogueItemShots(graph);
+  const shots = assembleCatalogueItemShots(graph);
 
   const alpha = shots.get('alpha');
   assert.equal(alpha.length, 1);
@@ -465,7 +469,7 @@ test('replay shots fan multishots out in order and preserve unknown timing on re
   // The missing child is dropped; the remaining child still counts.
   assert.equal(shots.get('delta').length, 1);
 
-  const timing = catalogueProducts.assembleCatalogueItemShots(
+  const timing = assembleCatalogueItemShots(
     await loadGraph(supabase, { ids: ['delta'], listedOnly: false, include: {} }),
     { preserveUnknownTiming: true },
   );
@@ -474,7 +478,7 @@ test('replay shots fan multishots out in order and preserve unknown timing on re
     ...graph,
     fireworks: [...graph.fireworks, firework('missing-child')],
   };
-  const preserved = catalogueProducts.assembleCatalogueItemShots(withMissingChild, {
+  const preserved = assembleCatalogueItemShots(withMissingChild, {
     preserveUnknownTiming: true,
   });
   assert.ok(Number.isNaN(preserved.get('delta')[1].timeOffsetSeconds));
@@ -507,10 +511,10 @@ test('the loader issues flat, batched lookups instead of one nested embed', asyn
       if (kind !== 'in') continue;
       const limit =
         request.table === 'fireworks'
-          ? catalogueReads.CATALOGUE_FIREWORK_BATCH_SIZE
+          ? CATALOGUE_FIREWORK_BATCH_SIZE
           : request.table === 'multishot_fireworks'
-            ? catalogueReads.CATALOGUE_SHOT_BATCH_SIZE
-            : catalogueReads.CATALOGUE_ID_BATCH_SIZE;
+            ? CATALOGUE_SHOT_BATCH_SIZE
+            : CATALOGUE_ID_BATCH_SIZE;
       assert.ok(
         values.length <= limit,
         `${request.table} batch of ${values.length} exceeds ${limit}`,
@@ -551,7 +555,7 @@ test('scoped reads stay listed-only and keep name order across batches', async (
     'alpha',
     ...Array.from({ length: 120 }, (_, index) => `bulk-${index}`),
   ];
-  const items = await catalogueReads.readCatalogueItems(supabase, { ids, listedOnly: true });
+  const items = await readCatalogueItems(supabase, { ids, listedOnly: true });
   assert.equal(
     items.find((row) => row.id === 'zeta'),
     undefined,
@@ -587,7 +591,7 @@ test('multishot-children-only reads skip the direct firework payloads', async ()
     supabase.requests.some((request) => request.table === 'supplier_inventory_items'),
     false,
   );
-  assert.deepEqual(catalogueProducts.assembleCatalogueItemShots(graph).get('beta').length, 2);
+  assert.deepEqual(assembleCatalogueItemShots(graph).get('beta').length, 2);
 });
 
 test('any failing table read throws instead of shrinking the catalogue', async (context) => {
@@ -628,11 +632,11 @@ test('listFireworkProducts propagates read failures on every path and caches goo
 
   // Full read: a database failure is a thrown error, not an empty catalogue.
   installContext(fakeSupabase(fixtureTables(), { failures: { fireworks: timeout } }));
-  await assert.rejects(queries.listFireworkProducts(), CatalogueReadError);
+  await assert.rejects(listFireworkProducts(), CatalogueReadError);
 
   // Lightweight read: same contract.
   installContext(fakeSupabase(fixtureTables(), { failures: { multishot_fireworks: timeout } }));
-  await assert.rejects(queries.listFireworkProducts({ lightweight: true }), CatalogueReadError);
+  await assert.rejects(listFireworkProducts({ lightweight: true }), CatalogueReadError);
 
   // Scoped read uses the caller's client, bypasses the cache and still fails loudly.
   const scopedFailure = fakeSupabase(fixtureTables(), {
@@ -640,7 +644,7 @@ test('listFireworkProducts propagates read failures on every path and caches goo
   });
   const scopedContext = installContext(fakeSupabase({}));
   await assert.rejects(
-    queries.listFireworkProducts({ scopedRead: { supabase: scopedFailure, ids: ['alpha'] } }),
+    listFireworkProducts({ scopedRead: { supabase: scopedFailure, ids: ['alpha'] } }),
     CatalogueReadError,
   );
   assert.equal(scopedContext.cache.size, 0);
@@ -652,7 +656,7 @@ test('listFireworkProducts propagates read failures on every path and caches goo
 
   // Healthy full read: mapped products and a single cache write.
   const healthy = installContext(fakeSupabase(fixtureTables()));
-  const products = await queries.listFireworkProducts();
+  const products = await listFireworkProducts();
   assert.deepEqual(
     products.map((product) => product.id),
     ['alpha', 'beta', 'delta', 'epsilon'],
@@ -667,7 +671,7 @@ test('listFireworkProducts propagates read failures on every path and caches goo
   // Scoped healthy read: listed filter plus id filter, no cache write.
   const scoped = installContext(fakeSupabase({}));
   const scopedClient = fakeSupabase(fixtureTables());
-  const scopedProducts = await queries.listFireworkProducts({
+  const scopedProducts = await listFireworkProducts({
     scopedRead: { supabase: scopedClient, ids: ['beta', 'zeta'] },
   });
   assert.deepEqual(
@@ -686,7 +690,7 @@ test('listFireworkProducts propagates read failures on every path and caches goo
 
   // An empty catalogue is still a genuine empty list.
   installContext(fakeSupabase({ catalogue_items: [] }));
-  assert.deepEqual(await queries.listFireworkProducts({ lightweight: true }), []);
+  assert.deepEqual(await listFireworkProducts({ lightweight: true }), []);
 });
 
 test('fetchShotsByCatalogueItem fails every consumer loudly rather than replaying silence', async (context) => {
@@ -695,7 +699,7 @@ test('fetchShotsByCatalogueItem fails every consumer loudly rather than replayin
 
   // Public replay path (no options): a database failure is still a failure.
   const replay = fakeSupabase(fixtureTables(), { failures: { multishot_fireworks: timeout } });
-  await assert.rejects(queries.fetchShotsByCatalogueItem(replay, ['alpha', 'beta']), (error) => {
+  await assert.rejects(fetchShotsByCatalogueItem(replay, ['alpha', 'beta']), (error) => {
     assert.ok(error instanceof CatalogueReadError);
     assert.equal(error.cause.code, '57014');
     return true;
@@ -704,7 +708,7 @@ test('fetchShotsByCatalogueItem fails every consumer loudly rather than replayin
   // Timing and card-preview paths share the same contract.
   const strict = fakeSupabase(fixtureTables(), { failures: { multishot_fireworks: timeout } });
   await assert.rejects(
-    queries.fetchShotsByCatalogueItem(strict, ['alpha', 'beta'], {
+    fetchShotsByCatalogueItem(strict, ['alpha', 'beta'], {
       preserveUnknownTiming: true,
       multishotChildrenOnly: true,
     }),
@@ -714,11 +718,11 @@ test('fetchShotsByCatalogueItem fails every consumer loudly rather than replayin
   const network = fakeSupabase(fixtureTables(), {
     failures: { fireworks: { message: 'fetch failed' } },
   });
-  await assert.rejects(queries.fetchShotsByCatalogueItem(network, ['alpha']), ShowsNetworkError);
+  await assert.rejects(fetchShotsByCatalogueItem(network, ['alpha']), ShowsNetworkError);
 
   // Replay reads unlisted items too, since saved shows may reference them.
   const healthy = fakeSupabase(fixtureTables());
-  const shots = await queries.fetchShotsByCatalogueItem(healthy, ['zeta', 'beta'], {
+  const shots = await fetchShotsByCatalogueItem(healthy, ['zeta', 'beta'], {
     multishotChildrenOnly: true,
     preserveUnknownTiming: true,
   });
@@ -729,9 +733,9 @@ test('fetchShotsByCatalogueItem fails every consumer loudly rather than replayin
     itemRequest.filters.some(([, column]) => column === 'is_listed'),
     false,
   );
-  const full = await queries.fetchShotsByCatalogueItem(fakeSupabase(fixtureTables()), ['zeta']);
+  const full = await fetchShotsByCatalogueItem(fakeSupabase(fixtureTables()), ['zeta']);
   assert.equal(full.get('zeta')[0].kind, 'direct', 'unlisted saved items still replay');
-  assert.equal(await queries.fetchShotsByCatalogueItem(healthy, []).then((map) => map.size), 0);
+  assert.equal(await fetchShotsByCatalogueItem(healthy, []).then((map) => map.size), 0);
 });
 
 test('high fan-out relations are read page by page until a short page, never truncated', async () => {
@@ -759,7 +763,7 @@ test('high fan-out relations are read page by page until a short page, never tru
     ['multishot_id', 'sequence_index', 'id'],
   );
 
-  const products = catalogueProducts.assembleCatalogueProducts(graph, { lightweight: false });
+  const products = assembleCatalogueProducts(graph, { lightweight: false });
   const cakes = products.filter((product) => product.id.startsWith('cake-'));
   assert.equal(cakes.length, 20, 'every cake survives the page walk');
   for (const product of cakes) {
@@ -789,7 +793,7 @@ test('an exact page boundary and an empty relation both finish cleanly', async (
     [11, [PAGE, 2 * PAGE - 1]],
   ]);
   assert.equal(graph.shots.length, PAGE);
-  const products = catalogueProducts.assembleCatalogueProducts(graph, { lightweight: false });
+  const products = assembleCatalogueProducts(graph, { lightweight: false });
   assert.deepEqual(
     products.map((product) => product.shotCount),
     Array.from({ length: 10 }, () => PAGE / 10),
@@ -799,7 +803,7 @@ test('an exact page boundary and an empty relation both finish cleanly', async (
     products.some((product) => product.id === 'cake-99'),
     false,
   );
-  assert.equal(catalogueProducts.assembleCatalogueItemShots(graph).has('cake-99'), false);
+  assert.equal(assembleCatalogueItemShots(graph).has('cake-99'), false);
 });
 
 test('a failure on a later page fails the whole read and nothing partial is cached', async (context) => {
@@ -812,7 +816,7 @@ test('a failure on a later page fails the whole read and nothing partial is cach
   });
   const test = installContext(supabase);
 
-  await assert.rejects(queries.listFireworkProducts(), (error) => {
+  await assert.rejects(listFireworkProducts(), (error) => {
     assert.ok(error instanceof CatalogueReadError);
     assert.equal(error.table, 'multishot_fireworks');
     assert.equal(error.cause.code, '57014');
@@ -856,9 +860,9 @@ test('an unscoped catalogue beyond the row cap is read in name-ordered pages', a
   );
   assert.equal(
     supabase.requests.filter((request) => request.table === 'supplier_inventory_items').length,
-    Math.ceil(1105 / catalogueReads.CATALOGUE_ID_BATCH_SIZE),
+    Math.ceil(1105 / CATALOGUE_ID_BATCH_SIZE),
   );
-  const products = catalogueProducts.assembleCatalogueProducts(graph, { lightweight: true });
+  const products = assembleCatalogueProducts(graph, { lightweight: true });
   assert.equal(products.length, 1104);
   assert.equal(products.find((product) => product.id === 'bulk-1099').minPriceCents, 1199);
 });
@@ -893,7 +897,7 @@ test('supplier inventory fan-out beyond one page still finds the cheapest availa
     [PAGE, 2 * PAGE - 1],
   ]);
   assert.equal(graph.inventory.length, 600);
-  const products = catalogueProducts.assembleCatalogueProducts(graph, { lightweight: true });
+  const products = assembleCatalogueProducts(graph, { lightweight: true });
   // The last item's cheapest offer lives on the second page.
   assert.equal(products.find((product) => product.id === 'bulk-99').minPriceCents, 500);
   assert.equal(products.find((product) => product.id === 'bulk-50').minPriceCents, 996);
@@ -913,18 +917,18 @@ test('requests across every table share one in-flight cap', async () => {
   const supabase = fakeSupabase(tables, { delayMs: 2 });
   const context = installContext(supabase);
 
-  const products = await queries.listFireworkProducts();
+  const products = await listFireworkProducts();
   assert.ok(supabase.requests.length > 20, 'the read spans many batches and pages');
   assert.ok(supabase.state.maxInFlight > 1, 'batches run side by side');
   assert.ok(
-    supabase.state.maxInFlight <= catalogueReads.CATALOGUE_READ_CONCURRENCY,
+    supabase.state.maxInFlight <= CATALOGUE_READ_CONCURRENCY,
     `${supabase.state.maxInFlight} requests were in flight at once`,
   );
   assert.equal(products.length, 400 + 60 + 4);
   assert.equal(context.cache.size, 1);
 
   // The limiter itself: bounded, order-preserving, and it releases on failure.
-  const limiter = catalogueReads.createReadLimiter(2);
+  const limiter = createReadLimiter(2);
   let active = 0;
   let peak = 0;
   const tasks = Array.from({ length: 5 }, (_, index) =>

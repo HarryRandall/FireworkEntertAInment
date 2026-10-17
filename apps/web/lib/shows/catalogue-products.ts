@@ -111,7 +111,7 @@ export function chunkIds(ids: Iterable<string>, size: number): string[][] {
 }
 
 /** Cheapest purchasable supplier price for a catalogue item; null when unlisted. */
-export function cheapestAvailablePriceCents(
+function cheapestAvailablePriceCents(
   rows: Array<{ price_cents: number | null; available: boolean | null }> | null | undefined,
 ): number | null {
   let cheapest: number | null = null;
