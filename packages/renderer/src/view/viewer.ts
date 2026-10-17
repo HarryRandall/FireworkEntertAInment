@@ -3,7 +3,7 @@ import { syncViewerClock, subscribeViewer } from './external-clock';
 import { ViewerSound } from './sound/scheduler';
 import * as THREE from 'three';
 import type { Design } from '../schema/index';
-import { shotDuration, shakeEvents, type Vec3 } from '../sim/index';
+import { shakeEvents, type Vec3 } from '../sim/index';
 import { ParticleLayers } from './buffers';
 import { GpuSprays } from './gpu-sprays';
 import { FrameProfiler } from './frame-profile';
@@ -30,6 +30,7 @@ import {
 import type { Shot, ViewerOptions } from './types';
 import { observeMotionPreference, representativeTime } from './motion';
 import { createViewerRenderer } from './low-power';
+import { prepareShotSequence } from './shot-windows';
 
 // Prototype projection settings, in degrees and metres.
 const FOV_DEG = 45;
@@ -265,7 +266,7 @@ export class Viewer {
     this.sound.setShots(soundShots(this));
     resetViewerReadout(this);
     this.last = 0;
-    this.duration = Math.max(0, ...shots.map((shot) => (shot.t0 ?? 0) + shotDuration(shot.design)));
+    this.duration = prepareShotSequence(this, shots);
     this.t = Math.min(this.t, this.duration);
     if (!this.playing && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
       this.t = representativeTime(shots);
