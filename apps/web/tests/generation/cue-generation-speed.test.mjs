@@ -82,8 +82,15 @@ test('cue generation emits server timing logs for the critical stages', () => {
   assert.match(runner, /totalMs:/);
   assert.match(runner, /console\.info\('\[cue-generation\] show plan'/);
   assert.match(llmPlan, /const LLM_PLAN_TIMEOUT_MS = 75_000/);
+  assert.match(llmPlan, /const LLM_PLAN_TOTAL_BUDGET_MS = 90_000/);
   assert.match(llmPlan, /max_tokens: LLM_PLAN_MAX_TOKENS/);
-  assert.match(llmPlan, /timeout: LLM_PLAN_TIMEOUT_MS/);
+  // Per-attempt timeout never exceeds the remaining overall budget; the SDK's
+  // own retries are off so a slow model cannot stack two full timeouts.
+  assert.match(
+    llmPlan,
+    /timeout: Math\.max\(1, Math\.min\(LLM_PLAN_TIMEOUT_MS, Math\.round\(remainingMs\)\)\)/,
+  );
+  assert.match(llmPlan, /maxRetries: 0/);
 });
 
 test('timeline persistence retries thrown network and timeout failures', () => {

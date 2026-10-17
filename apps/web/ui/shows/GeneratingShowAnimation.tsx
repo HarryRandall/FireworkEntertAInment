@@ -2,16 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  AudioLines,
-  Check,
-  Clock3,
-  MonitorPlay,
-  ShieldCheck,
-  Sparkles,
-  Waves,
-  type LucideIcon,
-} from 'lucide-react';
+import { AudioLines, Check, MonitorPlay, Sparkles, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import {
   clearPersistedGenerationCover,
@@ -27,12 +18,12 @@ import { setShowCoverImagePath } from '@/lib/shows/cover-actions.server';
 import { createClient } from '@/lib/supabase/client';
 import { Cover } from '@/ui/covers/Cover';
 import styles from './GeneratingShowAnimation.module.css';
-import { generationDelayLabel } from './generation-delay';
+import { formatElapsed, stageStatusNote } from './generation-delay';
 
 type GeneratingStatus = 'running' | 'completed' | 'failed';
 
 /** Which part of the pipeline the show is actually in, fed from the server on
- * every poll so the bar tracks reality instead of a fixed script. */
+ * every poll so the checklist tracks reality instead of a fixed script. */
 type GeneratingPhase = 'analysing' | 'generating' | 'finalising';
 
 type GeneratingShowAnimationProps = {
@@ -41,12 +32,12 @@ type GeneratingShowAnimationProps = {
   status?: GeneratingStatus;
   /** Real pipeline phase; `analysing` while the track analysis is running. */
   phase?: GeneratingPhase;
-  /** Whether the show has a soundtrack (adds the analysis stage + estimate). */
+  /** Whether the show has a soundtrack (adds the analysis stage). */
   hasAudio?: boolean;
   /** Null lets a caller own status polling and recovery. */
   pollIntervalMs?: number | null;
   startedAt?: string | null;
-  /** When true, the analyser container is warmed up so the run is fast. */
+  /** When true, the analyser container is already warm; otherwise its cold start is explained. */
   isWarm?: boolean;
   /** Persisted visual identity for the show, rendered behind the progress card. */
   coverShader?: ShowCover | null;
@@ -63,54 +54,49 @@ type GeneratingShowAnimationProps = {
   coverImagePath?: string | null;
 };
 
-type Stage = { label: string; icon: LucideIcon };
+/**
+ * One real pipeline phase. The checklist only moves when the server reports
+ * a new phase, so a tick always means that step genuinely finished.
+ */
+type Stage = {
+  phase: GeneratingPhase;
+  label: string;
+  /** What is happening inside the step, shown while it is active. */
+  description: string;
+  icon: LucideIcon;
+};
 
-const AUDIO_STAGES: Stage[] = [
-  { label: 'Analysing your track', icon: AudioLines },
-  { label: 'Mapping beats and energy', icon: Waves },
-  { label: 'Choosing fireworks', icon: Sparkles },
-  { label: 'Timing cues to the music', icon: Clock3 },
-  { label: 'Final safety checks', icon: ShieldCheck },
-];
+const ANALYSING_STAGE: Stage = {
+  phase: 'analysing',
+  label: 'Analysing your track',
+  description: 'Finding the beats, sections and energy of the song.',
+  icon: AudioLines,
+};
 
-const NO_AUDIO_STAGES: Stage[] = [
-  { label: 'Setting the rhythm', icon: Waves },
-  { label: 'Choosing fireworks', icon: Sparkles },
-  { label: 'Timing the cues', icon: Clock3 },
-  { label: 'Final safety checks', icon: ShieldCheck },
-];
+const GENERATING_WITH_AUDIO_STAGE: Stage = {
+  phase: 'generating',
+  label: 'Composing your show',
+  description: 'Choosing fireworks, timing cues to the music and checking launch safety.',
+  icon: Sparkles,
+};
 
-const FINALISING_STAGE: Stage = { label: 'Loading the preview', icon: MonitorPlay };
+const GENERATING_WITHOUT_AUDIO_STAGE: Stage = {
+  phase: 'generating',
+  label: 'Composing your show',
+  description: 'Setting a rhythm, choosing fireworks, timing cues and checking launch safety.',
+  icon: Sparkles,
+};
 
-// With a soundtrack the analysis dominates the wait, so it owns the first
-// stretch of the bar and cue generation the remainder.
-const ANALYSIS_BAR_SHARE = 0.55;
+const FINALISING_STAGE: Stage = {
+  phase: 'finalising',
+  label: 'Loading the preview',
+  description: 'Preparing the replay.',
+  icon: MonitorPlay,
+};
+
 // Give up on capturing the cover poster after this many failed attempts so a
 // broken WebGL context can't retry forever across poll refreshes.
 const MAX_COVER_CAPTURE_ATTEMPTS = 2;
-
-/** Rough wall-clock estimate for a phase, in seconds. LLM cue assignment can
- * run well past a minute, so the generating estimate leans conservative and
- * the eased curve keeps creeping (never finishing) on long runs. */
-function phaseEstimateSeconds(phase: 'analysing' | 'generating', isWarm: boolean): number {
-  if (phase === 'analysing') return isWarm ? 35 : 110;
-  return isWarm ? 18 : 45;
-}
-
-/**
- * Eased 0→~1 curve: reaches ~0.89 at the estimate, then creeps asymptotically
- * so the bar keeps moving on slow runs without ever finishing early.
- */
-function phaseCurve(elapsedSeconds: number, estimateSeconds: number): number {
-  if (estimateSeconds <= 0) return 0.98;
-  return Math.min(0.98, 1 - Math.exp(-2.2 * (elapsedSeconds / estimateSeconds)));
-}
-
-function formatEta(seconds: number): string {
-  if (seconds <= 8) return 'almost there';
-  if (seconds < 90) return `about ${Math.max(10, Math.round(seconds / 5) * 5)}s left`;
-  return `about ${Math.ceil(seconds / 60)} min left`;
-}
 
 function stableJson(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(stableJson);
@@ -133,9 +119,10 @@ function coverSignature(cover: ShowCover | null | undefined): string | null {
 }
 
 type ProgressUi = {
-  percent: number;
-  activeStageIndex: number;
-  etaLabel: string | null;
+  /** Whole seconds since the run started, for the elapsed readout. */
+  elapsedSeconds: number;
+  /** Context line for the active step. */
+  statusNote: string;
 };
 
 export function GeneratingShowAnimation({
@@ -154,15 +141,12 @@ export function GeneratingShowAnimation({
   coverImagePath = null,
 }: GeneratingShowAnimationProps) {
   const router = useRouter();
-  const progressFillRef = useRef<HTMLDivElement>(null);
   const coverCaptureAttemptsRef = useRef(0);
   const coverCaptureInFlightRef = useRef(false);
-  // Wall-clock anchor for the current phase, so estimates restart when the
-  // pipeline moves from analysis to generation.
+  // Wall-clock anchor for the current phase, so the delay note restarts when
+  // the pipeline moves from analysis to generation.
   const phaseRef = useRef<GeneratingPhase>(phase);
   const phaseStartedAtRef = useRef<number | null>(null);
-  // The bar never moves backwards, even if estimates or phases shift under it.
-  const maxProgressRef = useRef(0);
   const [generatedCover, setGeneratedCover] = useState<ShowCover | null>(null);
   // The cover the user has been watching since they clicked Generate. While
   // the run is live it takes precedence over the show's saved cover so the
@@ -170,15 +154,24 @@ export function GeneratingShowAnimation({
   // splash → real slug → finalising all share it).
   const [sessionCover, setSessionCover] = useState<ShowCover | null>(null);
   const [progressUi, setProgressUi] = useState<ProgressUi>(() => ({
-    percent: status === 'completed' ? 100 : 0,
-    activeStageIndex: 0,
-    etaLabel: null,
+    elapsedSeconds: 0,
+    statusNote: stageStatusNote({ phase, hasAudio, isWarm, phaseElapsedSeconds: 0 }),
   }));
 
-  const stages = useMemo(() => {
-    const base = hasAudio ? AUDIO_STAGES : NO_AUDIO_STAGES;
+  const stages = useMemo<Stage[]>(() => {
+    const base = hasAudio
+      ? [ANALYSING_STAGE, GENERATING_WITH_AUDIO_STAGE]
+      : [GENERATING_WITHOUT_AUDIO_STAGE];
     return phase === 'finalising' ? [...base, FINALISING_STAGE] : base;
   }, [hasAudio, phase]);
+  // The active row follows the server-reported phase, so a tick is earned.
+  const activeStageIndex =
+    status === 'completed'
+      ? stages.length
+      : Math.max(
+          0,
+          stages.findIndex((stage) => stage.phase === phase),
+        );
 
   // Layout effects: each splash surface (launch overlay → route splash →
   // handover) remounts this component, so the cover must be committed before
@@ -218,7 +211,7 @@ export function GeneratingShowAnimation({
       Number.isFinite(fallbackStartedAt) ? fallbackStartedAt : Date.now(),
     );
     if (phaseRef.current !== phase || phaseStartedAtRef.current === null) {
-      // Entering a new phase: anchor its estimate to now. On the very first
+      // Entering a new phase: anchor its delay note to now. On the very first
       // render, anchor to the persisted overall start instead so a mid-run
       // refresh resumes in the right place.
       phaseStartedAtRef.current =
@@ -226,86 +219,29 @@ export function GeneratingShowAnimation({
       phaseRef.current = phase;
     }
 
-    const generationEstimate = phaseEstimateSeconds('generating', isWarm);
-    const analysisEstimate = phaseEstimateSeconds('analysing', isWarm);
-    const generatingBase = hasAudio ? ANALYSIS_BAR_SHARE : 0;
-
-    let animationFrame = 0;
-    let lastPercent: number | null = null;
-    let lastStageIndex: number | null = null;
-    let lastEta: string | null = null;
-
     const tick = () => {
       const now = Date.now();
-      const phaseElapsed = (now - (phaseStartedAtRef.current ?? resolvedStartedAt)) / 1000;
-
-      let progress: number;
-      let etaSeconds: number | null;
-      if (status === 'completed') {
-        progress = 1;
-        etaSeconds = null;
-      } else if (phase === 'finalising') {
-        progress = Math.max(0.96, maxProgressRef.current) + Math.min(0.03, phaseElapsed * 0.004);
-        etaSeconds = 5;
-      } else if (phase === 'analysing') {
-        progress = ANALYSIS_BAR_SHARE * phaseCurve(phaseElapsed, analysisEstimate);
-        etaSeconds = Math.max(analysisEstimate - phaseElapsed, 4) + generationEstimate;
-      } else {
-        progress =
-          generatingBase + (1 - generatingBase) * phaseCurve(phaseElapsed, generationEstimate);
-        etaSeconds = Math.max(generationEstimate - phaseElapsed, 4);
-      }
-
-      progress = Math.min(status === 'completed' ? 1 : 0.99, progress);
-      progress = Math.max(progress, maxProgressRef.current);
-      maxProgressRef.current = progress;
-
-      // Stage handoff: analysis owns stage 0; generation walks the remaining
-      // stages as its share of the bar fills; finalising pins to the last row.
-      let stageIndex: number;
-      if (status === 'completed' || phase === 'finalising') {
-        stageIndex = stages.length - 1;
-      } else if (phase === 'analysing') {
-        stageIndex = 0;
-      } else {
-        const generationStages = hasAudio ? stages.length - 1 : stages.length;
-        const offset = hasAudio ? 1 : 0;
-        const within = (progress - generatingBase) / Math.max(1 - generatingBase, 0.01);
-        stageIndex = Math.min(offset + Math.floor(within * generationStages), stages.length - 1);
-      }
-
-      const percent = Math.round(progress * 100);
-      const etaLabel =
-        status === 'completed' || etaSeconds === null
-          ? null
-          : (generationDelayLabel(
-              phase,
-              phaseElapsed,
-              phase === 'analysing'
-                ? analysisEstimate
-                : phase === 'generating'
-                  ? generationEstimate
-                  : 5,
-            ) ?? formatEta(etaSeconds));
-
-      progressFillRef.current?.style.setProperty('--progress-scale', String(progress));
-
-      if (percent !== lastPercent || stageIndex !== lastStageIndex || etaLabel !== lastEta) {
-        lastPercent = percent;
-        lastStageIndex = stageIndex;
-        lastEta = etaLabel;
-        setProgressUi({ percent, activeStageIndex: stageIndex, etaLabel });
-      }
-
-      if (status === 'running') {
-        animationFrame = window.requestAnimationFrame(tick);
-      }
+      const phaseElapsedSeconds = (now - (phaseStartedAtRef.current ?? resolvedStartedAt)) / 1000;
+      const next: ProgressUi = {
+        elapsedSeconds: Math.max(0, Math.floor((now - resolvedStartedAt) / 1000)),
+        statusNote:
+          status === 'completed'
+            ? 'Show ready'
+            : stageStatusNote({ phase, hasAudio, isWarm, phaseElapsedSeconds }),
+      };
+      setProgressUi((previous) =>
+        previous.elapsedSeconds === next.elapsedSeconds && previous.statusNote === next.statusNote
+          ? previous
+          : next,
+      );
     };
 
     tick();
-
-    return () => window.cancelAnimationFrame(animationFrame);
-  }, [hasAudio, isWarm, persistKey, phase, stages, startedAt, status]);
+    if (status !== 'running') return;
+    // Once a second is enough for an m:ss readout and avoids a render per frame.
+    const interval = window.setInterval(tick, 1000);
+    return () => window.clearInterval(interval);
+  }, [hasAudio, isWarm, persistKey, phase, startedAt, status]);
 
   useEffect(() => {
     if (status !== 'running' || pollIntervalMs === null) return;
@@ -400,16 +336,14 @@ export function GeneratingShowAnimation({
             {showTitle ? <h1 className={styles.title}>{showTitle}</h1> : null}
           </div>
 
-          <ol className={styles.stages} aria-label="Generation progress">
+          <ol className={styles.stages} aria-label="Generation steps">
             {stages.map((stage, index) => {
-              const isDone =
-                status === 'completed' ||
-                (index < progressUi.activeStageIndex && status !== 'failed');
-              const isActive = status === 'running' && index === progressUi.activeStageIndex;
+              const isDone = status !== 'failed' && index < activeStageIndex;
+              const isActive = status === 'running' && index === activeStageIndex;
               const Icon = stage.icon;
               return (
                 <li
-                  key={stage.label}
+                  key={stage.phase}
                   className={cn(
                     styles.stageRow,
                     isDone && styles.stageDone,
@@ -425,29 +359,53 @@ export function GeneratingShowAnimation({
                     )}
                     {isActive ? <span className={styles.stageIconPulse} /> : null}
                   </span>
-                  <span className={styles.stageText}>{stage.label}</span>
-                  {isActive ? <span className={styles.stageDots} aria-hidden="true" /> : null}
+                  <span className={styles.stageBody}>
+                    <span className={styles.stageText}>
+                      {stage.label}
+                      {isActive ? <span className={styles.stageDots} aria-hidden="true" /> : null}
+                    </span>
+                    {isActive ? (
+                      <span className={styles.stageDescription}>{stage.description}</span>
+                    ) : null}
+                  </span>
                 </li>
               );
             })}
           </ol>
 
-          <div className={styles.barRow}>
-            <div
-              className={styles.progressTrack}
-              role="progressbar"
-              aria-valuenow={progressUi.percent}
-              aria-valuemin={0}
-              aria-valuemax={100}
-            >
-              <div ref={progressFillRef} className={styles.progressFill} aria-hidden="true" />
-            </div>
+          {/* One segment per real step. The active segment sweeps instead of
+              pretending to know how far through the step we are. */}
+          <div
+            className={styles.segments}
+            role="progressbar"
+            aria-label="Generation progress"
+            aria-valuetext={
+              status === 'completed'
+                ? 'Show ready'
+                : `Step ${Math.min(activeStageIndex + 1, stages.length)} of ${stages.length}: ${
+                    stages[Math.min(activeStageIndex, stages.length - 1)]?.label ?? ''
+                  }`
+            }
+          >
+            {stages.map((stage, index) => (
+              <span
+                key={stage.phase}
+                className={cn(
+                  styles.segment,
+                  (status === 'completed' || index < activeStageIndex) && styles.segmentDone,
+                  status === 'running' && index === activeStageIndex && styles.segmentActive,
+                )}
+              />
+            ))}
           </div>
 
           <div className={styles.meta}>
-            <span className={styles.percent}>{progressUi.percent}%</span>
-            <span className={styles.eta} role="status" aria-live="polite">
-              {status === 'completed' ? 'Show ready' : (progressUi.etaLabel ?? '')}
+            <span className={styles.statusNote} role="status" aria-live="polite">
+              {progressUi.statusNote}
+            </span>
+            <span className={styles.elapsed}>
+              <span className="sr-only">Elapsed </span>
+              {formatElapsed(progressUi.elapsedSeconds)}
             </span>
           </div>
         </div>

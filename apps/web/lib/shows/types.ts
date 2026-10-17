@@ -60,9 +60,10 @@ export type ShowCueProjection = Pick<
   | 'emphasis'
 >;
 
+/** Effect identity for show mapping; the legacy `model_json` payload is not read here. */
 export type FireworkEffectProjection = Pick<
   FireworkEffectRow,
-  'id' | 'slug' | 'name' | 'pattern_key' | 'template_key' | 'model_json'
+  'id' | 'slug' | 'name' | 'pattern_key' | 'template_key'
 >;
 
 type FireworkPreviewImageProjection = {
@@ -141,7 +142,7 @@ export const SHOW_SELECT =
 export const SHOW_CUE_SELECT =
   'id, show_id, position, time_seconds, description, catalogue_item_id, seed_override, launch_position_index, emphasis';
 export const FIREWORK_VARIANT_SELECT =
-  'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, design, design_schema, render_snapshot_json, render_overrides_json, variant_json, firework_effects(id, slug, name, pattern_key, template_key, model_json), firework_preview_images(source_revision, renderer_version, storage_path)';
+  'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, design, design_schema, render_snapshot_json, render_overrides_json, variant_json, firework_effects(id, slug, name, pattern_key, template_key), firework_preview_images(source_revision, renderer_version, storage_path)';
 /** Lighter fireworks projection for browse-only catalogue cards. */
 export const CATALOGUE_FIREWORK_CARD_SELECT =
   'id, slug, name, description, primary_color, secondary_color, color_palette, caliber, duration_seconds, height_meters, design, design_schema, firework_effects(id, slug, name, pattern_key, template_key), firework_preview_images(source_revision, renderer_version, storage_path)';

@@ -24,14 +24,19 @@ test('cue generation restricts the planning pool to priced supplier inventory', 
 });
 
 test('firework products expose the cheapest available supplier price', () => {
-  const queries = read('lib/shows/queries.server.ts');
+  const catalogue = read('lib/shows/catalogue-products.ts');
+  const reads = read('lib/shows/catalogue-products.server.ts');
   const domain = read('lib/show-domain.ts');
 
-  assert.match(queries, /supplier_inventory_items \(price_cents, available\)/);
-  assert.match(queries, /cheapestAvailablePriceCents/);
+  assert.match(reads, /from\('supplier_inventory_items'\)/);
+  assert.match(
+    catalogue,
+    /CATALOGUE_INVENTORY_SELECT = 'catalogue_item_id, price_cents, available'/,
+  );
+  assert.match(catalogue, /minPriceCents: cheapestAvailablePriceCents/);
   assert.match(domain, /minPriceCents\?: number \| null/);
   // Unavailable or unpriced listings must never count as purchasable.
-  assert.match(queries, /if \(!row\.available \|\| row\.price_cents == null/);
+  assert.match(catalogue, /if \(!row\.available \|\| row\.price_cents == null/);
 });
 
 test('product payload cache key versions with the pricing/occupancy payload', () => {
@@ -41,5 +46,10 @@ test('product payload cache key versions with the pricing/occupancy payload', ()
 });
 
 test('catalogue product reads explicitly exclude unlisted entries for every caller', () => {
-  assert.match(read('lib/shows/queries.server.ts'), /\.eq\('is_listed', true\)/);
+  const queries = read('lib/shows/queries.server.ts');
+  const reads = read('lib/shows/catalogue-products.server.ts');
+  // Both the whole-catalogue and the scoped id lookups go through the shared listed filter.
+  assert.match(reads, /params\.listedOnly \? query\.eq\('is_listed', true\) : query/);
+  assert.equal(reads.match(/listed\(supabase\.from\('catalogue_items'\)/g)?.length, 2);
+  assert.match(queries, /listFireworkProducts = cache\([\s\S]*?listedOnly: true/);
 });

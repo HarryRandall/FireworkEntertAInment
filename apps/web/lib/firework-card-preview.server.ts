@@ -32,11 +32,8 @@ import {
   parseReconstructionShotVariant,
   type ReconstructionShotMetadata,
 } from '@/lib/firework-import/reconstruction-shot';
-import {
-  fetchShotsByCatalogueItem,
-  listFireworkSpecifications,
-  ShowsNetworkError,
-} from '@/lib/shows/queries.server';
+import { fetchShotsByCatalogueItem, listFireworkSpecifications } from '@/lib/shows/queries.server';
+import { ShowsNetworkError } from '@/lib/shows/read-errors';
 import { getCatalogueReadClient } from '@/lib/shows/supabase';
 import { getServerClient } from '@/lib/supabase/server-client';
 import { isRecord } from '@/lib/utils';
@@ -467,9 +464,7 @@ export async function loadCatalogueFireworkCardPreview(
 ): Promise<FireworkCardPreviewPayload | null> {
   try {
     const supabase = await getCatalogueReadClient();
-    const shotsByCatalogueItem = await fetchShotsByCatalogueItem(supabase, [catalogueItemId], {
-      failOnError: true,
-    });
+    const shotsByCatalogueItem = await fetchShotsByCatalogueItem(supabase, [catalogueItemId]);
     const shots = shotsByCatalogueItem.get(catalogueItemId) ?? [];
     const cues: ReplayCue[] = shots.map((shot, index) => ({
       id: shot.sourceCueId,

@@ -8,7 +8,8 @@
  * `listReplayPreviewCuesForShow` (current-user check plus RLS).
  */
 import { NextResponse } from 'next/server';
-import { listReplayPreviewCuesForShow, ShowsNetworkError } from '@/lib/shows/queries.server';
+import { listReplayPreviewCuesForShow } from '@/lib/shows/queries.server';
+import { CatalogueReadError, ShowsNetworkError } from '@/lib/shows/read-errors';
 import { SHOW_CARD_PREVIEW_WINDOW_SECONDS } from '@/lib/show-preview';
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -25,7 +26,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     const cues = await listReplayPreviewCuesForShow(id, windowSeconds);
     return NextResponse.json({ cues });
   } catch (error) {
-    if (error instanceof ShowsNetworkError) {
+    // A hover preview degrades to an explicit unavailable response, never to a silent empty show.
+    if (error instanceof ShowsNetworkError || error instanceof CatalogueReadError) {
       return NextResponse.json({ cues: [] }, { status: 503 });
     }
     throw error;

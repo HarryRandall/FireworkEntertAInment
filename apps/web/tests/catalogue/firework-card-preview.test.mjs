@@ -157,16 +157,17 @@ test('preview loaders compile real designs and bound normalised sequence payload
 
   assert.match(preview, /getCatalogueReadClient/);
   assert.match(preview, /fetchShotsByCatalogueItem/);
-  assert.match(preview, /\{\s*failOnError: true,?\s*\}/);
   assert.match(shows, /export async function fetchShotsByCatalogueItem/);
-  assert.match(shows, /options\.failOnError \|\| isSupabaseTransientNetworkError/);
-  assert.match(shows, /kind: 'direct'/);
-  assert.match(shows, /timeOffsetSeconds: DIRECT_SHOW_REPLAY_SHOT_OFFSET_SECONDS/);
+  // Read failures always surface: the loader has no tolerant path that returns an empty map.
+  assert.doesNotMatch(shows, /failOnError/);
+  const catalogueProducts = read('lib/shows/catalogue-products.ts');
+  assert.match(catalogueProducts, /kind: 'direct'/);
+  assert.match(catalogueProducts, /timeOffsetSeconds: DIRECT_SHOW_REPLAY_SHOT_OFFSET_SECONDS/);
   assert.match(
     preview,
     /fireworkCardPreviewShotTimeSeconds\(shot\.kind, shot\.timeOffsetSeconds\)/,
   );
-  assert.match(shows, /parseReconstructionShotVariant/);
+  assert.match(catalogueProducts, /parseReconstructionShotVariant/);
 });
 
 test('preview APIs enforce their distinct access boundaries and no-store responses', () => {

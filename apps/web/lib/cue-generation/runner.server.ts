@@ -34,6 +34,7 @@ import type { GenerationMode } from '@/lib/prompt-configs';
 import { getActivePromptConfig, getShowCueGenerationSettings } from '@/lib/prompt-configs.server';
 import { syncShowDerivedFieldsForUser } from '@/lib/shows/mutations.server';
 import { listFireworkProducts } from '@/lib/shows/queries.server';
+import { CatalogueReadError, ShowsNetworkError } from '@/lib/shows/read-errors';
 import type { AnalyserResult } from '@/lib/show-analysis.types';
 import { normalisePersistedCueModel } from '@/lib/cue-models';
 import { parseCreativeDirection } from './creative-direction';
@@ -395,13 +396,29 @@ export async function generateCuesForShow(params: {
   let promptConstraints: PromptConstraints = parsePromptConstraints('');
 
   const loadStart = performance.now();
+  // The catalogue and the credit reservation do not depend on the brief, so
+  // they overlap the brief/analysis reads. The catalogue promise is only
+  // awaited after the analysis state has been checked, so a show that is
+  // still waiting on its analysis reports as waiting rather than failed.
+  const productsPromise = listFireworkProducts();
+  productsPromise.catch(() => undefined);
+  let promptConfigPromise: ReturnType<typeof getActivePromptConfig> | null = null;
   try {
-    [brief, analysisResult] = await Promise.all([
+    const [loadedBrief, loadedAnalysis, reservationRead] = await Promise.all([
       loadBrief(supabase, userId, showId),
       musicAnalysisId
         ? loadAnalysisState(supabase, musicAnalysisId)
         : Promise.resolve({ status: 'absent', analysis: null } satisfies AnalysisJsonLoadResult),
+      supabase
+        .from('ai_credit_transactions')
+        .select('metadata')
+        .eq('user_id', userId)
+        .eq('idempotency_key', `show-generation:${showId}:reserve`)
+        .eq('transaction_type', 'reserve')
+        .maybeSingle(),
     ]);
+    brief = loadedBrief;
+    analysisResult = loadedAnalysis;
     if (!brief) throw new Error('Show not found.');
     promptConstraints = parsePromptConstraints(brief.description ?? '');
     if (brief.creation_source === 'assortment_qr') {
@@ -416,6 +433,11 @@ export async function generateCuesForShow(params: {
     showStyle = isShowStyleKey(brief.show_style) ? brief.show_style : null;
     if (showStyle && SHOW_STYLES[showStyle].engine === 'beat') {
       generationMode = 'beat';
+    }
+    if (generationMode === 'llm') {
+      // The prompt text is independent of the catalogue filtering below.
+      promptConfigPromise = getActivePromptConfig('show_cue_generation');
+      promptConfigPromise.catch(() => undefined);
     }
     maxTubes = launchPositionsForWidth(brief.site_width_feet);
     if (musicAnalysisId) {
@@ -443,7 +465,8 @@ export async function generateCuesForShow(params: {
       analysis = null;
     }
 
-    products = await listFireworkProducts();
+    // A read failure throws here and is retried; an empty list is a real empty catalogue.
+    products = await productsPromise;
     if (products.length === 0) {
       throw new Error('Product catalogue contains no firework products.');
     }
@@ -531,13 +554,7 @@ export async function generateCuesForShow(params: {
       );
     timings.loadInputsMs = elapsedMs(loadStart);
 
-    const { data: reservation, error: reservationError } = await supabase
-      .from('ai_credit_transactions')
-      .select('metadata')
-      .eq('user_id', userId)
-      .eq('idempotency_key', `show-generation:${showId}:reserve`)
-      .eq('transaction_type', 'reserve')
-      .maybeSingle();
+    const { data: reservation, error: reservationError } = reservationRead;
     if (reservationError || !reservation)
       throw new Error('Could not load the requested generation duration.');
     const metadata = reservation.metadata;
@@ -567,7 +584,11 @@ export async function generateCuesForShow(params: {
     const message = error instanceof Error ? error.message : String(error);
     if (!timings.loadInputsMs) timings.loadInputsMs = elapsedMs(loadStart);
     logTimings('failed', { error: message });
-    return finishFailure(message);
+    // A catalogue or network read failure says nothing about the brief, so it
+    // takes the retry path instead of failing (and refunding) immediately.
+    const retryable = error instanceof CatalogueReadError || error instanceof ShowsNetworkError;
+    if (retryable) console.error('[cue-generation] input read failed:', error);
+    return finishFailure(message, retryable);
   }
 
   let accepted: ReconstructedCue[] = [];
@@ -689,9 +710,11 @@ export async function generateCuesForShow(params: {
       });
       let plan = defaultPlan;
       let llmFailure: string | null = null;
+      let modelAttempts = 0;
       if (generationMode === 'llm') {
         const promptStart = performance.now();
-        const promptConfig = await getActivePromptConfig('show_cue_generation');
+        const promptConfig = await (promptConfigPromise ??
+          getActivePromptConfig('show_cue_generation'));
         timings.promptBuildMs = elapsedMs(promptStart);
         const outcome = await requestShowPlan({
           model,
@@ -719,6 +742,7 @@ export async function generateCuesForShow(params: {
         });
         plan = outcome.plan;
         llmFailure = outcome.failure;
+        modelAttempts = outcome.attempts;
         promptBytes = outcome.promptBytes;
         rawResponseBytes = outcome.responseBytes;
         timings.openRouterMs = outcome.durationMs;
@@ -747,6 +771,7 @@ export async function generateCuesForShow(params: {
       planReport = {
         planSource: plan.source,
         llmFailure,
+        modelAttempts,
         roles: plan.sections.map((direction) => direction.role),
         metrics: evaluateShowMetrics({
           cues: realised.cues,

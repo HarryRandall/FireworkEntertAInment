@@ -126,7 +126,13 @@ test('admin and public list loaders expose persisted poster manifest fields', ()
   const effects = read('lib/admin/effects.server.ts');
   const fireworks = read('lib/admin/fireworks.server.ts');
   const multishots = read('lib/admin/multishots.server.ts');
-  const catalogue = read('lib/shows/queries.server.ts');
+  // The public catalogue reads flat rows per table and joins them in
+  // `catalogue-products.ts`; the firework select lives in `types.ts`.
+  const catalogue = [
+    read('lib/shows/types.ts'),
+    read('lib/shows/catalogue-products.ts'),
+    read('lib/shows/catalogue-products.server.ts'),
+  ].join('\n');
   const showDomain = read('lib/show-domain.ts');
 
   assert.equal(adminTypes.match(/previewImagePath: string \| null/g)?.length, 3);

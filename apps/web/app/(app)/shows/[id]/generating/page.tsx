@@ -7,6 +7,7 @@ import { GENERATING_ROUTE_SPLASH_CLASS } from '@/ui/shows/generatingSplashLayout
 import { Button } from '@/ui/patterns/Button';
 import { Card } from '@/ui/patterns/Card';
 import { getAnalyserWarmthState } from '@/lib/analyser-warmth.server';
+import { describeGenerationFailure } from '@/lib/cue-generation/failure-presentation';
 import { getMusicAnalysisStatus } from '@/lib/show-analyses.server';
 import { getShowBySlug } from '@/lib/shows/queries.server';
 
@@ -74,27 +75,52 @@ export default async function ShowGeneratingPage({ params, searchParams }: PageP
   }
 
   if (show.generationStatus === 'failed') {
+    // The stored message is operator detail; the page only shows curated copy.
     console.error('[shows/generating] generation failed:', {
       showId: show.id,
       error: show.generationError,
     });
+    const failure = describeGenerationFailure(show.generationError);
+    const hasPartialResult = (show.generatedCueCount ?? 0) > 0;
+    const soundtrack = [show.song, show.artist].filter(Boolean).join(' - ');
     return (
-      <Card radius="lg" className="mx-auto max-w-2xl p-8">
-        <div className="flex items-start gap-4">
-          <span className="bg-destructive/10 text-destructive rounded-lg p-3">
+      <Card radius="lg" className="mx-auto w-full max-w-2xl p-6 sm:p-8">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+          <span className="bg-status-danger-subtle text-status-danger inline-flex h-11 w-11 flex-none items-center justify-center rounded-lg">
             <AlertTriangle size={22} aria-hidden="true" />
           </span>
-          <div className="space-y-4">
-            <div>
+          <div className="min-w-0 flex-1 space-y-5">
+            <div className="space-y-2">
+              <p className="text-muted-foreground font-mono text-[0.6875rem] font-semibold tracking-[0.18em] uppercase">
+                {show.title}
+              </p>
               <h1 className="text-foreground text-2xl font-bold tracking-tight">
                 Show generation failed
               </h1>
-              <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-                We could not finish this show. Adjust the brief or start another show.
-              </p>
+              {soundtrack ? (
+                <p className="text-muted-foreground text-xs">Soundtrack: {soundtrack}</p>
+              ) : null}
+              <p className="text-foreground text-sm leading-relaxed">{failure.summary}</p>
+              {failure.detail ? (
+                <p className="text-muted-foreground text-sm leading-relaxed">{failure.detail}</p>
+              ) : null}
             </div>
+
+            <div className="border-border bg-muted/40 rounded-lg border p-4">
+              <h2 className="text-foreground text-sm font-semibold">What you can do</h2>
+              <ul className="text-muted-foreground mt-2 list-disc space-y-1 pl-5 text-sm leading-relaxed">
+                {hasPartialResult ? (
+                  <li>Review the cues that were generated before it stopped.</li>
+                ) : null}
+                {failure.nextSteps.map((step) => (
+                  <li key={step}>{step}</li>
+                ))}
+              </ul>
+              <p className="text-muted-foreground mt-3 text-xs">{failure.creditsNote}</p>
+            </div>
+
             <div className="flex flex-wrap gap-3">
-              {(show.generatedCueCount ?? 0) > 0 ? (
+              {hasPartialResult ? (
                 <Button href={`/shows/${show.slug}/preview`} size="sm">
                   Review show
                 </Button>
@@ -106,6 +132,11 @@ export default async function ShowGeneratingPage({ params, searchParams }: PageP
               <Button href="/shows/new" size="sm" variant="secondary">
                 Start another show
               </Button>
+              {hasPartialResult ? (
+                <Button href="/shows" size="sm" variant="ghost">
+                  Back to My Shows
+                </Button>
+              ) : null}
             </div>
           </div>
         </div>
